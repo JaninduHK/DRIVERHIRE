@@ -1,0 +1,83 @@
+import { getStoredToken } from './authToken.js';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const AUTH_BASE_URL = `${API_BASE_URL.replace(/\/+$/, '')}/auth`;
+
+const withAuthHeaders = () => {
+  const token = getStoredToken();
+  if (!token) {
+    throw new Error('Please sign in to manage your profile.');
+  }
+  return {
+    Authorization: `Bearer ${token}`,
+  };
+};
+
+const parseError = async (response) => {
+  try {
+    const data = await response.json();
+    if (Array.isArray(data?.errors) && data.errors.length > 0) {
+      return data.errors.map((error) => error.msg || error.message).join('\n');
+    }
+    if (typeof data?.message === 'string' && data.message.trim()) {
+      return data.message;
+    }
+    return `Request failed (${response.status})`;
+  } catch (_error) {
+    return 'Unable to parse server response';
+  }
+};
+
+const request = async (path, options = {}) => {
+  const isFormData = options.body instanceof FormData;
+  const headers = {
+    ...withAuthHeaders(),
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+    ...(options.headers || {}),
+  };
+
+  const response = await fetch(`${AUTH_BASE_URL}${path}`, {
+    ...options,
+    headers,
+  });
+
+  if (response.status === 204) {
+    return {};
+  }
+
+  if (!response.ok) {
+    const message = await parseError(response);
+    throw new Error(message);
+  }
+
+  const text = await response.text();
+  if (!text) {
+    return {};
+  }
+  try {
+    return JSON.parse(text);
+  } catch (_error) {
+    throw new Error('Unable to parse server response');
+  }
+};
+
+export const fetchCurrentUser = () =>
+  request('/me', { method: 'GET' });
+
+export const updateProfile = (payload) =>
+  request('/profile', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+
+export const updatePassword = (payload) =>
+  request('/password', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+
+export default {
+  fetchCurrentUser,
+  updateProfile,
+  updatePassword,
+};
