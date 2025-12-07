@@ -1,5 +1,6 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-const DRIVER_DIRECTORY_BASE_URL = `${API_BASE_URL.replace(/\/+$/, '')}/drivers`;
+import { API_BASE_URL } from '../constants/api.js';
+
+const DRIVER_DIRECTORY_BASE_URL = `${API_BASE_URL}/drivers`;
 
 const withTimeout = (promise, ms = 15000, message = 'Request timed out') => {
   let timeoutId;

@@ -1,8 +1,8 @@
+import { API_BASE_URL } from '../constants/api.js';
 import { getStoredToken } from './authToken.js';
 
 // /src/services/driverApi.js
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-const DRIVER_BASE_URL = `${API_BASE_URL.replace(/\/+$/, '')}/driver`;
+const DRIVER_BASE_URL = `${API_BASE_URL}/driver`;
 
 // ---- tiny utilities -------------------------------------------------
 const withTimeout = (promise, ms = 15000, msg = 'Request timed out') => {

@@ -1,7 +1,7 @@
+import { API_BASE_URL } from '../constants/api.js';
 import { getStoredToken } from './authToken.js';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-const VEHICLE_BASE_URL = `${API_BASE_URL.replace(/\/+$/, '')}/vehicles`;
+const VEHICLE_BASE_URL = `${API_BASE_URL}/vehicles`;
 
 const withTimeout = (promise, ms = 15000, message = 'Request timed out') => {
   let timeoutId;
