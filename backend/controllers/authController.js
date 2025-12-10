@@ -8,6 +8,7 @@ import {
   sendPasswordResetEmail,
   sendPasswordChangedEmail,
 } from '../services/emailService.js';
+import { buildAssetUrl } from '../utils/assetUtils.js';
 
 const buildVerificationUrl = (token) => {
   const url = new URL(buildAppUrl('/verify-email'));
@@ -253,13 +254,37 @@ export const getCurrentUser = async (req, res) => {
   }
 };
 
+const parseBooleanLike = (value) => {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    return ['true', '1', 'yes', 'on'].includes(value.trim().toLowerCase());
+  }
+  if (typeof value === 'number') {
+    return value === 1;
+  }
+  return false;
+};
+
 export const updateProfile = async (req, res) => {
   const validationError = handleValidation(req, res);
   if (validationError) {
     return validationError;
   }
 
-  const { name, contactNumber, description, tripAdvisor, address } = req.body || {};
+  const {
+    name,
+    contactNumber,
+    description,
+    tripAdvisor,
+    address,
+    currentLatitude,
+    currentLongitude,
+    currentLocationLabel,
+    removeProfilePhoto,
+    clearLocation,
+  } = req.body || {};
 
   try {
     const user = await User.findById(req.user.id);
@@ -297,11 +322,58 @@ export const updateProfile = async (req, res) => {
       }
     }
 
+    if (req.file) {
+      user.profilePhoto = `/uploads/profiles/${req.file.filename}`;
+    } else if (parseBooleanLike(removeProfilePhoto)) {
+      user.profilePhoto = undefined;
+    }
+
+    const wantsToClearLocation = parseBooleanLike(clearLocation);
+    const hasLat = currentLatitude !== undefined && currentLatitude !== '';
+    const hasLng = currentLongitude !== undefined && currentLongitude !== '';
+    const hasLocationLabel =
+      currentLocationLabel !== undefined && currentLocationLabel !== null;
+
+    if (wantsToClearLocation) {
+      user.driverLocation = undefined;
+    } else if (hasLat || hasLng || hasLocationLabel) {
+      if (!hasLat || !hasLng) {
+        return res
+          .status(400)
+          .json({ message: 'Please provide both latitude and longitude for your location.' });
+      }
+
+      const latitude = Number(currentLatitude);
+      const longitude = Number(currentLongitude);
+
+      if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
+        return res.status(400).json({ message: 'Latitude must be between -90 and 90.' });
+      }
+      if (!Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+        return res.status(400).json({ message: 'Longitude must be between -180 and 180.' });
+      }
+
+      const label =
+        typeof currentLocationLabel === 'string' ? currentLocationLabel.trim() : undefined;
+
+      user.driverLocation = {
+        label: label || undefined,
+        latitude,
+        longitude,
+        updatedAt: new Date(),
+      };
+    }
+
     await user.save();
+
+    const responseUser = user.toJSON();
+    if (responseUser.profilePhoto) {
+      responseUser.profilePhoto = buildAssetUrl(responseUser.profilePhoto, req);
+    }
 
     return res.json({
       message: 'Profile updated successfully.',
-      user: user.toJSON(),
+      user: responseUser,
     });
   } catch (error) {
     console.error('Update profile error:', error);

@@ -75,6 +75,15 @@ const buildDriverSummary = (driver, vehicles = [], reviewStats = null, req) => {
     : fallbackReviewScore;
   const reviewCount = hasReviewStats ? reviewStats.reviewCount : fallbackReviewCount;
 
+  const locationPayload = driver.driverLocation
+    ? {
+        label: driver.driverLocation.label || '',
+        latitude: driver.driverLocation.latitude,
+        longitude: driver.driverLocation.longitude,
+        updatedAt: driver.driverLocation.updatedAt,
+      }
+    : null;
+
   return {
     id: driver._id.toString(),
     name: driver.name,
@@ -91,6 +100,8 @@ const buildDriverSummary = (driver, vehicles = [], reviewStats = null, req) => {
     hasEnglishDriver: featureCounts.englishSpeakingDriver,
     reviewScore: Math.round(reviewScore * 10) / 10,
     reviewCount,
+    profilePhoto: buildAssetUrl(driver.profilePhoto, req),
+    location: locationPayload,
   };
 };
 
@@ -132,7 +143,9 @@ export const listPublicDrivers = async (req, res) => {
       role: USER_ROLES.DRIVER,
       driverStatus: DRIVER_STATUS.APPROVED,
     })
-      .select('name description contactNumber tripAdvisor address createdAt')
+      .select(
+        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation'
+      )
       .sort({ createdAt: -1 })
       .lean();
 
@@ -190,7 +203,9 @@ export const getPublicDriverDetails = async (req, res) => {
       role: USER_ROLES.DRIVER,
       driverStatus: DRIVER_STATUS.APPROVED,
     })
-      .select('name description contactNumber tripAdvisor address createdAt')
+      .select(
+        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation'
+      )
       .lean();
 
     if (!driver) {

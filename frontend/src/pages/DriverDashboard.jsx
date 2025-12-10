@@ -589,8 +589,15 @@ const OverviewPanel = ({ profile }) => (
         <p className="text-sm text-slate-700">{profile?.contactNumber || 'Not provided'}</p>
         <p className="text-xs text-slate-500">{profile?.email}</p>
       </InfoCard>
-      <InfoCard title="Base location" icon={MapPin}>
-        <p className="text-sm text-slate-700">{profile?.address || 'Not provided'}</p>
+      <InfoCard title="Live location" icon={MapPin}>
+        <p className="text-sm text-slate-700">
+          {profile?.driverLocation?.label ||
+            profile?.address ||
+            'Not provided'}
+        </p>
+        {profile?.driverLocation?.label && profile?.address ? (
+          <p className="text-xs text-slate-500">Base: {profile.address}</p>
+        ) : null}
       </InfoCard>
       <InfoCard title="TripAdvisor" icon={BadgeCheck}>
         {profile?.tripAdvisor ? (
@@ -1565,23 +1572,93 @@ const buildDriverProfileForm = (profile) => ({
   address: profile?.address || '',
   description: profile?.description || '',
   tripAdvisor: profile?.tripAdvisor || '',
+  profilePhoto: profile?.profilePhoto || '',
+  currentLocationLabel: profile?.driverLocation?.label || '',
+  currentLatitude:
+    typeof profile?.driverLocation?.latitude === 'number'
+      ? String(profile.driverLocation.latitude)
+      : '',
+  currentLongitude:
+    typeof profile?.driverLocation?.longitude === 'number'
+      ? String(profile.driverLocation.longitude)
+      : '',
 });
 
-const DriverProfilePanel = ({ profile, onSave, onPasswordChange, savingProfile, savingPassword }) => {
+const DriverProfilePanel = ({
+  profile,
+  onSave,
+  onPasswordChange,
+  savingProfile,
+  savingPassword,
+}) => {
   const [formState, setFormState] = useState(() => buildDriverProfileForm(profile));
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     password: '',
     confirmPassword: '',
   });
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(profile?.profilePhoto || '');
+  const [removePhoto, setRemovePhoto] = useState(false);
+  const [clearLocation, setClearLocation] = useState(false);
+  const photoInputRef = useRef(null);
 
   useEffect(() => {
     setFormState(buildDriverProfileForm(profile));
+    setPhotoPreview(profile?.profilePhoto || '');
+    setPhotoFile(null);
+    setRemovePhoto(false);
+    setClearLocation(false);
   }, [profile]);
+
+  useEffect(() => {
+    return () => {
+      if (photoPreview && photoPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(photoPreview);
+      }
+    };
+  }, [photoPreview]);
 
   const handleFieldChange = (event) => {
     const { name, value } = event.target;
     setFormState((prev) => ({ ...prev, [name]: value }));
+    if (['currentLocationLabel', 'currentLatitude', 'currentLongitude'].includes(name)) {
+      setClearLocation(false);
+    }
+  };
+
+  const handlePhotoChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+    setPhotoFile(file);
+    setRemovePhoto(false);
+    setPhotoPreview((current) => {
+      if (current && current.startsWith('blob:')) {
+        URL.revokeObjectURL(current);
+      }
+      return URL.createObjectURL(file);
+    });
+  };
+
+  const handleRemovePhotoClick = () => {
+    setPhotoFile(null);
+    setRemovePhoto(true);
+    if (photoPreview && photoPreview.startsWith('blob:')) {
+      URL.revokeObjectURL(photoPreview);
+    }
+    setPhotoPreview('');
+  };
+
+  const handleClearLocation = () => {
+    setFormState((prev) => ({
+      ...prev,
+      currentLocationLabel: '',
+      currentLatitude: '',
+      currentLongitude: '',
+    }));
+    setClearLocation(true);
   };
 
   const handleProfileSubmit = async (event) => {
@@ -1589,14 +1666,43 @@ const DriverProfilePanel = ({ profile, onSave, onPasswordChange, savingProfile, 
     if (!onSave) {
       return;
     }
+
     try {
-      await onSave({
-        name: formState.name,
-        contactNumber: formState.contactNumber,
-        address: formState.address,
-        description: formState.description,
-        tripAdvisor: formState.tripAdvisor,
-      });
+      const payload = new FormData();
+      payload.append('name', formState.name);
+      payload.append('contactNumber', formState.contactNumber || '');
+      payload.append('address', formState.address || '');
+      payload.append('description', formState.description || '');
+      payload.append('tripAdvisor', formState.tripAdvisor || '');
+
+      if (photoFile) {
+        payload.append('profilePhoto', photoFile);
+      } else if (removePhoto) {
+        payload.append('removeProfilePhoto', 'true');
+      }
+
+      const hasEditedLocation =
+        (formState.currentLocationLabel && formState.currentLocationLabel.trim()) ||
+        formState.currentLatitude ||
+        formState.currentLongitude;
+
+      if (clearLocation) {
+        payload.append('clearLocation', 'true');
+      } else if (!hasEditedLocation && profile?.driverLocation) {
+        payload.append('clearLocation', 'true');
+      } else {
+        if (formState.currentLocationLabel.trim()) {
+          payload.append('currentLocationLabel', formState.currentLocationLabel.trim());
+        }
+        if (formState.currentLatitude) {
+          payload.append('currentLatitude', formState.currentLatitude);
+        }
+        if (formState.currentLongitude) {
+          payload.append('currentLongitude', formState.currentLongitude);
+        }
+      }
+
+      await onSave(payload);
     } catch (error) {
       console.warn('Driver profile update failed', error);
     }
@@ -1644,6 +1750,56 @@ const DriverProfilePanel = ({ profile, onSave, onPasswordChange, savingProfile, 
           <p className="text-sm text-slate-500">Update the information travellers see on your listings.</p>
         </header>
         <form onSubmit={handleProfileSubmit} className="space-y-4">
+          <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              <div className="h-20 w-20 overflow-hidden rounded-full border border-slate-200 bg-white">
+                {photoPreview ? (
+                  <img
+                    src={photoPreview}
+                    alt={`${formState.name || 'Driver'} avatar`}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-slate-400">
+                    <User2 className="h-8 w-8" />
+                  </div>
+                )}
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Profile photo</p>
+                <p className="text-xs text-slate-500">
+                  A friendly face builds trust when travellers browse drivers.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoChange}
+              />
+              <button
+                type="button"
+                onClick={() => photoInputRef.current?.click()}
+                className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-700 transition hover:border-emerald-300 hover:text-emerald-600"
+              >
+                <Upload className="h-3.5 w-3.5" />
+                Upload photo
+              </button>
+              {(photoPreview || profile?.profilePhoto) && (
+                <button
+                  type="button"
+                  onClick={handleRemovePhotoClick}
+                  className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-rose-600 transition hover:border-rose-300"
+                >
+                  <XCircle className="h-3.5 w-3.5" />
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="driver-profile-name">
               Name
@@ -1696,6 +1852,84 @@ const DriverProfilePanel = ({ profile, onSave, onPasswordChange, savingProfile, 
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
               placeholder="Tell travellers about your experience and specialties."
             />
+          </div>
+          <div className="rounded-2xl border border-slate-200 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Live location</p>
+                <p className="text-xs text-slate-500">
+                  Set your current base so the homepage map can spotlight you in real time.
+                </p>
+              </div>
+              {(formState.currentLatitude || formState.currentLongitude || formState.currentLocationLabel) && (
+                <button
+                  type="button"
+                  onClick={handleClearLocation}
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600 transition hover:border-rose-200 hover:text-rose-600"
+                >
+                  Clear location
+                </button>
+              )}
+            </div>
+            <div className="mt-4 grid gap-4 sm:grid-cols-3">
+              <div className="sm:col-span-3">
+                <label
+                  className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  htmlFor="driver-profile-location-label"
+                >
+                  Location label
+                </label>
+                <input
+                  id="driver-profile-location-label"
+                  name="currentLocationLabel"
+                  value={formState.currentLocationLabel}
+                  onChange={handleFieldChange}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  placeholder="e.g. Kandy city center"
+                />
+              </div>
+              <div>
+                <label
+                  className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  htmlFor="driver-profile-latitude"
+                >
+                  Latitude
+                </label>
+                <input
+                  id="driver-profile-latitude"
+                  name="currentLatitude"
+                  type="number"
+                  step="0.0001"
+                  value={formState.currentLatitude}
+                  onChange={handleFieldChange}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  placeholder="6.9271"
+                />
+              </div>
+              <div>
+                <label
+                  className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
+                  htmlFor="driver-profile-longitude"
+                >
+                  Longitude
+                </label>
+                <input
+                  id="driver-profile-longitude"
+                  name="currentLongitude"
+                  type="number"
+                  step="0.0001"
+                  value={formState.currentLongitude}
+                  onChange={handleFieldChange}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  placeholder="79.8612"
+                />
+              </div>
+              <div className="sm:col-span-3">
+                <p className="text-xs text-slate-500">
+                  Coordinates power the homepage live map. Leave blank if you don&apos;t want to appear there.
+                </p>
+              </div>
+            </div>
           </div>
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="driver-profile-tripAdvisor">

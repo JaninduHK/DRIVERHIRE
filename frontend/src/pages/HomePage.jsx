@@ -165,7 +165,7 @@ const detectCityFromAddress = (address = '') => {
   );
 };
 
-const buildCityPins = (drivers = []) => {
+const buildCityPinsFromAddress = (drivers = []) => {
   if (!Array.isArray(drivers) || drivers.length === 0) {
     return [];
   }
@@ -205,18 +205,67 @@ const buildCityPins = (drivers = []) => {
         const normalized = currentDriver.address.toLowerCase();
         return city.keywords.some((keyword) => normalized.includes(keyword));
       }).length,
+      label: driver.address || city.label,
+      avatar: driver.profilePhoto || null,
     });
 
     return acc;
   }, []);
 };
 
+const MAP_BOUNDS = {
+  minLat: 5.5,
+  maxLat: 10.1,
+  minLng: 79.4,
+  maxLng: 82.1,
+};
+
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+const projectLatLng = (latitude, longitude) => {
+  const latRange = MAP_BOUNDS.maxLat - MAP_BOUNDS.minLat || 1;
+  const lngRange = MAP_BOUNDS.maxLng - MAP_BOUNDS.minLng || 1;
+  const normalizedLat =
+    (clamp(latitude, MAP_BOUNDS.minLat, MAP_BOUNDS.maxLat) - MAP_BOUNDS.minLat) / latRange;
+  const normalizedLng =
+    (clamp(longitude, MAP_BOUNDS.minLng, MAP_BOUNDS.maxLng) - MAP_BOUNDS.minLng) / lngRange;
+
+  return {
+    top: `${(1 - normalizedLat) * 100}%`,
+    left: `${normalizedLng * 100}%`,
+  };
+};
+
+const buildLiveDriverPins = (drivers = []) => {
+  if (!Array.isArray(drivers) || drivers.length === 0) {
+    return [];
+  }
+
+  const pinsWithCoordinates = drivers
+    .filter(
+      (driver) =>
+        typeof driver?.location?.latitude === 'number' &&
+        typeof driver?.location?.longitude === 'number'
+    )
+    .slice(0, 10)
+    .map((driver) => ({
+      id: driver.id,
+      name: driver.name || 'Driver',
+      label: driver.location?.label || driver.address || 'On the road',
+      style: projectLatLng(driver.location.latitude, driver.location.longitude),
+      driverCount: 1,
+      avatar: driver.profilePhoto || null,
+    }));
+
+  if (pinsWithCoordinates.length) {
+    return pinsWithCoordinates;
+  }
+
+  return buildCityPinsFromAddress(drivers);
+};
+
 const LiveDriversMapCard = ({ drivers, loading, error, onReload }) => {
-  const pins = useMemo(() => buildCityPins(drivers), [drivers]);
-  const cityCount = useMemo(
-    () => new Set(pins.map((pin) => pin.city.id)).size,
-    [pins],
-  );
+  const pins = useMemo(() => buildLiveDriverPins(drivers), [drivers]);
 
   const renderMapContent = () => {
     if (loading) {
@@ -253,15 +302,16 @@ const LiveDriversMapCard = ({ drivers, loading, error, onReload }) => {
         style={pin.style}
       >
         <div className="flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-900 shadow-lg shadow-emerald-900/40 backdrop-blur-sm">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white">
-            <UserRoundCheck className="h-3.5 w-3.5" />
+          <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full border border-white/80 bg-emerald-500/10">
+            {pin.avatar ? (
+              <img src={pin.avatar} alt={pin.name} className="h-full w-full object-cover" />
+            ) : (
+              <UserRoundCheck className="h-4 w-4 text-emerald-600" />
+            )}
           </span>
           <span className="flex flex-col text-left leading-tight">
             <span>{pin.name.split(' ')[0]}</span>
-            <span className="text-[0.65rem] font-medium text-slate-500">
-              {pin.city.label}
-              {pin.driverCount > 1 ? ` · +${pin.driverCount - 1} more` : ''}
-            </span>
+            <span className="text-[0.65rem] font-medium text-slate-500">{pin.label}</span>
           </span>
         </div>
       </Link>
@@ -274,11 +324,7 @@ const LiveDriversMapCard = ({ drivers, loading, error, onReload }) => {
       <div className="relative rounded-[30px] overflow-hidden">
         <div className="absolute left-0 top-0 z-20 rounded-br-2xl bg-slate-950/85 px-4 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-emerald-200 shadow-lg shadow-black/30">
           Live driver map ·{' '}
-          <span className="text-white">
-            {(pins.reduce((total, pin) => total + (pin.driverCount || 1), 0) ||
-              (loading ? '—' : 0))}{' '}
-            drivers · {cityCount || (loading ? '—' : 0)} cities
-          </span>
+          <span className="text-white">{pins.length || (loading ? '—' : 0)} live pins</span>
         </div>
         <div className="relative h-[600px] w-full overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950">
           <img
@@ -721,6 +767,7 @@ const HomePage = () => {
                   ? `${driver.reviewScore.toFixed(1)} • ${driver.reviewCount ?? 0} reviews`
                   : 'No reviews yet';
                 const averageRate = formatCurrency(driver.averagePricePerDay) || 'Custom quote';
+                const locationLabel = driver.location?.label || driver.address || 'Island-wide';
 
                 return (
                   <Link
@@ -739,12 +786,30 @@ const HomePage = () => {
                     ) : null}
                     <div className="flex flex-1 flex-col gap-4 p-6">
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-lg font-semibold text-slate-900">{driver.name}</h3>
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">
-                            <UserRoundCheck className="h-4 w-4" />
-                            Verified
-                          </span>
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 overflow-hidden rounded-full border border-slate-200 bg-slate-100">
+                            {driver.profilePhoto ? (
+                              <img
+                                src={driver.profilePhoto}
+                                alt={driver.name}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-slate-400">
+                                <UserRoundCheck className="h-4 w-4" />
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-lg font-semibold text-slate-900">{driver.name}</h3>
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">
+                                <UserRoundCheck className="h-4 w-4" />
+                                Verified
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-500">{locationLabel}</p>
+                          </div>
                         </div>
                         <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                           <Star className="h-4 w-4 text-amber-500" />
@@ -763,7 +828,7 @@ const HomePage = () => {
                           {formatExperience(driver.experienceYears)}
                         </span>
                         <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1">
-                          {driver.address || 'Island-wide'}
+                          {locationLabel}
                         </span>
                       </div>
                       {driver.badges?.length ? (

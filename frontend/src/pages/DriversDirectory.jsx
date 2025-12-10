@@ -9,6 +9,7 @@ import {
   Search,
   SlidersHorizontal,
   Star,
+  UserRoundCheck,
 } from 'lucide-react';
 import { fetchDriverDirectory } from '../services/driverDirectoryApi.js';
 
@@ -71,7 +72,12 @@ const DriversDirectory = () => {
 
     const matchesSearch = (driver) => {
       if (!term) return true;
-      const haystack = [driver.name, driver.description, ...(driver.badges || [])]
+      const haystack = [
+        driver.name,
+        driver.description,
+        driver.location?.label,
+        ...(driver.badges || []),
+      ]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
@@ -262,6 +268,10 @@ const DriversDirectory = () => {
 
 const DriverCard = ({ driver }) => {
   const { featuredVehicle } = driver;
+  const locationLabel = driver.location?.label || driver.address || 'Based in Sri Lanka';
+  const ratingLabel = driver.reviewScore
+    ? `${driver.reviewScore.toFixed(1)} / 5`
+    : 'No reviews yet';
   return (
     <Link
       to={`/drivers/${driver.id}`}
@@ -282,17 +292,34 @@ const DriverCard = ({ driver }) => {
         </div>
       )}
       <div className="flex flex-1 flex-col gap-4 p-6">
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-xl font-semibold text-slate-900">{driver.name}</h2>
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">
-              <BadgeCheck className="h-3.5 w-3.5" />
-              Verified
-            </span>
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-3">
+            <div className="h-14 w-14 overflow-hidden rounded-full border border-slate-200 bg-slate-50">
+              {driver.profilePhoto ? (
+                <img src={driver.profilePhoto} alt={driver.name} className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-slate-400">
+                  <UserRoundCheck className="h-6 w-6" />
+                </div>
+              )}
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-xl font-semibold text-slate-900">{driver.name}</h2>
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">
+                  <BadgeCheck className="h-3.5 w-3.5" />
+                  Verified
+                </span>
+              </div>
+              <div className="text-xs text-slate-500">
+                <MapPin className="mr-1 inline h-3 w-3 text-slate-400" />
+                {locationLabel}
+              </div>
+            </div>
           </div>
           <div className="flex items-center gap-2 text-xs font-semibold text-slate-900">
             <Star className="h-4 w-4 text-amber-500" />
-            {driver.reviewScore ? `${driver.reviewScore.toFixed(1)} / 5` : 'No reviews yet'}
+            {ratingLabel}
             <span className="text-xs font-normal text-slate-400">
               ({driver.reviewCount ?? 0})
             </span>
@@ -333,7 +360,7 @@ const DriverCard = ({ driver }) => {
         <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-4">
           <div className="text-xs text-slate-500">
             <MapPin className="mr-1 inline h-3.5 w-3.5 text-slate-400" />
-            {driver.address || 'Based in Sri Lanka'}
+            {locationLabel}
           </div>
           <span className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 transition group-hover:border-emerald-300 group-hover:text-emerald-700">
             View profile

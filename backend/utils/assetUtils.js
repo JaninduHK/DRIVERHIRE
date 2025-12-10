@@ -68,15 +68,24 @@ const getApiPrefix = (req) => {
 };
 
 const getExplicitAssetBase = () => {
-  const raw = process.env.PUBLIC_ASSET_BASE_URL;
-  if (typeof raw !== 'string') {
-    return null;
+  const candidates = [
+    process.env.PUBLIC_ASSET_BASE_URL,
+    process.env.PUBLIC_APP_ORIGIN,
+    process.env.CLIENT_ORIGIN,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate !== 'string') {
+      continue;
+    }
+    const trimmed = candidate.trim();
+    if (!trimmed) {
+      continue;
+    }
+    return trimmed.replace(/\/+$/, '');
   }
-  const trimmed = raw.trim();
-  if (!trimmed) {
-    return null;
-  }
-  return trimmed.replace(/\/+$/, '');
+
+  return null;
 };
 
 const joinBaseAndPath = (base, pathSegment) => {

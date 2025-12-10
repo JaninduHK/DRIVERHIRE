@@ -16,6 +16,16 @@ export const DRIVER_STATUS = {
 const roleValues = Object.values(USER_ROLES);
 const driverStatusValues = Object.values(DRIVER_STATUS);
 
+const driverLocationSchema = new mongoose.Schema(
+  {
+    label: { type: String, trim: true, maxlength: 120 },
+    latitude: { type: Number, min: -90, max: 90 },
+    longitude: { type: Number, min: -180, max: 180 },
+    updatedAt: Date,
+  },
+  { _id: false }
+);
+
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -75,6 +85,11 @@ const userSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
+    profilePhoto: {
+      type: String,
+      trim: true,
+    },
+    driverLocation: driverLocationSchema,
   },
   {
     timestamps: true,

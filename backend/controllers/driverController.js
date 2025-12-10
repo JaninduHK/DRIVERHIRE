@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
 import User, { DRIVER_STATUS } from '../models/User.js';
 import Vehicle, { VEHICLE_STATUS, VEHICLE_AVAILABILITY_STATUS } from '../models/Vehicle.js';
-import { mapAssetUrls } from '../utils/assetUtils.js';
+import { mapAssetUrls, buildAssetUrl } from '../utils/assetUtils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -81,8 +81,9 @@ const serializeDriverVehicle = (vehicle, req) => {
 
 export const getDriverOverview = async (req, res) => {
   try {
-    const driver = await User.findById(req.user.id)
-      .select('name email contactNumber address description tripAdvisor driverStatus createdAt');
+    const driver = await User.findById(req.user.id).select(
+      'name email contactNumber address description tripAdvisor driverStatus createdAt profilePhoto driverLocation'
+    );
 
     if (!driver) {
       return res.status(404).json({ message: 'Driver not found' });
@@ -93,6 +94,9 @@ export const getDriverOverview = async (req, res) => {
     }
 
     const profile = driver.toJSON();
+    if (profile.profilePhoto) {
+      profile.profilePhoto = buildAssetUrl(profile.profilePhoto, req);
+    }
 
     const activity = {
       totalTrips: 0,

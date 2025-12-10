@@ -9,17 +9,18 @@ import {
   sendBookingRequestAlertEmail,
   sendBookingRequestConfirmationEmail,
 } from '../services/emailService.js';
-import { mapAssetUrls } from '../utils/assetUtils.js';
+import { mapAssetUrls, buildAssetUrl } from '../utils/assetUtils.js';
 
 const escapeRegex = (value = '') => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-const sanitizeDriver = (driverDoc) => {
+const sanitizeDriver = (driverDoc, extras = {}) => {
   if (!driverDoc) {
     return null;
   }
 
   const source =
     driverDoc instanceof mongoose.Model ? driverDoc.toObject({ getters: true }) : driverDoc;
+  const { req } = extras;
 
   return {
     id: source._id ? source._id.toString() : source.id,
@@ -29,6 +30,15 @@ const sanitizeDriver = (driverDoc) => {
     tripAdvisor: source.tripAdvisor,
     address: source.address,
     createdAt: source.createdAt,
+    profilePhoto: buildAssetUrl(source.profilePhoto, req),
+    location: source.driverLocation
+      ? {
+          label: source.driverLocation.label || '',
+          latitude: source.driverLocation.latitude,
+          longitude: source.driverLocation.longitude,
+          updatedAt: source.driverLocation.updatedAt,
+        }
+      : null,
   };
 };
 
@@ -77,7 +87,7 @@ const sanitizeVehicle = (vehicleDoc, extras = {}) => {
     createdAt: source.createdAt,
     updatedAt: source.updatedAt,
     availability,
-    driver: sanitizeDriver(source.driver),
+    driver: sanitizeDriver(source.driver, { req }),
     reviewSummary: {
       averageRating:
         typeof reviewSummary.averageRating === 'number'
@@ -312,7 +322,8 @@ export const listVehicles = async (req, res) => {
       .populate({
         path: 'driver',
         match: { driverStatus: DRIVER_STATUS.APPROVED },
-        select: 'name description contactNumber tripAdvisor address driverStatus createdAt',
+        select:
+          'name description contactNumber tripAdvisor address driverStatus createdAt profilePhoto driverLocation',
         options: { lean: true },
       })
       .lean();
@@ -411,7 +422,8 @@ export const getVehicleDetails = async (req, res) => {
     })
       .populate({
         path: 'driver',
-        select: 'name description contactNumber tripAdvisor address driverStatus createdAt',
+        select:
+          'name description contactNumber tripAdvisor address driverStatus createdAt profilePhoto driverLocation',
         match: { driverStatus: DRIVER_STATUS.APPROVED },
         options: { lean: true },
       })
@@ -559,7 +571,7 @@ export const createVehicleBooking = async (req, res) => {
       .populate({
         path: 'driver',
         match: { driverStatus: DRIVER_STATUS.APPROVED },
-        select: '_id name email driverStatus contactNumber',
+        select: '_id name email driverStatus contactNumber profilePhoto driverLocation',
       });
 
     if (!vehicle || !vehicle.driver) {

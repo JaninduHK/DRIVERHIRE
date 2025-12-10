@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Star,
   Users,
+  UserRoundCheck,
 } from 'lucide-react';
 import { fetchDriverProfile } from '../services/driverDirectoryApi.js';
 import { fetchVehicleReviews } from '../services/vehicleCatalogApi.js';
@@ -75,6 +76,7 @@ const DriverDetails = () => {
   const driver = state.data?.driver;
   const vehicles = state.data?.vehicles || [];
   const heroImage = driver?.featuredVehicle?.image || vehicles[0]?.image || null;
+  const locationLabel = driver?.location?.label || driver?.address || 'Based in Sri Lanka';
 
   const vehicleHighlights = useMemo(() => {
     if (!vehicles.length) {
@@ -149,12 +151,29 @@ const DriverDetails = () => {
             <div className="space-y-6 p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-8">
             <div className="space-y-2 lg:max-w-3xl">
-              <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-3xl font-semibold text-slate-900">{driver.name}</h1>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                  <BadgeCheck className="h-4 w-4" />
-                  Approved driver
-                </span>
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="h-20 w-20 overflow-hidden rounded-full border border-slate-200 bg-slate-50">
+                  {driver.profilePhoto ? (
+                    <img src={driver.profilePhoto} alt={driver.name} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-slate-400">
+                      <UserRoundCheck className="h-9 w-9" />
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h1 className="text-3xl font-semibold text-slate-900">{driver.name}</h1>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                      <BadgeCheck className="h-4 w-4" />
+                      Approved driver
+                    </span>
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    <MapPin className="mr-1 inline h-3.5 w-3.5 text-slate-400" />
+                    {locationLabel}
+                  </div>
+                </div>
               </div>
               <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                 <Star className="h-4 w-4 text-amber-500" />
@@ -167,7 +186,7 @@ const DriverDetails = () => {
               <div className="flex flex-wrap gap-3 text-xs text-slate-500">
                 <span className="inline-flex items-center gap-1">
                   <MapPin className="h-3.5 w-3.5" />
-                  {driver.address || 'Based in Sri Lanka'}
+                  {locationLabel}
                     </span>
                     <span className="inline-flex items-center gap-1">
                       <ShieldCheck className="h-3.5 w-3.5" />

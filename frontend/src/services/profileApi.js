@@ -64,11 +64,13 @@ const request = async (path, options = {}) => {
 export const fetchCurrentUser = () =>
   request('/me', { method: 'GET' });
 
-export const updateProfile = (payload) =>
-  request('/profile', {
+export const updateProfile = (payload) => {
+  const body = payload instanceof FormData ? payload : JSON.stringify(payload);
+  return request('/profile', {
     method: 'PUT',
-    body: JSON.stringify(payload),
+    body,
   });
+};
 
 export const updatePassword = (payload) =>
   request('/password', {
