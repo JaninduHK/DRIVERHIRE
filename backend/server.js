@@ -31,9 +31,9 @@ app.use(express.urlencoded({ extended: true }));
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const uploadsPath = path.join(__dirname, 'uploads');
+const uploadsPath = path.join(__dirname, '../uploads');
 
-app.use('/uploads', express.static(uploadsPath));
+app.use(['/uploads', '/api/uploads'], express.static(uploadsPath));
 
 app.get('/', (req, res) => {
   res.json({ status: 'ok' });

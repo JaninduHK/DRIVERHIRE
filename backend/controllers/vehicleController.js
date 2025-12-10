@@ -9,6 +9,7 @@ import {
   sendBookingRequestAlertEmail,
   sendBookingRequestConfirmationEmail,
 } from '../services/emailService.js';
+import { mapAssetUrls } from '../utils/assetUtils.js';
 
 const escapeRegex = (value = '') => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -57,7 +58,7 @@ const sanitizeVehicle = (vehicleDoc, extras = {}) => {
         })
     : [];
 
-  const reviewSummary = extras.reviewSummary || {};
+  const { req, reviewSummary = {} } = extras;
 
   return {
     id: source._id ? source._id.toString() : source.id,
@@ -66,7 +67,7 @@ const sanitizeVehicle = (vehicleDoc, extras = {}) => {
     description: source.description,
     pricePerDay: source.pricePerDay,
     seats: source.seats,
-    images: Array.isArray(source.images) ? source.images : [],
+    images: mapAssetUrls(source.images, req),
     englishSpeakingDriver: Boolean(source.englishSpeakingDriver),
     meetAndGreetAtAirport: Boolean(source.meetAndGreetAtAirport),
     fuelAndInsurance: Boolean(source.fuelAndInsurance),
@@ -378,6 +379,7 @@ export const listVehicles = async (req, res) => {
 
     const vehicles = availabilityFilteredVehicles.map((vehicle) =>
       sanitizeVehicle(vehicle, {
+        req,
         reviewSummary: reviewSummaryMap.get(vehicle._id.toString()),
       })
     );
@@ -423,6 +425,7 @@ export const getVehicleDetails = async (req, res) => {
 
     return res.json({
       vehicle: sanitizeVehicle(vehicle, {
+        req,
         reviewSummary: reviewSummaryMap.get(vehicle._id.toString()),
       }),
     });

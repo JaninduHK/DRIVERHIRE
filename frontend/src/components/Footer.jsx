@@ -5,8 +5,8 @@ import logoWhite from '../assets/Logo.png';
 const touristLinks = [
   { label: 'Browse vehicles', to: '/vehicles' },
   { label: 'Featured drivers', to: '/drivers' },
-  { label: 'Tour briefs', to: '/briefs' },
-  { label: 'Traveler dashboard', to: '/dashboard' },
+  { label: 'My Quote Requests', to: '/briefs' },
+  { label: 'Chat Messages', to: '/dashboard' },
 ];
 
 const driverLinks = [
@@ -19,8 +19,8 @@ const driverLinks = [
 const helpLinks = [
   { label: 'Contact support', to: '/contact' },
   { label: 'Safety promise', to: '/about' },
-  { label: 'Email concierge', href: 'mailto:hello@driverhire.lk' },
-  { label: 'WhatsApp travel desk', href: 'https://wa.me/94770001234' },
+  { label: 'Privacy Policy', href: 'mailto:hello@carwithdriver.lk' },
+  { label: 'Terms & Conditions', href: 'https://wa.me/94763021483' },
 ];
 
 const socialLinks = [
@@ -60,23 +60,23 @@ const Footer = () => {
             <img src={logoWhite} alt="DriverHire Sri Lanka" className="h-20 w-auto" />
             <div className="space-y-4 text-sm text-slate-300">
               <div>
-                <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Quisquam beatae maxime.</p>
+                <p className='mb-5'>We combine vetted drivers, modern vehicles with tourists to deliver five-star journeys.</p>
                 <a
                   href="tel:+94770001234"
                   className="mt-1 flex items-center gap-2 font-semibold text-white transition hover:text-emerald-200"
                 >
                   <PhoneCall className="h-4 w-4 text-emerald-300" />
-                  +94 77 000 1234
+                  +94 76 3021 483
                 </a>
               </div>
               <div>
                 
                 <a
-                  href="mailto:hello@driverhire.lk"
+                  href="mailto:hello@carwithdriver.lk"
                   className="mt-1 flex items-center gap-2 font-semibold text-white transition hover:text-emerald-200"
                 >
                   <Mail className="h-4 w-4 text-emerald-300" />
-                  hello@driverhire.lk
+                  hello@carwithdriver.lk
                 </a>
               </div>
             </div>
@@ -107,7 +107,7 @@ const Footer = () => {
         </div>
 
         <div className="flex flex-col gap-4 pt-12 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {currentYear} DriverHire Sri Lanka. All rights reserved.</p>
+          <p>© {currentYear} Car with Driver LK Sri Lanka. All rights reserved.</p>
           <div className="flex gap-4">
             <Link to="/about" className="transition hover:text-white">
               About

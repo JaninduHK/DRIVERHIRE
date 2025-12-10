@@ -4,6 +4,7 @@ import Review from '../models/Review.js';
 import ChatMessage from '../models/ChatMessage.js';
 import { USER_ROLES } from '../models/User.js';
 import { sendBookingStatusUpdateEmail } from '../services/emailService.js';
+import { mapAssetUrls } from '../utils/assetUtils.js';
 
 const toId = (value) => {
   if (!value) {
@@ -29,7 +30,7 @@ const toId = (value) => {
   return null;
 };
 
-const shapeVehicle = (vehicle) => {
+const shapeVehicle = (vehicle, req) => {
   if (!vehicle) {
     return null;
   }
@@ -37,7 +38,7 @@ const shapeVehicle = (vehicle) => {
     id: toId(vehicle),
     model: vehicle.model,
     pricePerDay: vehicle.pricePerDay,
-    images: Array.isArray(vehicle.images) ? vehicle.images : [],
+    images: mapAssetUrls(vehicle.images, req),
   };
 };
 
@@ -90,7 +91,7 @@ const canSubmitReviewForBooking = (booking, review) => {
   return true;
 };
 
-const shapeBooking = (booking, review) => {
+const shapeBooking = (booking, review, req) => {
   const shapedReview = shapeReview(review);
   const gross = Number.isFinite(booking.totalPrice) ? booking.totalPrice : 0;
   const baseRate = Number.isFinite(booking.commissionBaseRate)
@@ -132,7 +133,7 @@ const shapeBooking = (booking, review) => {
     commissionDiscountId: discountId,
     driverEarnings,
     paymentNote: booking.paymentNote,
-    vehicle: shapeVehicle(booking.vehicle),
+    vehicle: shapeVehicle(booking.vehicle, req),
     driver: shapeDriver(booking.driver),
     traveler: booking.traveler,
     specialRequests: booking.specialRequests,
@@ -212,7 +213,7 @@ export const listTravelerBookings = async (req, res) => {
 
     return res.json({
       bookings: bookings.map((booking) =>
-        shapeBooking(booking, reviewMap.get(booking._id.toString()))
+        shapeBooking(booking, reviewMap.get(booking._id.toString()), req)
       ),
     });
   } catch (error) {
@@ -249,7 +250,7 @@ export const listDriverBookings = async (req, res) => {
 
     return res.json({
       bookings: bookings.map((booking) =>
-        shapeBooking(booking, reviewMap.get(booking._id.toString()))
+        shapeBooking(booking, reviewMap.get(booking._id.toString()), req)
       ),
     });
   } catch (error) {
@@ -289,7 +290,7 @@ export const driverRespondToBooking = async (req, res) => {
     if (normalizedAction === 'accept') {
       if (booking.status === BOOKING_STATUS.CONFIRMED) {
         const hydrated = await fetchBookingWithDetails(id);
-        return res.json({ booking: shapeBooking(hydrated) });
+        return res.json({ booking: shapeBooking(hydrated, null, req) });
       }
 
       if (booking.status !== BOOKING_STATUS.PENDING) {
@@ -348,7 +349,7 @@ export const driverRespondToBooking = async (req, res) => {
       }).catch((error) => console.warn('Traveler booking status email failed:', error));
     }
 
-    return res.json({ booking: shapeBooking(hydrated) });
+    return res.json({ booking: shapeBooking(hydrated, null, req) });
   } catch (error) {
     console.error('Driver booking response error:', error);
     return res.status(500).json({ message: 'Unable to update booking status right now.' });
@@ -479,7 +480,7 @@ export const updateTravelerBooking = async (req, res) => {
 
     const hydrated = await fetchBookingWithDetails(id);
 
-    return res.json({ booking: shapeBooking(hydrated) });
+    return res.json({ booking: shapeBooking(hydrated, null, req) });
   } catch (error) {
     console.error('Update traveler booking error:', error);
     return res.status(500).json({ message: 'Unable to update your booking right now.' });
@@ -506,7 +507,7 @@ export const cancelTravelerBooking = async (req, res) => {
 
     if ([BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED].includes(booking.status)) {
       const hydrated = await fetchBookingWithDetails(id);
-      return res.json({ booking: shapeBooking(hydrated) });
+      return res.json({ booking: shapeBooking(hydrated, null, req) });
     }
 
     booking.status = BOOKING_STATUS.CANCELLED;
@@ -555,7 +556,7 @@ export const cancelTravelerBooking = async (req, res) => {
       }).catch((error) => console.warn('Driver cancel email failed:', error));
     }
 
-    return res.json({ booking: shapeBooking(hydrated) });
+    return res.json({ booking: shapeBooking(hydrated, null, req) });
   } catch (error) {
     console.error('Cancel traveler booking error:', error);
     return res.status(500).json({ message: 'Unable to cancel this booking right now.' });

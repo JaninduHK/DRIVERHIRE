@@ -11,6 +11,7 @@ import {
   sendVehicleStatusEmail,
   sendBookingStatusUpdateEmail,
 } from '../services/emailService.js';
+import { mapAssetUrls } from '../utils/assetUtils.js';
 
 const handleValidation = (req, res) => {
   const errors = validationResult(req);
@@ -39,13 +40,13 @@ const toId = (value) => {
   return null;
 };
 
-const shapeVehicle = (vehicle) => {
+const shapeVehicle = (vehicle, req) => {
   if (!vehicle) return null;
   return {
     id: toId(vehicle),
     model: vehicle.model,
     pricePerDay: vehicle.pricePerDay,
-    images: Array.isArray(vehicle.images) ? vehicle.images : [],
+    images: mapAssetUrls(vehicle.images, req),
   };
 };
 
@@ -59,7 +60,7 @@ const shapeDriver = (driver) => {
   };
 };
 
-const shapeBooking = (booking) => {
+const shapeBooking = (booking, req) => {
   const baseRate = Number.isFinite(booking.commissionBaseRate)
     ? booking.commissionBaseRate
     : booking.commissionRate;
@@ -96,7 +97,7 @@ const shapeBooking = (booking) => {
     departureTime: booking.departureTime,
     traveler: booking.traveler,
     travelerUser: booking.travelerUser ? booking.travelerUser.toString() : null,
-    vehicle: shapeVehicle(booking.vehicle),
+    vehicle: shapeVehicle(booking.vehicle, req),
     driver: shapeDriver(booking.driver),
     offerId: booking.offerMessage?._id ? booking.offerMessage._id.toString() : null,
     offerStatus: booking.offerMessage?.offer?.status || null,
@@ -406,7 +407,7 @@ export const listBookings = async (_req, res) => {
         select: 'offer conversation',
       });
 
-    return res.json({ bookings: bookings.map((booking) => shapeBooking(booking)) });
+    return res.json({ bookings: bookings.map((booking) => shapeBooking(booking, req)) });
   } catch (error) {
     console.error('List bookings error:', error);
     return res.status(500).json({ message: 'Unable to load bookings.' });
@@ -523,7 +524,7 @@ export const updateBooking = async (req, res) => {
       });
     }
 
-    return res.json({ booking: shapeBooking(booking) });
+    return res.json({ booking: shapeBooking(booking, req) });
   } catch (error) {
     console.error('Update booking error:', error);
     return res.status(500).json({ message: 'Unable to update booking.' });

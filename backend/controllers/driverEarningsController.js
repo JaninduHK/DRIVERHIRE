@@ -6,6 +6,7 @@ import DriverCommission, {
   COMMISSION_STATUS,
 } from '../models/DriverCommission.js';
 import CommissionDiscount from '../models/CommissionDiscount.js';
+import { buildAssetUrl } from '../utils/assetUtils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -135,6 +136,15 @@ const summariseBooking = (booking) => {
   };
 };
 
+const shapeCommissionRecord = (record, req) => {
+  if (!record) {
+    return null;
+  }
+  const payload = typeof record.toJSON === 'function' ? record.toJSON() : record;
+  payload.paymentSlipUrl = buildAssetUrl(payload.paymentSlipUrl, req);
+  return payload;
+};
+
 export const getDriverEarningsSummary = async (req, res) => {
   try {
     const { year, month } = parseMonthParam(req.query.month);
@@ -237,7 +247,7 @@ export const getDriverEarningsSummary = async (req, res) => {
         effectiveCommissionRate: effectiveRate,
         driverEarnings: driverEarningsTotal,
       },
-      commission: commissionRecord.toJSON(),
+      commission: shapeCommissionRecord(commissionRecord, req),
       bookings: bookingSummaries,
       discount: activeDiscount ? activeDiscount.toJSON() : null,
       bankDetails: BANK_DETAILS,
@@ -270,7 +280,7 @@ export const getDriverEarningsHistory = async (req, res) => {
         driverEarnings: entry.driverEarnings ?? 0,
       },
       status: entry.status,
-      paymentSlipUrl: entry.paymentSlipUrl || '',
+      paymentSlipUrl: buildAssetUrl(entry.paymentSlipUrl || '', req),
       paymentSlipUploadedAt: entry.paymentSlipUploadedAt || null,
       updatedAt: entry.updatedAt,
     }));
@@ -322,7 +332,7 @@ export const uploadCommissionPaymentSlip = async (req, res) => {
 
     return res.json({
       message: 'Payment slip uploaded successfully.',
-      commission: commission.toJSON(),
+      commission: shapeCommissionRecord(commission, req),
     });
   } catch (error) {
     console.error('Upload commission slip error:', error);

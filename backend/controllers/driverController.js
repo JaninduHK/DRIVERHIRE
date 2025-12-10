@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import fs from 'fs/promises';
 import User, { DRIVER_STATUS } from '../models/User.js';
 import Vehicle, { VEHICLE_STATUS, VEHICLE_AVAILABILITY_STATUS } from '../models/Vehicle.js';
+import { mapAssetUrls } from '../utils/assetUtils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -69,6 +70,15 @@ const normalizeDateInput = (value) => {
   return date;
 };
 
+const serializeDriverVehicle = (vehicle, req) => {
+  if (!vehicle) {
+    return null;
+  }
+  const payload = typeof vehicle.toJSON === 'function' ? vehicle.toJSON() : vehicle;
+  payload.images = mapAssetUrls(payload.images, req);
+  return payload;
+};
+
 export const getDriverOverview = async (req, res) => {
   try {
     const driver = await User.findById(req.user.id)
@@ -103,7 +113,7 @@ export const getDriverVehicles = async (req, res) => {
     const vehicles = await Vehicle.find({ driver: req.user.id }).sort({ createdAt: -1 });
 
     return res.json({
-      vehicles: vehicles.map((vehicle) => vehicle.toJSON()),
+      vehicles: vehicles.map((vehicle) => serializeDriverVehicle(vehicle, req)),
     });
   } catch (error) {
     console.error('Driver vehicles fetch error:', error);
@@ -364,7 +374,7 @@ export const createDriverVehicle = async (req, res) => {
 
     await vehicle.save();
 
-    return res.status(201).json({ vehicle: vehicle.toJSON() });
+    return res.status(201).json({ vehicle: serializeDriverVehicle(vehicle, req) });
   } catch (error) {
     console.error('Create driver vehicle error:', error);
     return res.status(500).json({ message: 'Unable to submit vehicle' });
@@ -461,7 +471,7 @@ export const updateDriverVehicle = async (req, res) => {
 
     await vehicle.save();
 
-    return res.json({ vehicle: vehicle.toJSON() });
+    return res.json({ vehicle: serializeDriverVehicle(vehicle, req) });
   } catch (error) {
     console.error('Update driver vehicle error:', error);
     return res.status(500).json({ message: 'Unable to update vehicle' });

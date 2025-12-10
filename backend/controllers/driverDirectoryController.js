@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import User, { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
 import Vehicle, { VEHICLE_STATUS } from '../models/Vehicle.js';
 import Review, { REVIEW_STATUS } from '../models/Review.js';
+import { buildAssetUrl } from '../utils/assetUtils.js';
 
 const FEATURE_FLAGS = [
   { key: 'englishSpeakingDriver', label: 'English speaking' },
@@ -12,10 +13,12 @@ const FEATURE_FLAGS = [
   { key: 'allTaxes', label: 'All taxes included' },
 ];
 
-const shapeVehicleCard = (vehicle) => {
+const shapeVehicleCard = (vehicle, req) => {
   const features = FEATURE_FLAGS.filter(({ key }) => Boolean(vehicle[key])).map(
     ({ label }) => label
   );
+  const coverImage =
+    Array.isArray(vehicle.images) && vehicle.images.length > 0 ? vehicle.images[0] : null;
 
   return {
     id: vehicle._id.toString(),
@@ -24,7 +27,7 @@ const shapeVehicleCard = (vehicle) => {
     description: vehicle.description || '',
     pricePerDay: vehicle.pricePerDay,
     seats: vehicle.seats,
-    image: Array.isArray(vehicle.images) && vehicle.images.length > 0 ? vehicle.images[0] : null,
+    image: buildAssetUrl(coverImage, req),
     features,
   };
 };
@@ -44,8 +47,8 @@ const deriveReviewScore = (experienceYears, vehicleCount) => {
   return Math.min(5, Math.max(4, base + experienceContribution + fleetContribution));
 };
 
-const buildDriverSummary = (driver, vehicles = [], reviewStats = null) => {
-  const cardVehicles = vehicles.map(shapeVehicleCard);
+const buildDriverSummary = (driver, vehicles = [], reviewStats = null, req) => {
+  const cardVehicles = vehicles.map((vehicle) => shapeVehicleCard(vehicle, req));
   const featuredVehicle = cardVehicles.find((vehicle) => Boolean(vehicle.image)) || cardVehicles[0] || null;
   const averagePricePerDay = computeAveragePrice(vehicles);
   const experienceYears = driver.createdAt
@@ -123,7 +126,7 @@ const buildReviewStatsMap = async (driverIds = []) => {
   return map;
 };
 
-export const listPublicDrivers = async (_req, res) => {
+export const listPublicDrivers = async (req, res) => {
   try {
     const drivers = await User.find({
       role: USER_ROLES.DRIVER,
@@ -162,7 +165,8 @@ export const listPublicDrivers = async (_req, res) => {
       buildDriverSummary(
         driver,
         vehicleMap.get(driver._id.toString()) || [],
-        reviewStatsMap.get(driver._id.toString())
+        reviewStatsMap.get(driver._id.toString()),
+        req
       )
     );
 
@@ -204,7 +208,7 @@ export const getPublicDriverDetails = async (req, res) => {
       .lean();
 
     const shapedVehicles = vehicles.map((vehicle) => ({
-      ...shapeVehicleCard(vehicle),
+      ...shapeVehicleCard(vehicle, req),
       availability: Array.isArray(vehicle.availability)
         ? vehicle.availability.map((entry) => ({
             id: entry._id ? entry._id.toString() : undefined,
@@ -216,7 +220,12 @@ export const getPublicDriverDetails = async (req, res) => {
     }));
 
     const reviewStatsMap = await buildReviewStatsMap([driver._id]);
-    const driverSummary = buildDriverSummary(driver, vehicles, reviewStatsMap.get(driver._id.toString()));
+    const driverSummary = buildDriverSummary(
+      driver,
+      vehicles,
+      reviewStatsMap.get(driver._id.toString()),
+      req
+    );
 
     return res.json({
       driver: driverSummary,

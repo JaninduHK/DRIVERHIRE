@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import Review, { REVIEW_STATUS } from '../models/Review.js';
 import Booking, { BOOKING_STATUS } from '../models/Booking.js';
 import Vehicle, { VEHICLE_STATUS } from '../models/Vehicle.js';
+import { mapAssetUrls } from '../utils/assetUtils.js';
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
@@ -44,7 +45,7 @@ const shapePublicReview = (review) => ({
   createdAt: review.createdAt,
 });
 
-const shapeAdminReview = (review) => ({
+const shapeAdminReview = (review, req) => ({
   ...shapePublicReview(review),
   status: review.status,
   adminNote: review.adminNote || '',
@@ -64,7 +65,7 @@ const shapeAdminReview = (review) => ({
       ? {
           id: review.vehicle._id ? review.vehicle._id.toString() : review.vehicle.id,
           model: review.vehicle.model,
-          images: review.vehicle.images || [],
+          images: mapAssetUrls(review.vehicle.images, req),
           pricePerDay: review.vehicle.pricePerDay,
           driver:
             review.vehicle.driver && typeof review.vehicle.driver === 'object'
@@ -329,7 +330,7 @@ export const listAdminReviews = async (req, res) => {
       })
       .lean();
 
-    const shaped = reviews.map((review) => shapeAdminReview(review));
+    const shaped = reviews.map((review) => shapeAdminReview(review, req));
 
     return res.json({
       reviews: shaped,
@@ -400,7 +401,7 @@ export const updateReviewStatus = async (req, res) => {
           : normalizedStatus === REVIEW_STATUS.REJECTED
           ? 'Review rejected.'
           : 'Review status updated.',
-      review: shapeAdminReview(review.toJSON()),
+      review: shapeAdminReview(review.toJSON(), req),
     });
   } catch (error) {
     console.error('Update review status error:', error);
