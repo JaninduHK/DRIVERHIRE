@@ -68,11 +68,7 @@ const getApiPrefix = (req) => {
 };
 
 const getExplicitAssetBase = () => {
-  const candidates = [
-    process.env.PUBLIC_ASSET_BASE_URL,
-    process.env.PUBLIC_APP_ORIGIN,
-    process.env.CLIENT_ORIGIN,
-  ];
+  const candidates = [process.env.PUBLIC_ASSET_BASE_URL, process.env.PUBLIC_APP_ORIGIN];
 
   for (const candidate of candidates) {
     if (typeof candidate !== 'string') {

@@ -57,7 +57,7 @@ const Footer = () => {
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid gap-10 pb-12 md:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-6">
-            <img src={logoWhite} alt="DriverHire Sri Lanka" className="h-20 w-auto" />
+            <img src={logoWhite} alt="Car with Driver Sri Lanka" className="h-20 w-auto" />
             <div className="space-y-4 text-sm text-slate-300">
               <div>
                 <p className='mb-5'>We combine vetted drivers, modern vehicles with tourists to deliver five-star journeys.</p>
