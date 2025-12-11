@@ -1,0 +1,104 @@
+# Nginx configuration for DRIVERHIRE with image uploads
+# Place this in /etc/nginx/sites-available/carwithdriver.lk
+
+upstream backend {
+    server 127.0.0.1:3000;
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name carwithdriver.lk www.carwithdriver.lk;
+
+    # Redirect HTTP to HTTPS
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name carwithdriver.lk www.carwithdriver.lk;
+
+    # SSL certificates (adjust paths to your actual certificates)
+    ssl_certificate /etc/letsencrypt/live/carwithdriver.lk/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/carwithdriver.lk/privkey.pem;
+
+    # SSL configuration
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+
+    # Security headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+
+    # Root for static files
+    root /path/to/DRIVERHIRE/frontend/dist;  # Adjust to your frontend build path
+
+    # Serve frontend static files
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Serve uploaded images directly from disk (RECOMMENDED)
+    location /uploads {
+        alias /path/to/DRIVERHIRE/uploads;
+        
+        # Cache images for 30 days
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+        add_header Pragma "public";
+        
+        # Allow cross-origin requests
+        add_header Access-Control-Allow-Origin "*";
+        
+        # Don't log image requests to reduce log size
+        access_log off;
+    }
+
+    # Alternative: Proxy uploads to Node backend (if you prefer)
+    # Uncomment this and comment out the location /uploads above if you want Node to serve files
+    # location /uploads {
+    #     proxy_pass http://backend/uploads;
+    #     proxy_set_header Host $host;
+    #     proxy_set_header X-Real-IP $remote_addr;
+    #     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    #     proxy_set_header X-Forwarded-Proto $scheme;
+    #     
+    #     # Cache images
+    #     proxy_cache_valid 200 30d;
+    #     add_header X-Cache-Status $upstream_cache_status;
+    # }
+
+    # Proxy API requests to Node backend
+    location /api {
+        proxy_pass http://backend;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # WebSocket support (for real-time features if needed)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        
+        # Timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    # Deny access to sensitive files
+    location ~ /\. {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+
+    # Gzip compression for text files
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/javascript;
+    gzip_vary on;
+}
