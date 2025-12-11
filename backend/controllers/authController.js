@@ -323,7 +323,7 @@ export const updateProfile = async (req, res) => {
     }
 
     if (req.file) {
-      user.profilePhoto = `/uploads/profiles/${req.file.filename}`;
+      user.profilePhoto = `profiles/${req.file.filename}`;
     } else if (parseBooleanLike(removeProfilePhoto)) {
       user.profilePhoto = undefined;
     }

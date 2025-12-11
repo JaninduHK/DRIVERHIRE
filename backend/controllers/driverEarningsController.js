@@ -324,7 +324,7 @@ export const uploadCommissionPaymentSlip = async (req, res) => {
       }
     }
 
-    commission.paymentSlipUrl = `/uploads/commissions/${req.file.filename}`;
+    commission.paymentSlipUrl = `commissions/${req.file.filename}`;
     commission.paymentSlipFilename = req.file.filename;
     commission.paymentSlipUploadedAt = new Date();
     commission.status = COMMISSION_STATUS.SUBMITTED;

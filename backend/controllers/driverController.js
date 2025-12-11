@@ -356,7 +356,7 @@ export const createDriverVehicle = async (req, res) => {
 
     const imagePaths =
       Array.isArray(req.files) && req.files.length > 0
-        ? req.files.map((file) => `/uploads/vehicles/${path.basename(file.path)}`)
+        ? req.files.map((file) => `vehicles/${path.basename(file.path)}`)
         : [];
 
     const vehicle = new Vehicle({
@@ -448,7 +448,7 @@ export const updateDriverVehicle = async (req, res) => {
 
     const newImagePaths =
       Array.isArray(req.files) && req.files.length > 0
-        ? req.files.map((file) => `/uploads/vehicles/${path.basename(file.path)}`)
+        ? req.files.map((file) => `vehicles/${path.basename(file.path)}`)
         : [];
 
     vehicle.model = model.trim();
