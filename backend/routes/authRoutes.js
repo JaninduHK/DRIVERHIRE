@@ -123,8 +123,14 @@ router.put(
     body('currentLatitude').optional().isFloat({ min: -90, max: 90 }).toFloat(),
     body('currentLongitude').optional().isFloat({ min: -180, max: 180 }).toFloat(),
     body('currentLocationLabel').optional().isString().trim().isLength({ max: 120 }),
-    body('removeProfilePhoto').optional().isBoolean().toBoolean(),
-    body('clearLocation').optional().isBoolean().toBoolean(),
+    body('removeProfilePhoto').optional().trim().custom((value) => {
+      const normalized = String(value).toLowerCase().trim();
+      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
+    }),
+    body('clearLocation').optional().trim().custom((value) => {
+      const normalized = String(value).toLowerCase().trim();
+      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
+    }),
   ],
   updateProfile
 );

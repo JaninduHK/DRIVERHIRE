@@ -72,6 +72,12 @@ export const updateDriverStatus = (driverId, status) =>
     body: JSON.stringify({ status }),
   });
 
+export const sendDriverEmail = (driverId, payload) =>
+  request(`/drivers/${driverId}/email`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+
 export const fetchVehicleSubmissions = () => request('/vehicles', { method: 'GET' });
 
 export const updateVehicleStatus = (vehicleId, payload) =>

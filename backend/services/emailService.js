@@ -1,7 +1,5 @@
-import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
 
-let transporter;
 let resendClient;
 
 const brandName = process.env.APP_BRAND_NAME || 'Car With Driver';
@@ -149,113 +147,118 @@ const getResendClient = () => {
   return resendClient;
 };
 
-const createTransporter = () => {
-  if (transporter) {
-    return transporter;
-  }
-
-  const {
-    SMTP_HOST,
-    SMTP_PORT,
-    SMTP_USER,
-    SMTP_PASS,
-    SMTP_SECURE,
-    RESEND_SMTP_HOST,
-    RESEND_SMTP_PORT,
-    RESEND_SMTP_USER,
-    RESEND_SMTP_PASS,
-    RESEND_SMTP_SECURE,
-    RESEND_API_KEY,
-  } = process.env;
-
-  const host = SMTP_HOST || RESEND_SMTP_HOST;
-  const port = SMTP_PORT || RESEND_SMTP_PORT;
-  const user = SMTP_USER || RESEND_SMTP_USER;
-  const pass = SMTP_PASS || RESEND_SMTP_PASS || RESEND_API_KEY;
-  const secureValue = SMTP_SECURE ?? RESEND_SMTP_SECURE;
-
-  if (host && port && user && pass) {
-    transporter = nodemailer.createTransport({
-      host,
-      port: Number(port),
-      secure: String(secureValue).toLowerCase() === 'true',
-      auth: {
-        user,
-        pass,
-      },
-    });
-  }
-
-  return transporter;
+const normalizeRecipients = (to) => {
+  const recipients = Array.isArray(to) ? to : [to];
+  return recipients
+    .map((recipient) => {
+      if (!recipient) {
+        return null;
+      }
+      if (typeof recipient === 'string') {
+        return recipient.trim();
+      }
+      if (typeof recipient?.email === 'string') {
+        return recipient.email.trim();
+      }
+      return null;
+    })
+    .filter(Boolean);
 };
 
-const logEmailFallback = ({ to, subject, html }) => {
-  console.warn('[email] Unable to send email via Resend or SMTP. Logging content for debugging.');
-  console.info(JSON.stringify({ to, subject, preview: htmlToText(html).slice(0, 400) }, null, 2));
+const logEmailPreview = ({ to, subject, html }, reason) => {
+  const preview = htmlToText(html).slice(0, 400);
+  const message = reason || 'Unable to send email via Resend.';
+  console.warn(`[email] ${message}`);
+  console.info(JSON.stringify({ to, subject, preview }, null, 2));
 };
 
-const sendViaResend = async ({ to, subject, html, text }) => {
-  const client = getResendClient();
-
-  if (!client) {
-    return false;
-  }
-
-  try {
-    await client.emails.send({
-      from: emailFrom,
-      to: Array.isArray(to) ? to : [to],
-      subject,
-      html,
-      text,
-    });
-    return true;
-  } catch (error) {
-    console.error('[email] Resend API error:', error.message || error);
-    if (error?.response?.data) {
-      console.error('[email] Resend response:', JSON.stringify(error.response.data, null, 2));
-    }
-    return false;
+const logEmailResult = ({ to, subject }, status, extra = {}) => {
+  const entry = { to, subject, ...extra };
+  const serialized = JSON.stringify(entry, null, 2);
+  if (status === 'SENT') {
+    console.info(`[email] SENT\n${serialized}`);
+  } else {
+    console.warn(`[email] ${status}\n${serialized}`);
   }
 };
 
 const sendEmail = async ({ to, subject, html, text }) => {
-  if (!to) {
+  const recipients = normalizeRecipients(to);
+
+  if (!recipients.length) {
     return;
   }
 
   const payload = {
-    to,
+    to: recipients,
     subject,
     html,
     text: text || htmlToText(html),
   };
 
-  const sentWithResend = await sendViaResend(payload);
+  const client = getResendClient();
 
-  if (sentWithResend) {
-    return;
-  }
-
-  const activeTransporter = createTransporter();
-
-  if (!activeTransporter) {
-    logEmailFallback(payload);
+  if (!client) {
+    logEmailResult(payload, 'SKIPPED', { reason: 'RESEND_API_KEY missing' });
+    logEmailPreview(payload, 'RESEND_API_KEY missing. Logging the email preview instead.');
     return;
   }
 
   try {
-    await activeTransporter.sendMail({
+    await client.emails.send({
       from: emailFrom,
       to: payload.to,
       subject: payload.subject,
       html: payload.html,
       text: payload.text,
     });
+    logEmailResult(payload, 'SENT');
   } catch (error) {
-    console.error('[email] SMTP send failed:', error.message);
-    logEmailFallback(payload);
+    console.error('[email] Resend API error:', error.message || error);
+    if (error?.response?.data) {
+      console.error('[email] Resend response:', JSON.stringify(error.response.data, null, 2));
+    }
+    logEmailResult(payload, 'FAILED', { error: error.message || 'Unknown error' });
+    logEmailPreview(payload, 'Resend send failed. Logged preview for debugging.');
   }
+};
+
+export const sendDriverAdminMessageEmail = async ({ driver, subject, message, sender }) => {
+  if (!driver?.email || !message) {
+    return;
+  }
+
+  const safeDriverName = escapeHtml(driver.name || 'there');
+  const adminName = escapeHtml(sender?.name || 'Admin team');
+  const adminEmail = sender?.email ? ` (${escapeHtml(sender.email)})` : '';
+  const normalizedSubject = subject?.trim() || `Message from ${brandName}`;
+  const normalizedMessage = message.trim();
+
+  const html = buildEmailTemplate({
+    title: normalizedSubject,
+    preheader: `${adminName} sent you a new message on ${brandName}`,
+    bodyLines: [
+      `Hi ${safeDriverName},`,
+      formatMultiline(normalizedMessage),
+      `— ${adminName}${adminEmail}`,
+    ],
+    action: {
+      label: 'Open driver portal',
+      url: buildUrl('/portal/driver'),
+    },
+    footerLines: sender?.email ? [`Questions? Reply to ${escapeHtml(sender.email)}.`] : [],
+  });
+
+  const text = `Hi ${driver.name || 'there'},\n\n${normalizedMessage}\n\n— ${
+    sender?.name || 'Admin team'
+  }${sender?.email ? ` (${sender.email})` : ''}`;
+
+  await sendEmail({
+    to: driver.email,
+    subject: normalizedSubject,
+    html,
+    text,
+  });
 };
 
 export const sendVerificationEmail = async ({ to, name, verificationUrl }) => {

@@ -10,6 +10,7 @@ import {
   sendDriverStatusEmail,
   sendVehicleStatusEmail,
   sendBookingStatusUpdateEmail,
+  sendDriverAdminMessageEmail,
 } from '../services/emailService.js';
 import { mapAssetUrls } from '../utils/assetUtils.js';
 
@@ -276,6 +277,40 @@ export const updateDriverStatus = async (req, res) => {
   } catch (error) {
     console.error('Update driver status error:', error);
     return res.status(500).json({ message: 'Unable to update driver status' });
+  }
+};
+
+export const sendDriverDirectMessage = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+
+  const { id } = req.params;
+  const { subject, message } = req.body;
+
+  try {
+    const driver = await User.findOne({ _id: id, role: USER_ROLES.DRIVER });
+
+    if (!driver) {
+      return res.status(404).json({ message: 'Driver not found' });
+    }
+
+    if (!driver.email) {
+      return res.status(400).json({ message: 'Driver does not have an email address on file' });
+    }
+
+    await sendDriverAdminMessageEmail({
+      driver: { name: driver.name, email: driver.email },
+      subject,
+      message,
+      sender: { name: req.user?.name, email: req.user?.email },
+    });
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('Admin driver message error:', error);
+    return res.status(500).json({ message: 'Unable to send email to driver' });
   }
 };
 

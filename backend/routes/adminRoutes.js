@@ -19,6 +19,7 @@ import {
   listConversations,
   updateConversationStatus,
   deleteConversation,
+  sendDriverDirectMessage,
 } from '../controllers/adminController.js';
 import {
   listAdminReviews,
@@ -53,6 +54,24 @@ router.patch(
   updateDriverStatus
 );
 
+router.post(
+  '/drivers/:id/email',
+  [
+    param('id').isMongoId().withMessage('Invalid driver identifier'),
+    body('subject')
+      .isString()
+      .trim()
+      .isLength({ min: 3, max: 120 })
+      .withMessage('Subject must be between 3 and 120 characters'),
+    body('message')
+      .isString()
+      .trim()
+      .isLength({ min: 10, max: 2000 })
+      .withMessage('Message must be between 10 and 2000 characters'),
+  ],
+  sendDriverDirectMessage
+);
+
 router.get('/vehicles', getVehicleSubmissions);
 
 router.patch(
@@ -82,12 +101,36 @@ router.patch(
       .withMessage('Price per day must be a positive number')
       .toFloat(),
     body('seats').optional().isInt({ min: 1 }).withMessage('Seats must be at least 1').toInt(),
-    body('englishSpeakingDriver').isBoolean().toBoolean(),
-    body('meetAndGreetAtAirport').isBoolean().toBoolean(),
-    body('fuelAndInsurance').isBoolean().toBoolean(),
-    body('driverMealsAndAccommodation').isBoolean().toBoolean(),
-    body('parkingFeesAndTolls').isBoolean().toBoolean(),
-    body('allTaxes').isBoolean().toBoolean(),
+    body('englishSpeakingDriver').optional().trim().custom((value) => {
+      if (typeof value === 'boolean') return true;
+      const normalized = String(value).toLowerCase().trim();
+      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
+    }),
+    body('meetAndGreetAtAirport').optional().trim().custom((value) => {
+      if (typeof value === 'boolean') return true;
+      const normalized = String(value).toLowerCase().trim();
+      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
+    }),
+    body('fuelAndInsurance').optional().trim().custom((value) => {
+      if (typeof value === 'boolean') return true;
+      const normalized = String(value).toLowerCase().trim();
+      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
+    }),
+    body('driverMealsAndAccommodation').optional().trim().custom((value) => {
+      if (typeof value === 'boolean') return true;
+      const normalized = String(value).toLowerCase().trim();
+      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
+    }),
+    body('parkingFeesAndTolls').optional().trim().custom((value) => {
+      if (typeof value === 'boolean') return true;
+      const normalized = String(value).toLowerCase().trim();
+      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
+    }),
+    body('allTaxes').optional().trim().custom((value) => {
+      if (typeof value === 'boolean') return true;
+      const normalized = String(value).toLowerCase().trim();
+      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
+    }),
   ],
   updateVehicleDetails
 );
@@ -217,7 +260,11 @@ router.post(
       .toFloat(),
     body('startDate').isISO8601().withMessage('Start date must be a valid ISO date'),
     body('endDate').isISO8601().withMessage('End date must be a valid ISO date'),
-    body('active').optional().isBoolean().toBoolean(),
+    body('active').optional().trim().custom((value) => {
+      if (typeof value === 'boolean') return true;
+      const normalized = String(value).toLowerCase().trim();
+      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
+    }),
   ],
   createCommissionDiscount
 );
@@ -235,7 +282,11 @@ router.patch(
       .toFloat(),
     body('startDate').optional().isISO8601().withMessage('Start date must be a valid ISO date'),
     body('endDate').optional().isISO8601().withMessage('End date must be a valid ISO date'),
-    body('active').optional().isBoolean().toBoolean(),
+    body('active').optional().trim().custom((value) => {
+      if (typeof value === 'boolean') return true;
+      const normalized = String(value).toLowerCase().trim();
+      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
+    }),
   ],
   updateCommissionDiscount
 );

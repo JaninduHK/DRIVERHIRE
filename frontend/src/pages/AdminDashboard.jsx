@@ -46,6 +46,7 @@ import {
   createCommissionDiscount as createAdminDiscount,
   updateCommissionDiscount as updateAdminDiscount,
   deleteCommissionDiscount as deleteAdminDiscount,
+  sendDriverEmail as sendDriverEmailRequest,
 } from '../services/adminApi.js';
 import {
   fetchCurrentUser as fetchProfileCurrentUser,
@@ -698,6 +699,10 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleDriverMessageSend = useCallback(async (driverId, payload) => {
+    await sendDriverEmailRequest(driverId, payload);
+  }, []);
+
   const handleVehicleStatusChange = async (vehicleId, nextStatus) => {
     setVehicleState((prev) => ({ ...prev, updatingId: vehicleId }));
     try {
@@ -988,6 +993,7 @@ const AdminDashboard = () => {
                 state={driverState}
                 onRetry={loadDrivers}
                 onStatusChange={handleDriverStatusChange}
+                onSendMessage={handleDriverMessageSend}
               />
             ) : activeSection === 'vehicles' ? (
               <VehiclesPanel
@@ -2241,8 +2247,67 @@ const ConversationsPanel = ({ state, onReload, onStatusChange, onDelete }) => {
   );
 };
 
-const DriversPanel = ({ state, onRetry, onStatusChange }) => {
+const DriversPanel = ({ state, onRetry, onStatusChange, onSendMessage }) => {
   const { items, loading, error, updatingId } = state;
+  const [messageForm, setMessageForm] = useState({
+    driverId: null,
+    subject: '',
+    message: '',
+    sending: false,
+    error: '',
+  });
+
+  const toggleMessageForm = (driverId) => {
+    setMessageForm((prev) => {
+      const shouldClose = !driverId || prev.driverId === driverId;
+      if (shouldClose) {
+        return { driverId: null, subject: '', message: '', sending: false, error: '' };
+      }
+      return { driverId, subject: '', message: '', sending: false, error: '' };
+    });
+  };
+
+  const handleMessageFieldChange = (event) => {
+    const { name, value } = event.target;
+    setMessageForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleMessageSubmit = async (event) => {
+    event.preventDefault();
+    if (!messageForm.driverId || !onSendMessage) {
+      return;
+    }
+
+    const trimmedSubject = messageForm.subject.trim();
+    const trimmedMessage = messageForm.message.trim();
+
+    if (trimmedSubject.length < 3) {
+      setMessageForm((prev) => ({ ...prev, error: 'Subject must be at least 3 characters.' }));
+      return;
+    }
+
+    if (trimmedMessage.length < 10) {
+      setMessageForm((prev) => ({ ...prev, error: 'Message must be at least 10 characters.' }));
+      return;
+    }
+
+    setMessageForm((prev) => ({ ...prev, sending: true, error: '' }));
+    try {
+      await onSendMessage(messageForm.driverId, {
+        subject: trimmedSubject,
+        message: trimmedMessage,
+      });
+      toast.success('Email sent to driver.');
+      setMessageForm({ driverId: null, subject: '', message: '', sending: false, error: '' });
+    } catch (submitError) {
+      setMessageForm((prev) => ({
+        ...prev,
+        sending: false,
+        error: submitError?.message || 'Unable to send email.',
+      }));
+      toast.error(submitError?.message || 'Unable to send email.');
+    }
+  };
 
   if (loading) {
     return (
@@ -2295,6 +2360,8 @@ const DriversPanel = ({ state, onRetry, onStatusChange }) => {
             isUpdating || application.driverStatus === DRIVER_STATUS.APPROVED;
           const disableReject =
             isUpdating || application.driverStatus === DRIVER_STATUS.REJECTED;
+          const isFormOpen = messageForm.driverId === application.id;
+          const isSendingMessage = isFormOpen && messageForm.sending;
 
           return (
             <article
@@ -2386,7 +2453,94 @@ const DriversPanel = ({ state, onRetry, onStatusChange }) => {
                   <XCircle className="h-4 w-4" />
                   {isUpdating ? 'Updating...' : 'Reject'}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => toggleMessageForm(application.id)}
+                  className={`inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition ${
+                    isFormOpen ? 'bg-slate-200' : 'hover:bg-slate-100'
+                  }`}
+                  disabled={isSendingMessage}
+                >
+                  <Mail className="h-4 w-4" />
+                  {isFormOpen ? (isSendingMessage ? 'Sending...' : 'Close email form') : 'Email driver'}
+                </button>
               </div>
+
+              {isFormOpen && (
+                <form
+                  onSubmit={handleMessageSubmit}
+                  className="mt-4 space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4"
+                >
+                  {messageForm.error ? (
+                    <p className="text-sm font-medium text-rose-600">{messageForm.error}</p>
+                  ) : null}
+                  <div>
+                    <label
+                      htmlFor={`subject-${application.id}`}
+                      className="text-xs font-semibold uppercase tracking-wide text-slate-500"
+                    >
+                      Subject
+                    </label>
+                    <input
+                      id={`subject-${application.id}`}
+                      name="subject"
+                      type="text"
+                      value={messageForm.subject}
+                      onChange={handleMessageFieldChange}
+                      disabled={isSendingMessage}
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      placeholder="e.g. New platform update"
+                      maxLength={120}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor={`message-${application.id}`}
+                      className="text-xs font-semibold uppercase tracking-wide text-slate-500"
+                    >
+                      Message
+                    </label>
+                    <textarea
+                      id={`message-${application.id}`}
+                      name="message"
+                      rows={4}
+                      value={messageForm.message}
+                      onChange={handleMessageFieldChange}
+                      disabled={isSendingMessage}
+                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      placeholder="Share updates, reminders, or policy changes."
+                      maxLength={2000}
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="submit"
+                      disabled={isSendingMessage}
+                      className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isSendingMessage ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="h-4 w-4" />
+                          Send email
+                        </>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isSendingMessage}
+                      onClick={() => toggleMessageForm(application.id)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
             </article>
           );
         })}

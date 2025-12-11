@@ -96,12 +96,30 @@ router.post(
       .withMessage('Price per day must be between $35 and $250 USD')
       .toFloat(),
     body('seats').optional().isInt({ min: 1 }).withMessage('Seats must be at least 1').toInt(),
-    body('englishSpeakingDriver').optional().isBoolean().toBoolean(),
-    body('meetAndGreetAtAirport').optional().isBoolean().toBoolean(),
-    body('fuelAndInsurance').optional().isBoolean().toBoolean(),
-    body('driverMealsAndAccommodation').optional().isBoolean().toBoolean(),
-    body('parkingFeesAndTolls').optional().isBoolean().toBoolean(),
-    body('allTaxes').optional().isBoolean().toBoolean(),
+    body('englishSpeakingDriver').optional().trim().custom((value) => {
+      const normalized = String(value).toLowerCase().trim();
+      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
+    }),
+    body('meetAndGreetAtAirport').optional().trim().custom((value) => {
+      const normalized = String(value).toLowerCase().trim();
+      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
+    }),
+    body('fuelAndInsurance').optional().trim().custom((value) => {
+      const normalized = String(value).toLowerCase().trim();
+      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
+    }),
+    body('driverMealsAndAccommodation').optional().trim().custom((value) => {
+      const normalized = String(value).toLowerCase().trim();
+      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
+    }),
+    body('parkingFeesAndTolls').optional().trim().custom((value) => {
+      const normalized = String(value).toLowerCase().trim();
+      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
+    }),
+    body('allTaxes').optional().trim().custom((value) => {
+      const normalized = String(value).toLowerCase().trim();
+      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
+    }),
   ],
   createDriverVehicle
 );
@@ -122,12 +140,30 @@ router.patch(
       .withMessage('Price per day must be between $35 and $250 USD')
       .toFloat(),
     body('seats').optional().isInt({ min: 1 }).withMessage('Seats must be at least 1').toInt(),
-    body('englishSpeakingDriver').optional().isBoolean().toBoolean(),
-    body('meetAndGreetAtAirport').optional().isBoolean().toBoolean(),
-    body('fuelAndInsurance').optional().isBoolean().toBoolean(),
-    body('driverMealsAndAccommodation').optional().isBoolean().toBoolean(),
-    body('parkingFeesAndTolls').optional().isBoolean().toBoolean(),
-    body('allTaxes').optional().isBoolean().toBoolean(),
+    body('englishSpeakingDriver').optional().trim().custom((value) => {
+      const normalized = String(value).toLowerCase().trim();
+      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
+    }),
+    body('meetAndGreetAtAirport').optional().trim().custom((value) => {
+      const normalized = String(value).toLowerCase().trim();
+      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
+    }),
+    body('fuelAndInsurance').optional().trim().custom((value) => {
+      const normalized = String(value).toLowerCase().trim();
+      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
+    }),
+    body('driverMealsAndAccommodation').optional().trim().custom((value) => {
+      const normalized = String(value).toLowerCase().trim();
+      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
+    }),
+    body('parkingFeesAndTolls').optional().trim().custom((value) => {
+      const normalized = String(value).toLowerCase().trim();
+      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
+    }),
+    body('allTaxes').optional().trim().custom((value) => {
+      const normalized = String(value).toLowerCase().trim();
+      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
+    }),
   ],
   updateDriverVehicle
 );
