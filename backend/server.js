@@ -11,6 +11,7 @@ import bookingRoutes from './routes/bookingRoutes.js';
 import briefRoutes from './routes/briefRoutes.js';
 import publicDriverRoutes from './routes/publicDriverRoutes.js';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 dotenv.config();
@@ -35,7 +36,18 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const uploadsPath = path.join(__dirname, '../uploads');
 
-app.use(['/uploads', '/api/uploads'], express.static(uploadsPath));
+// Ensure uploads directory exists
+if (!fs.existsSync(uploadsPath)) {
+  fs.mkdirSync(uploadsPath, { recursive: true });
+  fs.mkdirSync(path.join(uploadsPath, 'vehicles'), { recursive: true });
+  fs.mkdirSync(path.join(uploadsPath, 'profiles'), { recursive: true });
+  fs.mkdirSync(path.join(uploadsPath, 'commissions'), { recursive: true });
+}
+
+app.use(['/uploads', '/api/uploads'], express.static(uploadsPath, {
+  maxAge: '1d',
+  etag: false,
+}));
 
 app.get('/', (req, res) => {
   res.json({ status: 'ok' });
@@ -49,6 +61,32 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/briefs', briefRoutes);
 app.use('/api/drivers', publicDriverRoutes);
+
+// Error handler for multer and other errors
+app.use((error, req, res, next) => {
+  console.error('Request error:', error.message);
+  
+  // Multer errors
+  if (error.code === 'LIMIT_FILE_SIZE') {
+    return res.status(400).json({ message: 'File size too large. Maximum 5MB allowed.' });
+  }
+  if (error.code === 'LIMIT_FILE_COUNT') {
+    return res.status(400).json({ message: 'Too many files. Maximum 5 files allowed.' });
+  }
+  if (error.code === 'LIMIT_UNEXPECTED_FILE') {
+    return res.status(400).json({ message: 'Unexpected file field.' });
+  }
+  
+  // Generic multer or validation errors
+  if (error.message && error.message.includes('Only image uploads are allowed')) {
+    return res.status(400).json({ message: 'Only image files are allowed.' });
+  }
+  
+  // Default error response
+  res.status(error.status || 500).json({ 
+    message: error.message || 'An error occurred processing your request.' 
+  });
+});
 
 const PORT = process.env.PORT || 3000;
 

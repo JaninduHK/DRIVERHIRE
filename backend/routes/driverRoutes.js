@@ -30,7 +30,7 @@ router.use(ensureApprovedDriver);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const uploadDir = path.join(__dirname, '../..', 'uploads/vehicles');
+const uploadDir = path.join(__dirname, '../../uploads/vehicles');
 fs.mkdirSync(uploadDir, { recursive: true });
 
 const storage = multer.diskStorage({
@@ -53,7 +53,7 @@ const upload = multer({
   },
 });
 
-const slipsDir = path.join(__dirname, '../..', 'uploads/commissions');
+const slipsDir = path.join(__dirname, '../../uploads/commissions');
 fs.mkdirSync(slipsDir, { recursive: true });
 
 const slipStorage = multer.diskStorage({

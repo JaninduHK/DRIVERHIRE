@@ -23,7 +23,7 @@ const router = express.Router();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const profileUploadDir = path.join(__dirname, '../..', 'uploads/profiles');
+const profileUploadDir = path.join(__dirname, '../../uploads/profiles');
 fs.mkdirSync(profileUploadDir, { recursive: true });
 
 const profileStorage = multer.diskStorage({
