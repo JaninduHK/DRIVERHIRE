@@ -1,11 +1,12 @@
-import { Resend } from 'resend';
+import Brevo from 'sib-api-v3-sdk';
 
-let resendClient;
+let brevoClient;
 
 const brandName = process.env.APP_BRAND_NAME || 'Car With Driver';
 const appBaseUrl = process.env.APP_BASE_URL || 'http://localhost:5173';
-const emailFrom = process.env.EMAIL_FROM || `${brandName} <no-reply@example.com>`;
-const supportEmail = process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM || 'support@example.com';
+const emailFrom = process.env.EMAIL_FROM || 'hello@carwithdriver.lk';
+const brevoApiKey = process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY;
+const supportEmail = process.env.SUPPORT_EMAIL || emailFrom || 'support@example.com';
 const currencyCode = process.env.APP_CURRENCY || 'USD';
 
 const paragraphStyles =
@@ -107,6 +108,23 @@ const renderFooter = (lines = []) =>
     .map((line) => `<p style="${footerStyles}">${line}</p>`)
     .join('');
 
+const parseFromAddress = (value = '') => {
+  const trimmed = value?.trim?.() || '';
+
+  if (!trimmed) {
+    return { email: 'hello@carwithdriver.lk', name: brandName };
+  }
+
+  const match = trimmed.match(/^(.*)<(.+)>$/);
+  if (match) {
+    const name = match[1].trim().replace(/^"|"$/g, '');
+    const email = match[2].trim();
+    return { email, name: name || brandName };
+  }
+
+  return { email: trimmed, name: brandName };
+};
+
 const buildEmailTemplate = ({ title, preheader, bodyLines = [], action, footerLines = [] }) => `
   <div style="background-color:#e2e8f0;padding:24px;">
     <div style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:20px;padding:32px;">
@@ -133,18 +151,19 @@ const buildEmailTemplate = ({ title, preheader, bodyLines = [], action, footerLi
   </div>
 `;
 
-const getResendClient = () => {
-  if (resendClient) {
-    return resendClient;
+const getBrevoClient = () => {
+  if (brevoClient) {
+    return brevoClient;
   }
 
-  const apiKey = process.env.RESEND_API_KEY;
-
-  if (apiKey) {
-    resendClient = new Resend(apiKey);
+  if (!brevoApiKey) {
+    return null;
   }
 
-  return resendClient;
+  const apiClient = Brevo.ApiClient.instance;
+  apiClient.authentications['api-key'].apiKey = brevoApiKey;
+  brevoClient = new Brevo.TransactionalEmailsApi();
+  return brevoClient;
 };
 
 const normalizeRecipients = (to) => {
@@ -167,7 +186,7 @@ const normalizeRecipients = (to) => {
 
 const logEmailPreview = ({ to, subject, html }, reason) => {
   const preview = htmlToText(html).slice(0, 400);
-  const message = reason || 'Unable to send email via Resend.';
+  const message = reason || 'Unable to send email via Brevo.';
   console.warn(`[email] ${message}`);
   console.info(JSON.stringify({ to, subject, preview }, null, 2));
 };
@@ -196,30 +215,48 @@ const sendEmail = async ({ to, subject, html, text }) => {
     text: text || htmlToText(html),
   };
 
-  const client = getResendClient();
+  const client = getBrevoClient();
 
   if (!client) {
-    logEmailResult(payload, 'SKIPPED', { reason: 'RESEND_API_KEY missing' });
-    logEmailPreview(payload, 'RESEND_API_KEY missing. Logging the email preview instead.');
+    logEmailResult(payload, 'SKIPPED', { reason: 'BREVO_API_KEY missing' });
+    logEmailPreview(payload, 'BREVO_API_KEY missing. Logging the email preview instead.');
     return;
   }
 
   try {
-    await client.emails.send({
-      from: emailFrom,
-      to: payload.to,
+    const { email, name } = parseFromAddress(emailFrom);
+
+    const response = await client.sendTransacEmail({
+      sender: { email, name: name || brandName },
+      to: payload.to.map((address) => ({ email: address })),
       subject: payload.subject,
-      html: payload.html,
-      text: payload.text,
+      htmlContent: payload.html,
+      textContent: payload.text,
     });
-    logEmailResult(payload, 'SENT');
+
+    logEmailResult(payload, 'SENT', {
+      provider: 'Brevo',
+      messageId: response?.messageId || response?.message_id,
+    });
   } catch (error) {
-    console.error('[email] Resend API error:', error.message || error);
-    if (error?.response?.data) {
-      console.error('[email] Resend response:', JSON.stringify(error.response.data, null, 2));
+    const status = error?.response?.status || error?.status || error?.statusCode;
+    const errorBody =
+      typeof error?.response?.body === 'object'
+        ? JSON.stringify(error.response.body, null, 2)
+        : error?.response?.body;
+    const errorMessage =
+      error?.response?.body?.message ||
+      errorBody ||
+      error?.message ||
+      error?.toString?.() ||
+      'Unknown error';
+
+    console.error('[email] Brevo API error:', errorMessage);
+    if (errorBody) {
+      console.error('[email] Brevo response body:', errorBody);
     }
-    logEmailResult(payload, 'FAILED', { error: error.message || 'Unknown error' });
-    logEmailPreview(payload, 'Resend send failed. Logged preview for debugging.');
+    logEmailResult(payload, 'FAILED', { error: errorMessage, status, body: errorBody });
+    logEmailPreview(payload, 'Brevo send failed. Logged preview for debugging.');
   }
 };
 
