@@ -268,6 +268,7 @@ const TourBriefsBoard = () => {
                   return (
                     <li
                       key={brief.id}
+                      id={`brief-${brief.id}`}
                       className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-emerald-200 hover:shadow-md"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-3">

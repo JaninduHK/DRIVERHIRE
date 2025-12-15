@@ -184,7 +184,36 @@ const shapeOffer = (message) => ({
   updatedAt: message.updatedAt,
 });
 
-const shapeConversation = (conversation) => ({
+const shapeMessage = (message) => ({
+  id: toId(message),
+  body: message.body,
+  type: message.type,
+  senderRole: message.senderRole,
+  warning: message.warning,
+  offer: message.offer
+    ? {
+        startDate: message.offer.startDate,
+        endDate: message.offer.endDate,
+        vehicle: message.offer.vehicle ? toId(message.offer.vehicle) : null,
+        totalPrice: message.offer.totalPrice,
+        totalKms: message.offer.totalKms,
+        pricePerExtraKm: message.offer.pricePerExtraKm,
+        currency: message.offer.currency,
+        status: message.offer.status,
+      }
+    : null,
+  sender: message.sender
+    ? {
+        id: toId(message.sender),
+        name: message.sender.name,
+        role: message.sender.role,
+      }
+    : null,
+  createdAt: message.createdAt,
+  updatedAt: message.updatedAt,
+});
+
+const shapeConversation = (conversation, messages = []) => ({
   id: conversation._id.toString(),
   traveler: conversation.traveler
     ? {
@@ -215,6 +244,7 @@ const shapeConversation = (conversation) => ({
     : null,
   createdAt: conversation.createdAt,
   updatedAt: conversation.updatedAt,
+  messages: messages.map((message) => shapeMessage(message)),
 });
 
 const refreshConversationMetadata = async (conversationId) => {
@@ -431,7 +461,7 @@ export const updateVehicleDetails = async (req, res) => {
   }
 };
 
-export const listBookings = async (_req, res) => {
+export const listBookings = async (req, res) => {
   try {
     const bookings = await Booking.find()
       .sort({ createdAt: -1 })
@@ -742,8 +772,27 @@ export const listConversations = async (_req, res) => {
       .populate('vehicle', 'model')
       .populate('lastMessage', 'body type createdAt');
 
+    const conversationIds = conversations.map((conversation) => conversation._id);
+    const messages = await ChatMessage.find({ conversation: { $in: conversationIds } })
+      .sort({ createdAt: 1 })
+      .populate('sender', 'name role');
+
+    const messagesByConversation = conversationIds.reduce((acc, id) => {
+      acc[id.toString()] = [];
+      return acc;
+    }, {});
+
+    messages.forEach((message) => {
+      const key = message.conversation?.toString?.();
+      if (key && messagesByConversation[key]) {
+        messagesByConversation[key].push(message);
+      }
+    });
+
     return res.json({
-      conversations: conversations.map((conversation) => shapeConversation(conversation)),
+      conversations: conversations.map((conversation) =>
+        shapeConversation(conversation, messagesByConversation[conversation._id.toString()] || [])
+      ),
     });
   } catch (error) {
     console.error('List conversations error:', error);
@@ -776,7 +825,11 @@ export const updateConversationStatus = async (req, res) => {
     }
 
     await conversation.save();
-    return res.json({ conversation: shapeConversation(conversation) });
+    const messages = await ChatMessage.find({ conversation: id })
+      .sort({ createdAt: 1 })
+      .populate('sender', 'name role');
+
+    return res.json({ conversation: shapeConversation(conversation, messages) });
   } catch (error) {
     console.error('Update conversation error:', error);
     return res.status(500).json({ message: 'Unable to update conversation.' });

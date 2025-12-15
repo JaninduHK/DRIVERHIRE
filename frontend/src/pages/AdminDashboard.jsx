@@ -2128,6 +2128,21 @@ const OffersPanel = ({ state, onReload, onStatusChange, onDelete }) => {
 
 const ConversationsPanel = ({ state, onReload, onStatusChange, onDelete }) => {
   const { items, loading, error, updatingId, deletingId } = state;
+  const formatDateTime = (value) => {
+    if (!value) {
+      return '—';
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return '—';
+    }
+    return date.toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
 
   if (loading) {
     return (
@@ -2175,6 +2190,7 @@ const ConversationsPanel = ({ state, onReload, onStatusChange, onDelete }) => {
         items.map((conversation) => {
           const isUpdating = updatingId === conversation.id;
           const isDeleting = deletingId === conversation.id;
+          const messages = Array.isArray(conversation.messages) ? conversation.messages : [];
 
           return (
             <article key={conversation.id} className="rounded-xl border border-slate-200 p-4">
@@ -2199,7 +2215,7 @@ const ConversationsPanel = ({ state, onReload, onStatusChange, onDelete }) => {
                     Vehicle: {conversation.vehicle?.model || '—'}
                   </p>
                   <p className="text-xs text-slate-500">
-                    Last message {formatDate(conversation.lastMessageAt)}
+                    Last message {formatDateTime(conversation.lastMessageAt)}
                   </p>
                 </div>
                 <div className="text-right text-xs text-slate-500">
@@ -2207,7 +2223,59 @@ const ConversationsPanel = ({ state, onReload, onStatusChange, onDelete }) => {
                   <p>Unread (driver): {conversation.driverUnreadCount}</p>
                 </div>
               </div>
-              {conversation.lastMessage ? (
+              {messages.length > 0 ? (
+                <div className="mt-4 space-y-2 rounded-xl border border-slate-100 bg-slate-50 p-3">
+                  <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    <span>Conversation history</span>
+                    <span className="text-slate-400">
+                      {messages.length} message{messages.length === 1 ? '' : 's'}
+                    </span>
+                  </div>
+                  <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
+                    {messages.map((message) => {
+                      const isDriver = message.senderRole === 'driver';
+                      const senderLabel =
+                        message.sender?.name ||
+                        (message.senderRole === 'guest'
+                          ? 'Traveller'
+                          : message.senderRole === 'admin'
+                          ? 'Admin'
+                          : 'Driver');
+                      const timestamp = formatDateTime(message.createdAt);
+                      const offerLabel =
+                        message.offer && typeof message.offer.totalPrice === 'number'
+                          ? `Offer • ${formatCurrency(message.offer.totalPrice)}`
+                          : message.offer
+                          ? 'Offer shared'
+                          : '';
+                      return (
+                        <div
+                          key={message.id}
+                          className={`rounded-lg border px-3 py-2 text-sm leading-relaxed ${
+                            isDriver ? 'border-emerald-100 bg-white' : 'border-slate-200 bg-white'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide">
+                            <span className={isDriver ? 'text-emerald-600' : 'text-slate-600'}>
+                              {senderLabel}
+                            </span>
+                            <span className="text-slate-400">{timestamp}</span>
+                          </div>
+                          <p className="mt-1 whitespace-pre-line text-sm text-slate-700">
+                            {message.body}
+                          </p>
+                          {offerLabel ? (
+                            <p className="mt-1 text-xs font-medium text-amber-600">{offerLabel}</p>
+                          ) : null}
+                          {message.warning ? (
+                            <p className="mt-1 text-[11px] text-amber-600">{message.warning}</p>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : conversation.lastMessage ? (
                 <p className="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-600">
                   {conversation.lastMessage.body}
                 </p>

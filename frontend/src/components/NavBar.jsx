@@ -74,7 +74,7 @@ const NavBar = () => {
   const toggleMobileMenu = () => setMobileOpen((prev) => !prev);
   const closeMobileMenu = () => setMobileOpen(false);
 
-  const { isAuthenticated, dashboardPath, messagesPath } = authState;
+  const { isAuthenticated, dashboardPath, messagesPath, user } = authState;
   const messageDestination = isAuthenticated ? messagesPath : '/login';
 
   return (
@@ -164,6 +164,21 @@ const NavBar = () => {
               {label}
             </NavLink>
           ))}
+          {user?.role === 'driver' ? (
+            <NavLink
+              to="/briefs"
+              onClick={closeMobileMenu}
+              className={({ isActive }) =>
+                `rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150 ${
+                  isActive
+                    ? 'bg-emerald-50 text-emerald-700'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`
+              }
+            >
+              Briefs
+            </NavLink>
+          ) : null}
           <div className="mt-3 flex items-center gap-2">
             {isAuthenticated ? (
               <NavLink

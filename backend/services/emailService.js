@@ -298,6 +298,44 @@ export const sendDriverAdminMessageEmail = async ({ driver, subject, message, se
   });
 };
 
+export const sendSupportRequestEmail = async ({ name, email, category, bookingId, message }) => {
+  const targetEmail = supportEmail || 'hello@carwithdriver.lk';
+  const safeName = escapeHtml(name || 'Customer');
+  const safeEmail = escapeHtml(email || 'unknown');
+  const normalizedCategory = category ? escapeHtml(category) : 'Not specified';
+  const normalizedBookingId = bookingId ? escapeHtml(bookingId) : 'Not provided';
+  const html = buildEmailTemplate({
+    title: 'New support request',
+    preheader: `${safeName} requested help via the contact page.`,
+    bodyLines: [
+      `<strong>Name:</strong> ${safeName}`,
+      `<strong>Email:</strong> ${safeEmail}`,
+      `<strong>Category:</strong> ${normalizedCategory}`,
+      `<strong>Booking ID:</strong> ${normalizedBookingId}`,
+      {
+        raw: `<p style="${paragraphStyles}"><strong>Message:</strong><br />${formatMultiline(message || '')}</p>`,
+      },
+    ],
+    action: {
+      label: 'Reply now',
+      url: `mailto:${safeEmail}`,
+    },
+  });
+
+  const text = `New support request\n\nName: ${name || 'Customer'}\nEmail: ${
+    email || 'unknown'
+  }\nCategory: ${category || 'Not specified'}\nBooking ID: ${
+    bookingId || 'Not provided'
+  }\n\n${message || ''}`;
+
+  await sendEmail({
+    to: targetEmail,
+    subject: `Support request from ${name || 'customer'}`,
+    html,
+    text,
+  });
+};
+
 export const sendVerificationEmail = async ({ to, name, verificationUrl }) => {
   const safeName = escapeHtml(name || 'there');
   const url = verificationUrl || buildUrl('/verify-email');
@@ -439,6 +477,52 @@ export const sendConversationNotificationEmail = async ({
     html,
     text,
   });
+};
+
+export const sendBriefAlertEmail = async ({ drivers = [], brief }) => {
+  if (!brief) {
+    return;
+  }
+
+  const recipients = drivers.filter((driver) => driver?.email);
+
+  if (!recipients.length) {
+    return;
+  }
+
+  const briefUrl = buildUrl(`/briefs#brief-${brief.id || brief._id || ''}`);
+
+  await Promise.all(
+    recipients.map((driver) => {
+      const driverName = escapeHtml(driver.name || 'there');
+      const travelerName = escapeHtml(brief.traveler?.name || 'A traveller');
+      const html = buildEmailTemplate({
+        title: 'New tour brief available',
+        preheader: `${travelerName} shared a new trip request on ${brandName}.`,
+        bodyLines: [
+          `Hi ${driverName},`,
+          `${travelerName} just posted a new trip brief.`,
+          `<strong>Route:</strong> ${escapeHtml(brief.startLocation || 'TBD')} → ${escapeHtml(brief.endLocation || 'TBD')}`,
+          `<strong>Dates:</strong> ${formatDateRange(brief.startDate, brief.endDate)}`,
+          brief.message ? formatMultiline(brief.message) : null,
+          'Share an offer from your driver portal to connect with this traveller.',
+        ],
+        action: {
+          label: 'Open brief',
+          url: briefUrl,
+        },
+      });
+
+      const text = `Hi ${driver.name || 'there'},\n\n${brief.traveler?.name || 'A traveller'} posted a new trip brief.\nRoute: ${brief.startLocation || 'TBD'} -> ${brief.endLocation || 'TBD'}\nDates: ${formatDateRange(brief.startDate, brief.endDate)}\n\nReply from your driver portal: ${briefUrl}`;
+
+      return sendEmail({
+        to: driver.email,
+        subject: 'New traveller brief available',
+        html,
+        text,
+      });
+    })
+  );
 };
 
 export const sendBookingRequestConfirmationEmail = async ({

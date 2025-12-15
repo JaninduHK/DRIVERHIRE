@@ -632,7 +632,7 @@ const VehicleDetails = () => {
         <article className="space-y-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">About this vehicle</h2>
-            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+            <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-600">
               {vehicle.description
                 ? vehicle.description
                 : 'Share your itinerary and the driver will curate scenic stops, dining suggestions, and memorable experiences tailored to your group.'}

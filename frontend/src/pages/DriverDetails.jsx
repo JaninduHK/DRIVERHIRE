@@ -182,7 +182,9 @@ const DriverDetails = () => {
                   ({driver.reviewCount ?? 0})
                 </span>
               </div>
-              <p className="line-clamp-3 text-sm text-slate-600">{driver.description}</p>
+              <p className="whitespace-pre-line text-sm leading-relaxed text-slate-700">
+                {driver.description}
+              </p>
               <div className="flex flex-wrap gap-3 text-xs text-slate-500">
                 <span className="inline-flex items-center gap-1">
                   <MapPin className="h-3.5 w-3.5" />

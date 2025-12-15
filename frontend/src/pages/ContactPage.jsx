@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import { Mail, Phone } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { submitSupportRequest } from '../services/supportApi.js';
 
 const contactInfo = [
   {
@@ -18,6 +21,55 @@ const contactInfo = [
 const placeholderIndentStyle = { textIndent: '5px' };
 
 const ContactPage = () => {
+  const [formState, setFormState] = useState({
+    name: '',
+    email: '',
+    category: '',
+    bookingId: '',
+    message: '',
+    submitting: false,
+  });
+
+  const handleFieldChange = (field) => (event) => {
+    const { value } = event.target;
+    setFormState((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const name = formState.name.trim();
+    const email = formState.email.trim();
+    const message = formState.message.trim();
+
+    if (!name || !email || !message) {
+      toast.error('Please add your name, email, and message.');
+      return;
+    }
+
+    setFormState((prev) => ({ ...prev, submitting: true }));
+    try {
+      await submitSupportRequest({
+        name,
+        email,
+        category: formState.category.trim(),
+        bookingId: formState.bookingId.trim(),
+        message,
+      });
+      toast.success('Your request was sent to hello@carwithdriver.lk.');
+      setFormState({
+        name: '',
+        email: '',
+        category: '',
+        bookingId: '',
+        message: '',
+        submitting: false,
+      });
+    } catch (error) {
+      toast.error(error?.message || 'Unable to send your request.');
+      setFormState((prev) => ({ ...prev, submitting: false }));
+    }
+  };
+
   return (
     <section className="min-h-[80vh] bg-slate-50">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-16 lg:flex-row lg:py-20">
@@ -122,7 +174,7 @@ const ContactPage = () => {
               </div>
             </div>
 
-            <form className="space-y-5">
+            <form className="space-y-5" onSubmit={handleSubmit}>
               {/* Reason / Category */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-600">
@@ -130,7 +182,8 @@ const ContactPage = () => {
                 </label>
                 <select
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm text-slate-900 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-100"
-                  defaultValue=""
+                  value={formState.category}
+                  onChange={handleFieldChange('category')}
                   style={placeholderIndentStyle}
                 >
                   <option value="" disabled>
@@ -155,6 +208,9 @@ const ContactPage = () => {
                     type="text"
                     placeholder="Name on your booking"
                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                    value={formState.name}
+                    onChange={handleFieldChange('name')}
+                    required
                     style={placeholderIndentStyle}
                   />
                 </div>
@@ -166,6 +222,9 @@ const ContactPage = () => {
                     type="email"
                     placeholder="you@example.com"
                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                    value={formState.email}
+                    onChange={handleFieldChange('email')}
+                    required
                     style={placeholderIndentStyle}
                   />
                 </div>
@@ -176,34 +235,40 @@ const ContactPage = () => {
                 <label className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-600">
                   Booking ID (if you have one)
                 </label>
-                <input
-                  type="text"
-                  placeholder="#DRIVER12345 or platform reference"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-100"
-                  style={placeholderIndentStyle}
-                />
-              </div>
+                  <input
+                    type="text"
+                    placeholder="#DRIVER12345 or platform reference"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                    value={formState.bookingId}
+                    onChange={handleFieldChange('bookingId')}
+                    style={placeholderIndentStyle}
+                  />
+                </div>
 
               {/* Message */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-600">
                   Explain your situation
                 </label>
-                <textarea
-                  rows={5}
-                  placeholder="Tell us your travel dates, where you are now (or landing), what went wrong or what you want to change. Include driver name or vehicle type if possible."
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-100"
-                  style={placeholderIndentStyle}
-                />
-              </div>
+                  <textarea
+                    rows={5}
+                    placeholder="Tell us your travel dates, where you are now (or landing), what went wrong or what you want to change. Include driver name or vehicle type if possible."
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                    value={formState.message}
+                    onChange={handleFieldChange('message')}
+                    required
+                    style={placeholderIndentStyle}
+                  />
+                </div>
 
               {/* Big button + note */}
               <div className="space-y-2 pt-1">
                 <button
-                  type="button"
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
+                  type="submit"
+                  disabled={formState.submitting}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-emerald-600/70"
                 >
-                  Send support request
+                  {formState.submitting ? 'Sending...' : 'Send support request'}
                 </button>
                 <p className="text-xs text-slate-500">
                   We answer all tourists personally — no bots. For urgent same-day issues, we

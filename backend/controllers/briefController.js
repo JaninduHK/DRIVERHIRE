@@ -3,8 +3,10 @@ import TourBrief from '../models/TourBrief.js';
 import ChatConversation from '../models/ChatConversation.js';
 import ChatMessage from '../models/ChatMessage.js';
 import Vehicle from '../models/Vehicle.js';
+import User from '../models/User.js';
 import { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
 import { createChatMessage } from '../services/chatService.js';
+import { sendBriefAlertEmail } from '../services/emailService.js';
 import { sanitizeMessageContent } from '../utils/chatSanitizer.js';
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
@@ -54,6 +56,24 @@ const toPlainBrief = (brief, currentUserId = null) => {
       ),
     isOwner: Boolean(currentUserId) && travelerId === currentUserId,
   };
+};
+
+const notifyApprovedDriversOfBrief = async (brief) => {
+  try {
+    const drivers = await User.find({
+      role: USER_ROLES.DRIVER,
+      driverStatus: DRIVER_STATUS.APPROVED,
+      email: { $exists: true, $ne: '' },
+    }).select('name email role driverStatus');
+
+    if (!drivers.length) {
+      return;
+    }
+
+    await sendBriefAlertEmail({ drivers, brief });
+  } catch (error) {
+    console.error('Brief notification error:', error);
+  }
 };
 
 export const createBrief = async (req, res) => {
@@ -111,8 +131,10 @@ export const createBrief = async (req, res) => {
 
     await brief.save();
     await brief.populate('traveler', 'id name country');
+    const plainBrief = toPlainBrief(brief, req.user.id);
+    notifyApprovedDriversOfBrief(plainBrief);
 
-    return res.status(201).json({ brief: toPlainBrief(brief, req.user.id) });
+    return res.status(201).json({ brief: plainBrief });
   } catch (error) {
     console.error('Create brief error:', error);
     return res.status(500).json({ message: 'Unable to save your tour brief right now.' });
