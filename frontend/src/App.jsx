@@ -21,6 +21,9 @@ import ContactPage from './pages/ContactPage.jsx';
 import TripCostCalculator from './pages/TripCostCalculator.jsx';
 import { trackPageView } from './lib/analytics.js';
 import Footer from './components/Footer.jsx';
+import ForgotPassword from './pages/ForgotPassword.jsx';
+import ResetPassword from './pages/ResetPassword.jsx';
+import VerifyEmail from './pages/VerifyEmail.jsx';
 
 const App = () => {
   const location = useLocation();
@@ -49,6 +52,9 @@ const App = () => {
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/dashboard" element={<TravelerDashboard />} />
           <Route path="/portal/driver" element={<DriverDashboard />} />
           <Route path="/portal/driver/messages" element={<DriverMessages />} />

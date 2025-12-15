@@ -196,7 +196,18 @@ export const verifyEmail = async (req, res) => {
     user.verificationTokenExpires = undefined;
     await user.save();
 
-    return res.json({ message: 'Email verified successfully' });
+    const token = generateAccessToken(user);
+    const responseUser = user.toJSON();
+
+    if (responseUser.profilePhoto) {
+      responseUser.profilePhoto = buildAssetUrl(responseUser.profilePhoto, req);
+    }
+
+    return res.json({
+      message: 'Email verified successfully',
+      token,
+      user: responseUser,
+    });
   } catch (error) {
     console.error('Email verification error:', error);
     return res.status(500).json({ message: 'Unable to verify email' });

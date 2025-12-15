@@ -576,6 +576,8 @@ const DriverMessages = () => {
                 <input
                   type="number"
                   min="0"
+                  step="0.001"
+                  inputMode="decimal"
                   value={offerForm.pricePerExtraKm}
                   onChange={(event) => handleOfferChange('pricePerExtraKm', event.target.value)}
                   className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"

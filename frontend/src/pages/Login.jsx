@@ -1,13 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { login } from '../services/authApi.js';
-import { persistAuthSession } from '../services/authToken.js';
+import { consumeAuthMessage, consumeReturnPath, persistAuthSession } from '../services/authToken.js';
 
 const Login = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const message = consumeAuthMessage();
+    if (message) {
+      toast.error(message);
+    }
+  }, []);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -26,21 +33,26 @@ const Login = () => {
       const firstName = user?.name?.split(' ')?.[0] || 'there';
       toast.success(`Welcome back, ${firstName}!`);
 
-      let destination = '/';
+      const savedPath = consumeReturnPath();
+      const destinationFromReturn = savedPath && !savedPath.startsWith('/register') ? savedPath : '';
 
-      if (user?.role === 'admin') {
-        destination = '/admin';
-      } else if (user?.role === 'driver') {
-        if (user?.driverStatus === 'approved') {
-          destination = '/portal/driver';
+      let destination = destinationFromReturn || '/';
+
+      if (!destinationFromReturn) {
+        if (user?.role === 'admin') {
+          destination = '/admin';
+        } else if (user?.role === 'driver') {
+          if (user?.driverStatus === 'approved') {
+            destination = '/portal/driver';
+          } else {
+            toast(
+              'Your driver profile is pending approval. We will notify you once you are approved.',
+              { icon: '⏳' }
+            );
+          }
         } else {
-          toast(
-            'Your driver profile is pending approval. We will notify you once you are approved.',
-            { icon: '⏳' }
-          );
+          destination = '/dashboard';
         }
-      } else {
-        destination = '/dashboard';
       }
 
       navigate(destination);
@@ -122,9 +134,12 @@ const Login = () => {
                     >
                       Password
                     </label>
-                    <a href="#" className="text-xs font-medium text-emerald-600 hover:text-emerald-700">
+                    <Link
+                      to="/forgot-password"
+                      className="text-xs font-medium text-emerald-600 hover:text-emerald-700"
+                    >
                       Forgot password?
-                    </a>
+                    </Link>
                   </div>
                   <input
                     id="password"

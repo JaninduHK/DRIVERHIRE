@@ -3,10 +3,10 @@ import Brevo from 'sib-api-v3-sdk';
 let brevoClient;
 
 const brandName = process.env.APP_BRAND_NAME || 'Car With Driver';
-const appBaseUrl = process.env.APP_BASE_URL || 'http://localhost:5173';
+const appBaseUrl = process.env.APP_BASE_URL || 'http://carwithdriver.lk';
 const emailFrom = process.env.EMAIL_FROM || 'hello@carwithdriver.lk';
 const brevoApiKey = process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY;
-const supportEmail = process.env.SUPPORT_EMAIL || emailFrom || 'support@example.com';
+const supportEmail = process.env.SUPPORT_EMAIL || emailFrom || 'support@carwithdriver.lk';
 const currencyCode = process.env.APP_CURRENCY || 'USD';
 
 const paragraphStyles =

@@ -48,3 +48,22 @@ export const login = async (payload) =>
     method: 'POST',
     body: JSON.stringify(payload),
   });
+
+export const verifyEmail = async (token) => {
+  const search = token ? `?token=${encodeURIComponent(token)}` : '';
+  return request(`/verify-email${search}`, {
+    method: 'GET',
+  });
+};
+
+export const requestPasswordReset = async (email) =>
+  request('/password/reset/request', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+
+export const resetPassword = async (payload) =>
+  request('/password/reset/confirm', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });

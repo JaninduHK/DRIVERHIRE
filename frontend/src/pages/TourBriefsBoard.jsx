@@ -436,7 +436,8 @@ const TourBriefsBoard = () => {
                   <input
                     type="number"
                     min="0"
-                    step="1"
+                    step="0.001"
+                    inputMode="decimal"
                     name="pricePerExtraKm"
                     value={offerForm.pricePerExtraKm}
                     onChange={handleOfferFieldChange}

@@ -1,5 +1,5 @@
 import { API_BASE_URL } from '../constants/api.js';
-import { getStoredToken } from './authToken.js';
+import { getStoredToken, handleSessionExpired } from './authToken.js';
 
 const BOOKINGS_BASE_URL = `${API_BASE_URL}/bookings`;
 
@@ -65,6 +65,9 @@ const request = async (path, options = {}) => {
 
   if (!response.ok) {
     const message = await parseError(response);
+    if (response.status === 401) {
+      handleSessionExpired(message);
+    }
     throw new Error(message);
   }
 

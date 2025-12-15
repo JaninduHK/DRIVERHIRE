@@ -1601,6 +1601,8 @@ const DriverProfilePanel = ({
   const [photoPreview, setPhotoPreview] = useState(profile?.profilePhoto || '');
   const [removePhoto, setRemovePhoto] = useState(false);
   const [clearLocation, setClearLocation] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [locationStatus, setLocationStatus] = useState('');
   const photoInputRef = useRef(null);
 
   useEffect(() => {
@@ -1609,6 +1611,8 @@ const DriverProfilePanel = ({
     setPhotoFile(null);
     setRemovePhoto(false);
     setClearLocation(false);
+    setLocating(false);
+    setLocationStatus('');
   }, [profile]);
 
   useEffect(() => {
@@ -1659,6 +1663,42 @@ const DriverProfilePanel = ({
       currentLongitude: '',
     }));
     setClearLocation(true);
+    setLocationStatus('Location cleared. Save to remove yourself from the live map.');
+  };
+
+  const handleUseLiveLocation = () => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      toast.error('Live location is not available in this browser.');
+      return;
+    }
+    setLocating(true);
+    setLocationStatus('Requesting your current position...');
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocating(false);
+        const { latitude, longitude } = position.coords || {};
+        if (typeof latitude === 'number' && typeof longitude === 'number') {
+          setFormState((prev) => ({
+            ...prev,
+            currentLatitude: latitude.toFixed(6),
+            currentLongitude: longitude.toFixed(6),
+          }));
+          setClearLocation(false);
+          setLocationStatus('Location captured from your device.');
+        } else {
+          setLocationStatus('We could not read coordinates from your device.');
+          toast.error('Unable to read coordinates from your device.');
+        }
+      },
+      (error) => {
+        setLocating(false);
+        setLocationStatus('Unable to fetch your location. Check permissions and try again.');
+        console.warn('Geolocation error', error);
+        toast.error('Please enable location access to use live location.');
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
   };
 
   const handleProfileSubmit = async (event) => {
@@ -1871,8 +1911,37 @@ const DriverProfilePanel = ({
                 </button>
               )}
             </div>
-            <div className="mt-4 grid gap-4 sm:grid-cols-3">
-              <div className="sm:col-span-3">
+            <div className="mt-4 space-y-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleUseLiveLocation}
+                  disabled={locating}
+                  className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {locating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Locating...
+                    </>
+                  ) : (
+                    <>
+                      <MapPin className="h-4 w-4" />
+                      Use my live location
+                    </>
+                  )}
+                </button>
+                {formState.currentLatitude && formState.currentLongitude ? (
+                  <span className="text-xs font-medium text-emerald-700">
+                    Captured {formState.currentLatitude}, {formState.currentLongitude}
+                  </span>
+                ) : (
+                  <span className="text-xs text-slate-500">
+                    We only save your base point—never continuous tracking.
+                  </span>
+                )}
+              </div>
+              <div>
                 <label
                   className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
                   htmlFor="driver-profile-location-label"
@@ -1885,50 +1954,15 @@ const DriverProfilePanel = ({
                   value={formState.currentLocationLabel}
                   onChange={handleFieldChange}
                   className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                  placeholder="e.g. Kandy city center"
+                  placeholder="e.g. Near Kandy city center"
                 />
-              </div>
-              <div>
-                <label
-                  className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
-                  htmlFor="driver-profile-latitude"
-                >
-                  Latitude
-                </label>
-                <input
-                  id="driver-profile-latitude"
-                  name="currentLatitude"
-                  type="number"
-                  step="0.0001"
-                  value={formState.currentLatitude}
-                  onChange={handleFieldChange}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                  placeholder="6.9271"
-                />
-              </div>
-              <div>
-                <label
-                  className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
-                  htmlFor="driver-profile-longitude"
-                >
-                  Longitude
-                </label>
-                <input
-                  id="driver-profile-longitude"
-                  name="currentLongitude"
-                  type="number"
-                  step="0.0001"
-                  value={formState.currentLongitude}
-                  onChange={handleFieldChange}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                  placeholder="79.8612"
-                />
-              </div>
-              <div className="sm:col-span-3">
-                <p className="text-xs text-slate-500">
+                <p className="mt-1 text-xs text-slate-500">
                   Coordinates power the homepage live map. Leave blank if you don&apos;t want to appear there.
                 </p>
               </div>
+              {locationStatus ? (
+                <p className="text-xs text-slate-500">{locationStatus}</p>
+              ) : null}
             </div>
           </div>
           <div>
