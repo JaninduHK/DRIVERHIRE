@@ -101,6 +101,18 @@ const summariseBooking = (booking) => {
   const gross = Number.isFinite(booking.totalPrice) ? booking.totalPrice : 0;
   const baseRate = clampRate(booking.commissionBaseRate);
   const rate = clampRate(booking.commissionRate);
+  const discountRate =
+    Number.isFinite(booking.commissionDiscountRate) && booking.commissionDiscountRate > 0
+      ? clampRate(booking.commissionDiscountRate)
+      : 0;
+  const discountAmount =
+    Number.isFinite(booking.discountAmount) && booking.discountAmount > 0
+      ? roundCurrency(booking.discountAmount)
+      : roundCurrency(gross * discountRate);
+  const payableTotal =
+    Number.isFinite(booking.payableTotal) && booking.payableTotal > 0
+      ? roundCurrency(booking.payableTotal)
+      : roundCurrency(Math.max(gross - discountAmount, 0));
   const commissionAmount =
     Number.isFinite(booking.commissionAmount) && booking.commissionAmount >= 0
       ? booking.commissionAmount
@@ -108,7 +120,7 @@ const summariseBooking = (booking) => {
   const driverEarnings =
     Number.isFinite(booking.driverEarnings) && booking.driverEarnings >= 0
       ? booking.driverEarnings
-      : roundCurrency(gross - commissionAmount);
+      : roundCurrency(payableTotal - commissionAmount);
 
   const travelerName =
     booking.traveler?.fullName ||
@@ -122,6 +134,8 @@ const summariseBooking = (booking) => {
     endDate: booking.endDate,
     status: booking.status,
     totalPrice: gross,
+    payableTotal,
+    discountAmount,
     commissionBaseRate: baseRate,
     commissionRate: rate,
     commissionDiscountRate:
@@ -167,7 +181,11 @@ export const getDriverEarningsSummary = async (req, res) => {
 
     for (const booking of bookings) {
       const rate = clampRate(booking.commissionRate);
-      const gross = Number.isFinite(booking.totalPrice) ? Math.max(booking.totalPrice, 0) : 0;
+      const gross = Number.isFinite(booking.payableTotal) && booking.payableTotal > 0
+        ? Math.max(booking.payableTotal, 0)
+        : Number.isFinite(booking.totalPrice)
+          ? Math.max(booking.totalPrice, 0)
+          : 0;
       const commissionAmount =
         Number.isFinite(booking.commissionAmount) && booking.commissionAmount >= 0
           ? booking.commissionAmount

@@ -272,6 +272,7 @@ const DriverCard = ({ driver }) => {
   const ratingLabel = driver.reviewScore
     ? `${driver.reviewScore.toFixed(1)} / 5`
     : 'No reviews yet';
+  const activeDiscount = driver.activeDiscount;
   return (
     <Link
       to={`/drivers/${driver.id}`}
@@ -310,6 +311,11 @@ const DriverCard = ({ driver }) => {
                   <BadgeCheck className="h-3.5 w-3.5" />
                   Verified
                 </span>
+                {activeDiscount?.discountPercent ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                    {activeDiscount.discountPercent}% off
+                  </span>
+                ) : null}
               </div>
               <div className="text-xs text-slate-500">
                 <MapPin className="mr-1 inline h-3 w-3 text-slate-400" />

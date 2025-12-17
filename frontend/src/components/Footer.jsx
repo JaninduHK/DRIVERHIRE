@@ -19,8 +19,8 @@ const driverLinks = [
 const helpLinks = [
   { label: 'Contact support', to: '/contact' },
   { label: 'Safety promise', to: '/about' },
-  { label: 'Privacy Policy', href: 'mailto:hello@carwithdriver.lk' },
-  { label: 'Terms & Conditions', href: 'https://wa.me/94763021483' },
+  { label: 'Privacy Policy', to: '/privacy-policy' },
+  { label: 'Terms & Conditions', to: '/terms' },
 ];
 
 const socialLinks = [

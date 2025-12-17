@@ -3,6 +3,7 @@ import Vehicle, { VEHICLE_STATUS, VEHICLE_AVAILABILITY_STATUS } from '../models/
 import { DRIVER_STATUS } from '../models/User.js';
 import Booking, { BOOKING_STATUS, DEFAULT_COMMISSION_RATE } from '../models/Booking.js';
 import Review, { REVIEW_STATUS } from '../models/Review.js';
+import CommissionDiscount from '../models/CommissionDiscount.js';
 import '../models/ChatConversation.js';
 import ChatMessage from '../models/ChatMessage.js';
 import {
@@ -69,6 +70,19 @@ const sanitizeVehicle = (vehicleDoc, extras = {}) => {
     : [];
 
   const { req, reviewSummary = {} } = extras;
+  const activeDiscount = extras.activeDiscount || null;
+  const discountRate =
+    typeof activeDiscount?.discountRate === 'number' ? Math.max(activeDiscount.discountRate, 0) : 0;
+  const discountPercent =
+    typeof activeDiscount?.discountPercent === 'number'
+      ? activeDiscount.discountPercent
+      : Math.round(discountRate * 100 * 100) / 100;
+  const discountAmountPerDay =
+    Number.isFinite(source.pricePerDay) && source.pricePerDay > 0
+      ? Math.round(source.pricePerDay * discountRate * 100) / 100
+      : null;
+  const discountedPricePerDay =
+    discountAmountPerDay !== null ? Math.max(source.pricePerDay - discountAmountPerDay, 0) : null;
 
   return {
     id: source._id ? source._id.toString() : source.id,
@@ -99,6 +113,22 @@ const sanitizeVehicle = (vehicleDoc, extras = {}) => {
         : [0, 0, 0, 0, 0],
       latestReviewAt: reviewSummary.latestReviewAt ?? null,
     },
+    activeDiscount:
+      activeDiscount && discountPercent > 0
+        ? {
+            id: activeDiscount.id || activeDiscount._id?.toString?.() || undefined,
+            name: activeDiscount.name,
+            description: activeDiscount.description,
+            discountRate,
+            discountPercent,
+            startDate: activeDiscount.startDate,
+            endDate: activeDiscount.endDate,
+            status: activeDiscount.status || 'active',
+            discountedPricePerDay,
+            discountAmountPerDay,
+          }
+        : null,
+    discountedPricePerDay,
   };
 };
 
@@ -123,6 +153,21 @@ const buildSortOption = (sortKey) => {
     default:
       return { createdAt: -1 };
   }
+};
+
+const findActiveCommissionDiscount = async (referenceDate = new Date()) => {
+  const target = referenceDate instanceof Date ? referenceDate : new Date(referenceDate);
+  if (Number.isNaN(target.getTime())) {
+    return null;
+  }
+  const discount = await CommissionDiscount.findOne({
+    active: true,
+    startDate: { $lte: target },
+    endDate: { $gte: target },
+  })
+    .sort({ discountRate: -1, startDate: -1 })
+    .lean();
+  return discount;
 };
 
 const normalizeDateInput = (value) => {
@@ -316,6 +361,7 @@ export const listVehicles = async (req, res) => {
 
   try {
     const sortOption = buildSortOption(sort);
+    const activeDiscount = await findActiveCommissionDiscount();
 
     const results = await Vehicle.find(filters)
       .sort(sortOption)
@@ -392,6 +438,7 @@ export const listVehicles = async (req, res) => {
       sanitizeVehicle(vehicle, {
         req,
         reviewSummary: reviewSummaryMap.get(vehicle._id.toString()),
+        activeDiscount,
       })
     );
 
@@ -416,6 +463,7 @@ export const getVehicleDetails = async (req, res) => {
   }
 
   try {
+    const activeDiscount = await findActiveCommissionDiscount();
     const vehicle = await Vehicle.findOne({
       _id: id,
       status: VEHICLE_STATUS.APPROVED,
@@ -439,6 +487,7 @@ export const getVehicleDetails = async (req, res) => {
       vehicle: sanitizeVehicle(vehicle, {
         req,
         reviewSummary: reviewSummaryMap.get(vehicle._id.toString()),
+        activeDiscount,
       }),
     });
   } catch (error) {
@@ -505,6 +554,24 @@ export const checkVehicleAvailability = async (req, res) => {
     const pricePerDay = Number.isFinite(vehicle.pricePerDay) ? vehicle.pricePerDay : null;
     const totalPrice =
       pricePerDay !== null ? Math.max(pricePerDay * totalDays, pricePerDay) : null;
+    const activeDiscount = await findActiveCommissionDiscount(startDate);
+    const discountRate =
+      activeDiscount && typeof activeDiscount.discountRate === 'number'
+        ? Math.max(activeDiscount.discountRate, 0)
+        : 0;
+    const discountPercent =
+      activeDiscount?.discountPercent ??
+      Math.round(Math.max(discountRate, 0) * 100 * 100) / 100;
+    const perDayDiscount =
+      pricePerDay !== null ? Math.round(pricePerDay * discountRate * 100) / 100 : null;
+    const discountedPricePerDay =
+      perDayDiscount !== null ? Math.max(pricePerDay - perDayDiscount, 0) : null;
+    const discountAmount =
+      totalPrice !== null ? Math.round(totalPrice * discountRate * 100) / 100 : null;
+    const payableTotal =
+      totalPrice !== null && discountAmount !== null
+        ? Math.max(totalPrice - discountAmount, 0)
+        : totalPrice;
 
     return res.json({
       available: true,
@@ -513,7 +580,23 @@ export const checkVehicleAvailability = async (req, res) => {
         endDate: endDate.toISOString(),
         totalDays,
         pricePerDay,
+        discountedPricePerDay,
         totalPrice,
+        payableTotal,
+        discount: activeDiscount
+          ? {
+              id: activeDiscount._id?.toString?.() || activeDiscount.id,
+              name: activeDiscount.name,
+              description: activeDiscount.description,
+              discountRate,
+              discountPercent,
+              amount: discountAmount,
+              payableTotal,
+              startDate: activeDiscount.startDate,
+              endDate: activeDiscount.endDate,
+              status: activeDiscount.status || 'active',
+            }
+          : null,
         paymentNote: 'Pay your driver directly on the first day of the trip.',
       },
     });

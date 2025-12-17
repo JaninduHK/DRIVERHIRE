@@ -8,6 +8,7 @@ import ChatConversation from '../models/ChatConversation.js';
 import ChatMessage from '../models/ChatMessage.js';
 import {
   sendDriverStatusEmail,
+  sendDriverProfileCompletionEmail,
   sendVehicleStatusEmail,
   sendBookingStatusUpdateEmail,
   sendDriverAdminMessageEmail,
@@ -65,10 +66,16 @@ const shapeBooking = (booking, req) => {
   const baseRate = Number.isFinite(booking.commissionBaseRate)
     ? booking.commissionBaseRate
     : booking.commissionRate;
+  const gross = Number.isFinite(booking.totalPrice) ? booking.totalPrice : 0;
   const discountRate =
     Number.isFinite(booking.commissionDiscountRate) && booking.commissionDiscountRate > 0
       ? booking.commissionDiscountRate
       : 0;
+  const discountAmount = Math.round(gross * discountRate * 100) / 100;
+  const payableTotal =
+    Number.isFinite(booking.payableTotal) && booking.payableTotal > 0
+      ? booking.payableTotal
+      : Math.max(gross - discountAmount, 0);
   const discountLabel = booking.commissionDiscountLabel || null;
   const discountId = booking.commissionDiscount
     ? toId(booking.commissionDiscount)
@@ -79,7 +86,9 @@ const shapeBooking = (booking, req) => {
     status: booking.status,
     startDate: booking.startDate,
     endDate: booking.endDate,
-    totalPrice: booking.totalPrice,
+    totalPrice: gross,
+    payableTotal,
+    discountAmount,
     totalDays: booking.totalDays,
     pricePerDay: booking.pricePerDay,
     commissionBaseRate: Number.isFinite(baseRate) ? baseRate : DEFAULT_COMMISSION_RATE,
@@ -291,9 +300,15 @@ export const updateDriverStatus = async (req, res) => {
       return res.status(400).json({ message: 'Invalid driver status' });
     }
 
+    const previousStatus = driver.driverStatus;
+    const now = new Date();
     driver.driverStatus = status;
-    driver.driverReviewedAt = new Date();
+    driver.driverReviewedAt = now;
     driver.driverReviewedBy = req.user.id;
+    if (status === DRIVER_STATUS.APPROVED && previousStatus !== DRIVER_STATUS.APPROVED) {
+      driver.driverApprovedAt = now;
+      driver.driverProfileTourCompletedAt = undefined;
+    }
     await driver.save();
 
     if (driver.email) {
@@ -301,6 +316,12 @@ export const updateDriverStatus = async (req, res) => {
         driver: { name: driver.name, email: driver.email },
         status,
       }).catch((error) => console.warn('Driver status email failed:', error));
+
+      if (status === DRIVER_STATUS.APPROVED && previousStatus !== DRIVER_STATUS.APPROVED) {
+        sendDriverProfileCompletionEmail({
+          driver: { name: driver.name, email: driver.email },
+        }).catch((error) => console.warn('Driver profile completion email failed:', error));
+      }
     }
 
     return res.json({ driver: driver.toJSON() });

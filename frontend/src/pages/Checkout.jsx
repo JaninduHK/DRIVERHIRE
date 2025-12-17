@@ -448,9 +448,41 @@ const Checkout = () => {
   const effectiveStartDate = offerState.offer?.startDate || bookingDates.start;
   const effectiveEndDate = offerState.offer?.endDate || bookingDates.end;
 
-  const pricePerDay = offerState.offer ? null : formatPrice(quote?.pricePerDay ?? vehicle?.pricePerDay);
-  const totalPriceValue = offerState.offer ? offerState.offer.totalPrice : quote?.totalPrice ?? null;
+  const pricePerDay = offerState.offer
+    ? null
+    : formatPrice(
+        quote?.discount?.discountedPricePerDay ??
+          quote?.pricePerDay ??
+          vehicle?.activeDiscount?.discountedPricePerDay ??
+          vehicle?.pricePerDay
+      );
+  const totalPriceValue = offerState.offer
+    ? offerState.offer.totalPrice
+    : quote?.totalPrice ?? bookingResult?.totalPrice ?? null;
+  const discountSource = quote?.discount || vehicle?.activeDiscount || null;
+  const discountPercent =
+    discountSource?.discountPercent ??
+    (typeof discountSource?.discountRate === 'number'
+      ? Math.round(discountSource.discountRate * 100 * 100) / 100
+      : null);
+  const discountAmountValue =
+    quote?.discount?.amount ??
+    bookingResult?.discountAmount ??
+    (typeof totalPriceValue === 'number' && typeof discountPercent === 'number'
+      ? Math.round(totalPriceValue * (discountPercent / 100) * 100) / 100
+      : null);
+  const payableTotalValue =
+    quote?.discount?.payableTotal ??
+    bookingResult?.payableTotal ??
+    (typeof totalPriceValue === 'number' && typeof discountAmountValue === 'number'
+      ? Math.max(totalPriceValue - discountAmountValue, 0)
+      : totalPriceValue);
   const totalPrice = formatPrice(totalPriceValue);
+  const discountAmount =
+    typeof discountAmountValue === 'number' && discountAmountValue > 0
+      ? formatPrice(discountAmountValue)
+      : null;
+  const payableTotal = formatPrice(payableTotalValue);
 
   const tripDateRange = useMemo(
     () => formatDateRange(effectiveStartDate, effectiveEndDate),
@@ -597,7 +629,9 @@ const Checkout = () => {
               <ul className="space-y-1 text-emerald-700">
                 {tripDateRange ? <li>Trip dates: {tripDateRange}</li> : null}
                 {totalDaysLabel ? <li>Trip length: {totalDaysLabel}</li> : null}
-                {totalPrice ? <li>Total due to driver: {totalPrice}</li> : null}
+                {totalPrice ? <li>Base total: {totalPrice}</li> : null}
+                {discountAmount ? <li>Discount: -{discountAmount}</li> : null}
+                {payableTotal ? <li>Total due to driver: {payableTotal}</li> : null}
               </ul>
               <div className="flex flex-wrap gap-3 pt-2">
                 <Link
@@ -786,7 +820,19 @@ const Checkout = () => {
                 <div className="pl-6 text-xs text-slate-500">Rates will be confirmed by the driver.</div>
               )}
               {totalPrice ? (
-                <div className="pl-6 text-xs font-semibold text-slate-600">Estimated total: {totalPrice}</div>
+                <div className="pl-6 text-xs font-semibold text-slate-600">
+                  Estimated total: {totalPrice}
+                  {discountAmount ? (
+                    <div className="text-xs font-medium text-emerald-700">
+                      Discount: -{discountAmount}
+                    </div>
+                  ) : null}
+                  {payableTotal ? (
+                    <div className="text-sm font-semibold text-emerald-700">
+                      You pay driver: {payableTotal}
+                    </div>
+                  ) : null}
+                </div>
               ) : null}
               {offerExtras ? (
                 <>

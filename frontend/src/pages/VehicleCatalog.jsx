@@ -414,7 +414,16 @@ const VehicleCatalog = () => {
               const coverImage =
                 (Array.isArray(vehicle.images) && vehicle.images[0]) ||
                 'https://opel.autogermany.com.sg/choose-your-vehicle-test-drive.jpg.webp';
-              const price = formatPrice(vehicle.pricePerDay);
+              const activeDiscount = vehicle.activeDiscount;
+              const price = formatPrice(
+                typeof activeDiscount?.discountedPricePerDay === 'number'
+                  ? activeDiscount.discountedPricePerDay
+                  : vehicle.pricePerDay
+              );
+              const originalPrice =
+                activeDiscount && typeof vehicle.pricePerDay === 'number'
+                  ? formatPrice(vehicle.pricePerDay)
+                  : null;
               const reviewSummary = vehicle.reviewSummary || {};
               const reviewCount = reviewSummary.totalReviews ?? 0;
               const hasReviews = reviewCount > 0 && typeof reviewSummary.averageRating === 'number';
@@ -440,11 +449,27 @@ const VehicleCatalog = () => {
                       <h3 className="text-lg font-semibold text-slate-900">{vehicle.model}</h3>
                       <div className="flex items-center gap-2 text-sm text-slate-600">
                         <span className="font-medium text-emerald-700">
-                          {price ? `From ${price}` : 'Rate on request'}
+                          {price ? (
+                            <span className="flex items-center gap-2">
+                              <span>From {price}</span>
+                              {originalPrice ? (
+                                <span className="text-xs font-semibold text-slate-400 line-through">
+                                  {originalPrice}
+                                </span>
+                              ) : null}
+                            </span>
+                          ) : (
+                            'Rate on request'
+                          )}
                         </span>
                         <span>•</span>
                         <span>{vehicle.seats ? `${vehicle.seats} Seats` : 'Seats on request'}</span>
                       </div>
+                      {activeDiscount?.discountPercent ? (
+                        <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                          Save {activeDiscount.discountPercent}% this month
+                        </div>
+                      ) : null}
                       <div className="flex items-center gap-2 text-sm text-slate-600">
                         {hasReviews ? (
                           <>

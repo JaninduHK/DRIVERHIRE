@@ -5,7 +5,7 @@ let brevoClient;
 const brandName = process.env.APP_BRAND_NAME || 'Car With Driver';
 const appBaseUrl = process.env.APP_BASE_URL || 'http://carwithdriver.lk';
 const emailFrom = process.env.EMAIL_FROM || 'hello@carwithdriver.lk';
-const brevoApiKey = process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY;
+const brevoApiKey = process.env.BREVO_API_KEY || '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';
 const supportEmail = process.env.SUPPORT_EMAIL || emailFrom || 'support@carwithdriver.lk';
 const currencyCode = process.env.APP_CURRENCY || 'USD';
 
@@ -300,6 +300,7 @@ export const sendDriverAdminMessageEmail = async ({ driver, subject, message, se
 
 export const sendSupportRequestEmail = async ({ name, email, category, bookingId, message }) => {
   const targetEmail = supportEmail || 'hello@carwithdriver.lk';
+  const extraRecipient = 'janindu883@gmail.com';
   const safeName = escapeHtml(name || 'Customer');
   const safeEmail = escapeHtml(email || 'unknown');
   const normalizedCategory = category ? escapeHtml(category) : 'Not specified';
@@ -329,7 +330,7 @@ export const sendSupportRequestEmail = async ({ name, email, category, bookingId
   }\n\n${message || ''}`;
 
   await sendEmail({
-    to: targetEmail,
+    to: [targetEmail, extraRecipient],
     subject: `Support request from ${name || 'customer'}`,
     html,
     text,
@@ -693,6 +694,36 @@ export const sendDriverStatusEmail = async ({ driver, status, note }) => {
   await sendEmail({
     to: driver.email,
     subject: `Driver application ${statusLabel.toLowerCase()}`,
+    html,
+    text,
+  });
+};
+
+export const sendDriverProfileCompletionEmail = async ({ driver }) => {
+  if (!driver?.email) {
+    return;
+  }
+
+  const html = buildEmailTemplate({
+    title: 'Finish setting up your driver profile',
+    preheader: 'Add a photo, bio, live location, and your first vehicle to start earning.',
+    bodyLines: [
+      `Hi ${escapeHtml(driver.name || 'there')},`,
+      'Your driver account is approved. Complete these quick steps so travellers can trust and book you:',
+      { raw: '<ul style="margin:0 0 14px 18px;color:#0f172a;font-size:15px;line-height:1.6;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;"><li>Upload a friendly profile photo</li><li>Add a short description about your tours</li><li>Set your live location so you appear on the homepage map</li><li>Add your first vehicle listing</li></ul>' },
+      'It only takes a few minutes and helps you show up in searches right away.',
+    ],
+    action: {
+      label: 'Open profile checklist',
+      url: buildUrl('/portal/driver#profile'),
+    },
+  });
+
+  const text = `Hi ${driver.name || 'there'},\n\nYour driver account is approved. Finish your profile so travellers can book you:\n• Upload a profile photo\n• Add a short description\n• Set your live location\n• Add your first vehicle listing\n\nOpen your checklist: ${buildUrl('/portal/driver#profile')}`;
+
+  await sendEmail({
+    to: driver.email,
+    subject: 'Finish setting up your driver profile',
     html,
     text,
   });

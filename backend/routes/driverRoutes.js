@@ -14,6 +14,7 @@ import {
   createVehicleAvailability,
   updateVehicleAvailability,
   deleteVehicleAvailability,
+  completeDriverProfileTour,
 } from '../controllers/driverController.js';
 import {
   getDriverEarningsHistory,
@@ -80,6 +81,7 @@ const slipUpload = multer({
 });
 
 router.get('/overview', getDriverOverview);
+router.post('/onboarding/profile-tour/complete', completeDriverProfileTour);
 router.get('/vehicles', getDriverVehicles);
 router.post(
   '/vehicles',

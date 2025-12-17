@@ -264,8 +264,50 @@ const buildLiveDriverPins = (drivers = []) => {
   return buildCityPinsFromAddress(drivers);
 };
 
+const spreadOverlappingPins = (pins = []) => {
+  const clusters = pins.reduce((acc, pin) => {
+    const key = `${pin.style.top}|${pin.style.left}`;
+    if (!acc[key]) {
+      acc[key] = [];
+    }
+    acc[key].push(pin);
+    return acc;
+  }, {});
+
+  return pins.map((pin) => {
+    const key = `${pin.style.top}|${pin.style.left}`;
+    const cluster = clusters[key];
+
+    if (!cluster || cluster.length <= 1) {
+      return pin;
+    }
+
+    const index = cluster.indexOf(pin);
+    const angle = (index / cluster.length) * 2 * Math.PI;
+    const radius = 10 + cluster.length * 2;
+    const offset = {
+      x: Math.round(Math.cos(angle) * radius * 10) / 10,
+      y: Math.round(Math.sin(angle) * radius * 10) / 10,
+    };
+
+    return {
+      ...pin,
+      offset,
+      driverCount: Math.max(pin.driverCount || 1, cluster.length),
+    };
+  });
+};
+
 const LiveDriversMapCard = ({ drivers, loading, error, onReload }) => {
-  const pins = useMemo(() => buildLiveDriverPins(drivers), [drivers]);
+  const [mapScale, setMapScale] = useState(1);
+  const pins = useMemo(
+    () => spreadOverlappingPins(buildLiveDriverPins(drivers)),
+    [drivers]
+  );
+
+  const zoomIn = () => setMapScale((prev) => clamp(prev + 0.2, 0.85, 2.2));
+  const zoomOut = () => setMapScale((prev) => clamp(prev - 0.2, 0.85, 2.2));
+  const resetZoom = () => setMapScale(1);
 
   const renderMapContent = () => {
     if (loading) {
@@ -294,47 +336,89 @@ const LiveDriversMapCard = ({ drivers, loading, error, onReload }) => {
       );
     }
 
-    return pins.map((pin) => (
-      <Link
-        key={pin.id}
-        to={`/drivers/${pin.id}`}
-        className="group absolute z-10 -translate-x-1/2 -translate-y-1/2 transition hover:scale-105"
-        style={pin.style}
-      >
-        <div className="flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-900 shadow-lg shadow-emerald-900/40 backdrop-blur-sm">
-          <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full border border-white/80 bg-emerald-500/10">
-            {pin.avatar ? (
-              <img src={pin.avatar} alt={pin.name} className="h-full w-full object-cover" />
-            ) : (
-              <UserRoundCheck className="h-4 w-4 text-emerald-600" />
-            )}
-          </span>
-          <span className="flex flex-col text-left leading-tight">
-            <span>{pin.name.split(' ')[0]}</span>
-            <span className="text-[0.65rem] font-medium text-slate-500">{pin.label}</span>
-          </span>
-        </div>
-      </Link>
-    ));
+    return pins.map((pin) => {
+      const hasOffset =
+        pin.offset && typeof pin.offset.x === 'number' && typeof pin.offset.y === 'number';
+      const transform = hasOffset
+        ? `translate(-50%, -50%) translate(${pin.offset.x}px, ${pin.offset.y}px)`
+        : 'translate(-50%, -50%)';
+      const locationLabel =
+        pin.driverCount > 1 ? `${pin.driverCount} drivers · ${pin.label}` : pin.label;
+
+      return (
+        <Link
+          key={pin.id}
+          to={`/drivers/${pin.id}`}
+          className="group absolute z-10 transition hover:scale-105"
+          style={{ ...pin.style, transform }}
+        >
+          <div className="flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-900 shadow-lg shadow-emerald-900/40 backdrop-blur-sm">
+            <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full border border-white/80 bg-emerald-500/10">
+              {pin.avatar ? (
+                <img src={pin.avatar} alt={pin.name} className="h-full w-full object-cover" />
+              ) : (
+                <UserRoundCheck className="h-4 w-4 text-emerald-600" />
+              )}
+            </span>
+            <span className="flex flex-col text-left leading-tight">
+              <span>{pin.name.split(' ')[0]}</span>
+              <span className="text-[0.65rem] font-medium text-slate-500">{locationLabel}</span>
+            </span>
+          </div>
+        </Link>
+      );
+    });
   };
 
   return (
     <div className="relative mx-auto w-full max-w-[420px] rounded-[30px] border border-white/60 bg-white/80 shadow-2xl shadow-emerald-200/60 backdrop-blur lg:max-w-[460px]">
       <div className="absolute inset-0 rounded-[30px] bg-gradient-to-tr from-emerald-300/20 to-transparent blur-3xl" />
-      <div className="relative rounded-[30px] overflow-hidden">
-        <div className="absolute left-0 top-0 z-20 rounded-br-2xl bg-slate-950/85 px-4 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-emerald-200 shadow-lg shadow-black/30">
+      <div className="relative overflow-hidden rounded-[30px]">
+        <div className="absolute left-0 top-0 z-30 rounded-br-2xl bg-slate-950/85 px-4 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-emerald-200 shadow-lg shadow-black/30">
           Live driver map ·{' '}
           <span className="text-white">{pins.length || (loading ? '—' : 0)} live pins</span>
         </div>
+        <div className="absolute right-3 top-3 z-30 flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={zoomIn}
+            className="rounded-full bg-white/90 px-3 py-2 text-sm font-bold text-slate-900 shadow hover:bg-white"
+            aria-label="Zoom in on live map"
+          >
+            +
+          </button>
+          <button
+            type="button"
+            onClick={zoomOut}
+            className="rounded-full bg-white/90 px-3 py-2 text-sm font-bold text-slate-900 shadow hover:bg-white"
+            aria-label="Zoom out on live map"
+          >
+            -
+          </button>
+          <button
+            type="button"
+            onClick={resetZoom}
+            className="rounded-full bg-slate-900/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-100 shadow hover:bg-slate-900"
+          >
+            Reset
+          </button>
+        </div>
         <div className="relative h-[600px] w-full overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950">
-          <img
-            src={sriLankaTouristMap}
-            alt="Sri Lanka tourist map"
-            className="absolute inset-0 h-full w-full object-cover object-center brightness-95 contrast-110 saturate-120"
-            loading="lazy"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/45 via-slate-900/15 to-emerald-900/40" />
-          {renderMapContent()}
+          <div className="absolute inset-0">
+            <div
+              className="relative h-full w-full transition-transform duration-300 ease-out"
+              style={{ transform: `scale(${mapScale})`, transformOrigin: '50% 50%' }}
+            >
+              <img
+                src={sriLankaTouristMap}
+                alt="Sri Lanka tourist map"
+                className="absolute inset-0 h-full w-full object-cover object-center brightness-95 contrast-110 saturate-120"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-slate-950/45 via-slate-900/15 to-emerald-900/40" />
+              {renderMapContent()}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -633,7 +717,16 @@ const HomePage = () => {
             <div className="grid gap-6 md:grid-cols-3">
               {featuredVehicles.map((vehicle) => {
                 const image = getVehicleImage(vehicle);
-                const dailyRate = formatCurrency(vehicle.pricePerDay) || 'Custom quote';
+                const discount = vehicle.activeDiscount;
+                const dailyRate = formatCurrency(
+                  typeof discount?.discountedPricePerDay === 'number'
+                    ? discount.discountedPricePerDay
+                    : vehicle.pricePerDay
+                ) || 'Custom quote';
+                const originalRate =
+                  discount && typeof vehicle.pricePerDay === 'number'
+                    ? formatCurrency(vehicle.pricePerDay)
+                    : null;
                 const seatLabel = vehicle.seats ? `${vehicle.seats} seats` : 'Seats on request';
                 const driverName = vehicle.driver?.name ?? 'Approved driver';
 
@@ -678,7 +771,19 @@ const HomePage = () => {
                       <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-4">
                         <div>
                           <p className="text-xs uppercase tracking-wide text-slate-400">Average rate</p>
-                          <p className="text-sm font-semibold text-slate-900">{dailyRate}</p>
+                          <p className="text-sm font-semibold text-slate-900">
+                            {dailyRate}
+                            {originalRate ? (
+                              <span className="ml-2 text-xs font-semibold text-slate-400 line-through">
+                                {originalRate}
+                              </span>
+                            ) : null}
+                          </p>
+                          {discount?.discountPercent ? (
+                            <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                              Save {discount.discountPercent}%
+                            </p>
+                          ) : null}
                         </div>
                         <p className="text-xs font-medium text-slate-500">By {driverName}</p>
                       </div>

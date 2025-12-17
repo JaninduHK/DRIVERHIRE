@@ -82,7 +82,7 @@ const serializeDriverVehicle = (vehicle, req) => {
 export const getDriverOverview = async (req, res) => {
   try {
     const driver = await User.findById(req.user.id).select(
-      'name email contactNumber address description tripAdvisor driverStatus createdAt profilePhoto driverLocation'
+      'name email contactNumber address description tripAdvisor driverStatus createdAt profilePhoto driverLocation driverApprovedAt driverProfileTourCompletedAt driverReviewedAt'
     );
 
     if (!driver) {
@@ -98,6 +98,12 @@ export const getDriverOverview = async (req, res) => {
       profile.profilePhoto = buildAssetUrl(profile.profilePhoto, req);
     }
 
+    const onboarding = {
+      profileTourCompletedAt: driver.driverProfileTourCompletedAt || null,
+      showProfileTour: !driver.driverProfileTourCompletedAt,
+      approvedAt: driver.driverApprovedAt || driver.driverReviewedAt || null,
+    };
+
     const activity = {
       totalTrips: 0,
       upcomingTrips: 0,
@@ -105,7 +111,7 @@ export const getDriverOverview = async (req, res) => {
       lastUpdated: new Date(),
     };
 
-    return res.json({ profile, activity });
+    return res.json({ profile, activity, onboarding });
   } catch (error) {
     console.error('Driver overview error:', error);
     return res.status(500).json({ message: 'Unable to load driver dashboard' });
@@ -479,5 +485,29 @@ export const updateDriverVehicle = async (req, res) => {
   } catch (error) {
     console.error('Update driver vehicle error:', error);
     return res.status(500).json({ message: 'Unable to update vehicle' });
+  }
+};
+
+export const completeDriverProfileTour = async (req, res) => {
+  try {
+    const driver = await User.findById(req.user.id);
+
+    if (!driver) {
+      return res.status(404).json({ message: 'Driver not found' });
+    }
+
+    if (driver.driverStatus !== DRIVER_STATUS.APPROVED) {
+      return res.status(403).json({ message: 'Driver application pending approval' });
+    }
+
+    driver.driverProfileTourCompletedAt = new Date();
+    await driver.save();
+
+    return res.json({
+      completedAt: driver.driverProfileTourCompletedAt,
+    });
+  } catch (error) {
+    console.error('Complete driver profile tour error:', error);
+    return res.status(500).json({ message: 'Unable to update onboarding status' });
   }
 };

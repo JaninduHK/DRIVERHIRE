@@ -85,6 +85,8 @@ const userSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
+    driverApprovedAt: Date,
+    driverProfileTourCompletedAt: Date,
     profilePhoto: {
       type: String,
       trim: true,

@@ -451,7 +451,16 @@ const VehicleDetails = () => {
     // The guard above ensures we only get here on unexpected state.
   }
 
-  const priceLabel = formatPrice(vehicle.pricePerDay);
+  const activeDiscount = vehicle?.activeDiscount;
+  const pricePerDayValue =
+    typeof activeDiscount?.discountedPricePerDay === 'number'
+      ? activeDiscount.discountedPricePerDay
+      : vehicle.pricePerDay;
+  const priceLabel = formatPrice(pricePerDayValue);
+  const originalPriceLabel =
+    activeDiscount && typeof vehicle.pricePerDay === 'number'
+      ? formatPrice(vehicle.pricePerDay)
+      : null;
   const driverAddress = vehicle.driver?.address;
   const locationLabel =
     typeof driverAddress === 'string' && driverAddress.trim()
@@ -465,6 +474,21 @@ const VehicleDetails = () => {
     ? `Member since ${formatDate(vehicle.driver.createdAt)}`
     : 'Member since —';
   const firstName = driverName.split(' ')[0] || driverName;
+  const quoteDiscount = availability.quote?.discount;
+  const quoteTotalValue = availability.quote?.totalPrice ?? null;
+  const quotePayableValue = availability.quote?.payableTotal ?? quoteTotalValue;
+  const quoteDiscountAmount =
+    typeof quoteDiscount?.amount === 'number'
+      ? quoteDiscount.amount
+      : quoteTotalValue && typeof quoteDiscount?.discountRate === 'number'
+        ? quoteTotalValue * quoteDiscount.discountRate
+        : null;
+  const quotePayableLabel =
+    typeof quotePayableValue === 'number' ? formatPrice(quotePayableValue) : null;
+  const quoteDiscountLabel =
+    typeof quoteDiscountAmount === 'number' ? formatPrice(quoteDiscountAmount) : null;
+  const quoteTotalLabel =
+    typeof quoteTotalValue === 'number' ? formatPrice(quoteTotalValue) : null;
 
   return (
     <section className="space-y-10 py-6">
@@ -541,9 +565,21 @@ const VehicleDetails = () => {
                 <div className="mt-1 text-3xl font-semibold text-slate-900">
                   {priceLabel ?? 'Request quote'}
                   {priceLabel ? (
-                    <span className="text-base font-medium text-slate-500"> /day</span>
+                    <>
+                      <span className="text-base font-medium text-slate-500"> /day</span>
+                      {originalPriceLabel ? (
+                        <span className="ml-2 text-base font-semibold text-rose-400 line-through">
+                          {originalPriceLabel}
+                        </span>
+                      ) : null}
+                    </>
                   ) : null}
                 </div>
+                {activeDiscount?.discountPercent ? (
+                  <p className="mt-1 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                    Save {activeDiscount.discountPercent}% on this vehicle
+                  </p>
+                ) : null}
               </div>
               <CalendarClock className="h-6 w-6 text-slate-400" />
             </div>
@@ -606,11 +642,21 @@ const VehicleDetails = () => {
                 {typeof availability.quote.pricePerDay === 'number' ? (
                   <p>
                     {formatPrice(availability.quote.pricePerDay)} per day, estimated total{' '}
-                    <span className="font-semibold">{formatPrice(availability.quote.totalPrice)}</span>
+                    <span className="font-semibold">{quoteTotalLabel}</span>
                   </p>
                 ) : (
                   <p>Pricing will be confirmed directly with your driver.</p>
                 )}
+                {quoteDiscountLabel ? (
+                  <p>
+                    Discount applied: <span className="font-semibold">-{quoteDiscountLabel}</span>
+                  </p>
+                ) : null}
+                {quotePayableLabel ? (
+                  <p className="text-sm font-semibold text-emerald-800">
+                    Pay your driver: {quotePayableLabel}
+                  </p>
+                ) : null}
                 <p className="text-[11px] text-emerald-600/80">{availability.quote.paymentNote}</p>
               </div>
             ) : null}

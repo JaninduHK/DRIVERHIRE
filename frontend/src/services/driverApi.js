@@ -161,3 +161,8 @@ export const uploadCommissionSlip = (commissionId, payload) => {
     body,
   });
 };
+
+export const completeDriverProfileTour = () =>
+  request('/onboarding/profile-tour/complete', {
+    method: 'POST',
+  });

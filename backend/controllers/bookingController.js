@@ -104,10 +104,18 @@ const shapeBooking = (booking, review, req) => {
     Number.isFinite(booking.commissionAmount) && booking.commissionAmount >= 0
       ? booking.commissionAmount
       : Math.round(gross * rate * 100) / 100;
+  const discountAmount =
+    Number.isFinite(booking.discountAmount) && booking.discountAmount > 0
+      ? Math.round(booking.discountAmount * 100) / 100
+      : Math.round(gross * discountRate * 100) / 100;
+  const payableTotal =
+    Number.isFinite(booking.payableTotal) && booking.payableTotal > 0
+      ? booking.payableTotal
+      : Math.max(gross - discountAmount, 0);
   const driverEarnings =
     Number.isFinite(booking.driverEarnings) && booking.driverEarnings >= 0
       ? booking.driverEarnings
-      : Math.round((gross - commissionAmount) * 100) / 100;
+      : Math.round((payableTotal - commissionAmount) * 100) / 100;
   const discountRate =
     Number.isFinite(booking.commissionDiscountRate) && booking.commissionDiscountRate > 0
       ? booking.commissionDiscountRate
@@ -122,7 +130,9 @@ const shapeBooking = (booking, review, req) => {
     startDate: booking.startDate,
     endDate: booking.endDate,
     status: booking.status,
-    totalPrice: booking.totalPrice,
+    totalPrice: gross,
+    payableTotal,
+    discountAmount,
     totalDays: booking.totalDays,
     pricePerDay: booking.pricePerDay,
     commissionBaseRate: baseRate,

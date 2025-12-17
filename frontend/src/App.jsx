@@ -19,6 +19,8 @@ import DriverDetails from './pages/DriverDetails.jsx';
 import AboutPage from './pages/AboutPage.jsx';
 import ContactPage from './pages/ContactPage.jsx';
 import TripCostCalculator from './pages/TripCostCalculator.jsx';
+import PrivacyPolicy from './pages/PrivacyPolicy.jsx';
+import TermsConditions from './pages/TermsConditions.jsx';
 import { trackPageView } from './lib/analytics.js';
 import Footer from './components/Footer.jsx';
 import ForgotPassword from './pages/ForgotPassword.jsx';
@@ -69,6 +71,8 @@ const App = () => {
           <Route path="/about" element={<AboutPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/trip-cost-calculator" element={<TripCostCalculator />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsConditions />} />
         </Routes>
       </main>
       <Footer />

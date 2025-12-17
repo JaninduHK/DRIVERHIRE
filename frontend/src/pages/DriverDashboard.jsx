@@ -1,6 +1,6 @@
 // /src/pages/DriverDashboard.jsx
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useDropzone } from 'react-dropzone';
 import {
@@ -36,6 +36,7 @@ import {
   fetchDriverEarningsSummary,
   fetchDriverEarningsHistory,
   uploadCommissionSlip,
+  completeDriverProfileTour,
 } from '../services/driverApi.js';
 import {
   updateProfile as updateProfileRequest,
@@ -46,14 +47,25 @@ import { VEHICLE_FEATURES, getVehicleFeatureLabels } from '../constants/vehicleF
 import { clearStoredToken } from '../services/authToken.js';
 
 const NAV_ITEMS = [
-  { id: 'overview', label: 'Overview', icon: User2 },
-  { id: 'vehicles', label: 'Vehicles', icon: Car },
-  { id: 'availability', label: 'Availability', icon: CalendarCheck },
-  { id: 'bookings', label: 'Bookings', icon: CalendarDays },
-  { id: 'earnings', label: 'Earnings', icon: DollarSign },
-  { id: 'messages', label: 'Messages', icon: MessageCircle },
-  { id: 'profile', label: 'Profile', icon: ClipboardList },
+  { id: 'overview', label: 'Overview', icon: User2, hash: 'overview' },
+  { id: 'vehicles', label: 'My Vehicles', icon: Car, hash: 'vehicles' },
+  { id: 'bookings', label: 'My Bookings', icon: CalendarDays, hash: 'bookings' },
+  { id: 'messages', label: 'Messages', icon: MessageCircle, href: '/portal/driver/messages' },
+  { id: 'earnings', label: 'My Earnings', icon: DollarSign, hash: 'earnings' },
+  { id: 'availability', label: 'My Availability', icon: CalendarCheck, hash: 'availability' },
+  { id: 'profile', label: 'My Profile', icon: ClipboardList, hash: 'profile' },
 ];
+
+const HASHABLE_TABS = ['overview', 'vehicles', 'bookings', 'earnings', 'availability', 'profile'];
+const HASH_TARGETS = [...HASHABLE_TABS, 'messages'];
+
+const parseTabFromHash = (hash = '') => {
+  const normalized = hash.startsWith('#') ? hash.slice(1) : hash;
+  if (HASH_TARGETS.includes(normalized)) {
+    return normalized;
+  }
+  return 'overview';
+};
 
 const VEHICLE_STATUS_STYLES = {
   pending: 'bg-amber-100 text-amber-700',
@@ -113,6 +125,44 @@ const getCurrentMonthValue = () => {
   return `${year}-${month}`;
 };
 
+const buildProfileTourSteps = (profile, vehicles) => {
+  const hasLocation =
+    typeof profile?.driverLocation?.latitude === 'number' &&
+    typeof profile?.driverLocation?.longitude === 'number';
+  const hasVehicle = Array.isArray(vehicles) && vehicles.length > 0;
+
+  return [
+    {
+      id: 'photo',
+      label: 'Upload a profile photo',
+      description: 'Add a clear headshot so travellers can see who will drive them.',
+      tab: 'profile',
+      done: Boolean(profile?.profilePhoto),
+    },
+    {
+      id: 'description',
+      label: 'Add a driver description',
+      description: 'Share your experience, languages, and tour style.',
+      tab: 'profile',
+      done: Boolean(profile?.description && profile.description.trim()),
+    },
+    {
+      id: 'location',
+      label: 'Set your live location',
+      description: 'Place your pin on the homepage live map.',
+      tab: 'profile',
+      done: hasLocation,
+    },
+    {
+      id: 'vehicle',
+      label: 'Add your first vehicle',
+      description: 'Publish a vehicle so travellers can request quotes.',
+      tab: 'vehicles',
+      done: hasVehicle,
+    },
+  ];
+};
+
 // Small helper to guarantee we never stay stuck in loading
 const withTimeout = (promise, ms = 15000, msg = 'Request timed out') => {
   let id;
@@ -124,7 +174,8 @@ const withTimeout = (promise, ms = 15000, msg = 'Request timed out') => {
 
 const DriverDashboard = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('overview');
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState(() => parseTabFromHash(location.hash));
 
   const [overview, setOverview] = useState(null);
   const [overviewLoading, setOverviewLoading] = useState(true);
@@ -148,8 +199,11 @@ const DriverDashboard = () => {
   }));
   const [profileSaving, setProfileSaving] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
+  const [profileTourCompletedAt, setProfileTourCompletedAt] = useState(null);
+  const [profileTourSubmitting, setProfileTourSubmitting] = useState(false);
 
   const isMountedRef = useRef(false);
+  const profileTourAutoCompleteRef = useRef(false);
   useEffect(() => {
     isMountedRef.current = true;
     return () => { isMountedRef.current = false; };
@@ -318,6 +372,18 @@ const DriverDashboard = () => {
   }, [refreshVehicles, loadOverview]);
 
   useEffect(() => {
+    if (!overview) {
+      setProfileTourCompletedAt(null);
+      return;
+    }
+    const completionDate =
+      overview?.onboarding?.profileTourCompletedAt ||
+      overview?.profile?.driverProfileTourCompletedAt ||
+      null;
+    setProfileTourCompletedAt(completionDate || null);
+  }, [overview]);
+
+  useEffect(() => {
     if (activeTab === 'bookings') {
       loadDriverBookings();
     }
@@ -371,6 +437,37 @@ const DriverDashboard = () => {
     },
     [driverEarningsState.selectedMonth, loadDriverEarnings]
   );
+
+  const handleProfileTourCompletion = useCallback(async () => {
+    if (profileTourCompletedAt || profileTourSubmitting) {
+      return;
+    }
+    setProfileTourSubmitting(true);
+    try {
+      const response = await completeDriverProfileTour();
+      const completedAt = response?.completedAt || new Date().toISOString();
+      setProfileTourCompletedAt(completedAt);
+      setOverview((prev) =>
+        prev
+          ? {
+              ...prev,
+              onboarding: {
+                ...(prev.onboarding || {}),
+                profileTourCompletedAt: completedAt,
+                showProfileTour: false,
+              },
+              profile: prev.profile
+                ? { ...prev.profile, driverProfileTourCompletedAt: completedAt }
+                : prev.profile,
+            }
+          : prev
+      );
+    } catch (error) {
+      toast.error(error?.message || 'Unable to update your onboarding checklist.');
+    } finally {
+      setProfileTourSubmitting(false);
+    }
+  }, [profileTourCompletedAt, profileTourSubmitting, setOverview, completeDriverProfileTour]);
 
   const handleVehicleSubmit = async (formPayload) => {
     try {
@@ -428,6 +525,30 @@ const DriverDashboard = () => {
     }
   };
 
+  const scrollToTab = useCallback((tabId) => {
+    if (!tabId) {
+      return;
+    }
+    requestAnimationFrame(() => {
+      const element = document.getElementById(tabId);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    const targetTab = parseTabFromHash(location.hash);
+    if (targetTab === 'messages') {
+      navigate('/portal/driver/messages');
+      return;
+    }
+    if (targetTab !== activeTab) {
+      setActiveTab(targetTab);
+    }
+    scrollToTab(targetTab);
+  }, [location.hash, navigate, activeTab, scrollToTab]);
+
   const handleLogout = useCallback(() => {
     clearStoredToken();
     toast.success('You have been logged out.');
@@ -468,12 +589,63 @@ const DriverDashboard = () => {
 
   const { profile, activity } = overview ?? {};
 
-  const handleNavSelect = (id) => {
-    if (id === 'messages') {
-      navigate('/portal/driver/messages');
+  const profileTourSteps = useMemo(
+    () => buildProfileTourSteps(profile, vehicles),
+    [profile, vehicles]
+  );
+  const profileTourNextStep = useMemo(
+    () =>
+      profileTourSteps.length > 0
+        ? profileTourSteps.find((step) => !step.done) ||
+          profileTourSteps[profileTourSteps.length - 1]
+        : null,
+    [profileTourSteps]
+  );
+  const profileTourComplete = useMemo(
+    () => profileTourSteps.length > 0 && profileTourSteps.every((step) => step.done),
+    [profileTourSteps]
+  );
+  const shouldShowProfileTour =
+    !profileTourCompletedAt && (overview?.onboarding?.showProfileTour ?? true);
+
+  const goToTab = useCallback(
+    (tabId) => {
+      if (!tabId) {
+        return;
+      }
+      if (tabId === 'messages') {
+        navigate('/portal/driver/messages');
+        return;
+      }
+      setActiveTab(tabId);
+      navigate(`#${tabId}`);
+      scrollToTab(tabId);
+    },
+    [navigate, scrollToTab]
+  );
+
+  useEffect(() => {
+    if (!profileTourComplete) {
+      profileTourAutoCompleteRef.current = false;
+    }
+  }, [profileTourComplete]);
+
+  useEffect(() => {
+    if (profileTourComplete && !profileTourCompletedAt && !profileTourAutoCompleteRef.current) {
+      profileTourAutoCompleteRef.current = true;
+      handleProfileTourCompletion();
+    }
+  }, [profileTourComplete, profileTourCompletedAt, handleProfileTourCompletion]);
+
+  const handleNavSelect = (item, event) => {
+    if (event) {
+      event.preventDefault();
+    }
+    if (item.href) {
+      navigate(item.href);
       return;
     }
-    setActiveTab(id);
+    goToTab(item.hash || item.id);
   };
 
   return (
@@ -483,12 +655,13 @@ const DriverDashboard = () => {
           <nav className="space-y-1">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
-              const isActive = activeTab === item.id;
+              const isActive = activeTab === item.id || activeTab === item.hash;
+              const href = item.href || `#${item.hash || item.id}`;
               return (
-                <button
+                <a
                   key={item.id}
-                  type="button"
-                  onClick={() => handleNavSelect(item.id)}
+                  href={href}
+                  onClick={(event) => handleNavSelect(item, event)}
                   className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm transition ${
                     isActive
                       ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
@@ -497,7 +670,7 @@ const DriverDashboard = () => {
                 >
                 <Icon className="h-4 w-4" />
                 <span className="font-medium">{item.label}</span>
-              </button>
+              </a>
             );
           })}
           </nav>
@@ -532,13 +705,24 @@ const DriverDashboard = () => {
             </div>
           </header>
 
+          {shouldShowProfileTour ? (
+            <ProfileCompletionTour
+              steps={profileTourSteps}
+              nextStep={profileTourNextStep}
+              allDone={profileTourComplete}
+              onNavigate={goToTab}
+              onComplete={handleProfileTourCompletion}
+              completing={profileTourSubmitting}
+            />
+          ) : null}
+
           <section className="grid gap-4 sm:grid-cols-3">
             <MetricCard label="Total trips" value={activity?.totalTrips ?? 0} />
             <MetricCard label="Upcoming trips" value={activity?.upcomingTrips ?? 0} />
             <MetricCard label="Average rating" value={Number(activity?.rating ?? 0).toFixed(1)} />
           </section>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-6">
+          <div id={activeTab} className="rounded-2xl border border-slate-200 bg-white p-6">
             {renderTabContent(activeTab, {
               profile,
               vehicles,
@@ -574,6 +758,103 @@ const MetricCard = ({ label, value }) => (
     <p className="mt-2 text-2xl font-semibold text-slate-900">{value}</p>
   </div>
 );
+
+const ProfileCompletionTour = ({ steps = [], nextStep, allDone, onNavigate, onComplete, completing }) => {
+  if (!Array.isArray(steps) || steps.length === 0) {
+    return null;
+  }
+
+  const completedCount = steps.filter((step) => step.done).length;
+  const progressPercent = Math.round((completedCount / steps.length) * 100);
+
+  return (
+    <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+            Profile completion tour
+          </p>
+          <h2 className="text-lg font-semibold text-emerald-900">Finish your profile to go live</h2>
+          <p className="text-sm text-emerald-800/90">
+            We&apos;ll guide you through photo, description, live location, and adding your vehicle.
+          </p>
+        </div>
+        <span className="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-semibold text-emerald-700 shadow-sm">
+          {completedCount}/{steps.length} done
+        </span>
+      </div>
+
+      <div className="mt-4 grid gap-4 md:grid-cols-[1.2fr_1fr]">
+        <div className="space-y-2">
+          {steps.map((step, index) => (
+            <div
+              key={step.id}
+              className={`flex items-start gap-3 rounded-xl border px-3 py-2 ${
+                step.done ? 'border-emerald-200 bg-white' : 'border-emerald-300 bg-white/70'
+              }`}
+            >
+              <span
+                className={`mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold ${
+                  step.done
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-white text-emerald-700 ring-1 ring-emerald-200'
+                }`}
+              >
+                {step.done ? <CheckCircle2 className="h-4 w-4" /> : index + 1}
+              </span>
+              <div className="space-y-0.5">
+                <p className="text-sm font-semibold text-slate-900">{step.label}</p>
+                <p className="text-xs text-slate-600">{step.description}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-col gap-3 rounded-xl border border-emerald-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-slate-900">
+              {allDone ? 'All steps completed' : 'Up next'}
+            </p>
+            <span className="rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+              {progressPercent}% done
+            </span>
+          </div>
+          <p className="text-xs text-slate-600">
+            {allDone
+              ? 'Great work. Save this to stop seeing the checklist.'
+              : nextStep?.description || 'Keep your profile fresh for travellers.'}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            {nextStep && !allDone ? (
+              <button
+                type="button"
+                onClick={() => onNavigate?.(nextStep.tab)}
+                className="inline-flex items-center gap-2 rounded-full border border-emerald-300 bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
+              >
+                Go to {nextStep.tab === 'profile' ? 'profile' : nextStep.tab}
+              </button>
+            ) : null}
+            <button
+              type="button"
+              disabled={!allDone || completing}
+              onClick={onComplete}
+              className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:border-emerald-300 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {completing ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                'Mark checklist done'
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const OverviewPanel = ({ profile }) => (
   <div className="space-y-6">
@@ -1128,10 +1409,26 @@ const DriverBookingsPanel = ({ bookingsState, onReload }) => {
           const travelerEmail = booking.traveler?.email;
           const travelerPhone = booking.traveler?.phoneNumber;
           const vehicleName = booking.vehicle?.model || 'Vehicle to be confirmed';
-          const totalLabel =
+          const grossTotal =
             typeof booking.totalPrice === 'number' && booking.totalPrice > 0
-              ? formatMoney(booking.totalPrice)
+              ? booking.totalPrice
+              : null;
+          const totalLabel =
+            grossTotal !== null
+              ? formatMoney(grossTotal)
               : 'Rate on arrival';
+          const discountAmountValue =
+            typeof booking.discountAmount === 'number' && booking.discountAmount > 0
+              ? booking.discountAmount
+              : grossTotal !== null && typeof booking.commissionDiscountRate === 'number'
+                ? grossTotal * booking.commissionDiscountRate
+                : 0;
+          const discountAmountLabel =
+            discountAmountValue > 0 ? formatMoney(discountAmountValue) : null;
+          const travelerPaysLabel =
+            typeof booking.payableTotal === 'number' && booking.payableTotal > 0
+              ? formatMoney(booking.payableTotal)
+              : totalLabel;
           const statusClass = statusStyles[booking.status] || 'bg-slate-100 text-slate-600';
           const statusLabel = booking.status
             ? booking.status.charAt(0).toUpperCase() + booking.status.slice(1)
@@ -1141,6 +1438,8 @@ const DriverBookingsPanel = ({ bookingsState, onReload }) => {
             ? formatRatePercent(booking.commissionRate, 2)
             : null;
           const discountLabel = booking.commissionDiscountLabel || '';
+          const driverPayoutLabel =
+            typeof booking.driverEarnings === 'number' ? formatMoney(booking.driverEarnings) : null;
 
           return (
             <li
@@ -1163,12 +1462,21 @@ const DriverBookingsPanel = ({ bookingsState, onReload }) => {
                     Vehicle <span className="font-medium text-slate-700">{vehicleName}</span>
                   </p>
                   <p className="text-sm text-slate-500">
-                    Total <span className="font-medium text-slate-700">{totalLabel}</span>
+                    Traveller pays{' '}
+                    <span className="font-medium text-slate-700">{travelerPaysLabel}</span>
                   </p>
+                  {discountAmountLabel ? (
+                    <p className="text-xs text-emerald-600">Discount applied: -{discountAmountLabel}</p>
+                  ) : null}
                   {commissionRateLabel ? (
                     <p className="text-xs text-slate-500">
                       Commission {commissionRateLabel}
                       {discountLabel ? ` (${discountLabel})` : ''}
+                    </p>
+                  ) : null}
+                  {driverPayoutLabel ? (
+                    <p className="text-xs font-semibold text-slate-900">
+                      Driver payout after commission: {driverPayoutLabel}
                     </p>
                   ) : null}
                 </div>

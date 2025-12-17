@@ -127,6 +127,16 @@ const bookingSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    discountAmount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    payableTotal: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     commissionDiscountRate: {
       type: Number,
       default: 0,
@@ -269,9 +279,12 @@ bookingSchema.methods.applyCommissionRules = async function applyCommissionRules
   }
 
   const effectiveDiscountRate = discountRate > baseRate ? baseRate : discountRate;
-  const effectiveRate = clampRate(baseRate - effectiveDiscountRate, { fallback: baseRate, max: 1 });
-  const commission = roundCurrency(gross * effectiveRate);
-  const driverTake = roundCurrency(gross - commission);
+  const discountAmount = roundCurrency(gross * effectiveDiscountRate);
+  const payableTotal = roundCurrency(Math.max(gross - discountAmount, 0));
+  const baseCommissionAmount = roundCurrency(gross * baseRate);
+  const netCommissionAmount = roundCurrency(Math.max(baseCommissionAmount - discountAmount, 0));
+  const effectiveRate = gross > 0 ? netCommissionAmount / gross : 0;
+  const driverTake = roundCurrency(payableTotal - netCommissionAmount);
 
   let changed = false;
   changed = assignIfChanged(this, 'commissionBaseRate', baseRate) || changed;
@@ -280,7 +293,9 @@ bookingSchema.methods.applyCommissionRules = async function applyCommissionRules
     assignIfChanged(this, 'commissionDiscountLabel', discountLabel || undefined) || changed;
   changed = assignIfChanged(this, 'commissionDiscount', discountRef) || changed;
   changed = assignIfChanged(this, 'commissionRate', effectiveRate) || changed;
-  changed = assignIfChanged(this, 'commissionAmount', commission) || changed;
+  changed = assignIfChanged(this, 'commissionAmount', netCommissionAmount) || changed;
+  changed = assignIfChanged(this, 'discountAmount', discountAmount) || changed;
+  changed = assignIfChanged(this, 'payableTotal', payableTotal) || changed;
   changed = assignIfChanged(this, 'driverEarnings', driverTake) || changed;
 
   if (!this.$locals) {
@@ -312,6 +327,12 @@ bookingSchema.set('toJSON', {
     ret.id = ret._id.toString();
     delete ret._id;
     delete ret.__v;
+    if (
+      (ret.payableTotal === undefined || ret.payableTotal === null || ret.payableTotal === 0) &&
+      typeof ret.totalPrice === 'number'
+    ) {
+      ret.payableTotal = ret.totalPrice;
+    }
     if (ret.commissionDiscount) {
       ret.commissionDiscount = ret.commissionDiscount.toString();
     }

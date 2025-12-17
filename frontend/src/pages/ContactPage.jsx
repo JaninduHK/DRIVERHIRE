@@ -55,7 +55,7 @@ const ContactPage = () => {
         bookingId: formState.bookingId.trim(),
         message,
       });
-      toast.success('Your request was sent to hello@carwithdriver.lk.');
+      toast.success('Your request was sent to our support inbox.');
       setFormState({
         name: '',
         email: '',

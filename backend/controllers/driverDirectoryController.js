@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import User, { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
 import Vehicle, { VEHICLE_STATUS } from '../models/Vehicle.js';
 import Review, { REVIEW_STATUS } from '../models/Review.js';
+import CommissionDiscount from '../models/CommissionDiscount.js';
 import { buildAssetUrl } from '../utils/assetUtils.js';
 
 const FEATURE_FLAGS = [
@@ -13,12 +14,40 @@ const FEATURE_FLAGS = [
   { key: 'allTaxes', label: 'All taxes included' },
 ];
 
-const shapeVehicleCard = (vehicle, req) => {
+const findActiveCommissionDiscount = async (referenceDate = new Date()) => {
+  const target = referenceDate instanceof Date ? referenceDate : new Date(referenceDate);
+  if (Number.isNaN(target.getTime())) {
+    return null;
+  }
+  const discount = await CommissionDiscount.findOne({
+    active: true,
+    startDate: { $lte: target },
+    endDate: { $gte: target },
+  })
+    .sort({ discountRate: -1, startDate: -1 })
+    .lean();
+  return discount;
+};
+
+const shapeVehicleCard = (vehicle, req, activeDiscount = null) => {
   const features = FEATURE_FLAGS.filter(({ key }) => Boolean(vehicle[key])).map(
     ({ label }) => label
   );
   const coverImage =
     Array.isArray(vehicle.images) && vehicle.images.length > 0 ? vehicle.images[0] : null;
+  const discountRate =
+    activeDiscount && typeof activeDiscount.discountRate === 'number'
+      ? Math.max(activeDiscount.discountRate, 0)
+      : 0;
+  const discountPercent =
+    activeDiscount?.discountPercent ??
+    Math.round(Math.max(discountRate, 0) * 100 * 100) / 100;
+  const discountAmountPerDay =
+    Number.isFinite(vehicle.pricePerDay) && vehicle.pricePerDay > 0
+      ? Math.round(vehicle.pricePerDay * discountRate * 100) / 100
+      : null;
+  const discountedPricePerDay =
+    discountAmountPerDay !== null ? Math.max(vehicle.pricePerDay - discountAmountPerDay, 0) : null;
 
   return {
     id: vehicle._id.toString(),
@@ -29,6 +58,22 @@ const shapeVehicleCard = (vehicle, req) => {
     seats: vehicle.seats,
     image: buildAssetUrl(coverImage, req),
     features,
+    discountedPricePerDay,
+    activeDiscount:
+      activeDiscount && discountPercent > 0
+        ? {
+            id: activeDiscount._id?.toString?.() || activeDiscount.id,
+            name: activeDiscount.name,
+            description: activeDiscount.description,
+            discountRate,
+            discountPercent,
+            startDate: activeDiscount.startDate,
+            endDate: activeDiscount.endDate,
+            status: activeDiscount.status || 'active',
+            discountAmountPerDay,
+            discountedPricePerDay,
+          }
+        : null,
   };
 };
 
@@ -47,8 +92,8 @@ const deriveReviewScore = (experienceYears, vehicleCount) => {
   return Math.min(5, Math.max(4, base + experienceContribution + fleetContribution));
 };
 
-const buildDriverSummary = (driver, vehicles = [], reviewStats = null, req) => {
-  const cardVehicles = vehicles.map((vehicle) => shapeVehicleCard(vehicle, req));
+const buildDriverSummary = (driver, vehicles = [], reviewStats = null, req, activeDiscount = null) => {
+  const cardVehicles = vehicles.map((vehicle) => shapeVehicleCard(vehicle, req, activeDiscount));
   const featuredVehicle = cardVehicles.find((vehicle) => Boolean(vehicle.image)) || cardVehicles[0] || null;
   const averagePricePerDay = computeAveragePrice(vehicles);
   const experienceYears = driver.createdAt
@@ -102,6 +147,21 @@ const buildDriverSummary = (driver, vehicles = [], reviewStats = null, req) => {
     reviewCount,
     profilePhoto: buildAssetUrl(driver.profilePhoto, req),
     location: locationPayload,
+    activeDiscount:
+      activeDiscount && typeof activeDiscount.discountRate === 'number'
+        ? {
+            id: activeDiscount._id?.toString?.() || activeDiscount.id,
+            name: activeDiscount.name,
+            description: activeDiscount.description,
+            discountRate: Math.max(activeDiscount.discountRate, 0),
+            discountPercent:
+              activeDiscount.discountPercent ??
+              Math.round(Math.max(activeDiscount.discountRate, 0) * 100 * 100) / 100,
+            startDate: activeDiscount.startDate,
+            endDate: activeDiscount.endDate,
+            status: activeDiscount.status || 'active',
+          }
+        : null,
   };
 };
 
@@ -153,6 +213,7 @@ export const listPublicDrivers = async (req, res) => {
       return res.json({ drivers: [] });
     }
 
+    const activeDiscount = await findActiveCommissionDiscount();
     const driverIds = drivers.map((driver) => driver._id);
     const vehicles = await Vehicle.find({
       driver: { $in: driverIds },
@@ -179,7 +240,8 @@ export const listPublicDrivers = async (req, res) => {
         driver,
         vehicleMap.get(driver._id.toString()) || [],
         reviewStatsMap.get(driver._id.toString()),
-        req
+        req,
+        activeDiscount
       )
     );
 
@@ -212,6 +274,7 @@ export const getPublicDriverDetails = async (req, res) => {
       return res.status(404).json({ message: 'Driver not found.' });
     }
 
+    const activeDiscount = await findActiveCommissionDiscount();
     const vehicles = await Vehicle.find({
       driver: id,
       status: VEHICLE_STATUS.APPROVED,
@@ -223,7 +286,7 @@ export const getPublicDriverDetails = async (req, res) => {
       .lean();
 
     const shapedVehicles = vehicles.map((vehicle) => ({
-      ...shapeVehicleCard(vehicle, req),
+      ...shapeVehicleCard(vehicle, req, activeDiscount),
       availability: Array.isArray(vehicle.availability)
         ? vehicle.availability.map((entry) => ({
             id: entry._id ? entry._id.toString() : undefined,
@@ -239,7 +302,8 @@ export const getPublicDriverDetails = async (req, res) => {
       driver,
       vehicles,
       reviewStatsMap.get(driver._id.toString()),
-      req
+      req,
+      activeDiscount
     );
 
     return res.json({

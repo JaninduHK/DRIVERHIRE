@@ -281,57 +281,82 @@ const DriverDetails = () => {
   );
 };
 
-const VehicleCard = ({ vehicle }) => (
-  <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-    {vehicle.image ? (
-      <img src={vehicle.image} alt={vehicle.model} className="h-48 w-full object-cover" />
-    ) : (
-      <div className="flex h-48 items-center justify-center bg-slate-100 text-slate-400">
-        <Car className="h-8 w-8" />
-      </div>
-    )}
-    <div className="flex flex-1 flex-col gap-3 p-5">
-      <div>
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-900">{vehicle.model}</h3>
-          <p className="text-sm font-semibold text-slate-900">{formatCurrency(vehicle.pricePerDay)}/day</p>
+const VehicleCard = ({ vehicle }) => {
+  const activeDiscount = vehicle.activeDiscount;
+  const price = formatCurrency(
+    typeof activeDiscount?.discountedPricePerDay === 'number'
+      ? activeDiscount.discountedPricePerDay
+      : vehicle.pricePerDay
+  );
+  const originalPrice =
+    activeDiscount && typeof vehicle.pricePerDay === 'number'
+      ? formatCurrency(vehicle.pricePerDay)
+      : null;
+
+  return (
+    <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      {vehicle.image ? (
+        <img src={vehicle.image} alt={vehicle.model} className="h-48 w-full object-cover" />
+      ) : (
+        <div className="flex h-48 items-center justify-center bg-slate-100 text-slate-400">
+          <Car className="h-8 w-8" />
         </div>
-        <p className="text-xs uppercase tracking-wide text-slate-400">
-          {vehicle.year} • {vehicle.seats || 0} seats
-        </p>
-      </div>
-      <p className="line-clamp-3 text-sm text-slate-600">{vehicle.description}</p>
-      {vehicle.features?.length ? (
-        <div className="flex flex-wrap gap-2">
-          {vehicle.features.slice(0, 4).map((feature) => (
-            <span
-              key={feature}
-              className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600"
-            >
-              {feature}
-            </span>
-          ))}
+      )}
+      <div className="flex flex-1 flex-col gap-3 p-5">
+        <div>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-slate-900">{vehicle.model}</h3>
+            <div className="text-right text-sm font-semibold text-slate-900">
+              {price}/day
+              {originalPrice ? (
+                <div className="text-xs font-medium text-slate-400 line-through">
+                  {originalPrice}
+                </div>
+              ) : null}
+            </div>
+          </div>
+          <p className="text-xs uppercase tracking-wide text-slate-400">
+            {vehicle.year} • {vehicle.seats || 0} seats
+          </p>
+          {activeDiscount?.discountPercent ? (
+            <div className="mt-1 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+              Save {activeDiscount.discountPercent}% this trip
+            </div>
+          ) : null}
         </div>
-      ) : null}
-      <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-4">
-        <span className="text-xs text-slate-500">
-          {vehicle.availability?.length
-            ? `${vehicle.availability.length} availability block${
-                vehicle.availability.length === 1 ? '' : 's'
-              }`
-            : 'Availability on request'}
-        </span>
-        <Link
-          to={`/vehicles/${vehicle.id}`}
-          className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-600 transition hover:border-emerald-300 hover:text-emerald-700"
-        >
-          View vehicle
-          <ArrowUpRight className="h-4 w-4" />
-        </Link>
+        <p className="line-clamp-3 text-sm text-slate-600">{vehicle.description}</p>
+        {vehicle.features?.length ? (
+          <div className="flex flex-wrap gap-2">
+            {vehicle.features.slice(0, 4).map((feature) => (
+              <span
+                key={feature}
+                className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600"
+              >
+                {feature}
+              </span>
+            ))}
+          </div>
+        ) : null}
+        <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-4">
+          <span className="text-xs text-slate-500">
+            {vehicle.availability?.length
+              ? `${vehicle.availability.length} availability block${
+                  vehicle.availability.length === 1 ? '' : 's'
+                }`
+              : 'Availability on request'}
+          </span>
+          <Link
+            to={`/vehicles/${vehicle.id}`}
+            className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-600 transition hover:border-emerald-300 hover:text-emerald-700"
+          >
+            View vehicle
+            <ArrowUpRight className="h-4 w-4" />
+          </Link>
+        </div>
       </div>
-    </div>
-  </article>
-);
+    </article>
+  );
+};
 
 const DriverReviewsSection = ({ driver, vehicles }) => {
   const [reviewFilters, setReviewFilters] = useState({ rating: 'all', sort: 'recent' });
