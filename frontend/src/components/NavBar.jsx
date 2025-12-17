@@ -17,6 +17,15 @@ const navLinks = [
   { to: '/contact', label: 'Contact' },
 ];
 
+const driverPortalLinks = [
+  { to: '/portal/driver#vehicles', label: 'My Vehicles' },
+  { to: '/portal/driver#bookings', label: 'My Bookings' },
+  { to: '/portal/driver/messages', label: 'Messages' },
+  { to: '/portal/driver#earnings', label: 'My Earnings' },
+  { to: '/portal/driver#availability', label: 'My Availability' },
+  { to: '/portal/driver#profile', label: 'My Profile' },
+];
+
 const baseNavLink =
   'relative px-3 py-2 text-sm font-medium transition-colors duration-150';
 
@@ -75,6 +84,7 @@ const NavBar = () => {
   const closeMobileMenu = () => setMobileOpen(false);
 
   const { isAuthenticated, dashboardPath, messagesPath, user } = authState;
+  const isDriver = user?.role === 'driver';
   const messageDestination = isAuthenticated ? messagesPath : '/login';
 
   return (
@@ -144,6 +154,22 @@ const NavBar = () => {
         </div>
       </div>
 
+      {isDriver ? (
+        <div className="hidden border-t border-slate-200 bg-white/80 lg:block">
+          <div className="mx-auto flex max-w-6xl items-center gap-2 overflow-x-auto px-4 py-2 sm:px-6 lg:px-8">
+            {driverPortalLinks.map(({ to, label }) => (
+              <Link
+                key={to}
+                to={to}
+                className="whitespace-nowrap rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 transition hover:border-emerald-200 hover:bg-emerald-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <div
         className={`lg:hidden ${mobileOpen ? 'block' : 'hidden'} border-t border-slate-200 bg-white/95 backdrop-blur`}
       >
@@ -178,6 +204,25 @@ const NavBar = () => {
             >
               Briefs
             </NavLink>
+          ) : null}
+          {isDriver ? (
+            <div className="mt-3 space-y-2 rounded-xl border border-emerald-100 bg-emerald-50 p-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-emerald-700">
+                Driver menu
+              </p>
+              <div className="grid grid-cols-1 gap-2">
+                {driverPortalLinks.map(({ to, label }) => (
+                  <Link
+                    key={to}
+                    to={to}
+                    onClick={closeMobileMenu}
+                    className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-emerald-800 shadow-sm transition hover:bg-emerald-50"
+                  >
+                    {label}
+                  </Link>
+                ))}
+              </div>
+            </div>
           ) : null}
           <div className="mt-3 flex items-center gap-2">
             {isAuthenticated ? (

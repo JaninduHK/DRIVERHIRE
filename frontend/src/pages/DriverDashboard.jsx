@@ -555,38 +555,6 @@ const DriverDashboard = () => {
     navigate('/login');
   }, [navigate]);
 
-  if (overviewLoading) {
-    return (
-      <section className="mx-auto max-w-6xl px-4 py-8">
-        <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-slate-200 bg-white text-sm text-slate-500">
-          Loading driver dashboard...
-        </div>
-      </section>
-    );
-  }
-
-  if (overviewError && !overview) {
-    return (
-      <section className="mx-auto max-w-4xl px-4 py-12">
-        <div className="rounded-3xl border border-amber-200 bg-amber-50 p-10 text-center text-amber-800">
-          <ShieldAlert className="mx-auto mb-4 h-10 w-10" />
-          <h1 className="text-2xl font-semibold">Driver dashboard unavailable</h1>
-          <p className="mt-3 text-sm">
-            {pendingApproval
-              ? 'Your driver application is still under review. We will email you as soon as it is approved.'
-              : overviewError}
-          </p>
-          <p className="mt-6 text-xs text-amber-700">
-            Need help? Email{' '}
-            <a href="mailto:support@carwithdriver.lk" className="underline">
-              support@carwithdriver.lk
-            </a>.
-          </p>
-        </div>
-      </section>
-    );
-  }
-
   const { profile, activity } = overview ?? {};
 
   const profileTourSteps = useMemo(
@@ -607,6 +575,10 @@ const DriverDashboard = () => {
   );
   const shouldShowProfileTour =
     !profileTourCompletedAt && (overview?.onboarding?.showProfileTour ?? true);
+  const currentTabId = useMemo(
+    () => NAV_ITEMS.find((item) => item.id === activeTab || item.hash === activeTab)?.id || 'overview',
+    [activeTab]
+  );
 
   const goToTab = useCallback(
     (tabId) => {
@@ -648,6 +620,38 @@ const DriverDashboard = () => {
     goToTab(item.hash || item.id);
   };
 
+  if (overviewLoading) {
+    return (
+      <section className="mx-auto max-w-6xl px-4 py-8">
+        <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-slate-200 bg-white text-sm text-slate-500">
+          Loading driver dashboard...
+        </div>
+      </section>
+    );
+  }
+
+  if (overviewError && !overview) {
+    return (
+      <section className="mx-auto max-w-4xl px-4 py-12">
+        <div className="rounded-3xl border border-amber-200 bg-amber-50 p-10 text-center text-amber-800">
+          <ShieldAlert className="mx-auto mb-4 h-10 w-10" />
+          <h1 className="text-2xl font-semibold">Driver dashboard unavailable</h1>
+          <p className="mt-3 text-sm">
+            {pendingApproval
+              ? 'Your driver application is still under review. We will email you as soon as it is approved.'
+              : overviewError}
+          </p>
+          <p className="mt-6 text-xs text-amber-700">
+            Need help? Email{' '}
+            <a href="mailto:support@carwithdriver.lk" className="underline">
+              support@carwithdriver.lk
+            </a>.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="mx-auto max-w-6xl px-4 py-8">
       <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
@@ -655,7 +659,7 @@ const DriverDashboard = () => {
           <nav className="space-y-1">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
-              const isActive = activeTab === item.id || activeTab === item.hash;
+              const isActive = currentTabId === item.id || activeTab === item.hash;
               const href = item.href || `#${item.hash || item.id}`;
               return (
                 <a
@@ -722,8 +726,8 @@ const DriverDashboard = () => {
             <MetricCard label="Average rating" value={Number(activity?.rating ?? 0).toFixed(1)} />
           </section>
 
-          <div id={activeTab} className="rounded-2xl border border-slate-200 bg-white p-6">
-            {renderTabContent(activeTab, {
+          <div id={currentTabId} className="rounded-2xl border border-slate-200 bg-white p-6">
+            {renderTabContent(currentTabId, {
               profile,
               vehicles,
               vehiclesLoading,
