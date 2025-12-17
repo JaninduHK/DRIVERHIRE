@@ -5,7 +5,7 @@ let brevoClient;
 const brandName = process.env.APP_BRAND_NAME || 'Car With Driver';
 const appBaseUrl = process.env.APP_BASE_URL || 'http://carwithdriver.lk';
 const emailFrom = process.env.EMAIL_FROM || 'hello@carwithdriver.lk';
-const brevoApiKey = process.env.BREVO_API_KEY || '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';
+const brevoApiKey = process.env.BREVO_API_KEY || process.env.SENDINGBLUE_API_KEY;
 const supportEmail = process.env.SUPPORT_EMAIL || emailFrom || 'support@carwithdriver.lk';
 const currencyCode = process.env.APP_CURRENCY || 'USD';
 
