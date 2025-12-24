@@ -172,6 +172,33 @@ const withTimeout = (promise, ms = 15000, msg = 'Request timed out') => {
   return Promise.race([promise.finally(() => clearTimeout(id)), timeout]);
 };
 
+const getTodayDateKey = () => new Date().toISOString().slice(0, 10);
+
+const buildLocationPromptKey = (profile) => {
+  if (!profile) {
+    return 'driver-location-prompt:unknown';
+  }
+  const identifier = profile.email || profile.contactNumber || profile.name || 'driver';
+  return `driver-location-prompt:${identifier}`;
+};
+
+const hasSeenLocationPromptToday = (profile) => {
+  if (typeof window === 'undefined' || !profile) {
+    return true;
+  }
+  const key = buildLocationPromptKey(profile);
+  const today = getTodayDateKey();
+  return window.localStorage.getItem(key) === today;
+};
+
+const markLocationPromptSeenToday = (profile) => {
+  if (typeof window === 'undefined' || !profile) {
+    return;
+  }
+  const key = buildLocationPromptKey(profile);
+  window.localStorage.setItem(key, getTodayDateKey());
+};
+
 const DriverDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -201,6 +228,15 @@ const DriverDashboard = () => {
   const [passwordSaving, setPasswordSaving] = useState(false);
   const [profileTourCompletedAt, setProfileTourCompletedAt] = useState(null);
   const [profileTourSubmitting, setProfileTourSubmitting] = useState(false);
+  const [locationPromptOpen, setLocationPromptOpen] = useState(false);
+  const [locationPromptForm, setLocationPromptForm] = useState({
+    label: '',
+    latitude: '',
+    longitude: '',
+  });
+  const [locationPromptStatus, setLocationPromptStatus] = useState('');
+  const [locationPromptLocating, setLocationPromptLocating] = useState(false);
+  const [locationPromptSaving, setLocationPromptSaving] = useState(false);
 
   const isMountedRef = useRef(false);
   const profileTourAutoCompleteRef = useRef(false);
@@ -557,6 +593,154 @@ const DriverDashboard = () => {
 
   const { profile, activity } = overview ?? {};
 
+  useEffect(() => {
+    if (!profile) {
+      return;
+    }
+    setLocationPromptForm((prev) => {
+      const nextLabel = prev.label || profile.driverLocation?.label || profile.address || '';
+      const nextLatitude =
+        prev.latitude ||
+        (typeof profile.driverLocation?.latitude === 'number'
+          ? String(profile.driverLocation.latitude)
+          : '');
+      const nextLongitude =
+        prev.longitude ||
+        (typeof profile.driverLocation?.longitude === 'number'
+          ? String(profile.driverLocation.longitude)
+          : '');
+      if (prev.label === nextLabel && prev.latitude === nextLatitude && prev.longitude === nextLongitude) {
+        return prev;
+      }
+      return {
+        ...prev,
+        label: nextLabel,
+        latitude: nextLatitude,
+        longitude: nextLongitude,
+      };
+    });
+  }, [profile]);
+
+  useEffect(() => {
+    if (!profile || overviewLoading) {
+      return;
+    }
+    if (hasSeenLocationPromptToday(profile)) {
+      return;
+    }
+    setLocationPromptStatus('');
+    setLocationPromptOpen(true);
+  }, [profile, overviewLoading]);
+
+  const handleLocationPromptClose = useCallback(() => {
+    setLocationPromptOpen(false);
+    setLocationPromptLocating(false);
+    setLocationPromptSaving(false);
+    setLocationPromptStatus('');
+    if (profile) {
+      markLocationPromptSeenToday(profile);
+    }
+  }, [profile]);
+
+  const handleLocationFieldChange = useCallback((field, value) => {
+    setLocationPromptForm((prev) => ({ ...prev, [field]: value }));
+  }, []);
+
+  const handleUseDeviceLocation = useCallback(() => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      toast.error('Live location is not available in this browser.');
+      return;
+    }
+    setLocationPromptLocating(true);
+    setLocationPromptStatus('Requesting your current position...');
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocationPromptLocating(false);
+        const { latitude, longitude } = position.coords || {};
+        if (typeof latitude === 'number' && typeof longitude === 'number') {
+          setLocationPromptForm((prev) => ({
+            ...prev,
+            latitude: latitude.toFixed(6),
+            longitude: longitude.toFixed(6),
+          }));
+          setLocationPromptStatus('Location captured. Save to update the live map.');
+        } else {
+          setLocationPromptStatus('We could not read coordinates from your device.');
+          toast.error('Unable to read coordinates from your device.');
+        }
+      },
+      (error) => {
+        setLocationPromptLocating(false);
+        setLocationPromptStatus('Unable to fetch your location. Check permissions and try again.');
+        console.warn('Geolocation error', error);
+        toast.error('Please enable location access to use live location.');
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }, []);
+
+  const handleSaveLiveLocation = useCallback(async () => {
+    const label = locationPromptForm.label.trim();
+    const hasLatitude = String(locationPromptForm.latitude ?? '').trim() !== '';
+    const hasLongitude = String(locationPromptForm.longitude ?? '').trim() !== '';
+    const latitude = Number(locationPromptForm.latitude);
+    const longitude = Number(locationPromptForm.longitude);
+
+    if (!label) {
+      toast.error('Add a short label for where you are today.');
+      return;
+    }
+    if (!hasLatitude || !Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
+      toast.error('Enter a valid latitude.');
+      return;
+    }
+    if (!hasLongitude || !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+      toast.error('Enter a valid longitude.');
+      return;
+    }
+
+    setLocationPromptSaving(true);
+    setLocationPromptStatus('Saving your live location...');
+    try {
+      const payload = new FormData();
+      payload.append('currentLocationLabel', label);
+      payload.append('currentLatitude', latitude.toString());
+      payload.append('currentLongitude', longitude.toString());
+      await updateProfileRequest(payload);
+      toast.success('Live location updated for today.');
+      markLocationPromptSeenToday(profile);
+      setLocationPromptOpen(false);
+      setLocationPromptStatus('');
+      await loadOverview({ silent: true });
+    } catch (error) {
+      console.warn('Live location update failed', error);
+      toast.error(error?.message || 'Unable to update live location.');
+    } finally {
+      setLocationPromptSaving(false);
+    }
+  }, [locationPromptForm, profile, loadOverview]);
+
+  const handleUnavailableToday = useCallback(async () => {
+    setLocationPromptSaving(true);
+    setLocationPromptStatus('Marking you as unavailable for today...');
+    try {
+      const payload = new FormData();
+      payload.append('clearLocation', 'true');
+      await updateProfileRequest(payload);
+      toast.success("You're marked unavailable today.");
+      markLocationPromptSeenToday(profile);
+      setLocationPromptOpen(false);
+      setLocationPromptStatus('');
+      setLocationPromptForm({ label: '', latitude: '', longitude: '' });
+      await loadOverview({ silent: true });
+    } catch (error) {
+      console.warn('Mark unavailable failed', error);
+      toast.error(error?.message || 'Unable to update your availability.');
+    } finally {
+      setLocationPromptSaving(false);
+    }
+  }, [profile, loadOverview]);
+
   const profileTourSteps = useMemo(
     () => buildProfileTourSteps(profile, vehicles),
     [profile, vehicles]
@@ -654,6 +838,18 @@ const DriverDashboard = () => {
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-8">
+      <DailyLocationPrompt
+        open={locationPromptOpen}
+        form={locationPromptForm}
+        status={locationPromptStatus}
+        locating={locationPromptLocating}
+        saving={locationPromptSaving}
+        onClose={handleLocationPromptClose}
+        onFieldChange={handleLocationFieldChange}
+        onUseDeviceLocation={handleUseDeviceLocation}
+        onSave={handleSaveLiveLocation}
+        onUnavailable={handleUnavailableToday}
+      />
       <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
         <aside className="rounded-2xl border border-slate-200 bg-white p-4">
           <nav className="space-y-1">
@@ -762,6 +958,142 @@ const MetricCard = ({ label, value }) => (
     <p className="mt-2 text-2xl font-semibold text-slate-900">{value}</p>
   </div>
 );
+
+const DailyLocationPrompt = ({
+  open,
+  form,
+  status,
+  locating,
+  saving,
+  onClose,
+  onFieldChange,
+  onUseDeviceLocation,
+  onSave,
+  onUnavailable,
+}) => {
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 py-6">
+      <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">
+              Daily check-in
+            </p>
+            <h2 className="text-lg font-semibold text-slate-900">Set your live location for today</h2>
+            <p className="text-sm text-slate-600">
+              Share where you&apos;re starting from or mark yourself unavailable for the day.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
+          >
+            Close
+          </button>
+        </div>
+
+        <div className="mt-5 space-y-4">
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Location label
+            </label>
+            <input
+              type="text"
+              value={form.label}
+              onChange={(event) => onFieldChange?.('label', event.target.value)}
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+              placeholder="Eg: Kandy city centre, Ella, Colombo airport"
+            />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Latitude
+              </label>
+              <input
+                type="number"
+                inputMode="decimal"
+                step="0.000001"
+                value={form.latitude}
+                onChange={(event) => onFieldChange?.('latitude', event.target.value)}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                placeholder="6.927079"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Longitude
+              </label>
+              <input
+                type="number"
+                inputMode="decimal"
+                step="0.000001"
+                value={form.longitude}
+                onChange={(event) => onFieldChange?.('longitude', event.target.value)}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                placeholder="79.861244"
+              />
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={onUseDeviceLocation}
+              disabled={locating || saving}
+              className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:border-emerald-300 hover:text-emerald-800 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
+              {locating ? 'Locating...' : 'Use my device location'}
+            </button>
+            <p className="text-xs text-slate-500">
+              {status || 'Coordinates help us place you correctly on the live map.'}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs text-slate-500">
+            Update at first login each day so travellers know if you&apos;re available.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={onUnavailable}
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              <XCircle className="h-4 w-4" />
+              I&apos;m unavailable today
+            </button>
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-600/70"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4" />
+                  Save live location
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const ProfileCompletionTour = ({ steps = [], nextStep, allDone, onNavigate, onComplete, completing }) => {
   if (!Array.isArray(steps) || steps.length === 0) {

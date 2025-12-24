@@ -33,9 +33,10 @@ const authHeaders = () => {
 };
 
 const request = async (path, options = {}) => {
+  const isFormData = options.body instanceof FormData;
   const headers = {
-    'Content-Type': 'application/json',
     ...authHeaders(),
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers || {}),
   };
 
@@ -93,6 +94,29 @@ export const updateVehicleDetails = (vehicleId, payload) =>
   request(`/vehicles/${vehicleId}`, {
     method: 'PATCH',
     body: JSON.stringify(payload),
+  });
+
+export const addVehicleImages = (vehicleId, payload) => {
+  const body =
+    payload instanceof FormData
+      ? payload
+      : (() => {
+          const form = new FormData();
+          if (Array.isArray(payload)) {
+            payload.forEach((file) => form.append('images', file));
+          }
+          return form;
+        })();
+  return request(`/vehicles/${vehicleId}/images`, {
+    method: 'POST',
+    body,
+  });
+};
+
+export const removeVehicleImage = (vehicleId, image) =>
+  request(`/vehicles/${vehicleId}/images`, {
+    method: 'DELETE',
+    body: JSON.stringify({ image }),
   });
 
 export const fetchReviews = (filters = {}) =>

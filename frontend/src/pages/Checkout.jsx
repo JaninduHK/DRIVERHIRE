@@ -14,9 +14,6 @@ import toast from 'react-hot-toast';
 import { fetchVehicleDetails, checkVehicleAvailability, createVehicleBooking } from '../services/vehicleCatalogApi.js';
 import { fetchOffer } from '../services/chatApi.js';
 
-const FALLBACK_IMAGE =
-  'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1600&q=80';
-
 const formatPrice = (value) => {
   if (typeof value !== 'number') {
     return null;
@@ -441,7 +438,7 @@ const Checkout = () => {
   const { quote, loading: availabilityLoading, error: availabilityError, available } =
     availabilityState;
 
-  const coverImage = vehicle?.images?.[0] || FALLBACK_IMAGE;
+  const coverImage = Array.isArray(vehicle?.images) ? vehicle.images[0] : null;
   const vehicleModel = vehicle?.model || 'Selected vehicle';
   const driverName = vehicle?.driver?.name || 'Assigned driver';
 
@@ -785,14 +782,21 @@ const Checkout = () => {
         </article>
 
         <aside className="space-y-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
-            <img
-              src={coverImage}
-              alt={`${vehicleModel} cover`}
-              className="h-44 w-full object-cover"
-              loading="lazy"
-            />
-          </div>
+          {coverImage ? (
+            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+              <img
+                src={coverImage}
+                alt={`${vehicleModel} cover`}
+                className="h-44 w-full object-cover"
+                loading="lazy"
+              />
+            </div>
+          ) : (
+            <div className="flex h-44 items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50 text-slate-400">
+              <Car className="h-6 w-6" />
+              <span className="sr-only">No vehicle image</span>
+            </div>
+          )}
 
           <div className="space-y-2">
             <h2 className="text-lg font-semibold text-slate-900">Trip summary</h2>

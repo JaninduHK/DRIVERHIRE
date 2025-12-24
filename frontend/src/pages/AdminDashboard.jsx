@@ -21,6 +21,7 @@ import {
   Users,
   XCircle,
   Star,
+  Upload,
 } from 'lucide-react';
 import {
   fetchDriverApplications,
@@ -28,6 +29,8 @@ import {
   fetchVehicleSubmissions,
   updateVehicleStatus as updateVehicleStatusRequest,
   updateVehicleDetails as updateVehicleDetailsRequest,
+  addVehicleImages as addVehicleImagesRequest,
+  removeVehicleImage as removeVehicleImageRequest,
   fetchReviews,
   updateReviewStatus as updateReviewStatusRequest,
   fetchBookings as fetchAdminBookings,
@@ -799,6 +802,40 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleVehicleImagesAdd = async (vehicleId, formData) => {
+    setVehicleState((prev) => ({ ...prev, updatingId: vehicleId }));
+    try {
+      const { vehicle } = await addVehicleImagesRequest(vehicleId, formData);
+      setVehicleState((prev) => ({
+        ...prev,
+        items: prev.items.map((item) => (item.id === vehicle.id ? vehicle : item)),
+        updatingId: null,
+      }));
+      toast.success('Images added.');
+    } catch (err) {
+      toast.error(err.message || 'Unable to add images.');
+      setVehicleState((prev) => ({ ...prev, updatingId: null }));
+      throw err;
+    }
+  };
+
+  const handleVehicleImageRemove = async (vehicleId, image) => {
+    setVehicleState((prev) => ({ ...prev, updatingId: vehicleId }));
+    try {
+      const { vehicle } = await removeVehicleImageRequest(vehicleId, image);
+      setVehicleState((prev) => ({
+        ...prev,
+        items: prev.items.map((item) => (item.id === vehicle.id ? vehicle : item)),
+        updatingId: null,
+      }));
+      toast.success('Image removed.');
+    } catch (err) {
+      toast.error(err.message || 'Unable to remove image.');
+      setVehicleState((prev) => ({ ...prev, updatingId: null }));
+      throw err;
+    }
+  };
+
   return (
     <section className="mx-auto max-w-6xl px-4 py-8">
       <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
@@ -1001,6 +1038,8 @@ const AdminDashboard = () => {
                 onRetry={loadVehicles}
                 onStatusChange={handleVehicleStatusChange}
                 onUpdate={handleVehicleDetailsUpdate}
+                onAddImages={handleVehicleImagesAdd}
+                onRemoveImage={handleVehicleImageRemove}
               />
             ) : activeSection === 'reviews' ? (
               <ReviewsPanel
@@ -2617,12 +2656,14 @@ const DriversPanel = ({ state, onRetry, onStatusChange, onSendMessage }) => {
   );
 };
 
-const VehiclesPanel = ({ state, onRetry, onStatusChange, onUpdate }) => {
+const VehiclesPanel = ({ state, onRetry, onStatusChange, onUpdate, onAddImages, onRemoveImage }) => {
   const { items, loading, error, updatingId } = state;
   const [editingVehicleId, setEditingVehicleId] = useState(null);
   const [formData, setFormData] = useState(() => buildAdminVehicleForm());
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [uploadingVehicleId, setUploadingVehicleId] = useState('');
+  const [removingImageKey, setRemovingImageKey] = useState('');
 
   const handleFieldChange = (event) => {
     const { name, value, type, checked } = event.target;
@@ -2703,6 +2744,52 @@ const VehiclesPanel = ({ state, onRetry, onStatusChange, onUpdate }) => {
       setFormError(error?.message || 'Unable to update vehicle details.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleImagesUpload = async (vehicle, fileList) => {
+    if (!onAddImages || !vehicle) {
+      return;
+    }
+    const files = Array.from(fileList || []);
+    if (files.length === 0) {
+      return;
+    }
+    const remainingSlots = Math.max(5 - (Array.isArray(vehicle.images) ? vehicle.images.length : 0), 0);
+    if (remainingSlots <= 0) {
+      toast.error('This vehicle already has 5 images. Remove one to add another.');
+      return;
+    }
+    const selected = files.slice(0, remainingSlots);
+    if (files.length > remainingSlots) {
+      toast.error(`You can add ${remainingSlots} more image${remainingSlots === 1 ? '' : 's'}.`);
+    }
+
+    const formData = new FormData();
+    selected.forEach((file) => formData.append('images', file));
+
+    setUploadingVehicleId(vehicle.id);
+    try {
+      await onAddImages(vehicle.id, formData);
+    } catch (error) {
+      console.warn('Vehicle image upload failed', error);
+    } finally {
+      setUploadingVehicleId('');
+    }
+  };
+
+  const handleImageRemove = async (vehicleId, image) => {
+    if (!onRemoveImage || !vehicleId || !image) {
+      return;
+    }
+    const key = `${vehicleId}:${image}`;
+    setRemovingImageKey(key);
+    try {
+      await onRemoveImage(vehicleId, image);
+    } catch (error) {
+      console.warn('Vehicle image remove failed', error);
+    } finally {
+      setRemovingImageKey('');
     }
   };
 
@@ -2838,6 +2925,73 @@ const VehiclesPanel = ({ state, onRetry, onStatusChange, onUpdate }) => {
                   Rejection notes: {vehicle.rejectedReason}
                 </p>
               )}
+
+              <div className="mt-4 space-y-2 rounded-xl border border-slate-200 bg-white p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      Vehicle images
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      Max 5 images per vehicle. Add more or remove outdated ones.
+                    </p>
+                  </div>
+                  <label
+                    htmlFor={`admin-vehicle-upload-${vehicle.id}`}
+                    className={`inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:text-slate-900 ${
+                      uploadingVehicleId === vehicle.id || updatingId === vehicle.id
+                        ? 'cursor-not-allowed opacity-60'
+                        : ''
+                    }`}
+                  >
+                    <Upload className="h-4 w-4" />
+                    {uploadingVehicleId === vehicle.id ? 'Uploading...' : 'Add images'}
+                    <input
+                      id={`admin-vehicle-upload-${vehicle.id}`}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="sr-only"
+                      disabled={uploadingVehicleId === vehicle.id || updatingId === vehicle.id}
+                      onChange={(event) => {
+                        handleImagesUpload(vehicle, event.target.files);
+                        event.target.value = '';
+                      }}
+                    />
+                  </label>
+                </div>
+
+                {Array.isArray(vehicle.images) && vehicle.images.length > 0 ? (
+                  <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
+                    {vehicle.images.map((image) => {
+                      const key = `${vehicle.id}:${image}`;
+                      const removing = removingImageKey === key || updatingId === vehicle.id;
+                      return (
+                        <div
+                          key={image}
+                          className="group relative overflow-hidden rounded-lg border border-slate-200"
+                        >
+                          <img
+                            src={image}
+                            alt={`${vehicle.model} image`}
+                            className="h-28 w-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            disabled={removing}
+                            onClick={() => handleImageRemove(vehicle.id, image)}
+                            className="absolute inset-x-2 top-2 inline-flex items-center justify-center rounded-full bg-white/90 px-2 py-1 text-[11px] font-semibold text-rose-700 opacity-0 shadow-sm transition group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-70"
+                          >
+                            {removing ? 'Removing...' : 'Remove'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-500">No images uploaded yet.</p>
+                )}
+              </div>
 
               {isEditing ? (
                 <form

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Filter, RefreshCw, Search, Star } from 'lucide-react';
+import { Car, Filter, RefreshCw, Search, Star } from 'lucide-react';
 import { fetchVehicles } from '../services/vehicleCatalogApi.js';
 
 const defaultFilters = {
@@ -411,9 +411,7 @@ const VehicleCatalog = () => {
         ) : (
           <div className="grid gap-5 lg:grid-cols-3">
             {vehicles.map((vehicle) => {
-              const coverImage =
-                (Array.isArray(vehicle.images) && vehicle.images[0]) ||
-                'https://opel.autogermany.com.sg/choose-your-vehicle-test-drive.jpg.webp';
+              const coverImage = Array.isArray(vehicle.images) ? vehicle.images[0] : null;
               const activeDiscount = vehicle.activeDiscount;
               const price = formatPrice(
                 typeof activeDiscount?.discountedPricePerDay === 'number'
@@ -436,14 +434,21 @@ const VehicleCatalog = () => {
                   to={`/vehicles/${vehicle.id}`}
                   className="group flex h-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white/95 shadow-lg transition hover:-translate-y-1 hover:shadow-xl"
                 >
-                  <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
-                    <img
-                      src={coverImage}
-                      alt={`${vehicle.model} cover`}
-                      className="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-110"
-                      loading="lazy"
-                    />
-                  </div>
+                  {coverImage ? (
+                    <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
+                      <img
+                        src={coverImage}
+                        alt={`${vehicle.model} cover`}
+                        className="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-110"
+                        loading="lazy"
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex aspect-[4/3] items-center justify-center bg-slate-50 text-slate-400">
+                      <Car className="h-10 w-10" />
+                      <span className="sr-only">No vehicle image</span>
+                    </div>
+                  )}
                   <div className="flex flex-1 flex-col gap-4 p-6">
                     <div className="space-y-2">
                       <h3 className="text-lg font-semibold text-slate-900">{vehicle.model}</h3>

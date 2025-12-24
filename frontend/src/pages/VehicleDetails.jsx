@@ -21,9 +21,6 @@ import {
 import { getVehicleFeatureLabels } from '../constants/vehicleFeatures.js';
 import { startConversation as startChatConversation } from '../services/chatApi.js';
 
-const FALLBACK_IMAGE =
-  'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?auto=format&fit=crop&w=1600&q=80';
-
 const DEFAULT_REVIEW_META = {
   total: 0,
   averageRating: null,
@@ -222,16 +219,12 @@ const VehicleDetails = () => {
   ];
 
   const includedServices = useMemo(() => getVehicleFeatureLabels(vehicle), [vehicle]);
-  const galleryImages = useMemo(() => {
-    if (!vehicle || !Array.isArray(vehicle.images) || vehicle.images.length === 0) {
-      return Array.from({ length: 5 }, () => FALLBACK_IMAGE);
-    }
-    const normalized = vehicle.images.slice(0, 5);
-    while (normalized.length < 5) {
-      normalized.push(FALLBACK_IMAGE);
-    }
-    return normalized;
-  }, [vehicle]);
+const galleryImages = useMemo(() => {
+  if (!vehicle || !Array.isArray(vehicle.images) || vehicle.images.length === 0) {
+    return [];
+  }
+  return vehicle.images.slice(0, 5);
+}, [vehicle]);
 
   const handleDateChange = (field, value) => {
     setDateForm((prev) => ({ ...prev, [field]: value }));
@@ -489,34 +482,50 @@ const VehicleDetails = () => {
     typeof quoteDiscountAmount === 'number' ? formatPrice(quoteDiscountAmount) : null;
   const quoteTotalLabel =
     typeof quoteTotalValue === 'number' ? formatPrice(quoteTotalValue) : null;
+  const hasGallery = galleryImages.length > 0;
+  const primaryImage = hasGallery ? galleryImages[0] : null;
+  const secondaryImages = hasGallery ? galleryImages.slice(1) : [];
 
   return (
     <section className="space-y-10 py-6">
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
         <div className="space-y-3">
-          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-sm">
-            <img
-              src={galleryImages[0]}
-              alt={`${vehicle.model} primary view`}
-              className="h-full w-full object-cover transition duration-700 ease-out hover:scale-105"
-              loading="lazy"
-            />
-          </div>
-          <div className="grid gap-3 sm:grid-cols-4">
-            {galleryImages.slice(1).map((image, index) => (
-              <div
-                key={`gallery-thumb-${index}`}
-                className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50"
-              >
+          {hasGallery ? (
+            <>
+              <div className="overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 shadow-sm">
                 <img
-                  src={image}
-                  alt={`${vehicle.model} gallery ${index + 2}`}
-                  className="h-28 w-full object-cover transition duration-500 hover:scale-110"
+                  src={primaryImage}
+                  alt={`${vehicle.model} primary view`}
+                  className="h-full w-full object-cover transition duration-700 ease-out hover:scale-105"
                   loading="lazy"
                 />
               </div>
-            ))}
-          </div>
+              {secondaryImages.length ? (
+                <div className="grid gap-3 sm:grid-cols-4">
+                  {secondaryImages.map((image, index) => (
+                    <div
+                      key={`gallery-thumb-${index}`}
+                      className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50"
+                    >
+                      <img
+                        src={image}
+                        alt={`${vehicle.model} gallery ${index + 2}`}
+                        className="h-28 w-full object-cover transition duration-500 hover:scale-110"
+                        loading="lazy"
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <div className="flex h-full min-h-[240px] items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50 text-slate-500">
+              <div className="flex items-center gap-3 text-sm font-semibold">
+                <Car className="h-5 w-5" />
+                <span>No images uploaded for this vehicle yet.</span>
+              </div>
+            </div>
+          )}
         </div>
 
         <aside className="flex h-full flex-col justify-between rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">

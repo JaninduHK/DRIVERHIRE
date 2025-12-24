@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { validationResult } from 'express-validator';
 import User, { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
 import Vehicle, { VEHICLE_STATUS } from '../models/Vehicle.js';
@@ -21,6 +23,13 @@ const handleValidation = (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
   return null;
+};
+
+const toVehicleResponse = (vehicle, req) => {
+  if (!vehicle) return null;
+  const payload = typeof vehicle.toJSON === 'function' ? vehicle.toJSON() : vehicle;
+  payload.images = mapAssetUrls(payload.images, req);
+  return payload;
 };
 
 const toId = (value) => {
@@ -373,7 +382,7 @@ export const getVehicleSubmissions = async (req, res) => {
     );
 
     return res.json({
-      vehicles: vehicles.map((vehicle) => vehicle.toJSON()),
+      vehicles: vehicles.map((vehicle) => toVehicleResponse(vehicle, req)),
     });
   } catch (error) {
     console.error('Fetch vehicle submissions error:', error);
@@ -422,7 +431,7 @@ export const updateVehicleStatus = async (req, res) => {
       }).catch((error) => console.warn('Vehicle status email failed:', error));
     }
 
-    return res.json({ vehicle: vehicle.toJSON() });
+    return res.json({ vehicle: toVehicleResponse(vehicle, req) });
   } catch (error) {
     console.error('Update vehicle status error:', error);
     return res.status(500).json({ message: 'Unable to update vehicle status' });
@@ -475,10 +484,115 @@ export const updateVehicleDetails = async (req, res) => {
     await vehicle.save();
     await vehicle.populate('driver', 'name email contactNumber address');
 
-    return res.json({ vehicle: vehicle.toJSON() });
+    return res.json({ vehicle: toVehicleResponse(vehicle, req) });
   } catch (error) {
     console.error('Update vehicle details error:', error);
     return res.status(500).json({ message: 'Unable to update vehicle details' });
+  }
+};
+
+export const addVehicleImages = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+
+  const { id } = req.params;
+  const newImages =
+    Array.isArray(req.files) && req.files.length > 0
+      ? req.files.map((file) => `vehicles/${path.basename(file.path)}`)
+      : [];
+
+  if (newImages.length === 0) {
+    return res.status(400).json({ message: 'Upload at least one image.' });
+  }
+
+  try {
+    const vehicle = await Vehicle.findById(id).populate(
+      'driver',
+      'name email contactNumber address'
+    );
+
+    if (!vehicle) {
+      return res.status(404).json({ message: 'Vehicle submission not found' });
+    }
+
+    const existing = Array.isArray(vehicle.images) ? vehicle.images : [];
+    const combined = [...existing, ...newImages].slice(0, 5);
+    vehicle.images = combined;
+    vehicle.reviewedAt = new Date();
+    vehicle.reviewedBy = req.user.id;
+
+    await vehicle.save();
+    await vehicle.populate('driver', 'name email contactNumber address');
+
+    return res.json({ vehicle: toVehicleResponse(vehicle, req) });
+  } catch (error) {
+    console.error('Add vehicle images error:', error);
+    return res.status(500).json({ message: 'Unable to add vehicle images' });
+  }
+};
+
+export const removeVehicleImage = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+
+  const { id } = req.params;
+  const { image } = req.body;
+  const trimmedImage = typeof image === 'string' ? image.trim() : '';
+
+  if (!trimmedImage) {
+    return res.status(400).json({ message: 'Image path is required' });
+  }
+
+  const toStoredPath = (input) => {
+    if (!input) return '';
+    const idx = input.lastIndexOf('vehicles/');
+    if (idx >= 0) {
+      return input.slice(idx);
+    }
+    return input;
+  };
+
+  const targetPath = toStoredPath(trimmedImage);
+
+  try {
+    const vehicle = await Vehicle.findById(id).populate(
+      'driver',
+      'name email contactNumber address'
+    );
+
+    if (!vehicle) {
+      return res.status(404).json({ message: 'Vehicle submission not found' });
+    }
+
+    const existing = Array.isArray(vehicle.images) ? vehicle.images : [];
+    const filtered = existing.filter((entry) => entry !== targetPath);
+
+    if (filtered.length === existing.length) {
+      return res.status(404).json({ message: 'Image not found on vehicle' });
+    }
+
+    vehicle.images = filtered;
+    vehicle.reviewedAt = new Date();
+    vehicle.reviewedBy = req.user.id;
+
+    await vehicle.save();
+    await vehicle.populate('driver', 'name email contactNumber address');
+
+    const absolutePath = path.join(process.cwd(), 'uploads', targetPath);
+    fs.unlink(absolutePath, (err) => {
+      if (err) {
+        console.warn('Unable to delete vehicle image file', absolutePath, err.message);
+      }
+    });
+
+    return res.json({ vehicle: toVehicleResponse(vehicle, req) });
+  } catch (error) {
+    console.error('Remove vehicle image error:', error);
+    return res.status(500).json({ message: 'Unable to remove vehicle image' });
   }
 };
 

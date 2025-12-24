@@ -100,6 +100,10 @@ const shapeBooking = (booking, review, req) => {
   const rate = Number.isFinite(booking.commissionRate)
     ? booking.commissionRate
     : DEFAULT_COMMISSION_RATE;
+  const discountRate =
+    Number.isFinite(booking.commissionDiscountRate) && booking.commissionDiscountRate > 0
+      ? booking.commissionDiscountRate
+      : 0;
   const commissionAmount =
     Number.isFinite(booking.commissionAmount) && booking.commissionAmount >= 0
       ? booking.commissionAmount
@@ -116,10 +120,6 @@ const shapeBooking = (booking, review, req) => {
     Number.isFinite(booking.driverEarnings) && booking.driverEarnings >= 0
       ? booking.driverEarnings
       : Math.round((payableTotal - commissionAmount) * 100) / 100;
-  const discountRate =
-    Number.isFinite(booking.commissionDiscountRate) && booking.commissionDiscountRate > 0
-      ? booking.commissionDiscountRate
-      : 0;
   const discountLabel = booking.commissionDiscountLabel || null;
   const discountId = booking.commissionDiscount
     ? toId(booking.commissionDiscount)
