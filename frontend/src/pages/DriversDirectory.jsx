@@ -21,10 +21,15 @@ const formatCurrency = (value) => {
 };
 
 const formatYears = (years) => {
-  if (!Number.isFinite(years)) {
-    return '1 year';
+  const numeric = Number(years);
+  if (!Number.isFinite(numeric)) {
+    return 'Experience not provided';
   }
-  return `${years} year${years === 1 ? '' : 's'}`;
+  const normalized = Math.max(0, Math.round(numeric));
+  if (normalized === 0) {
+    return 'New to guiding';
+  }
+  return `${normalized} year${normalized === 1 ? '' : 's'}`;
 };
 
 const sortOptions = [

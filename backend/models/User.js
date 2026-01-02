@@ -91,6 +91,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    experienceYears: {
+      type: Number,
+      min: 0,
+      max: 60,
+    },
     driverLocation: driverLocationSchema,
   },
   {

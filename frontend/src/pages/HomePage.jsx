@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
@@ -22,10 +22,15 @@ const formatCurrency = (value) => {
 };
 
 const formatExperience = (years) => {
-  if (!Number.isFinite(years)) {
+  const numeric = Number(years);
+  if (!Number.isFinite(numeric)) {
     return 'Experienced guide';
   }
-  return `${years}+ years guiding`;
+  const normalized = Math.max(0, Math.round(numeric));
+  if (normalized === 0) {
+    return 'New to guiding';
+  }
+  return `${normalized} year${normalized === 1 ? '' : 's'} guiding`;
 };
 
 const getVehicleImage = (vehicle) => {
@@ -241,21 +246,28 @@ const buildLiveDriverPins = (drivers = []) => {
     return [];
   }
 
+  const getLocation = (driver) => driver?.location || driver?.driverLocation;
+
   const pinsWithCoordinates = drivers
     .filter(
       (driver) =>
-        typeof driver?.location?.latitude === 'number' &&
-        typeof driver?.location?.longitude === 'number'
+        typeof getLocation(driver)?.latitude === 'number' &&
+        typeof getLocation(driver)?.longitude === 'number'
     )
     .slice(0, 10)
-    .map((driver) => ({
-      id: driver.id,
-      name: driver.name || 'Driver',
-      label: driver.location?.label || driver.address || 'On the road',
-      style: projectLatLng(driver.location.latitude, driver.location.longitude),
-      driverCount: 1,
-      avatar: driver.profilePhoto || null,
-    }));
+    .map((driver) => {
+      const location = getLocation(driver);
+      return {
+        id: driver.id,
+        name: driver.name || 'Driver',
+        label: location?.label || driver.address || 'On the road',
+        style: projectLatLng(location.latitude, location.longitude),
+        lat: location.latitude,
+        lng: location.longitude,
+        driverCount: 1,
+        avatar: driver.profilePhoto || null,
+      };
+    });
 
   if (pinsWithCoordinates.length) {
     return pinsWithCoordinates;
@@ -298,82 +310,114 @@ const spreadOverlappingPins = (pins = []) => {
   });
 };
 
+const googleMapsLoader = (() => {
+  let loaderPromise = null;
+  return (apiKey) => {
+    if (typeof window !== 'undefined' && window.google?.maps) {
+      return Promise.resolve(window.google.maps);
+    }
+    if (!apiKey) {
+      return Promise.reject(new Error('Google Maps API key missing.'));
+    }
+    if (!loaderPromise) {
+      loaderPromise = new Promise((resolve, reject) => {
+        const existing = document.querySelector('script[data-google-maps-loader]');
+        if (existing) {
+          existing.addEventListener('load', () => resolve(window.google.maps));
+          existing.addEventListener('error', () =>
+            reject(new Error('Unable to load Google Maps.'))
+          );
+          return;
+        }
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}`;
+        script.async = true;
+        script.defer = true;
+        script.dataset.googleMapsLoader = 'true';
+        script.onload = () => resolve(window.google.maps);
+        script.onerror = () => reject(new Error('Unable to load Google Maps.'));
+        document.head.appendChild(script);
+      });
+    }
+    return loaderPromise;
+  };
+})();
+
 const LiveDriversMapCard = ({ drivers, loading, error, onReload }) => {
-  const [mapScale, setMapScale] = useState(1);
+  const mapContainerRef = useRef(null);
+  const mapRef = useRef(null);
+  const markersRef = useRef([]);
+  const [mapError, setMapError] = useState('');
+  const [mapLoading, setMapLoading] = useState(false);
   const pins = useMemo(
     () => spreadOverlappingPins(buildLiveDriverPins(drivers)),
     [drivers]
   );
 
-  const zoomIn = () => setMapScale((prev) => clamp(prev + 0.2, 0.85, 2.2));
-  const zoomOut = () => setMapScale((prev) => clamp(prev - 0.2, 0.85, 2.2));
-  const resetZoom = () => setMapScale(1);
-
-  const renderMapContent = () => {
-    if (loading) {
-      return <div className="absolute inset-0 animate-pulse rounded-2xl bg-white/5" />;
+  useEffect(() => {
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+    if (!mapContainerRef.current) {
+      return;
     }
-    if (error) {
-      return (
-        <div className="flex h-full flex-col items-center justify-center gap-3 text-center text-sm text-amber-100">
-          <p>{error}</p>
-          <button
-            type="button"
-            onClick={onReload}
-            className="rounded-full border border-amber-200/60 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-white/10"
-          >
-            Try again
-          </button>
-        </div>
-      );
+    if (loading || error) {
+      return;
     }
-    if (!pins.length) {
-      return (
-        <div className="flex h-full flex-col items-center justify-center text-center text-sm text-slate-200">
-          <p>No live drivers to show yet.</p>
-          <p className="mt-1 text-xs text-slate-400">Check back soon.</p>
-        </div>
-      );
+    if (!apiKey) {
+      setMapError('Add VITE_GOOGLE_MAPS_API_KEY to show the live driver map.');
+      return;
     }
+    setMapError('');
+    setMapLoading(true);
 
-    return pins.map((pin) => {
-      const hasOffset =
-        pin.offset && typeof pin.offset.x === 'number' && typeof pin.offset.y === 'number';
-      const transform = hasOffset
-        ? `translate(-50%, -50%) translate(${pin.offset.x}px, ${pin.offset.y}px)`
-        : 'translate(-50%, -50%)';
-      const locationLabel =
-        pin.driverCount > 1 ? `${pin.driverCount} drivers · ${pin.label}` : pin.label;
+    googleMapsLoader(apiKey)
+      .then((maps) => {
+        setMapLoading(false);
+        if (!mapRef.current) {
+          mapRef.current = new maps.Map(mapContainerRef.current, {
+            center: { lat: 7.8731, lng: 80.7718 },
+            zoom: 7,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: false,
+          });
+        }
 
-      return (
-        <Link
-          key={pin.id}
-          to={`/drivers/${pin.id}`}
-          className="group absolute z-10 transition hover:scale-105"
-          style={{ ...pin.style, transform }}
-        >
-          <div className="flex items-center gap-2 rounded-full bg-white/95 px-3 py-1.5 text-xs font-semibold text-slate-900 shadow-lg shadow-emerald-900/40 backdrop-blur-sm">
-            <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full border border-white/80 bg-emerald-500/10">
-              {pin.avatar ? (
-                <img src={pin.avatar} alt={pin.name} className="h-full w-full object-cover" />
-              ) : (
-                <UserRoundCheck className="h-4 w-4 text-emerald-600" />
-              )}
-            </span>
-            <span className="flex flex-col text-left leading-tight">
-              <span>{pin.name.split(' ')[0]}</span>
-              <span className="text-[0.65rem] font-medium text-slate-500">{locationLabel}</span>
-            </span>
-          </div>
-        </Link>
-      );
-    });
-  };
+        markersRef.current.forEach((marker) => marker.setMap(null));
+        markersRef.current = [];
+
+        if (!pins.length) {
+          return;
+        }
+
+        const bounds = new maps.LatLngBounds();
+        pins.forEach((pin) => {
+          if (typeof pin.lat !== 'number' || typeof pin.lng !== 'number') {
+            return;
+          }
+          const marker = new maps.Marker({
+            position: { lat: pin.lat, lng: pin.lng },
+            map: mapRef.current,
+            title: `${pin.name} – ${pin.label}`,
+          });
+          markersRef.current.push(marker);
+          bounds.extend(marker.getPosition());
+        });
+
+        if (!bounds.isEmpty()) {
+          mapRef.current.fitBounds(bounds);
+        }
+      })
+      .catch((loadError) => {
+        console.warn('Google Maps failed', loadError);
+        setMapLoading(false);
+        setMapError(loadError?.message || 'Unable to load map.');
+      });
+  }, [pins, loading, error]);
 
   return (
-    <div className="relative mx-auto w-full max-w-[420px] rounded-[30px] border border-white/60 bg-white/80 shadow-2xl shadow-emerald-200/60 backdrop-blur lg:max-w-[460px]">
+    <div className="relative mx-auto w-full max-w-[420px] overflow-hidden rounded-[30px] border border-white/60 bg-white/80 shadow-2xl shadow-emerald-200/60 backdrop-blur lg:max-w-[460px]">
       <div className="absolute inset-0 rounded-[30px] bg-gradient-to-tr from-emerald-300/20 to-transparent blur-3xl" />
-      <div className="relative overflow-hidden rounded-[30px]">
+      <div className="relative h-[600px] w-full">
         <div className="absolute left-0 top-0 z-30 rounded-br-2xl bg-slate-950/85 px-4 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-emerald-200 shadow-lg shadow-black/30">
           Live driver map ·{' '}
           <span className="text-white">{pins.length || (loading ? '—' : 0)} live pins</span>
@@ -381,45 +425,39 @@ const LiveDriversMapCard = ({ drivers, loading, error, onReload }) => {
         <div className="absolute right-3 top-3 z-30 flex flex-col gap-2">
           <button
             type="button"
-            onClick={zoomIn}
-            className="rounded-full bg-white/90 px-3 py-2 text-sm font-bold text-slate-900 shadow hover:bg-white"
-            aria-label="Zoom in on live map"
-          >
-            +
-          </button>
-          <button
-            type="button"
-            onClick={zoomOut}
-            className="rounded-full bg-white/90 px-3 py-2 text-sm font-bold text-slate-900 shadow hover:bg-white"
-            aria-label="Zoom out on live map"
-          >
-            -
-          </button>
-          <button
-            type="button"
-            onClick={resetZoom}
+            onClick={onReload}
             className="rounded-full bg-slate-900/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-100 shadow hover:bg-slate-900"
           >
-            Reset
+            Refresh
           </button>
         </div>
-        <div className="relative h-[600px] w-full overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950">
-          <div className="absolute inset-0">
-            <div
-              className="relative h-full w-full transition-transform duration-300 ease-out"
-              style={{ transform: `scale(${mapScale})`, transformOrigin: '50% 50%' }}
-            >
-              <img
-                src={sriLankaTouristMap}
-                alt="Sri Lanka tourist map"
-                className="absolute inset-0 h-full w-full object-cover object-center brightness-95 contrast-110 saturate-120"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-gradient-to-b from-slate-950/45 via-slate-900/15 to-emerald-900/40" />
-              {renderMapContent()}
-            </div>
+        <div
+          ref={mapContainerRef}
+          className="absolute inset-0 h-full w-full overflow-hidden rounded-[30px] bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950"
+        />
+        {(loading || mapLoading) && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-950/30 text-sm text-white backdrop-blur">
+            Loading live map...
           </div>
-        </div>
+        )}
+        {(error || mapError) && !loading && (
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-slate-950/40 px-4 text-center text-sm text-amber-100 backdrop-blur">
+            <p>{mapError || error}</p>
+            <button
+              type="button"
+              onClick={onReload}
+              className="rounded-full border border-amber-200/60 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-white/10"
+            >
+              Try again
+            </button>
+          </div>
+        )}
+        {!loading && !mapLoading && !error && !mapError && !pins.length ? (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center text-sm text-slate-200 backdrop-blur-sm">
+            <p>No live drivers to show yet.</p>
+            <p className="mt-1 text-xs text-slate-400">Check back soon.</p>
+          </div>
+        ) : null}
       </div>
     </div>
   );

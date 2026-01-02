@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import Review, { REVIEW_STATUS } from '../models/Review.js';
 import Booking, { BOOKING_STATUS } from '../models/Booking.js';
 import Vehicle, { VEHICLE_STATUS } from '../models/Vehicle.js';
+import User, { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
 import { mapAssetUrls } from '../utils/assetUtils.js';
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
@@ -49,6 +50,7 @@ const shapeAdminReview = (review, req) => ({
   ...shapePublicReview(review),
   status: review.status,
   adminNote: review.adminNote || '',
+  createdByAdmin: Boolean(review.createdByAdmin),
   travelerUser: review.travelerUser ? review.travelerUser.toString() : undefined,
   driver: review.driver && typeof review.driver === 'object'
     ? {
@@ -342,6 +344,129 @@ export const listAdminReviews = async (req, res) => {
   } catch (error) {
     console.error('List admin reviews error:', error);
     return res.status(500).json({ message: 'Unable to load reviews.' });
+  }
+};
+
+export const createAdminReview = async (req, res) => {
+  const {
+    driver,
+    vehicle,
+    rating,
+    title,
+    comment,
+    travelerName,
+    visitedStartDate,
+    visitedEndDate,
+    status = REVIEW_STATUS.APPROVED,
+  } = req.body || {};
+
+  if (!isValidObjectId(driver)) {
+    return res.status(400).json({ message: 'Invalid driver identifier.' });
+  }
+
+  if (vehicle && !isValidObjectId(vehicle)) {
+    return res.status(400).json({ message: 'Invalid vehicle identifier.' });
+  }
+
+  const normalizedRating = coerceRating(rating);
+  if (normalizedRating === null) {
+    return res.status(400).json({ message: 'Rating must be a whole number between 1 and 5.' });
+  }
+
+  const trimmedComment = typeof comment === 'string' ? comment.trim() : '';
+  if (trimmedComment.length < 10) {
+    return res
+      .status(400)
+      .json({ message: 'Please include at least 10 characters in the review.' });
+  }
+
+  const trimmedTitle = typeof title === 'string' ? title.trim() : '';
+  if (trimmedTitle.length > 120) {
+    return res.status(400).json({ message: 'Title must be under 120 characters.' });
+  }
+
+  const normalizedStatusInput = typeof status === 'string' ? status.trim().toLowerCase() : status;
+  const normalizedStatus = Object.values(REVIEW_STATUS).includes(normalizedStatusInput)
+    ? normalizedStatusInput
+    : REVIEW_STATUS.APPROVED;
+  const startDate = coerceDate(visitedStartDate);
+  const endDate = coerceDate(visitedEndDate);
+
+  if (startDate && endDate && endDate < startDate) {
+    return res.status(400).json({ message: 'End date cannot be before start date.' });
+  }
+
+  try {
+    const driverDoc = await User.findOne({
+      _id: driver,
+      role: USER_ROLES.DRIVER,
+      driverStatus: DRIVER_STATUS.APPROVED,
+    });
+
+    if (!driverDoc) {
+      return res.status(404).json({ message: 'Driver not found or not approved.' });
+    }
+
+    let vehicleDoc = null;
+    if (vehicle) {
+      vehicleDoc = await Vehicle.findById(vehicle);
+      if (!vehicleDoc) {
+        return res.status(404).json({ message: 'Vehicle not found.' });
+      }
+      if (vehicleDoc.driver && vehicleDoc.driver.toString() !== driverDoc._id.toString()) {
+        return res
+          .status(400)
+          .json({ message: 'Selected vehicle does not belong to this driver.' });
+      }
+    } else {
+      vehicleDoc = await Vehicle.findOne({
+        driver: driverDoc._id,
+        status: VEHICLE_STATUS.APPROVED,
+      });
+    }
+
+    const review = await Review.create({
+      driver: driverDoc._id,
+      vehicle: vehicleDoc?._id,
+      travelerUser: req.user.id,
+      travelerName: typeof travelerName === 'string' && travelerName.trim()
+        ? travelerName.trim()
+        : 'Guest',
+      rating: normalizedRating,
+      title: trimmedTitle || undefined,
+      comment: trimmedComment,
+      visitedStartDate: startDate || undefined,
+      visitedEndDate: endDate || undefined,
+      status: normalizedStatus,
+      publishedAt: normalizedStatus === REVIEW_STATUS.APPROVED ? new Date() : undefined,
+      createdByAdmin: true,
+    });
+
+    await review.populate([
+      {
+        path: 'vehicle',
+        populate: { path: 'driver', select: 'name email contactNumber' },
+      },
+      {
+        path: 'driver',
+        select: 'name email contactNumber',
+      },
+      {
+        path: 'booking',
+        select: 'startDate endDate status totalDays totalPrice',
+      },
+    ]);
+
+    return res.status(201).json({
+      message:
+        normalizedStatus === REVIEW_STATUS.APPROVED
+          ? 'Review published.'
+          : 'Review saved as draft.',
+      review: shapeAdminReview(review.toJSON(), req),
+    });
+  } catch (error) {
+    console.error('Create admin review error:', error);
+    return res.status(500).json({ message: 'Unable to create review.' });
   }
 };
 

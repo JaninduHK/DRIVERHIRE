@@ -199,6 +199,63 @@ const markLocationPromptSeenToday = (profile) => {
   window.localStorage.setItem(key, getTodayDateKey());
 };
 
+const getDeviceLocation = () =>
+  new Promise((resolve, reject) => {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+      reject(new Error('Live location is unavailable in this browser.'));
+      return;
+    }
+    if (!navigator.geolocation) {
+      reject(new Error('Live location is not supported on this device.'));
+      return;
+    }
+    if (!window.isSecureContext) {
+      reject(
+        new Error('Location requires HTTPS or localhost. Enter coordinates manually instead.')
+      );
+      return;
+    }
+
+    let fallbackWatchId = null;
+    const cleanup = () => {
+      if (fallbackWatchId !== null && navigator.geolocation.clearWatch) {
+        navigator.geolocation.clearWatch(fallbackWatchId);
+      }
+    };
+
+    const onSuccess = (position) => {
+      cleanup();
+      const { latitude, longitude } = position.coords || {};
+      if (typeof latitude === 'number' && typeof longitude === 'number') {
+        resolve({ latitude, longitude });
+      } else {
+        reject(new Error('Unable to read coordinates from your device.'));
+      }
+    };
+
+    const onError = (error) => {
+      // If the initial fetch fails with a transient error, try a single watch as a fallback.
+      if (
+        error?.code === error?.POSITION_UNAVAILABLE &&
+        typeof navigator.geolocation.watchPosition === 'function'
+      ) {
+        fallbackWatchId = navigator.geolocation.watchPosition(onSuccess, (watchError) => {
+          cleanup();
+          reject(watchError);
+        });
+        return;
+      }
+      cleanup();
+      reject(error || new Error('Unable to fetch your location.'));
+    };
+
+    navigator.geolocation.getCurrentPosition(onSuccess, onError, {
+      enableHighAccuracy: true,
+      timeout: 20000,
+      maximumAge: 0,
+    });
+  });
+
 const DriverDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -647,36 +704,27 @@ const DriverDashboard = () => {
   }, []);
 
   const handleUseDeviceLocation = useCallback(() => {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      toast.error('Live location is not available in this browser.');
-      return;
-    }
     setLocationPromptLocating(true);
     setLocationPromptStatus('Requesting your current position...');
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
+    getDeviceLocation()
+      .then(({ latitude, longitude }) => {
         setLocationPromptLocating(false);
-        const { latitude, longitude } = position.coords || {};
-        if (typeof latitude === 'number' && typeof longitude === 'number') {
-          setLocationPromptForm((prev) => ({
-            ...prev,
-            latitude: latitude.toFixed(6),
-            longitude: longitude.toFixed(6),
-          }));
-          setLocationPromptStatus('Location captured. Save to update the live map.');
-        } else {
-          setLocationPromptStatus('We could not read coordinates from your device.');
-          toast.error('Unable to read coordinates from your device.');
-        }
-      },
-      (error) => {
+        setLocationPromptForm((prev) => ({
+          ...prev,
+          latitude: latitude.toFixed(6),
+          longitude: longitude.toFixed(6),
+        }));
+        setLocationPromptStatus('Location captured. Save to update the live map.');
+      })
+      .catch((error) => {
         setLocationPromptLocating(false);
-        setLocationPromptStatus('Unable to fetch your location. Check permissions and try again.');
+        const message =
+          error?.message ||
+          'Unable to fetch your location. Check permissions or enter coordinates manually.';
+        setLocationPromptStatus(message);
+        toast.error(message);
         console.warn('Geolocation error', error);
-        toast.error('Please enable location access to use live location.');
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+      });
   }, []);
 
   const handleSaveLiveLocation = useCallback(async () => {
@@ -2213,6 +2261,10 @@ const DriverEarningsPanel = ({ state, onMonthChange, onRefresh, onSlipUpload }) 
 const buildDriverProfileForm = (profile) => ({
   name: profile?.name || '',
   contactNumber: profile?.contactNumber || '',
+  experienceYears: (() => {
+    const numeric = Number(profile?.experienceYears);
+    return Number.isFinite(numeric) && numeric >= 0 ? String(numeric) : '';
+  })(),
   address: profile?.address || '',
   description: profile?.description || '',
   tripAdvisor: profile?.tripAdvisor || '',
@@ -2311,38 +2363,29 @@ const DriverProfilePanel = ({
   };
 
   const handleUseLiveLocation = () => {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      toast.error('Live location is not available in this browser.');
-      return;
-    }
     setLocating(true);
     setLocationStatus('Requesting your current position...');
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
+    getDeviceLocation()
+      .then(({ latitude, longitude }) => {
         setLocating(false);
-        const { latitude, longitude } = position.coords || {};
-        if (typeof latitude === 'number' && typeof longitude === 'number') {
-          setFormState((prev) => ({
-            ...prev,
-            currentLatitude: latitude.toFixed(6),
-            currentLongitude: longitude.toFixed(6),
-          }));
-          setClearLocation(false);
-          setLocationStatus('Location captured from your device.');
-        } else {
-          setLocationStatus('We could not read coordinates from your device.');
-          toast.error('Unable to read coordinates from your device.');
-        }
-      },
-      (error) => {
+        setFormState((prev) => ({
+          ...prev,
+          currentLatitude: latitude.toFixed(6),
+          currentLongitude: longitude.toFixed(6),
+        }));
+        setClearLocation(false);
+        setLocationStatus('Location captured from your device.');
+      })
+      .catch((error) => {
         setLocating(false);
-        setLocationStatus('Unable to fetch your location. Check permissions and try again.');
+        const message =
+          error?.message ||
+          'Unable to fetch your location. Check permissions or enter coordinates manually.';
+        setLocationStatus(message);
+        toast.error(message);
         console.warn('Geolocation error', error);
-        toast.error('Please enable location access to use live location.');
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+      });
   };
 
   const handleProfileSubmit = async (event) => {
@@ -2351,10 +2394,28 @@ const DriverProfilePanel = ({
       return;
     }
 
+    const hasExperienceInput =
+      formState.experienceYears !== undefined &&
+      formState.experienceYears !== null &&
+      String(formState.experienceYears).trim() !== '';
+
+    let normalizedExperience = null;
+    if (hasExperienceInput) {
+      const parsedExperience = Number(formState.experienceYears);
+      if (!Number.isFinite(parsedExperience) || parsedExperience < 0) {
+        toast.error('Enter your driving experience in years (0 or more).');
+        return;
+      }
+      normalizedExperience = Math.min(60, Math.round(parsedExperience));
+    }
+
     try {
       const payload = new FormData();
       payload.append('name', formState.name);
       payload.append('contactNumber', formState.contactNumber || '');
+      if (hasExperienceInput && normalizedExperience !== null) {
+        payload.append('experienceYears', String(normalizedExperience));
+      }
       payload.append('address', formState.address || '');
       payload.append('description', formState.description || '');
       payload.append('tripAdvisor', formState.tripAdvisor || '');
@@ -2508,6 +2569,23 @@ const DriverProfilePanel = ({
               onChange={handleFieldChange}
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
               placeholder="e.g. +94 71 555 5555"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="driver-profile-experience">
+              Years of driving experience
+            </label>
+            <input
+              id="driver-profile-experience"
+              name="experienceYears"
+              type="number"
+              inputMode="numeric"
+              min="0"
+              max="60"
+              value={formState.experienceYears}
+              onChange={handleFieldChange}
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+              placeholder="e.g. 5"
             />
           </div>
           <div>

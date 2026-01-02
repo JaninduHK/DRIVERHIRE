@@ -25,6 +25,18 @@ const formatCurrency = (value) => {
   })}`;
 };
 
+const formatExperienceYears = (years) => {
+  const numeric = Number(years);
+  if (!Number.isFinite(numeric)) {
+    return 'Experience not provided';
+  }
+  const normalized = Math.max(0, Math.round(numeric));
+  if (normalized === 0) {
+    return 'New to guiding';
+  }
+  return `${normalized} year${normalized === 1 ? '' : 's'} guiding`;
+};
+
 const DEFAULT_REVIEW_META = {
   total: 0,
   averageRating: null,
@@ -196,7 +208,7 @@ const DriverDetails = () => {
                     </span>
                     <span className="inline-flex items-center gap-1">
                       <Users className="h-3.5 w-3.5" />
-                      {driver.experienceYears}+ years guiding
+                      {formatExperienceYears(driver.experienceYears)}
                     </span>
                   </div>
                 </div>

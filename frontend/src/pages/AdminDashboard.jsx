@@ -32,6 +32,7 @@ import {
   addVehicleImages as addVehicleImagesRequest,
   removeVehicleImage as removeVehicleImageRequest,
   fetchReviews,
+  createReview as createAdminReview,
   updateReviewStatus as updateReviewStatusRequest,
   fetchBookings as fetchAdminBookings,
   updateBooking as updateAdminBooking,
@@ -219,6 +220,7 @@ const AdminDashboard = () => {
     loading: true,
     error: '',
     updatingId: null,
+    creating: false,
   });
   const [currentUser, setCurrentUser] = useState(null);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -355,25 +357,27 @@ const AdminDashboard = () => {
     try {
       setReviewState((prev) => ({ ...prev, loading: true, error: '' }));
       const response = await fetchReviews(status !== 'all' ? { status } : {});
-      setReviewState({
+      setReviewState((prev) => ({
+        ...prev,
         items: response.reviews || [],
         meta: response.meta || { total: 0, status },
         loading: false,
         error: '',
         updatingId: null,
-      });
+      }));
       if (status === 'pending') {
         setPendingReviewCount(response.meta?.total ?? (response.reviews?.length ?? 0));
       }
       return response;
     } catch (err) {
-      setReviewState({
+      setReviewState((prev) => ({
+        ...prev,
         items: [],
         meta: { total: 0, status },
         loading: false,
         error: err.message || 'Unable to load reviews',
         updatingId: null,
-      });
+      }));
       throw err;
     }
   }, []);
@@ -755,6 +759,29 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleReviewCreate = useCallback(
+    async (payload) => {
+      setReviewState((prev) => ({ ...prev, creating: true }));
+      try {
+        await createAdminReview(payload);
+        toast.success(
+          payload.status === 'pending'
+            ? 'Review saved as pending.'
+            : payload.status === 'rejected'
+            ? 'Review saved.'
+            : 'Review published.'
+        );
+        await loadReviews(reviewFilter);
+      } catch (err) {
+        toast.error(err.message || 'Unable to add review.');
+        throw err;
+      } finally {
+        setReviewState((prev) => ({ ...prev, creating: false }));
+      }
+    },
+    [loadReviews, reviewFilter]
+  );
+
   const handleAdminProfileSave = useCallback(
     async (payload) => {
       setProfileSaving(true);
@@ -1048,6 +1075,9 @@ const AdminDashboard = () => {
                 onFilterChange={handleReviewFilterChange}
                 onRetry={() => loadReviews(reviewFilter)}
                 onStatusChange={handleReviewStatusChange}
+                onCreate={handleReviewCreate}
+                drivers={driverState.items}
+                vehicles={vehicleState.items}
               />
             ) : activeSection === 'profile' ? (
               <AdminProfilePanel
@@ -3192,8 +3222,17 @@ const getReviewStatusLabel = (status) => {
   }
 };
 
-const ReviewsPanel = ({ state, filter, onFilterChange, onRetry, onStatusChange }) => {
-  const { items, meta, loading, error, updatingId } = state;
+const ReviewsPanel = ({
+  state,
+  filter,
+  onFilterChange,
+  onRetry,
+  onStatusChange,
+  onCreate,
+  drivers = [],
+  vehicles = [],
+}) => {
+  const { items, meta, loading, error, updatingId, creating = false } = state;
 
   const filters = [
     { value: 'pending', label: 'Pending' },
@@ -3202,11 +3241,153 @@ const ReviewsPanel = ({ state, filter, onFilterChange, onRetry, onStatusChange }
     { value: 'all', label: 'All' },
   ];
 
+  const [formState, setFormState] = useState({
+    driverId: '',
+    vehicleId: '',
+    travelerName: '',
+    rating: '5',
+    title: '',
+    comment: '',
+    visitedStartDate: '',
+    visitedEndDate: '',
+    status: 'approved',
+  });
+  const [formError, setFormError] = useState('');
+
+  const approvedDrivers = useMemo(
+    () => drivers.filter((driver) => driver.driverStatus === 'approved'),
+    [drivers]
+  );
+
+  const vehicleOptions = useMemo(() => {
+    if (!formState.driverId) {
+      return [];
+    }
+    return vehicles.filter((vehicle) => {
+      const driverId =
+        vehicle.driver?.id || vehicle.driver?._id || vehicle.driver;
+      const matchesDriver =
+        driverId && String(driverId) === String(formState.driverId);
+      const approvedStatus =
+        !vehicle.status || vehicle.status === 'approved';
+      return matchesDriver && approvedStatus;
+    });
+  }, [formState.driverId, vehicles]);
+
+  const statusCounts = useMemo(() => {
+    const counts = { approved: 0, pending: 0, rejected: 0 };
+    const list = Array.isArray(items) ? items : [];
+    list.forEach((review) => {
+      const key = review.status || 'pending';
+      if (counts[key] !== undefined) {
+        counts[key] += 1;
+      }
+    });
+    return counts;
+  }, [items]);
+
+  const averageRating = useMemo(() => {
+    const list = Array.isArray(items) ? items : [];
+    if (!list.length) {
+      return null;
+    }
+    const aggregate = list.reduce(
+      (acc, review) => {
+        const rating = Number(review.rating);
+        if (Number.isFinite(rating)) {
+          acc.sum += rating;
+          acc.count += 1;
+        }
+        return acc;
+      },
+      { sum: 0, count: 0 }
+    );
+    if (aggregate.count === 0) {
+      return null;
+    }
+    return Number((aggregate.sum / aggregate.count).toFixed(1));
+  }, [items]);
+
   const handleFilterClick = (value) => {
     if (value === filter) {
       return;
     }
     onFilterChange?.(value);
+  };
+
+  const handleFormFieldChange = (field, value) => {
+    setFormState((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleCreateSubmit = async (event) => {
+    event.preventDefault();
+    setFormError('');
+
+    if (!onCreate) {
+      return;
+    }
+
+    if (!formState.driverId) {
+      setFormError('Select a driver to attach this review to.');
+      return;
+    }
+
+    const ratingValue = Number(formState.rating);
+    if (!Number.isFinite(ratingValue) || ratingValue < 1 || ratingValue > 5) {
+      setFormError('Choose a rating between 1 and 5.');
+      return;
+    }
+
+    const trimmedComment = formState.comment.trim();
+    if (trimmedComment.length < 10) {
+      setFormError('Add at least 10 characters to the review text.');
+      return;
+    }
+
+    if (
+      formState.visitedStartDate &&
+      formState.visitedEndDate &&
+      formState.visitedEndDate < formState.visitedStartDate
+    ) {
+      setFormError('End date cannot be before start date.');
+      return;
+    }
+
+    const payload = {
+      driver: formState.driverId,
+      rating: Math.round(ratingValue),
+      travelerName: formState.travelerName.trim() || undefined,
+      title: formState.title.trim() || undefined,
+      comment: trimmedComment,
+      status: formState.status || 'approved',
+    };
+
+    if (formState.vehicleId) {
+      payload.vehicle = formState.vehicleId;
+    }
+    if (formState.visitedStartDate) {
+      payload.visitedStartDate = formState.visitedStartDate;
+    }
+    if (formState.visitedEndDate) {
+      payload.visitedEndDate = formState.visitedEndDate;
+    }
+
+    try {
+      await onCreate(payload);
+      setFormState({
+        driverId: '',
+        vehicleId: '',
+        travelerName: '',
+        rating: '5',
+        title: '',
+        comment: '',
+        visitedStartDate: '',
+        visitedEndDate: '',
+        status: 'approved',
+      });
+    } catch (createError) {
+      setFormError(createError?.message || 'Unable to publish review.');
+    }
   };
 
   const emptyCopy =
@@ -3220,6 +3401,218 @@ const ReviewsPanel = ({ state, filter, onFilterChange, onRetry, onStatusChange }
 
   return (
     <div className="space-y-4">
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Publish feedback
+            </p>
+            <h3 className="text-lg font-semibold text-slate-900">
+              Add a review to any driver
+            </h3>
+            <p className="text-sm text-slate-500">
+              Select the driver, capture the guest name, and publish immediately.
+            </p>
+          </div>
+        </div>
+        <form onSubmit={handleCreateSubmit} className="mt-4 space-y-3">
+          <div className="grid gap-3 md:grid-cols-2">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="admin-review-driver">
+                Driver
+              </label>
+              <select
+                id="admin-review-driver"
+                value={formState.driverId}
+                onChange={(event) => {
+                  handleFormFieldChange('driverId', event.target.value);
+                  handleFormFieldChange('vehicleId', '');
+                }}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                required
+              >
+                <option value="">Select driver</option>
+                {approvedDrivers.map((driver) => (
+                  <option key={driver.id} value={driver.id}>
+                    {driver.name} {driver.contactNumber ? `(${driver.contactNumber})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="admin-review-vehicle">
+                Vehicle (optional)
+              </label>
+              <select
+                id="admin-review-vehicle"
+                value={formState.vehicleId}
+                onChange={(event) => handleFormFieldChange('vehicleId', event.target.value)}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                disabled={!formState.driverId || vehicleOptions.length === 0}
+              >
+                <option value="">
+                  {formState.driverId
+                    ? vehicleOptions.length > 0
+                      ? 'Select vehicle'
+                      : 'No approved vehicles'
+                    : 'Select a driver first'}
+                </option>
+                {vehicleOptions.map((vehicle) => (
+                  <option key={vehicle.id} value={vehicle.id}>
+                    {vehicle.model} {vehicle.year ? `(${vehicle.year})` : ''}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-slate-500">
+                If left blank, we&apos;ll attach the first approved vehicle for this driver.
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="admin-review-guest">
+                Guest name
+              </label>
+              <input
+                id="admin-review-guest"
+                type="text"
+                value={formState.travelerName}
+                onChange={(event) => handleFormFieldChange('travelerName', event.target.value)}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                placeholder="e.g. Alex D."
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="admin-review-rating">
+                  Rating
+                </label>
+                <select
+                  id="admin-review-rating"
+                  value={formState.rating}
+                  onChange={(event) => handleFormFieldChange('rating', event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                >
+                  {[5, 4, 3, 2, 1].map((rating) => (
+                    <option key={rating} value={rating}>
+                      {rating} star{rating === 1 ? '' : 's'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="admin-review-status">
+                  Status
+                </label>
+                <select
+                  id="admin-review-status"
+                  value={formState.status}
+                  onChange={(event) => handleFormFieldChange('status', event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                >
+                  <option value="approved">Publish now</option>
+                  <option value="pending">Save as pending</option>
+                  <option value="rejected">Mark as declined</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="admin-review-title">
+                Title (optional)
+              </label>
+              <input
+                id="admin-review-title"
+                type="text"
+                value={formState.title}
+                onChange={(event) => handleFormFieldChange('title', event.target.value)}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                placeholder="e.g. Safe and flexible driver"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="admin-review-start">
+                  Trip start (optional)
+                </label>
+                <input
+                  id="admin-review-start"
+                  type="date"
+                  value={formState.visitedStartDate}
+                  onChange={(event) => handleFormFieldChange('visitedStartDate', event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="admin-review-end">
+                  Trip end (optional)
+                </label>
+                <input
+                  id="admin-review-end"
+                  type="date"
+                  value={formState.visitedEndDate}
+                  onChange={(event) => handleFormFieldChange('visitedEndDate', event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                />
+              </div>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="admin-review-comment">
+              Review text
+            </label>
+            <textarea
+              id="admin-review-comment"
+              rows={3}
+              value={formState.comment}
+              onChange={(event) => handleFormFieldChange('comment', event.target.value)}
+              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+              placeholder="Summarize the traveller's experience in 2-3 sentences."
+              required
+            />
+          </div>
+          {formError ? <p className="text-xs text-rose-600">{formError}</p> : null}
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={creating}
+              className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {creating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Publishing...
+                </>
+              ) : (
+                'Publish review'
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-3">
+          <p className="text-xs uppercase tracking-wide text-slate-400">Published</p>
+          <p className="mt-1 text-xl font-semibold text-slate-900">{statusCounts.approved ?? 0}</p>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-3">
+          <p className="text-xs uppercase tracking-wide text-slate-400">Pending</p>
+          <p className="mt-1 text-xl font-semibold text-slate-900">{statusCounts.pending ?? 0}</p>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-3">
+          <p className="text-xs uppercase tracking-wide text-slate-400">Declined</p>
+          <p className="mt-1 text-xl font-semibold text-slate-900">{statusCounts.rejected ?? 0}</p>
+        </div>
+        <div className="rounded-lg border border-slate-200 bg-white p-3">
+          <p className="text-xs uppercase tracking-wide text-slate-400">Average rating</p>
+          <p className="mt-1 text-xl font-semibold text-slate-900">
+            {averageRating !== null ? averageRating : '—'}
+          </p>
+        </div>
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           {filters.map((option) => {
@@ -3286,6 +3679,7 @@ const ReviewsPanel = ({ state, filter, onFilterChange, onRetry, onStatusChange }
             const statusLabel = getReviewStatusLabel(review.status);
             const badgeClass = reviewStatusStyles[review.status] || 'bg-slate-100 text-slate-600';
             const isUpdating = updatingId === review.id;
+            const isAdminAuthored = Boolean(review.createdByAdmin);
 
             const handleDecline = () => {
               let note = review.adminNote || '';
@@ -3308,6 +3702,11 @@ const ReviewsPanel = ({ state, filter, onFilterChange, onRetry, onStatusChange }
                       <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${badgeClass}`}>
                         {statusLabel}
                       </span>
+                      {isAdminAuthored ? (
+                        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+                          Admin added
+                        </span>
+                      ) : null}
                     </div>
                     {submittedOn ? (
                       <p className="mt-1 text-xs text-slate-500">Submitted {submittedOn}</p>

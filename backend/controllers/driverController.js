@@ -82,7 +82,7 @@ const serializeDriverVehicle = (vehicle, req) => {
 export const getDriverOverview = async (req, res) => {
   try {
     const driver = await User.findById(req.user.id).select(
-      'name email contactNumber address description tripAdvisor driverStatus createdAt profilePhoto driverLocation driverApprovedAt driverProfileTourCompletedAt driverReviewedAt'
+      'name email contactNumber address description tripAdvisor driverStatus createdAt profilePhoto driverLocation driverApprovedAt driverProfileTourCompletedAt driverReviewedAt experienceYears'
     );
 
     if (!driver) {

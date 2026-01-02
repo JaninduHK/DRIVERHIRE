@@ -75,6 +75,11 @@ router.post(
       .isIn(Object.values(USER_ROLES))
       .withMessage(`Role must be one of: ${Object.values(USER_ROLES).join(', ')}`),
     body('adminCode').optional().isString(),
+    body('experienceYears')
+      .if((value, { req }) => (req.body.role || USER_ROLES.GUEST) === USER_ROLES.DRIVER)
+      .isInt({ min: 0, max: 60 })
+      .withMessage('Experience years must be between 0 and 60')
+      .toInt(),
   ],
   registerUser
 );
@@ -123,6 +128,7 @@ router.put(
     body('currentLatitude').optional().isFloat({ min: -90, max: 90 }).toFloat(),
     body('currentLongitude').optional().isFloat({ min: -180, max: 180 }).toFloat(),
     body('currentLocationLabel').optional().isString().trim().isLength({ max: 120 }),
+    body('experienceYears').optional().isInt({ min: 0, max: 60 }).toInt(),
     body('removeProfilePhoto').optional().trim().custom((value) => {
       const normalized = String(value).toLowerCase().trim();
       return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';

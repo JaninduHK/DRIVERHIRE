@@ -30,6 +30,7 @@ import {
 import {
   listAdminReviews,
   updateReviewStatus as updateReviewStatusController,
+  createAdminReview,
 } from '../controllers/reviewController.js';
 import { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
 import { VEHICLE_STATUS } from '../models/Vehicle.js';
@@ -184,6 +185,29 @@ router.delete(
 );
 
 router.get('/reviews', listAdminReviews);
+
+router.post(
+  '/reviews',
+  [
+    body('driver').isMongoId().withMessage('Driver is required'),
+    body('vehicle').optional().isMongoId().withMessage('Vehicle must be valid'),
+    body('rating').isInt({ min: 1, max: 5 }).withMessage('Rating must be between 1 and 5'),
+    body('title').optional().isString().trim().isLength({ max: 120 }),
+    body('comment')
+      .isString()
+      .trim()
+      .isLength({ min: 10, max: 1200 })
+      .withMessage('Review comment must be between 10 and 1200 characters'),
+    body('travelerName').optional().isString().trim().isLength({ min: 1, max: 120 }),
+    body('visitedStartDate').optional().isISO8601(),
+    body('visitedEndDate').optional().isISO8601(),
+    body('status')
+      .optional()
+      .isIn(Object.values(REVIEW_STATUS))
+      .withMessage(`Status must be one of: ${Object.values(REVIEW_STATUS).join(', ')}`),
+  ],
+  createAdminReview
+);
 
 router.patch(
   '/reviews/:id/status',

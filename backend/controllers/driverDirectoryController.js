@@ -85,6 +85,22 @@ const computeAveragePrice = (vehicles = []) => {
   return Math.round((sum / vehicles.length) * 100) / 100;
 };
 
+const normalizeExperienceYears = (driver) => {
+  const raw = Number(driver?.experienceYears);
+  if (Number.isFinite(raw) && raw >= 0) {
+    return Math.max(0, Math.min(60, Math.round(raw)));
+  }
+  if (driver?.createdAt) {
+    return Math.max(
+      1,
+      Math.floor(
+        (Date.now() - new Date(driver.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 365)
+      )
+    );
+  }
+  return 1;
+};
+
 const deriveReviewScore = (experienceYears, vehicleCount) => {
   const experienceContribution = Math.min(0.6, (experienceYears / 10) * 0.6);
   const fleetContribution = Math.min(0.8, vehicleCount * 0.15);
@@ -96,14 +112,7 @@ const buildDriverSummary = (driver, vehicles = [], reviewStats = null, req, acti
   const cardVehicles = vehicles.map((vehicle) => shapeVehicleCard(vehicle, req, activeDiscount));
   const featuredVehicle = cardVehicles.find((vehicle) => Boolean(vehicle.image)) || cardVehicles[0] || null;
   const averagePricePerDay = computeAveragePrice(vehicles);
-  const experienceYears = driver.createdAt
-    ? Math.max(
-        1,
-        Math.floor(
-          (Date.now() - new Date(driver.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 365)
-        )
-      )
-    : 1;
+  const experienceYears = normalizeExperienceYears(driver);
 
   const featureCounts = FEATURE_FLAGS.reduce((acc, { key }) => {
     acc[key] = vehicles.some((vehicle) => Boolean(vehicle[key]));
@@ -204,7 +213,7 @@ export const listPublicDrivers = async (req, res) => {
       driverStatus: DRIVER_STATUS.APPROVED,
     })
       .select(
-        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation'
+        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation experienceYears'
       )
       .sort({ createdAt: -1 })
       .lean();
@@ -266,7 +275,7 @@ export const getPublicDriverDetails = async (req, res) => {
       driverStatus: DRIVER_STATUS.APPROVED,
     })
       .select(
-        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation'
+        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation experienceYears'
       )
       .lean();
 

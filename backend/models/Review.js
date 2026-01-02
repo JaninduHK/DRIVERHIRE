@@ -13,14 +13,13 @@ const reviewSchema = new mongoose.Schema(
     booking: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Booking',
-      required: true,
       unique: true,
+      sparse: true,
       index: true,
     },
     vehicle: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Vehicle',
-      required: true,
       index: true,
     },
     driver: {
@@ -68,6 +67,10 @@ const reviewSchema = new mongoose.Schema(
       type: String,
       trim: true,
       maxlength: 500,
+    },
+    createdByAdmin: {
+      type: Boolean,
+      default: false,
     },
     publishedAt: Date,
   },

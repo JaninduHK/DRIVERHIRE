@@ -9,6 +9,7 @@ const DriverRegister = () => {
     name: '',
     email: '',
     contactNumber: '',
+    experienceYears: '',
     description: '',
     tripAdvisor: '',
     address: '',
@@ -25,10 +26,18 @@ const DriverRegister = () => {
     event.preventDefault();
     setLoading(true);
 
+    const experienceValue = Number(formData.experienceYears);
+    if (!Number.isFinite(experienceValue) || experienceValue < 0) {
+      toast.error('Enter how many years you have been driving guests (0 or more).');
+      setLoading(false);
+      return;
+    }
+
     const payload = {
       name: formData.name.trim(),
       email: formData.email.trim().toLowerCase(),
       contactNumber: formData.contactNumber.trim(),
+      experienceYears: Math.min(60, Math.round(experienceValue)),
       description: formData.description.trim(),
       tripAdvisor: formData.tripAdvisor.trim(),
       address: formData.address.trim(),
@@ -99,13 +108,31 @@ const DriverRegister = () => {
                   id="contactNumber"
                   name="contactNumber"
                   type="tel"
-                  required
-                  value={formData.contactNumber}
-                  onChange={handleChange}
-                  className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                  placeholder="+94 71 234 5678"
-                />
-              </div>
+              required
+              value={formData.contactNumber}
+              onChange={handleChange}
+              className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+              placeholder="+94 71 234 5678"
+            />
+          </div>
+          <div>
+            <label htmlFor="experienceYears" className="block text-sm font-medium text-slate-700">
+              Years of driving experience
+            </label>
+            <input
+              id="experienceYears"
+              name="experienceYears"
+              type="number"
+              inputMode="numeric"
+              min="0"
+              max="60"
+              required
+              value={formData.experienceYears}
+              onChange={handleChange}
+              className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+              placeholder="e.g. 5"
+            />
+          </div>
               <div className="sm:col-span-2">
                 <label htmlFor="tripAdvisor" className="block text-sm font-medium text-slate-700">
                   TripAdvisor profile link

@@ -122,6 +122,12 @@ export const removeVehicleImage = (vehicleId, image) =>
 export const fetchReviews = (filters = {}) =>
   request(`/reviews${buildQueryString(filters)}`, { method: 'GET' });
 
+export const createReview = (payload) =>
+  request('/reviews', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+
 export const updateReviewStatus = (reviewId, payload) =>
   request(`/reviews/${reviewId}/status`, {
     method: 'PATCH',

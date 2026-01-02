@@ -61,6 +61,7 @@ export const registerUser = async (req, res) => {
       description,
       tripAdvisor,
       address,
+      experienceYears,
     } = req.body;
     const existingUser = await User.findOne({ email: email.toLowerCase() });
 
@@ -92,10 +93,11 @@ export const registerUser = async (req, res) => {
         { key: 'contactNumber', value: contactNumber },
         { key: 'description', value: description },
         { key: 'address', value: address },
+        { key: 'experienceYears', value: experienceYears },
       ];
 
       const missingFields = requiredDriverFields
-        .filter(({ value }) => !value || !String(value).trim())
+        .filter(({ value }) => value === undefined || value === null || (typeof value === 'string' && !value.trim()))
         .map(({ key }) => key);
 
       if (missingFields.length > 0) {
@@ -110,6 +112,11 @@ export const registerUser = async (req, res) => {
       user.description = description.trim();
       user.address = address.trim();
       user.tripAdvisor = tripAdvisor ? tripAdvisor.trim() : '';
+      const normalizedExperience = Math.max(
+        0,
+        Math.min(60, Math.round(Number(experienceYears) || 0))
+      );
+      user.experienceYears = normalizedExperience;
       user.driverStatus = DRIVER_STATUS.PENDING;
     }
 
@@ -295,6 +302,7 @@ export const updateProfile = async (req, res) => {
     currentLocationLabel,
     removeProfilePhoto,
     clearLocation,
+    experienceYears,
   } = req.body || {};
 
   try {
@@ -330,6 +338,14 @@ export const updateProfile = async (req, res) => {
       if (tripAdvisor !== undefined) {
         user.tripAdvisor =
           typeof tripAdvisor === 'string' && tripAdvisor.trim() ? tripAdvisor.trim() : '';
+      }
+
+      if (experienceYears !== undefined) {
+        const numericYears = Number(experienceYears);
+        if (!Number.isFinite(numericYears) || numericYears < 0 || numericYears > 60) {
+          return res.status(400).json({ message: 'Experience years must be between 0 and 60.' });
+        }
+        user.experienceYears = Math.round(numericYears);
       }
     }
 
