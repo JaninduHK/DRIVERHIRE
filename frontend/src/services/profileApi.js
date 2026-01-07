@@ -14,6 +14,11 @@ const withAuthHeaders = () => {
 };
 
 const parseError = async (response) => {
+  // When Nginx rejects uploads because of body-size limits, it returns HTML with 413.
+  if (response.status === 413) {
+    return 'Upload rejected by server. Please use images under 10MB and try again.';
+  }
+
   try {
     const data = await response.json();
     if (Array.isArray(data?.errors) && data.errors.length > 0) {

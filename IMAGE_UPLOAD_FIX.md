@@ -151,7 +151,7 @@ Controller:
 1. Check upload directory permissions: `ls -la uploads/`
 2. Verify `PUBLIC_ASSET_BASE_URL` matches domain
 3. Check server logs for multer errors
-4. Ensure file size < 5MB
+4. Ensure file size < 10MB
 5. Ensure only image files (mimetype starts with `image/`)
 
 ### Images Not Displaying
@@ -169,13 +169,13 @@ Controller:
 
 - Added `maxAge: '1d'` to static file serving
 - Files are cached for 1 day to reduce server load
-- Limit file size to 5MB to prevent large uploads
+- Limit file size to 10MB to prevent large uploads
 - Limit to 5 files per upload to prevent abuse
 
 ## Security Considerations
 
 - Only image files are accepted (MIME type check)
-- File size limit: 5MB per file
+- File size limit: 10MB per file
 - File count limit: 5 files per request
 - Filenames are randomized with timestamps
 - Proper error handling prevents information leakage

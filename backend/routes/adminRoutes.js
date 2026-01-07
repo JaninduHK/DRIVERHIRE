@@ -62,7 +62,7 @@ const vehicleStorage = multer.diskStorage({
 
 const vehicleUpload = multer({
   storage: vehicleStorage,
-  limits: { fileSize: 5 * 1024 * 1024, files: 5 },
+  limits: { fileSize: 10 * 1024 * 1024, files: 5 },
   fileFilter: (_req, file, cb) => {
     if (!file.mimetype.startsWith('image/')) {
       return cb(new Error('Only image uploads are allowed'));

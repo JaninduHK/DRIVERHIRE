@@ -1576,7 +1576,7 @@ const VehiclesPanel = ({ vehicles, loading, error, onRefresh, onCreate, onUpdate
           >
             <input {...getInputProps()} />
             <p className="font-semibold text-slate-700">Drag & drop images here, or click to select</p>
-            <p className="text-xs text-slate-500">Up to 5 images. Each must be under 5MB.</p>
+            <p className="text-xs text-slate-500">Up to 5 images. Each must be under 10MB.</p>
           </div>
 
           {pendingFiles.length > 0 && (

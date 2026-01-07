@@ -58,6 +58,7 @@ server {
     listen 80;
     listen [::]:80;
     server_name DOMAIN_PLACEHOLDER www.DOMAIN_PLACEHOLDER;
+    client_max_body_size 15M;
 
     # Redirect HTTP to HTTPS
     return 301 https://$server_name$request_uri;
@@ -67,6 +68,7 @@ server {
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
     server_name DOMAIN_PLACEHOLDER www.DOMAIN_PLACEHOLDER;
+    client_max_body_size 15M;
 
     # SSL certificates (adjust paths to your actual certificates)
     ssl_certificate /etc/letsencrypt/live/DOMAIN_PLACEHOLDER/fullchain.pem;

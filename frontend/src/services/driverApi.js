@@ -26,6 +26,11 @@ const safeJson = async (response) => {
 };
 
 const parseError = async (response) => {
+  // Nginx/client body limits return 413 with HTML; show a clear upload error instead of a parse failure.
+  if (response.status === 413) {
+    return 'Upload rejected by server. Please keep each image under 10MB and try again.';
+  }
+
   const data = await safeJson(response);
 
   if (Array.isArray(data?.errors) && data.errors.length > 0) {

@@ -330,7 +330,7 @@ const googleMapsLoader = (() => {
           return;
         }
         const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}`;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=marker`;
         script.async = true;
         script.defer = true;
         script.dataset.googleMapsLoader = 'true';
@@ -346,13 +346,135 @@ const googleMapsLoader = (() => {
 const LiveDriversMapCard = ({ drivers, loading, error, onReload }) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
-  const markersRef = useRef([]);
+  const overlaysRef = useRef([]);
   const [mapError, setMapError] = useState('');
   const [mapLoading, setMapLoading] = useState(false);
   const pins = useMemo(
     () => spreadOverlappingPins(buildLiveDriverPins(drivers)),
     [drivers]
   );
+
+  const clearMarkers = useCallback(() => {
+    overlaysRef.current.forEach((overlay) => {
+      try {
+        overlay.setMap(null);
+      } catch (e) {
+        // ignore
+      }
+    });
+    overlaysRef.current = [];
+  }, []);
+
+  const createDriverMarker = useCallback((maps, mapInstance, pin) => {
+    const container = document.createElement('div');
+    container.style.position = 'absolute';
+    container.style.transform = 'translate(-50%, -100%)';
+    container.style.cursor = 'pointer';
+    container.style.filter = 'drop-shadow(0 6px 12px rgba(0,0,0,0.25))';
+
+    const badge = document.createElement('div');
+    badge.style.display = 'flex';
+    badge.style.alignItems = 'center';
+    badge.style.gap = '8px';
+    badge.style.padding = '6px 10px';
+    badge.style.borderRadius = '999px';
+    badge.style.background = 'white';
+    badge.style.fontSize = '12px';
+    badge.style.fontWeight = '600';
+    badge.style.color = '#0f172a';
+    badge.style.boxShadow = '0 10px 25px rgba(15,23,42,0.25)';
+
+    const avatarWrapper = document.createElement('div');
+    avatarWrapper.style.width = '28px';
+    avatarWrapper.style.height = '28px';
+    avatarWrapper.style.borderRadius = '50%';
+    avatarWrapper.style.overflow = 'hidden';
+    avatarWrapper.style.border = '2px solid #d1fae5';
+    avatarWrapper.style.background = '#ecfdf3';
+
+    if (pin.avatar) {
+      const img = document.createElement('img');
+      img.src = pin.avatar;
+      img.alt = pin.name || 'Driver';
+      img.style.width = '100%';
+      img.style.height = '100%';
+      img.style.objectFit = 'cover';
+      avatarWrapper.appendChild(img);
+    } else {
+      const placeholder = document.createElement('div');
+      placeholder.style.width = '100%';
+      placeholder.style.height = '100%';
+      placeholder.style.display = 'flex';
+      placeholder.style.alignItems = 'center';
+      placeholder.style.justifyContent = 'center';
+      placeholder.style.color = '#10b981';
+      placeholder.style.fontWeight = '700';
+      placeholder.textContent = (pin.name || 'D')[0] || 'D';
+      avatarWrapper.appendChild(placeholder);
+    }
+
+    const textWrapper = document.createElement('div');
+    textWrapper.style.display = 'flex';
+    textWrapper.style.flexDirection = 'column';
+    textWrapper.style.lineHeight = '1.1';
+
+    const nameEl = document.createElement('span');
+    nameEl.textContent = (pin.name || 'Driver').split(' ')[0];
+    nameEl.style.fontSize = '12px';
+
+    const labelEl = document.createElement('span');
+    labelEl.textContent = pin.label || 'On the road';
+    labelEl.style.fontSize = '10px';
+    labelEl.style.color = '#475569';
+
+    textWrapper.appendChild(nameEl);
+    textWrapper.appendChild(labelEl);
+
+    badge.appendChild(avatarWrapper);
+    badge.appendChild(textWrapper);
+
+    const dot = document.createElement('div');
+    dot.style.width = '8px';
+    dot.style.height = '8px';
+    dot.style.borderRadius = '50%';
+    dot.style.background = '#10b981';
+    dot.style.margin = '6px auto 0';
+    dot.style.boxShadow = '0 0 10px 4px rgba(16,185,129,0.45)';
+
+    container.appendChild(badge);
+    container.appendChild(dot);
+
+    container.addEventListener('click', () => {
+      window.location.href = `/drivers/${pin.id}`;
+    });
+
+    class DriverOverlay extends maps.OverlayView {
+      constructor(position) {
+        super();
+        this.position = position;
+      }
+      onAdd() {
+        const panes = this.getPanes();
+        panes.overlayMouseTarget.appendChild(container);
+      }
+      draw() {
+        const overlayProjection = this.getProjection();
+        if (!overlayProjection) return;
+        const pos = overlayProjection.fromLatLngToDivPixel(this.position);
+        container.style.left = `${pos.x}px`;
+        container.style.top = `${pos.y}px`;
+      }
+      onRemove() {
+        if (container.parentNode) {
+          container.parentNode.removeChild(container);
+        }
+      }
+    }
+
+    const overlay = new DriverOverlay(new maps.LatLng(pin.lat, pin.lng));
+    overlay.setMap(mapInstance);
+    overlaysRef.current.push(overlay);
+  }, []);
 
   useEffect(() => {
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
@@ -382,8 +504,7 @@ const LiveDriversMapCard = ({ drivers, loading, error, onReload }) => {
           });
         }
 
-        markersRef.current.forEach((marker) => marker.setMap(null));
-        markersRef.current = [];
+        clearMarkers();
 
         if (!pins.length) {
           return;
@@ -394,13 +515,8 @@ const LiveDriversMapCard = ({ drivers, loading, error, onReload }) => {
           if (typeof pin.lat !== 'number' || typeof pin.lng !== 'number') {
             return;
           }
-          const marker = new maps.Marker({
-            position: { lat: pin.lat, lng: pin.lng },
-            map: mapRef.current,
-            title: `${pin.name} – ${pin.label}`,
-          });
-          markersRef.current.push(marker);
-          bounds.extend(marker.getPosition());
+          createDriverMarker(maps, mapRef.current, pin);
+          bounds.extend(new maps.LatLng(pin.lat, pin.lng));
         });
 
         if (!bounds.isEmpty()) {
@@ -412,7 +528,7 @@ const LiveDriversMapCard = ({ drivers, loading, error, onReload }) => {
         setMapLoading(false);
         setMapError(loadError?.message || 'Unable to load map.');
       });
-  }, [pins, loading, error]);
+  }, [pins, loading, error, clearMarkers, createDriverMarker]);
 
   return (
     <div className="relative mx-auto w-full max-w-[420px] overflow-hidden rounded-[30px] border border-white/60 bg-white/80 shadow-2xl shadow-emerald-200/60 backdrop-blur lg:max-w-[460px]">
