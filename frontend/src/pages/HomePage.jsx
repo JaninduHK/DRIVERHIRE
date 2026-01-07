@@ -330,7 +330,8 @@ const googleMapsLoader = (() => {
           return;
         }
         const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=marker`;
+        // Add loading=async to use the non-blocking Maps loader per Google guidance.
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=marker&loading=async`;
         script.async = true;
         script.defer = true;
         script.dataset.googleMapsLoader = 'true';
