@@ -59,6 +59,9 @@ const NAV_ITEMS = [
 const HASHABLE_TABS = ['overview', 'vehicles', 'bookings', 'earnings', 'availability', 'profile'];
 const HASH_TARGETS = [...HASHABLE_TABS, 'messages'];
 
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_VEHICLE_UPLOAD_BYTES = MAX_IMAGE_SIZE_BYTES * 5;
+
 const parseTabFromHash = (hash = '') => {
   const normalized = hash.startsWith('#') ? hash.slice(1) : hash;
   if (HASH_TARGETS.includes(normalized)) {
@@ -1311,18 +1314,45 @@ const VehiclesPanel = ({ vehicles, loading, error, onRefresh, onCreate, onUpdate
       const mapped = acceptedFiles.map((file) =>
         Object.assign(file, { preview: URL.createObjectURL(file) })
       );
-      const combined = [...prev, ...mapped].slice(0, 5);
+      const combined = [...prev, ...mapped];
+      const limited = combined.slice(0, 5);
+      const dropped = combined.slice(5);
+      dropped.forEach((file) => file.preview && URL.revokeObjectURL(file.preview));
       if (prev.length + acceptedFiles.length > 5) {
         toast.error('You can upload up to 5 images.');
       }
-      return combined;
+      const totalBytes = limited.reduce((sum, file) => sum + (file.size || 0), 0);
+      if (totalBytes > MAX_VEHICLE_UPLOAD_BYTES) {
+        mapped.forEach((file) => file.preview && URL.revokeObjectURL(file.preview));
+        toast.error('Total upload size must stay under 50MB (max 5 images under 10MB each).');
+        return prev;
+      }
+      return limited;
     });
+  }, []);
+
+  const onDropRejected = useCallback((fileRejections) => {
+    const messages = new Set();
+    fileRejections.forEach(({ file, errors }) => {
+      errors.forEach((error) => {
+        if (error.code === 'file-too-large') {
+          messages.add(`${file.name} is over 10MB. Please choose a smaller image.`);
+        } else if (error.code === 'too-many-files') {
+          messages.add('You can upload up to 5 images.');
+        } else {
+          messages.add(error.message || 'Unable to add that file.');
+        }
+      });
+    });
+    messages.forEach((message) => toast.error(message));
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: { 'image/*': [] },
     maxFiles: 5,
+    maxSize: MAX_IMAGE_SIZE_BYTES,
     onDrop,
+    onDropRejected,
   });
 
   // Clean up previews whenever the files list changes or on unmount
@@ -2330,6 +2360,11 @@ const DriverProfilePanel = ({
   const handlePhotoChange = (event) => {
     const file = event.target.files?.[0];
     if (!file) {
+      return;
+    }
+    if (file.size && file.size > MAX_IMAGE_SIZE_BYTES) {
+      toast.error('Please choose an image under 10MB.');
+      event.target.value = '';
       return;
     }
     setPhotoFile(file);

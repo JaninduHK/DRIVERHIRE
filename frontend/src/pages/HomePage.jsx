@@ -312,34 +312,96 @@ const spreadOverlappingPins = (pins = []) => {
 
 const googleMapsLoader = (() => {
   let loaderPromise = null;
+
+  const buildMapsApi = async () => {
+    const maps = window.google?.maps;
+    if (!maps) {
+      throw new Error('Google Maps unavailable.');
+    }
+
+    let MapCtor = maps.Map;
+    let OverlayViewCtor = maps.OverlayView;
+    let LatLngCtor = maps.LatLng;
+    let LatLngBoundsCtor = maps.LatLngBounds;
+
+    if (typeof maps.importLibrary === 'function') {
+      const [mapsLib, coreLib] = await Promise.all([
+        maps.importLibrary('maps'),
+        maps.importLibrary('core'),
+      ]);
+      MapCtor = MapCtor || mapsLib?.Map;
+      OverlayViewCtor = OverlayViewCtor || mapsLib?.OverlayView;
+      LatLngCtor = LatLngCtor || coreLib?.LatLng || mapsLib?.LatLng;
+      LatLngBoundsCtor = LatLngBoundsCtor || coreLib?.LatLngBounds || mapsLib?.LatLngBounds;
+    }
+
+    if (!MapCtor || !OverlayViewCtor || !LatLngCtor || !LatLngBoundsCtor) {
+      throw new Error('Google Maps failed to initialize.');
+    }
+
+    return {
+      Map: MapCtor,
+      OverlayView: OverlayViewCtor,
+      LatLng: LatLngCtor,
+      LatLngBounds: LatLngBoundsCtor,
+    };
+  };
+
   return (apiKey) => {
-    if (typeof window !== 'undefined' && window.google?.maps) {
-      return Promise.resolve(window.google.maps);
+    if (typeof window === 'undefined') {
+      return Promise.reject(new Error('Google Maps is only available in the browser.'));
     }
     if (!apiKey) {
       return Promise.reject(new Error('Google Maps API key missing.'));
     }
-    if (!loaderPromise) {
-      loaderPromise = new Promise((resolve, reject) => {
-        const existing = document.querySelector('script[data-google-maps-loader]');
-        if (existing) {
-          existing.addEventListener('load', () => resolve(window.google.maps));
-          existing.addEventListener('error', () =>
-            reject(new Error('Unable to load Google Maps.'))
-          );
+    if (window.google?.maps?.Map && !loaderPromise) {
+      loaderPromise = buildMapsApi();
+      return loaderPromise;
+    }
+    if (loaderPromise) {
+      return loaderPromise;
+    }
+
+    loaderPromise = new Promise((resolve, reject) => {
+      const finish = () =>
+        buildMapsApi()
+          .then(resolve)
+          .catch(reject);
+
+      const existing = document.querySelector('script[data-google-maps-loader]');
+      if (existing) {
+        if (window.google?.maps) {
+          finish();
           return;
         }
-        const script = document.createElement('script');
-        // Add loading=async to use the non-blocking Maps loader per Google guidance.
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=marker&loading=async`;
-        script.async = true;
-        script.defer = true;
-        script.dataset.googleMapsLoader = 'true';
-        script.onload = () => resolve(window.google.maps);
-        script.onerror = () => reject(new Error('Unable to load Google Maps.'));
-        document.head.appendChild(script);
-      });
-    }
+        existing.addEventListener('load', finish, { once: true });
+        existing.addEventListener(
+          'error',
+          () => reject(new Error('Unable to load Google Maps.')),
+          { once: true }
+        );
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(
+        apiKey
+      )}&libraries=maps,marker&loading=async`;
+      script.async = true;
+      script.defer = true;
+      script.dataset.googleMapsLoader = 'true';
+      script.addEventListener('load', finish, { once: true });
+      script.addEventListener(
+        'error',
+        () => reject(new Error('Unable to load Google Maps.')),
+        { once: true }
+      );
+      document.head.appendChild(script);
+    }).catch((err) => {
+      loaderPromise = null;
+      throw err;
+    });
+
     return loaderPromise;
   };
 })();
