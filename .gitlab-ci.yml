@@ -99,9 +99,17 @@ deploy:production:
       #!/bin/bash
       set -e
 
+      # Source Node.js environment (nvm, fnm, or standard paths)
+      export PATH="/root/.nvm/versions/node/$(ls /root/.nvm/versions/node 2>/dev/null | tail -1)/bin:$PATH" 2>/dev/null || true
+      export PATH="/usr/local/bin:/usr/bin:$PATH"
+      export NVM_DIR="$HOME/.nvm"
+      [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" 2>/dev/null || true
+
       APP_DIR="${APP_PATH:-/var/www/driverhire}"
 
       echo "=== Starting deployment ==="
+      echo "Node version: $(node --version 2>/dev/null || echo 'not found')"
+      echo "npm version: $(npm --version 2>/dev/null || echo 'not found')"
       cd "$APP_DIR"
 
       # Pull latest changes
