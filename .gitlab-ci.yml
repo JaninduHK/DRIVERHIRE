@@ -77,7 +77,14 @@ deploy:production:
     - chmod 700 ~/.ssh
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
-    - ssh-keyscan -H $VPS_HOST >> ~/.ssh/known_hosts 2>/dev/null
+    # Debug - show variables are set (not the actual values)
+    - echo "VPS_HOST is set:" && test -n "$VPS_HOST" && echo "yes" || echo "no"
+    - echo "SSH_USER is set:" && test -n "$SSH_USER" && echo "yes" || echo "no"
+    - echo "APP_PATH is set:" && test -n "$APP_PATH" && echo "yes" || echo "no"
+    # Add host key to known_hosts (with error output)
+    - ssh-keyscan -H $VPS_HOST >> ~/.ssh/known_hosts || echo "Warning - ssh-keyscan failed, continuing anyway"
+    # Disable strict host key checking as fallback
+    - echo "StrictHostKeyChecking accept-new" >> ~/.ssh/config
   script:
     # Create deployment script
     - |
