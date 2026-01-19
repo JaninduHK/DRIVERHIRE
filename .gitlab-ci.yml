@@ -1,0 +1,155 @@
+# GitLab CI/CD Pipeline for DRIVERHIRE
+# Automates testing, building, and deployment to VPS
+
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+  NODE_VERSION: "20"
+
+# Cache node_modules between jobs
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - frontend/node_modules/
+    - backend/node_modules/
+
+# ---------------------------------------------------------------------------
+# TEST STAGE - Run linting and tests
+# ---------------------------------------------------------------------------
+
+lint:frontend:
+  stage: test
+  image: node:${NODE_VERSION}-alpine
+  script:
+    - cd frontend
+    - npm ci --prefer-offline
+    - npm run lint
+  only:
+    - main
+    - merge_requests
+  tags:
+    - docker
+
+lint:backend:
+  stage: test
+  image: node:${NODE_VERSION}-alpine
+  script:
+    - cd backend
+    - npm ci --prefer-offline
+    - node --check server.js
+    - node --check config/database.js
+  only:
+    - main
+    - merge_requests
+  tags:
+    - docker
+
+# ---------------------------------------------------------------------------
+# BUILD STAGE - Build frontend for production
+# ---------------------------------------------------------------------------
+
+build:frontend:
+  stage: build
+  image: node:${NODE_VERSION}-alpine
+  script:
+    - cd frontend
+    - npm ci --prefer-offline
+    - npm run build
+  artifacts:
+    paths:
+      - frontend/dist/
+    expire_in: 1 hour
+  only:
+    - main
+  tags:
+    - docker
+
+# ---------------------------------------------------------------------------
+# DEPLOY STAGE - Deploy to VPS via SSH
+# ---------------------------------------------------------------------------
+
+deploy:production:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    # Install SSH client
+    - apk add --no-cache openssh-client rsync
+    # Setup SSH key
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - ssh-keyscan -H $VPS_HOST >> ~/.ssh/known_hosts 2>/dev/null
+  script:
+    # Create deployment script
+    - |
+      cat > deploy.sh << 'DEPLOY_SCRIPT'
+      #!/bin/bash
+      set -e
+
+      APP_DIR="${APP_PATH:-/var/www/driverhire}"
+
+      echo "=== Starting deployment ==="
+      cd "$APP_DIR"
+
+      # Pull latest changes
+      echo "Pulling latest code..."
+      git fetch origin main
+      git reset --hard origin/main
+
+      # Install backend dependencies
+      echo "Installing backend dependencies..."
+      cd backend
+      npm ci --omit=dev
+
+      # Restart backend service
+      echo "Restarting backend service..."
+      if command -v pm2 &> /dev/null; then
+        pm2 restart driverhire-backend || pm2 start server.js --name driverhire-backend
+      elif command -v systemctl &> /dev/null; then
+        sudo systemctl restart driverhire-backend || echo "No systemd service found"
+      else
+        echo "Warning: No process manager found. Please restart backend manually."
+      fi
+
+      echo "=== Deployment complete ==="
+      DEPLOY_SCRIPT
+
+    # Upload frontend build artifacts
+    - echo "Uploading frontend build..."
+    - rsync -avz --delete frontend/dist/ $SSH_USER@$VPS_HOST:$APP_PATH/frontend/dist/
+
+    # Upload and run deployment script
+    - echo "Running deployment on VPS..."
+    - scp deploy.sh $SSH_USER@$VPS_HOST:/tmp/deploy.sh
+    - ssh $SSH_USER@$VPS_HOST "chmod +x /tmp/deploy.sh && APP_PATH=$APP_PATH /tmp/deploy.sh"
+
+    # Reload Nginx to pick up any changes
+    - ssh $SSH_USER@$VPS_HOST "sudo nginx -t && sudo systemctl reload nginx"
+
+    - echo "Deployment successful!"
+  environment:
+    name: production
+    url: https://carwithdriver.lk
+  only:
+    - main
+  when: manual  # Requires manual trigger for safety
+  tags:
+    - docker
+
+# ---------------------------------------------------------------------------
+# OPTIONAL: Auto-deploy on main branch (remove 'when: manual' above to enable)
+# ---------------------------------------------------------------------------
+
+# deploy:staging:
+#   stage: deploy
+#   extends: deploy:production
+#   environment:
+#     name: staging
+#     url: https://staging.carwithdriver.lk
+#   only:
+#     - develop
+#   when: on_success

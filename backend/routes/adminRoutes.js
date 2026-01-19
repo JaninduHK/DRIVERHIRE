@@ -130,8 +130,8 @@ router.patch(
       .toInt(),
     body('description').optional().isString().trim(),
     body('pricePerDay')
-      .isFloat({ min: 0 })
-      .withMessage('Price per day must be a positive number')
+      .isFloat({ min: 35, max: 250 })
+      .withMessage('Price per day must be between $35 and $250 USD')
       .toFloat(),
     body('seats').optional().isInt({ min: 1 }).withMessage('Seats must be at least 1').toInt(),
     body('englishSpeakingDriver').optional().trim().custom((value) => {

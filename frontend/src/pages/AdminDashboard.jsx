@@ -2737,8 +2737,8 @@ const VehiclesPanel = ({ state, onRetry, onStatusChange, onUpdate, onAddImages, 
     }
 
     const normalizedPrice = Number(formData.pricePerDay);
-    if (Number.isNaN(normalizedPrice) || normalizedPrice <= 0) {
-      setFormError('Price per day must be greater than 0.');
+    if (Number.isNaN(normalizedPrice) || normalizedPrice < 35 || normalizedPrice > 250) {
+      setFormError('Price per day must be between $35 and $250 USD.');
       return;
     }
 
@@ -3061,17 +3061,19 @@ const VehiclesPanel = ({ state, onRetry, onStatusChange, onUpdate, onAddImages, 
                     </div>
                     <div>
                       <label htmlFor={`admin-price-${vehicle.id}`} className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Price per day (LKR)
+                        Price per day (USD)
                       </label>
                       <input
                         id={`admin-price-${vehicle.id}`}
                         name="pricePerDay"
                         type="number"
                         required
-                        min={0}
-                        step="100"
+                        min={35}
+                        max={250}
+                        step="1"
                         value={formData.pricePerDay}
                         onChange={handleFieldChange}
+                        placeholder="35-250"
                         className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                       />
                     </div>

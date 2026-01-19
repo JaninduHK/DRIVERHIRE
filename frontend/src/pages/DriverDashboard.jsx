@@ -45,6 +45,7 @@ import {
 import { fetchDriverBookings, driverRespondToBooking } from '../services/bookingApi.js';
 import { VEHICLE_FEATURES, getVehicleFeatureLabels } from '../constants/vehicleFeatures.js';
 import { clearStoredToken } from '../services/authToken.js';
+import imageCompression from 'browser-image-compression';
 
 const NAV_ITEMS = [
   { id: 'overview', label: 'Overview', icon: User2, hash: 'overview' },
@@ -61,6 +62,21 @@ const HASH_TARGETS = [...HASHABLE_TABS, 'messages'];
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const MAX_VEHICLE_UPLOAD_BYTES = MAX_IMAGE_SIZE_BYTES * 5;
+
+// Compress image if it exceeds the size limit (common on mobile phones)
+const compressImageIfNeeded = async (file, maxSizeMB = 9.5) => {
+  if (file.size <= maxSizeMB * 1024 * 1024) {
+    return file;
+  }
+  const options = {
+    maxSizeMB,
+    maxWidthOrHeight: 2048,
+    useWebWorker: true,
+    fileType: file.type || 'image/jpeg',
+  };
+  const compressed = await imageCompression(file, options);
+  return new File([compressed], file.name, { type: compressed.type });
+};
 
 const parseTabFromHash = (hash = '') => {
   const normalized = hash.startsWith('#') ? hash.slice(1) : hash;
@@ -1309,16 +1325,35 @@ const VehiclesPanel = ({ vehicles, loading, error, onRefresh, onCreate, onUpdate
     });
   }, []);
 
-  const onDrop = useCallback((acceptedFiles) => {
+  const onDrop = useCallback(async (acceptedFiles) => {
+    if (acceptedFiles.length === 0) return;
+
+    // Check if any files need compression
+    const needsCompression = acceptedFiles.some((file) => file.size > MAX_IMAGE_SIZE_BYTES);
+    let processedFiles = acceptedFiles;
+
+    if (needsCompression) {
+      try {
+        toast.loading('Compressing large images...', { id: 'compress-vehicle' });
+        processedFiles = await Promise.all(
+          acceptedFiles.map((file) => compressImageIfNeeded(file))
+        );
+        toast.success('Images compressed successfully', { id: 'compress-vehicle' });
+      } catch {
+        toast.error('Unable to compress images. Please choose smaller images.', { id: 'compress-vehicle' });
+        return;
+      }
+    }
+
     setPendingFiles((prev) => {
-      const mapped = acceptedFiles.map((file) =>
+      const mapped = processedFiles.map((file) =>
         Object.assign(file, { preview: URL.createObjectURL(file) })
       );
       const combined = [...prev, ...mapped];
       const limited = combined.slice(0, 5);
       const dropped = combined.slice(5);
       dropped.forEach((file) => file.preview && URL.revokeObjectURL(file.preview));
-      if (prev.length + acceptedFiles.length > 5) {
+      if (prev.length + processedFiles.length > 5) {
         toast.error('You can upload up to 5 images.');
       }
       const totalBytes = limited.reduce((sum, file) => sum + (file.size || 0), 0);
@@ -1333,12 +1368,12 @@ const VehiclesPanel = ({ vehicles, loading, error, onRefresh, onCreate, onUpdate
 
   const onDropRejected = useCallback((fileRejections) => {
     const messages = new Set();
-    fileRejections.forEach(({ file, errors }) => {
+    fileRejections.forEach(({ errors }) => {
       errors.forEach((error) => {
-        if (error.code === 'file-too-large') {
-          messages.add(`${file.name} is over 10MB. Please choose a smaller image.`);
-        } else if (error.code === 'too-many-files') {
+        if (error.code === 'too-many-files') {
           messages.add('You can upload up to 5 images.');
+        } else if (error.code === 'file-invalid-type') {
+          messages.add('Only image files are allowed.');
         } else {
           messages.add(error.message || 'Unable to add that file.');
         }
@@ -1350,7 +1385,6 @@ const VehiclesPanel = ({ vehicles, loading, error, onRefresh, onCreate, onUpdate
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: { 'image/*': [] },
     maxFiles: 5,
-    maxSize: MAX_IMAGE_SIZE_BYTES,
     onDrop,
     onDropRejected,
   });
@@ -2357,23 +2391,30 @@ const DriverProfilePanel = ({
     }
   };
 
-  const handlePhotoChange = (event) => {
+  const handlePhotoChange = async (event) => {
     const file = event.target.files?.[0];
     if (!file) {
       return;
     }
+    let processedFile = file;
     if (file.size && file.size > MAX_IMAGE_SIZE_BYTES) {
-      toast.error('Please choose an image under 10MB.');
-      event.target.value = '';
-      return;
+      try {
+        toast.loading('Compressing image...', { id: 'compress-photo' });
+        processedFile = await compressImageIfNeeded(file);
+        toast.success('Image compressed successfully', { id: 'compress-photo' });
+      } catch {
+        toast.error('Unable to compress image. Please choose a smaller image.', { id: 'compress-photo' });
+        event.target.value = '';
+        return;
+      }
     }
-    setPhotoFile(file);
+    setPhotoFile(processedFile);
     setRemovePhoto(false);
     setPhotoPreview((current) => {
       if (current && current.startsWith('blob:')) {
         URL.revokeObjectURL(current);
       }
-      return URL.createObjectURL(file);
+      return URL.createObjectURL(processedFile);
     });
   };
 
