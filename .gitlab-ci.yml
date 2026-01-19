@@ -27,11 +27,9 @@ lint:frontend:
     - cd frontend
     - npm ci --prefer-offline
     - npm run lint
-  only:
-    - main
-    - merge_requests
-  tags:
-    - docker
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 lint:backend:
   stage: test
@@ -41,11 +39,9 @@ lint:backend:
     - npm ci --prefer-offline
     - node --check server.js
     - node --check config/database.js
-  only:
-    - main
-    - merge_requests
-  tags:
-    - docker
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 # ---------------------------------------------------------------------------
 # BUILD STAGE - Build frontend for production
@@ -62,10 +58,8 @@ build:frontend:
     paths:
       - frontend/dist/
     expire_in: 1 hour
-  only:
-    - main
-  tags:
-    - docker
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
 
 # ---------------------------------------------------------------------------
 # DEPLOY STAGE - Deploy to VPS via SSH
@@ -134,11 +128,9 @@ deploy:production:
   environment:
     name: production
     url: https://carwithdriver.lk
-  only:
-    - main
-  when: manual  # Requires manual trigger for safety
-  tags:
-    - docker
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
 
 # ---------------------------------------------------------------------------
 # OPTIONAL: Auto-deploy on main branch (remove 'when: manual' above to enable)
