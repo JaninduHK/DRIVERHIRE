@@ -13,6 +13,7 @@ const navLinks = [
   { to: '/vehicles', label: 'Vehicles' },
   { to: '/drivers', label: 'Drivers' },
   { to: '/trip-cost-calculator', label: 'Trip Cost' },
+  { to: '/dashboard?tab=requests', label: 'Get Quotes' },
   { to: '/about', label: 'About Us' },
   { to: '/contact', label: 'Contact' },
 ];

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   AlertTriangle,
@@ -103,8 +103,12 @@ const BOOKING_CANCELLATION_NOTICE = [
   '100% of completed days and 50% of uncompleted days to be paid to driver if cancelling after start date.',
 ].join('\n\n');
 
+const VALID_TABS = ['bookings', 'messages', 'requests', 'settings'];
+
 const TravelerDashboard = () => {
-  const [activeTab, setActiveTab] = useState('bookings');
+  const [searchParams] = useSearchParams();
+  const initialTab = VALID_TABS.includes(searchParams.get('tab')) ? searchParams.get('tab') : 'bookings';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [conversationsState, setConversationsState] = useState({
     loading: true,
     error: '',
