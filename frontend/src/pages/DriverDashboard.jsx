@@ -53,7 +53,7 @@ const NAV_ITEMS = [
   { id: 'vehicles', label: 'My Vehicles', icon: Car, hash: 'vehicles' },
   { id: 'bookings', label: 'My Bookings', icon: CalendarDays, hash: 'bookings' },
   { id: 'messages', label: 'Messages', icon: MessageCircle, href: '/portal/driver/messages' },
-  { id: 'briefs', label: 'Tour Briefs', icon: MapPin, href: '/tour-briefs' },
+  { id: 'briefs', label: 'Tour Briefs', icon: MapPin, href: '/briefs' },
   { id: 'earnings', label: 'My Earnings', icon: DollarSign, hash: 'earnings' },
   { id: 'availability', label: 'My Availability', icon: CalendarCheck, hash: 'availability' },
   { id: 'profile', label: 'My Profile', icon: ClipboardList, hash: 'profile' },

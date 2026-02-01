@@ -155,6 +155,11 @@ const TravelerDashboard = () => {
     [travelerBookingsState.items]
   );
 
+  const requestsOffersCount = useMemo(
+    () => travelerBriefsState.items.reduce((sum, brief) => sum + (brief.offersCount || 0), 0),
+    [travelerBriefsState.items]
+  );
+
   // Redirect to login if not authenticated
   useEffect(() => {
     const token = getStoredToken();
@@ -581,6 +586,8 @@ const TravelerDashboard = () => {
                   ? unreadMessageCount
                   : tab.id === 'bookings'
                   ? pendingBookingsCount
+                  : tab.id === 'requests'
+                  ? requestsOffersCount
                   : 0;
               return (
                 <button

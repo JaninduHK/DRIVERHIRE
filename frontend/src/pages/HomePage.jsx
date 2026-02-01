@@ -257,14 +257,11 @@ const buildLiveDriverPins = (drivers = []) => {
     .slice(0, 10)
     .map((driver) => {
       const location = getLocation(driver);
-      const detectedCity = detectCityFromAddress(location?.label || driver.address || '');
-      const shortLabel = location?.label
-        ? detectedCity?.label || location.label
-        : detectedCity?.label || 'On the road';
+      const detectedCity = detectCityFromAddress(driver.address || '');
       return {
         id: driver.id,
         name: driver.name || 'Driver',
-        label: shortLabel,
+        label: detectedCity?.label || 'On the road',
         style: projectLatLng(location.latitude, location.longitude),
         lat: location.latitude,
         lng: location.longitude,
