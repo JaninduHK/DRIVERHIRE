@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { CalendarDays, Loader2, MapPin, MessageCircle, Send, Users } from 'lucide-react';
 import { fetchOpenBriefs, respondToBrief } from '../services/briefApi.js';
 import { fetchDriverVehicles } from '../services/driverApi.js';
 import { fetchCurrentUser } from '../services/profileApi.js';
+import { getStoredToken, saveReturnPath } from '../services/authToken.js';
 
 const formatDateLabel = (value) => {
   if (!value) {
@@ -32,6 +34,7 @@ const formatDateInput = (value) => {
 };
 
 const TourBriefsBoard = () => {
+  const navigate = useNavigate();
   const [userState, setUserState] = useState({ loading: true, error: '', data: null });
   const [briefsState, setBriefsState] = useState({ loading: true, error: '', items: [] });
   const [vehiclesState, setVehiclesState] = useState({ loading: false, error: '', items: [] });
@@ -88,10 +91,12 @@ const TourBriefsBoard = () => {
     setVehiclesState((prev) => ({ ...prev, loading: true, error: '' }));
     try {
       const data = await fetchDriverVehicles();
+      const allVehicles = Array.isArray(data?.vehicles) ? data.vehicles : [];
+      const approvedVehicles = allVehicles.filter((v) => v.status === 'approved');
       setVehiclesState({
         loading: false,
         error: '',
-        items: Array.isArray(data?.vehicles) ? data.vehicles : [],
+        items: approvedVehicles,
       });
     } catch (error) {
       setVehiclesState({
@@ -195,6 +200,13 @@ const TourBriefsBoard = () => {
     }
   };
 
+  const handleSignInClick = () => {
+    saveReturnPath();
+    navigate('/login');
+  };
+
+  const isLoggedIn = Boolean(getStoredToken());
+
   const renderGate = useMemo(() => {
     if (userState.loading) {
       return (
@@ -206,20 +218,50 @@ const TourBriefsBoard = () => {
     }
     if (!isApprovedDriver) {
       return (
-        <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-600">
+        <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-600">
           <p className="text-base font-semibold text-slate-900">Drivers only</p>
           <p>
             Sign in with an approved driver account to view live tour briefs and send offers. Want to
             join? Apply through the driver portal.
           </p>
-          {userState.error ? (
-            <p className="text-xs text-slate-400">{userState.error}</p>
-          ) : null}
+          {!isLoggedIn ? (
+            <div className="flex flex-wrap justify-center gap-3 pt-2">
+              <button
+                type="button"
+                onClick={handleSignInClick}
+                className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
+              >
+                Sign in
+              </button>
+              <Link
+                to="/register/driver"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-700"
+              >
+                Apply as driver
+              </Link>
+            </div>
+          ) : userState.data?.role !== 'driver' ? (
+            <div className="pt-2">
+              <Link
+                to="/register/driver"
+                className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700"
+              >
+                Apply as driver
+              </Link>
+              <p className="mt-2 text-xs text-slate-400">
+                You're signed in as a traveller. Drivers need a separate approved account.
+              </p>
+            </div>
+          ) : (
+            <p className="text-xs text-amber-600">
+              Your driver account is pending approval. Check back once approved.
+            </p>
+          )}
         </div>
       );
     }
     return null;
-  }, [userState.loading, userState.error, isApprovedDriver]);
+  }, [userState.loading, userState.data, isApprovedDriver, isLoggedIn]);
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">

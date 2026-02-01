@@ -131,11 +131,12 @@ const DriverMessages = () => {
     }));
     try {
       const data = await fetchDriverVehicles();
-      const items = Array.isArray(data?.vehicles) ? data.vehicles : [];
+      const allVehicles = Array.isArray(data?.vehicles) ? data.vehicles : [];
+      const approvedVehicles = allVehicles.filter((v) => v.status === 'approved');
       setVehiclesState({
         loading: false,
         error: '',
-        items,
+        items: approvedVehicles,
       });
     } catch (error) {
       const message = error?.message || 'Unable to load your vehicles.';

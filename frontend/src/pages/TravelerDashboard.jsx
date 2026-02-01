@@ -145,6 +145,16 @@ const TravelerDashboard = () => {
   const navigate = useNavigate();
   const travelerFirstName = profileState?.data?.name?.split(' ')?.[0] || 'traveller';
 
+  const unreadMessageCount = useMemo(
+    () => conversationsState.items.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0),
+    [conversationsState.items]
+  );
+
+  const pendingBookingsCount = useMemo(
+    () => travelerBookingsState.items.filter((booking) => booking.status === 'pending').length,
+    [travelerBookingsState.items]
+  );
+
   // Redirect to login if not authenticated
   useEffect(() => {
     const token = getStoredToken();
@@ -566,19 +576,36 @@ const TravelerDashboard = () => {
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
+              const badgeCount =
+                tab.id === 'messages'
+                  ? unreadMessageCount
+                  : tab.id === 'bookings'
+                  ? pendingBookingsCount
+                  : 0;
               return (
                 <button
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm transition ${
+                  className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm transition ${
                     isActive
                       ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
                       : 'text-slate-600 hover:bg-slate-50'
                   }`}
                 >
-                  <Icon className={`h-4 w-4 ${isActive ? 'text-emerald-600' : 'text-slate-400'}`} />
-                  <span className="font-medium">{tab.label}</span>
+                  <span className="flex items-center gap-3">
+                    <Icon className={`h-4 w-4 ${isActive ? 'text-emerald-600' : 'text-slate-400'}`} />
+                    <span className="font-medium">{tab.label}</span>
+                  </span>
+                  {badgeCount > 0 && (
+                    <span
+                      className={`inline-flex min-w-[1.5rem] justify-center rounded-full px-1.5 py-0.5 text-xs font-semibold ${
+                        isActive ? 'bg-emerald-600 text-white' : 'bg-emerald-100 text-emerald-700'
+                      }`}
+                    >
+                      {badgeCount}
+                    </span>
+                  )}
                 </button>
               );
             })}

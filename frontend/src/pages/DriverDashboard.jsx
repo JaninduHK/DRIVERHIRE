@@ -43,6 +43,7 @@ import {
   updatePassword as updatePasswordRequest,
 } from '../services/profileApi.js';
 import { fetchDriverBookings, driverRespondToBooking } from '../services/bookingApi.js';
+import { fetchConversations } from '../services/chatApi.js';
 import { VEHICLE_FEATURES, getVehicleFeatureLabels } from '../constants/vehicleFeatures.js';
 import { clearStoredToken, getStoredToken, saveReturnPath } from '../services/authToken.js';
 import imageCompression from 'browser-image-compression';
@@ -52,6 +53,7 @@ const NAV_ITEMS = [
   { id: 'vehicles', label: 'My Vehicles', icon: Car, hash: 'vehicles' },
   { id: 'bookings', label: 'My Bookings', icon: CalendarDays, hash: 'bookings' },
   { id: 'messages', label: 'Messages', icon: MessageCircle, href: '/portal/driver/messages' },
+  { id: 'briefs', label: 'Tour Briefs', icon: MapPin, href: '/tour-briefs' },
   { id: 'earnings', label: 'My Earnings', icon: DollarSign, hash: 'earnings' },
   { id: 'availability', label: 'My Availability', icon: CalendarCheck, hash: 'availability' },
   { id: 'profile', label: 'My Profile', icon: ClipboardList, hash: 'profile' },
@@ -297,6 +299,11 @@ const DriverDashboard = () => {
     error: '',
     items: [],
   });
+  const [conversationsState, setConversationsState] = useState({
+    loading: true,
+    error: '',
+    items: [],
+  });
   const [driverEarningsState, setDriverEarningsState] = useState(() => ({
     loading: false,
     error: '',
@@ -415,6 +422,28 @@ const DriverDashboard = () => {
     []
   );
 
+  const loadConversations = useCallback(async () => {
+    try {
+      const data = await fetchConversations();
+      const items = Array.isArray(data?.conversations) ? data.conversations : [];
+      if (isMountedRef.current) {
+        setConversationsState({
+          loading: false,
+          error: '',
+          items,
+        });
+      }
+    } catch (error) {
+      if (isMountedRef.current) {
+        setConversationsState({
+          loading: false,
+          error: error?.message || 'Unable to load conversations.',
+          items: [],
+        });
+      }
+    }
+  }, []);
+
   const loadDriverEarnings = useCallback(
     async ({ month, forceHistory = false } = {}) => {
       const targetMonth =
@@ -496,7 +525,9 @@ const DriverDashboard = () => {
   useEffect(() => {
     loadOverview({ silent: false });
     refreshVehicles();
-  }, [refreshVehicles, loadOverview]);
+    loadConversations();
+    loadDriverBookings();
+  }, [refreshVehicles, loadOverview, loadConversations, loadDriverBookings]);
 
   useEffect(() => {
     if (!overview) {
@@ -525,6 +556,16 @@ const DriverDashboard = () => {
   const pendingApproval = useMemo(
     () => /pending approval/i.test(overviewError),
     [overviewError]
+  );
+
+  const unreadMessageCount = useMemo(
+    () => conversationsState.items.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0),
+    [conversationsState.items]
+  );
+
+  const pendingBookingsCount = useMemo(
+    () => driverBookingsState.items.filter((booking) => booking.status === 'pending').length,
+    [driverBookingsState.items]
   );
 
   const handleEarningsMonthChange = useCallback(
@@ -939,22 +980,39 @@ const DriverDashboard = () => {
               const Icon = item.icon;
               const isActive = currentTabId === item.id || activeTab === item.hash;
               const href = item.href || `#${item.hash || item.id}`;
+              const badgeCount =
+                item.id === 'messages'
+                  ? unreadMessageCount
+                  : item.id === 'bookings'
+                  ? pendingBookingsCount
+                  : 0;
               return (
                 <a
                   key={item.id}
                   href={href}
                   onClick={(event) => handleNavSelect(item, event)}
-                  className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm transition ${
+                  className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm transition ${
                     isActive
                       ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
                       : 'text-slate-600 hover:bg-slate-50'
                   }`}
                 >
-                <Icon className="h-4 w-4" />
-                <span className="font-medium">{item.label}</span>
-              </a>
-            );
-          })}
+                  <span className="flex items-center gap-3">
+                    <Icon className="h-4 w-4" />
+                    <span className="font-medium">{item.label}</span>
+                  </span>
+                  {badgeCount > 0 && (
+                    <span
+                      className={`inline-flex min-w-[1.5rem] justify-center rounded-full px-1.5 py-0.5 text-xs font-semibold ${
+                        isActive ? 'bg-emerald-600 text-white' : 'bg-emerald-100 text-emerald-700'
+                      }`}
+                    >
+                      {badgeCount}
+                    </span>
+                  )}
+                </a>
+              );
+            })}
           </nav>
         </aside>
 
