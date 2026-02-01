@@ -33,18 +33,36 @@ const parseError = async (response) => {
   }
 };
 
+const withTimeout = (promise, ms, msg = 'Request timed out') => {
+  let id;
+  const timeout = new Promise((_, reject) => {
+    id = setTimeout(() => reject(new Error(msg)), ms);
+  });
+  return Promise.race([
+    promise.finally(() => clearTimeout(id)),
+    timeout,
+  ]);
+};
+
 const request = async (path, options = {}) => {
   const isFormData = options.body instanceof FormData;
+  // Use longer timeout for file uploads (2 minutes) vs regular requests (15 seconds)
+  const timeoutMs = isFormData ? 120000 : 15000;
   const headers = {
     ...withAuthHeaders(),
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers || {}),
   };
 
-  const response = await fetch(`${AUTH_BASE_URL}${path}`, {
-    ...options,
-    headers,
-  });
+  let response;
+  try {
+    response = await withTimeout(
+      fetch(`${AUTH_BASE_URL}${path}`, { ...options, headers }),
+      timeoutMs
+    );
+  } catch (e) {
+    throw new Error(e?.message || 'Network error');
+  }
 
   if (response.status === 204) {
     return {};

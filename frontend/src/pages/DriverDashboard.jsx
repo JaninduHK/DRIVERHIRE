@@ -44,7 +44,7 @@ import {
 } from '../services/profileApi.js';
 import { fetchDriverBookings, driverRespondToBooking } from '../services/bookingApi.js';
 import { VEHICLE_FEATURES, getVehicleFeatureLabels } from '../constants/vehicleFeatures.js';
-import { clearStoredToken } from '../services/authToken.js';
+import { clearStoredToken, getStoredToken, saveReturnPath } from '../services/authToken.js';
 import imageCompression from 'browser-image-compression';
 
 const NAV_ITEMS = [
@@ -75,7 +75,12 @@ const compressImageIfNeeded = async (file, maxSizeMB = 9.5) => {
     fileType: file.type || 'image/jpeg',
   };
   const compressed = await imageCompression(file, options);
-  return new File([compressed], file.name, { type: compressed.type });
+  const result = new File([compressed], file.name, { type: compressed.type });
+  // Validate that compression actually reduced the size below the limit
+  if (result.size > MAX_IMAGE_SIZE_BYTES) {
+    throw new Error(`Unable to compress "${file.name}" below 10MB. Try a smaller image.`);
+  }
+  return result;
 };
 
 const parseTabFromHash = (hash = '') => {
@@ -316,6 +321,16 @@ const DriverDashboard = () => {
 
   const isMountedRef = useRef(false);
   const profileTourAutoCompleteRef = useRef(false);
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    const token = getStoredToken();
+    if (!token) {
+      saveReturnPath();
+      navigate('/login', { replace: true });
+    }
+  }, [navigate]);
+
   useEffect(() => {
     isMountedRef.current = true;
     return () => { isMountedRef.current = false; };
@@ -1328,8 +1343,8 @@ const VehiclesPanel = ({ vehicles, loading, error, onRefresh, onCreate, onUpdate
   const onDrop = useCallback(async (acceptedFiles) => {
     if (acceptedFiles.length === 0) return;
 
-    // Check if any files need compression
-    const needsCompression = acceptedFiles.some((file) => file.size > MAX_IMAGE_SIZE_BYTES);
+    // Check if any files need compression (files over 9.5MB will be compressed)
+    const needsCompression = acceptedFiles.some((file) => file.size > 9.5 * 1024 * 1024);
     let processedFiles = acceptedFiles;
 
     if (needsCompression) {
@@ -1339,10 +1354,18 @@ const VehiclesPanel = ({ vehicles, loading, error, onRefresh, onCreate, onUpdate
           acceptedFiles.map((file) => compressImageIfNeeded(file))
         );
         toast.success('Images compressed successfully', { id: 'compress-vehicle' });
-      } catch {
-        toast.error('Unable to compress images. Please choose smaller images.', { id: 'compress-vehicle' });
+      } catch (error) {
+        toast.error(error?.message || 'Unable to compress images. Please choose smaller images.', { id: 'compress-vehicle' });
         return;
       }
+    }
+
+    // Validate all files are under the size limit
+    const oversizedFiles = processedFiles.filter((file) => file.size > MAX_IMAGE_SIZE_BYTES);
+    if (oversizedFiles.length > 0) {
+      const names = oversizedFiles.map((f) => f.name).join(', ');
+      toast.error(`These images are too large (max 10MB each): ${names}`);
+      return;
     }
 
     setPendingFiles((prev) => {
@@ -2397,16 +2420,23 @@ const DriverProfilePanel = ({
       return;
     }
     let processedFile = file;
-    if (file.size && file.size > MAX_IMAGE_SIZE_BYTES) {
+    // Compress if file is over 9.5MB (gives headroom for 10MB limit)
+    if (file.size && file.size > 9.5 * 1024 * 1024) {
       try {
         toast.loading('Compressing image...', { id: 'compress-photo' });
         processedFile = await compressImageIfNeeded(file);
         toast.success('Image compressed successfully', { id: 'compress-photo' });
-      } catch {
-        toast.error('Unable to compress image. Please choose a smaller image.', { id: 'compress-photo' });
+      } catch (error) {
+        toast.error(error?.message || 'Unable to compress image. Please choose a smaller image.', { id: 'compress-photo' });
         event.target.value = '';
         return;
       }
+    }
+    // Final size validation
+    if (processedFile.size > MAX_IMAGE_SIZE_BYTES) {
+      toast.error('Image is too large (max 10MB). Please choose a smaller image.');
+      event.target.value = '';
+      return;
     }
     setPhotoFile(processedFile);
     setRemovePhoto(false);

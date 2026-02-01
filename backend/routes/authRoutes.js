@@ -7,6 +7,7 @@ import fs from 'fs';
 import {
   registerUser,
   loginUser,
+  googleAuth,
   verifyEmail,
   resendVerificationEmail,
   getCurrentUser,
@@ -91,6 +92,12 @@ router.post(
     body('password').notEmpty().withMessage('Password is required'),
   ],
   loginUser
+);
+
+router.post(
+  '/google',
+  [body('credential').isString().notEmpty().withMessage('Google credential is required')],
+  googleAuth
 );
 
 router.get('/verify-email', verifyEmail);

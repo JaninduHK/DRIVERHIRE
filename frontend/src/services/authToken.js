@@ -132,6 +132,18 @@ export const handleSessionExpired = (message = 'Your session expired. Please sig
   emitAuthChange();
 };
 
+export const saveReturnPath = (path) => {
+  if (!hasSessionStorage) {
+    return;
+  }
+  const targetPath = path || (hasWindow
+    ? `${window.location.pathname}${window.location.search}${window.location.hash}`
+    : '');
+  if (shouldRememberPath(targetPath)) {
+    sessionStorage.setItem(AUTH_RETURN_PATH_KEY, targetPath);
+  }
+};
+
 export const consumeAuthMessage = () => {
   if (!hasSessionStorage) {
     return '';

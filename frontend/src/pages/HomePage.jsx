@@ -210,7 +210,7 @@ const buildCityPinsFromAddress = (drivers = []) => {
         const normalized = currentDriver.address.toLowerCase();
         return city.keywords.some((keyword) => normalized.includes(keyword));
       }).length,
-      label: driver.address || city.label,
+      label: city.label,
       avatar: driver.profilePhoto || null,
     });
 
@@ -257,10 +257,14 @@ const buildLiveDriverPins = (drivers = []) => {
     .slice(0, 10)
     .map((driver) => {
       const location = getLocation(driver);
+      const detectedCity = detectCityFromAddress(location?.label || driver.address || '');
+      const shortLabel = location?.label
+        ? detectedCity?.label || location.label
+        : detectedCity?.label || 'On the road';
       return {
         id: driver.id,
         name: driver.name || 'Driver',
-        label: location?.label || driver.address || 'On the road',
+        label: shortLabel,
         style: projectLatLng(location.latitude, location.longitude),
         lat: location.latitude,
         lng: location.longitude,

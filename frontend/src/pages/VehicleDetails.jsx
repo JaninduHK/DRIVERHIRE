@@ -18,6 +18,7 @@ import {
   checkVehicleAvailability,
   fetchVehicleReviews,
 } from '../services/vehicleCatalogApi.js';
+import { getStoredToken, saveReturnPath } from '../services/authToken.js';
 import { getVehicleFeatureLabels } from '../constants/vehicleFeatures.js';
 import { startConversation as startChatConversation } from '../services/chatApi.js';
 
@@ -219,6 +220,7 @@ const VehicleDetails = () => {
   ];
 
   const includedServices = useMemo(() => getVehicleFeatureLabels(vehicle), [vehicle]);
+  const todayDate = useMemo(() => new Date().toISOString().split('T')[0], []);
 const galleryImages = useMemo(() => {
   if (!vehicle || !Array.isArray(vehicle.images) || vehicle.images.length === 0) {
     return [];
@@ -292,6 +294,16 @@ const galleryImages = useMemo(() => {
       });
       return;
     }
+    if (dateForm.start < todayDate) {
+      setAvailability({
+        checking: false,
+        ready: false,
+        notice: 'Start date cannot be in the past.',
+        noticeTone: 'error',
+        quote: null,
+      });
+      return;
+    }
 
     setAvailability({
       checking: true,
@@ -357,7 +369,16 @@ const galleryImages = useMemo(() => {
       end: dateForm.end,
     });
 
-    navigate(`/checkout/${vehicleId}?${searchParams.toString()}`, {
+    const checkoutPath = `/checkout/${vehicleId}?${searchParams.toString()}`;
+
+    const token = getStoredToken();
+    if (!token) {
+      saveReturnPath(checkoutPath);
+      navigate('/register');
+      return;
+    }
+
+    navigate(checkoutPath, {
       state: {
         quote: availability.quote || null,
         vehicleSummary: vehicle
@@ -599,6 +620,7 @@ const galleryImages = useMemo(() => {
                   <input
                     type="date"
                     value={dateForm.start}
+                    min={todayDate}
                     onChange={(event) => handleDateChange('start', event.target.value)}
                     className="block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                     required
@@ -609,6 +631,7 @@ const galleryImages = useMemo(() => {
                   <input
                     type="date"
                     value={dateForm.end}
+                    min={dateForm.start || todayDate}
                     onChange={(event) => handleDateChange('end', event.target.value)}
                     className="block w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
                     required
@@ -728,7 +751,7 @@ const galleryImages = useMemo(() => {
                   </span>
                   <span className="inline-flex items-center gap-1 text-amber-600">
                     <Star className="h-3.5 w-3.5 text-amber-500" fill="currentColor" />
-                    4.8 / 5 rating
+                    {averageRatingLabel} / 5 rating
                   </span>
                 </div>
                 <p className="text-xs text-slate-400">{memberSinceLabel}</p>

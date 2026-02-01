@@ -36,7 +36,7 @@ import {
   fetchMyBriefs as fetchTravelerBriefs,
   createBrief as createTravelerBrief,
 } from '../services/briefApi.js';
-import { clearStoredToken } from '../services/authToken.js';
+import { clearStoredToken, getStoredToken, saveReturnPath } from '../services/authToken.js';
 
 const tabs = [
   {
@@ -144,6 +144,15 @@ const TravelerDashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const travelerFirstName = profileState?.data?.name?.split(' ')?.[0] || 'traveller';
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    const token = getStoredToken();
+    if (!token) {
+      saveReturnPath();
+      navigate('/login', { replace: true });
+    }
+  }, [navigate]);
 
   const handleLogout = useCallback(() => {
     clearStoredToken();

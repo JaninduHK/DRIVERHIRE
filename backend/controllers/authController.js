@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { validationResult } from 'express-validator';
-import User, { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
+import User, { AUTH_PROVIDERS, DRIVER_STATUS, USER_ROLES } from '../models/User.js';
+import { verifyGoogleToken } from '../utils/googleAuth.js';
 import { generateAccessToken } from '../utils/jwt.js';
 import buildAppUrl from '../utils/url.js';
 import {
@@ -508,5 +509,83 @@ export const resetPassword = async (req, res) => {
   } catch (error) {
     console.error('Password reset error:', error);
     return res.status(500).json({ message: 'Unable to reset password right now.' });
+  }
+};
+
+export const googleAuth = async (req, res) => {
+  const { credential } = req.body || {};
+
+  if (!credential) {
+    return res.status(400).json({ message: 'Google credential is required' });
+  }
+
+  try {
+    const googleData = await verifyGoogleToken(credential);
+
+    if (!googleData.email) {
+      return res.status(400).json({ message: 'Unable to retrieve email from Google account' });
+    }
+
+    if (!googleData.emailVerified) {
+      return res.status(400).json({ message: 'Please verify your Google email first' });
+    }
+
+    const existingUser = await User.findOne({ email: googleData.email.toLowerCase() });
+
+    if (existingUser) {
+      // Drivers and admins must use password authentication
+      if (existingUser.role === USER_ROLES.DRIVER || existingUser.role === USER_ROLES.ADMIN) {
+        return res.status(403).json({
+          message: 'This account uses password authentication. Please sign in with your email and password.',
+        });
+      }
+
+      // Link Google account to existing guest user if not already linked
+      if (!existingUser.googleId) {
+        existingUser.googleId = googleData.googleId;
+        existingUser.authProvider = AUTH_PROVIDERS.GOOGLE;
+        if (!existingUser.isVerified) {
+          existingUser.isVerified = true;
+          existingUser.verificationToken = undefined;
+          existingUser.verificationTokenExpires = undefined;
+        }
+        await existingUser.save();
+      }
+
+      const token = generateAccessToken(existingUser);
+      return res.json({
+        token,
+        user: existingUser.toJSON(),
+      });
+    }
+
+    // Create new guest user with Google account
+    const newUser = new User({
+      name: googleData.name || googleData.email.split('@')[0],
+      email: googleData.email.toLowerCase(),
+      googleId: googleData.googleId,
+      authProvider: AUTH_PROVIDERS.GOOGLE,
+      role: USER_ROLES.GUEST,
+      isVerified: true,
+    });
+
+    if (googleData.picture) {
+      newUser.profilePhoto = googleData.picture;
+    }
+
+    await newUser.save();
+
+    const token = generateAccessToken(newUser);
+    return res.json({
+      token,
+      user: newUser.toJSON(),
+      isNewUser: true,
+    });
+  } catch (error) {
+    console.error('Google auth error:', error);
+    if (error.message?.includes('Token used too late') || error.message?.includes('Invalid token')) {
+      return res.status(401).json({ message: 'Google sign-in expired. Please try again.' });
+    }
+    return res.status(500).json({ message: 'Unable to authenticate with Google' });
   }
 };

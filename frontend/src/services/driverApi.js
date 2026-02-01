@@ -54,6 +54,8 @@ const authHeaders = () => {
 // ---- core request ---------------------------------------------------
 const request = async (path, options = {}) => {
   const isFormData = options.body instanceof FormData;
+  // Use longer timeout for file uploads (2 minutes) vs regular requests (15 seconds)
+  const timeoutMs = isFormData ? 120000 : 15000;
 
   const headers = {
     ...authHeaders(),
@@ -69,7 +71,7 @@ const request = async (path, options = {}) => {
 
   let response;
   try {
-    response = await withTimeout(fetchPromise, 15000);
+    response = await withTimeout(fetchPromise, timeoutMs);
   } catch (e) {
     // Network or timeout
     throw new Error(e?.message || 'Network error');

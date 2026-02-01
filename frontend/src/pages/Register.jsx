@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { register as registerUser } from '../services/authApi.js';
+import GoogleSignInButton from '../components/GoogleSignInButton.jsx';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -148,6 +149,11 @@ const Register = () => {
               >
                 {loading ? 'Creating account...' : 'Create account'}
               </button>
+
+              <GoogleSignInButton
+                onLoadingChange={setLoading}
+                context="signup"
+              />
             </form>
 
             <p className="mt-4 text-xs text-slate-500">

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { login } from '../services/authApi.js';
 import { consumeAuthMessage, consumeReturnPath, persistAuthSession } from '../services/authToken.js';
+import GoogleSignInButton from '../components/GoogleSignInButton.jsx';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -162,6 +163,11 @@ const Login = () => {
               >
                 {loading ? 'Signing in...' : 'Sign in'}
               </button>
+
+              <GoogleSignInButton
+                onLoadingChange={setLoading}
+                context="signin"
+              />
             </form>
 
             <p className="mt-6 text-center text-xs text-slate-500">

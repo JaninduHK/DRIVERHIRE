@@ -13,8 +13,14 @@ export const DRIVER_STATUS = {
   REJECTED: 'rejected',
 };
 
+export const AUTH_PROVIDERS = {
+  LOCAL: 'local',
+  GOOGLE: 'google',
+};
+
 const roleValues = Object.values(USER_ROLES);
 const driverStatusValues = Object.values(DRIVER_STATUS);
+const authProviderValues = Object.values(AUTH_PROVIDERS);
 
 const driverLocationSchema = new mongoose.Schema(
   {
@@ -42,7 +48,19 @@ const userSchema = new mongoose.Schema(
     },
     passwordHash: {
       type: String,
-      required: true,
+      required: function () {
+        return this.authProvider === AUTH_PROVIDERS.LOCAL;
+      },
+    },
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    authProvider: {
+      type: String,
+      enum: authProviderValues,
+      default: AUTH_PROVIDERS.LOCAL,
     },
     role: {
       type: String,
@@ -118,6 +136,7 @@ userSchema.set('toJSON', {
     delete ret._id;
     delete ret.__v;
     delete ret.passwordHash;
+    delete ret.googleId;
     delete ret.verificationToken;
     delete ret.verificationTokenExpires;
     delete ret.passwordResetToken;

@@ -2,22 +2,22 @@ import Brevo from 'sib-api-v3-sdk';
 
 let brevoClient;
 
-const brandName = process.env.APP_BRAND_NAME || 'Car With Driver';
-const appBaseUrl = process.env.APP_BASE_URL || 'http://carwithdriver.lk';
-const emailFrom = process.env.EMAIL_FROM || 'hello@carwithdriver.lk';
-const brevoApiKey = process.env.BREVO_API_KEY || process.env.SENDINGBLUE_API_KEY;
-const supportEmail = process.env.SUPPORT_EMAIL || emailFrom || 'support@carwithdriver.lk';
-const currencyCode = process.env.APP_CURRENCY || 'USD';
+const getBrandName = () => process.env.APP_BRAND_NAME || 'Car With Driver';
+const getAppBaseUrl = () => process.env.APP_BASE_URL || 'http://carwithdriver.lk';
+const getEmailFrom = () => process.env.EMAIL_FROM || 'hello@carwithdriver.lk';
+const getBrevoApiKey = () => process.env.BREVO_API_KEY || '';
+const getSupportEmail = () => process.env.SUPPORT_EMAIL || getEmailFrom() || 'support@carwithdriver.lk';
+const getCurrencyCode = () => process.env.APP_CURRENCY || 'USD';
 
 const paragraphStyles =
   'margin:0 0 14px 0;color:#0f172a;font-size:15px;line-height:1.6;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;';
 const footerStyles =
   'margin:0 0 6px 0;color:#94a3b8;font-size:13px;line-height:1.6;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;';
 
-const defaultFooterLines = [
-  `Need help? Reply to this email or reach us at ${supportEmail}.`,
-  `You are receiving this email because you have an active account on ${brandName}.`,
-  `© ${new Date().getFullYear()} ${brandName}`,
+const getDefaultFooterLines = () => [
+  `Need help? Reply to this email or reach us at ${getSupportEmail()}.`,
+  `You are receiving this email because you have an active account on ${getBrandName()}.`,
+  `© ${new Date().getFullYear()} ${getBrandName()}`,
 ];
 
 const escapeHtml = (value = '') =>
@@ -46,6 +46,7 @@ const formatStatus = (status) => {
 };
 
 const buildUrl = (pathname = '/') => {
+  const appBaseUrl = getAppBaseUrl();
   try {
     return new URL(pathname, appBaseUrl).toString();
   } catch {
@@ -84,7 +85,7 @@ const formatCurrency = (value) => {
   }
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: currencyCode,
+    currency: getCurrencyCode(),
   }).format(numericValue);
 };
 
@@ -110,6 +111,7 @@ const renderFooter = (lines = []) =>
 
 const parseFromAddress = (value = '') => {
   const trimmed = value?.trim?.() || '';
+  const brandName = getBrandName();
 
   if (!trimmed) {
     return { email: 'hello@carwithdriver.lk', name: brandName };
@@ -146,16 +148,17 @@ const buildEmailTemplate = ({ title, preheader, bodyLines = [], action, footerLi
             </div>`
           : ''
       }
-      ${renderFooter([...footerLines, ...defaultFooterLines])}
+      ${renderFooter([...footerLines, ...getDefaultFooterLines()])}
     </div>
   </div>
 `;
 
-const getBrevoClient = () => {
+const initBrevoClient = () => {
   if (brevoClient) {
     return brevoClient;
   }
 
+  const brevoApiKey = getBrevoApiKey();
   if (!brevoApiKey) {
     return null;
   }
@@ -215,7 +218,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
     text: text || htmlToText(html),
   };
 
-  const client = getBrevoClient();
+  const client = initBrevoClient();
 
   if (!client) {
     logEmailResult(payload, 'SKIPPED', { reason: 'BREVO_API_KEY missing' });
@@ -224,10 +227,10 @@ const sendEmail = async ({ to, subject, html, text }) => {
   }
 
   try {
-    const { email, name } = parseFromAddress(emailFrom);
+    const { email, name } = parseFromAddress(getEmailFrom());
 
     const response = await client.sendTransacEmail({
-      sender: { email, name: name || brandName },
+      sender: { email, name: name || getBrandName() },
       to: payload.to.map((address) => ({ email: address })),
       subject: payload.subject,
       htmlContent: payload.html,
@@ -268,6 +271,7 @@ export const sendDriverAdminMessageEmail = async ({ driver, subject, message, se
   const safeDriverName = escapeHtml(driver.name || 'there');
   const adminName = escapeHtml(sender?.name || 'Admin team');
   const adminEmail = sender?.email ? ` (${escapeHtml(sender.email)})` : '';
+  const brandName = getBrandName();
   const normalizedSubject = subject?.trim() || `Message from ${brandName}`;
   const normalizedMessage = message.trim();
 
@@ -299,7 +303,7 @@ export const sendDriverAdminMessageEmail = async ({ driver, subject, message, se
 };
 
 export const sendSupportRequestEmail = async ({ name, email, category, bookingId, message }) => {
-  const targetEmail = supportEmail || 'hello@carwithdriver.lk';
+  const targetEmail = getSupportEmail() || 'hello@carwithdriver.lk';
   const extraRecipient = 'janindu883@gmail.com';
   const safeName = escapeHtml(name || 'Customer');
   const safeEmail = escapeHtml(email || 'unknown');
@@ -340,6 +344,7 @@ export const sendSupportRequestEmail = async ({ name, email, category, bookingId
 export const sendVerificationEmail = async ({ to, name, verificationUrl }) => {
   const safeName = escapeHtml(name || 'there');
   const url = verificationUrl || buildUrl('/verify-email');
+  const brandName = getBrandName();
   const html = buildEmailTemplate({
     title: 'Verify your email address',
     preheader: `Confirm your email to activate your ${brandName} account`,
@@ -370,6 +375,7 @@ export const sendVerificationEmail = async ({ to, name, verificationUrl }) => {
 export const sendPasswordResetEmail = async ({ to, name, resetUrl, expiresInMinutes = 60 }) => {
   const safeName = escapeHtml(name || 'there');
   const url = resetUrl || buildUrl('/reset-password');
+  const brandName = getBrandName();
   const html = buildEmailTemplate({
     title: 'Reset your password',
     preheader: `Use this link to reset your ${brandName} password`,
@@ -397,6 +403,7 @@ export const sendPasswordResetEmail = async ({ to, name, resetUrl, expiresInMinu
 
 export const sendPasswordChangedEmail = async ({ to, name }) => {
   const safeName = escapeHtml(name || 'there');
+  const brandName = getBrandName();
   const html = buildEmailTemplate({
     title: 'Your password was updated',
     preheader: `Confirmation of your recent ${brandName} password change`,
@@ -436,6 +443,7 @@ export const sendConversationNotificationEmail = async ({
   const recipientName = escapeHtml(recipient.name || 'there');
   const senderName = escapeHtml(sender?.name || 'your contact');
   const preview = messagePreview ? formatMultiline(messagePreview) : '';
+  const brandName = getBrandName();
 
   const subject = isOffer
     ? `${senderName} sent you a trip offer`
@@ -492,6 +500,7 @@ export const sendBriefAlertEmail = async ({ drivers = [], brief }) => {
   }
 
   const briefUrl = buildUrl(`/briefs#brief-${brief.id || brief._id || ''}`);
+  const brandName = getBrandName();
 
   await Promise.all(
     recipients.map((driver) => {

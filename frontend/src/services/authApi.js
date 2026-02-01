@@ -67,3 +67,9 @@ export const resetPassword = async (payload) =>
     method: 'POST',
     body: JSON.stringify(payload),
   });
+
+export const googleAuth = async (credential) =>
+  request('/google', {
+    method: 'POST',
+    body: JSON.stringify({ credential }),
+  });
