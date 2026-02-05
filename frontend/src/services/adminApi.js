@@ -219,3 +219,8 @@ export const deleteCommissionDiscount = (discountId) =>
   request(`/discounts/${discountId}`, {
     method: 'DELETE',
   });
+
+export const fetchUsers = () =>
+  request('/users', {
+    method: 'GET',
+  });

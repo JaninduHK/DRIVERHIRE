@@ -986,3 +986,38 @@ export const deleteConversation = async (req, res) => {
     return res.status(500).json({ message: 'Unable to delete conversation.' });
   }
 };
+
+export const getUsersList = async (_req, res) => {
+  try {
+    // Fetch all guest/tourist users
+    const users = await User.find({ role: USER_ROLES.GUEST })
+      .select('name email contactNumber isVerified createdAt authProvider')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Get booking counts for each user
+    const usersWithStats = await Promise.all(
+      users.map(async (user) => {
+        const bookingCount = await Booking.countDocuments({ travelerUser: user._id });
+        const briefCount = await TourBrief.countDocuments({ traveler: user._id });
+
+        return {
+          id: user._id.toString(),
+          name: user.name,
+          email: user.email,
+          contactNumber: user.contactNumber || '',
+          isVerified: user.isVerified || false,
+          authProvider: user.authProvider || 'local',
+          registeredAt: user.createdAt,
+          bookingsCount: bookingCount,
+          briefsCount: briefCount,
+        };
+      })
+    );
+
+    return res.json({ users: usersWithStats });
+  } catch (error) {
+    console.error('List users error:', error);
+    return res.status(500).json({ message: 'Unable to load users.' });
+  }
+};

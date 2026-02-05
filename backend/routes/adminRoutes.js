@@ -26,6 +26,7 @@ import {
   updateConversationStatus,
   deleteConversation,
   sendDriverDirectMessage,
+  getUsersList,
 } from '../controllers/adminController.js';
 import {
   listAdminReviews,
@@ -368,5 +369,7 @@ router.delete(
   [param('id').isMongoId().withMessage('Invalid discount identifier')],
   deleteCommissionDiscount
 );
+
+router.get('/users', getUsersList);
 
 export default router;
