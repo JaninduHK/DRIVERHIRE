@@ -5,7 +5,7 @@ import { getStoredToken, handleSessionExpired } from './authToken.js';
 const DRIVER_BASE_URL = `${API_BASE_URL}/driver`;
 
 // ---- tiny utilities -------------------------------------------------
-const withTimeout = (promise, ms = 15000, msg = 'Request timed out') => {
+const withTimeout = (promise, ms = 15000, msg = 'Request timed out. Please check your connection and try again.') => {
   let id;
   const timeout = new Promise((_, reject) => {
     id = setTimeout(() => reject(new Error(msg)), ms);
@@ -28,7 +28,17 @@ const safeJson = async (response) => {
 const parseError = async (response) => {
   // Nginx/client body limits return 413 with HTML; show a clear upload error instead of a parse failure.
   if (response.status === 413) {
-    return 'Upload rejected by server. Please keep each image under 10MB and try again.';
+    return 'Upload too large. Please ensure images are compressed below 10MB each and try again.';
+  }
+
+  // Handle timeout and network errors
+  if (response.status === 408 || response.status === 504) {
+    return 'Upload timed out. Please check your connection and try again with smaller images.';
+  }
+
+  // Handle server errors that might occur during image processing
+  if (response.status === 500) {
+    return 'Server error while processing upload. Please try again or use smaller images.';
   }
 
   const data = await safeJson(response);
@@ -39,7 +49,7 @@ const parseError = async (response) => {
   if (typeof data?.message === 'string' && data.message.trim()) {
     return data.message;
   }
-  return `Request failed (${response.status})`;
+  return `Request failed (${response.status}). Please try again.`;
 };
 
 const authHeaders = () => {
@@ -73,8 +83,14 @@ const request = async (path, options = {}) => {
   try {
     response = await withTimeout(fetchPromise, timeoutMs);
   } catch (e) {
-    // Network or timeout
-    throw new Error(e?.message || 'Network error');
+    // Network or timeout - provide helpful mobile-friendly error messages
+    if (e?.message?.includes('timed out')) {
+      throw new Error(e.message);
+    }
+    if (e?.message?.includes('Failed to fetch')) {
+      throw new Error('Network error. Please check your internet connection and try again.');
+    }
+    throw new Error(e?.message || 'Network error. Please check your connection.');
   }
 
   if (!response.ok) {

@@ -47,8 +47,10 @@ const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024, files: 5 },
   fileFilter: (_req, file, cb) => {
+    // Accept standard image formats (JPEG, PNG, WebP, etc.)
+    // Note: HEIC/HEIF should be converted to JPEG on frontend before upload
     if (!file.mimetype.startsWith('image/')) {
-      return cb(new Error('Only image uploads are allowed'));
+      return cb(new Error('Only image files are allowed. Please upload JPEG, PNG, or WebP images.'));
     }
     return cb(null, true);
   },

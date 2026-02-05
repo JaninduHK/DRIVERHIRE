@@ -66,6 +66,7 @@ const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const MAX_VEHICLE_UPLOAD_BYTES = MAX_IMAGE_SIZE_BYTES * 5;
 
 // Compress image if it exceeds the size limit (common on mobile phones)
+// Ensures mobile formats (HEIC, HEIF, WebP) are converted to JPEG for compatibility
 const compressImageIfNeeded = async (file, maxSizeMB = 9.5) => {
   if (file.size <= maxSizeMB * 1024 * 1024) {
     return file;
@@ -74,10 +75,14 @@ const compressImageIfNeeded = async (file, maxSizeMB = 9.5) => {
     maxSizeMB,
     maxWidthOrHeight: 2048,
     useWebWorker: true,
-    fileType: file.type || 'image/jpeg',
+    fileType: 'image/jpeg', // Always convert to JPEG for mobile compatibility
+    initialQuality: 0.8, // Better quality for initial compression
+    alwaysKeepResolution: false, // Allow resolution reduction
   };
   const compressed = await imageCompression(file, options);
-  const result = new File([compressed], file.name, { type: compressed.type });
+  // Generate JPEG filename if needed
+  const fileName = file.name.replace(/\.(heic|heif|webp|png)$/i, '.jpg');
+  const result = new File([compressed], fileName, { type: 'image/jpeg' });
   // Validate that compression actually reduced the size below the limit
   if (result.size > MAX_IMAGE_SIZE_BYTES) {
     throw new Error(`Unable to compress "${file.name}" below 10MB. Try a smaller image.`);
@@ -1401,19 +1406,20 @@ const VehiclesPanel = ({ vehicles, loading, error, onRefresh, onCreate, onUpdate
   const onDrop = useCallback(async (acceptedFiles) => {
     if (acceptedFiles.length === 0) return;
 
-    // Check if any files need compression (files over 9.5MB will be compressed)
-    const needsCompression = acceptedFiles.some((file) => file.size > 9.5 * 1024 * 1024);
+    // Compress all images proactively for mobile compatibility
+    // Mobile photos are often 5-20MB even if they look small
+    const needsCompression = acceptedFiles.some((file) => file.size > 2 * 1024 * 1024);
     let processedFiles = acceptedFiles;
 
     if (needsCompression) {
       try {
-        toast.loading('Compressing large images...', { id: 'compress-vehicle' });
+        toast.loading('Optimizing images for upload...', { id: 'compress-vehicle' });
         processedFiles = await Promise.all(
           acceptedFiles.map((file) => compressImageIfNeeded(file))
         );
-        toast.success('Images compressed successfully', { id: 'compress-vehicle' });
+        toast.success('Images optimized successfully', { id: 'compress-vehicle' });
       } catch (error) {
-        toast.error(error?.message || 'Unable to compress images. Please choose smaller images.', { id: 'compress-vehicle' });
+        toast.error(error?.message || 'Unable to optimize images. Please choose smaller images or try again.', { id: 'compress-vehicle' });
         return;
       }
     }
@@ -2478,14 +2484,14 @@ const DriverProfilePanel = ({
       return;
     }
     let processedFile = file;
-    // Compress if file is over 9.5MB (gives headroom for 10MB limit)
-    if (file.size && file.size > 9.5 * 1024 * 1024) {
+    // Compress all images proactively, especially for mobile photos
+    if (file.size && file.size > 2 * 1024 * 1024) {
       try {
-        toast.loading('Compressing image...', { id: 'compress-photo' });
+        toast.loading('Optimizing image...', { id: 'compress-photo' });
         processedFile = await compressImageIfNeeded(file);
-        toast.success('Image compressed successfully', { id: 'compress-photo' });
+        toast.success('Image optimized successfully', { id: 'compress-photo' });
       } catch (error) {
-        toast.error(error?.message || 'Unable to compress image. Please choose a smaller image.', { id: 'compress-photo' });
+        toast.error(error?.message || 'Unable to optimize image. Please try a different photo.', { id: 'compress-photo' });
         event.target.value = '';
         return;
       }

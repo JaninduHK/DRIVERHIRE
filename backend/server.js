@@ -30,8 +30,9 @@ app.use(
   })
 );
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Increase body size limits to support image uploads (5 images × 10MB + form data overhead)
+app.use(express.json({ limit: '60mb' }));
+app.use(express.urlencoded({ extended: true, limit: '60mb' }));
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -67,26 +68,41 @@ app.use('/api/support', supportRoutes);
 // Error handler for multer and other errors
 app.use((error, req, res, next) => {
   console.error('Request error:', error.message);
-  
-  // Multer errors
+
+  // Multer errors - provide mobile-friendly messages
   if (error.code === 'LIMIT_FILE_SIZE') {
-    return res.status(400).json({ message: 'File size too large. Maximum 10MB allowed.' });
+    return res.status(400).json({
+      message: 'File too large. Please compress images below 10MB before uploading.'
+    });
   }
   if (error.code === 'LIMIT_FILE_COUNT') {
-    return res.status(400).json({ message: 'Too many files. Maximum 5 files allowed.' });
+    return res.status(400).json({
+      message: 'Too many files selected. You can upload up to 5 images at once.'
+    });
   }
   if (error.code === 'LIMIT_UNEXPECTED_FILE') {
-    return res.status(400).json({ message: 'Unexpected file field.' });
+    return res.status(400).json({
+      message: 'Unexpected file field. Please try again.'
+    });
   }
-  
+
   // Generic multer or validation errors
-  if (error.message && error.message.includes('Only image uploads are allowed')) {
-    return res.status(400).json({ message: 'Only image files are allowed.' });
+  if (error.message && error.message.includes('Only image')) {
+    return res.status(400).json({
+      message: 'Only image files (JPEG, PNG, WebP) are allowed. Please convert HEIC/HEIF files first.'
+    });
   }
-  
+
+  // Request entity too large (body-parser limit)
+  if (error.type === 'entity.too.large') {
+    return res.status(413).json({
+      message: 'Upload too large. Please ensure all images are compressed below 10MB.'
+    });
+  }
+
   // Default error response
-  res.status(error.status || 500).json({ 
-    message: error.message || 'An error occurred processing your request.' 
+  res.status(error.status || 500).json({
+    message: error.message || 'An error occurred processing your request. Please try again.'
   });
 });
 
