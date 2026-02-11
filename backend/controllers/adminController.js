@@ -16,6 +16,7 @@ import {
   sendDriverAdminMessageEmail,
 } from '../services/emailService.js';
 import { mapAssetUrls } from '../utils/assetUtils.js';
+import * as cloudinaryService from '../services/cloudinaryService.js';
 
 const handleValidation = (req, res) => {
   const errors = validationResult(req);
@@ -498,14 +499,12 @@ export const addVehicleImages = async (req, res) => {
   }
 
   const { id } = req.params;
-  const newImages =
-    Array.isArray(req.files) && req.files.length > 0
-      ? req.files.map((file) => `vehicles/${path.basename(file.path)}`)
-      : [];
 
-  if (newImages.length === 0) {
+  if (!Array.isArray(req.files) || req.files.length === 0) {
     return res.status(400).json({ message: 'Upload at least one image.' });
   }
+
+  const uploadedUrls = [];
 
   try {
     const vehicle = await Vehicle.findById(id).populate(
@@ -517,8 +516,31 @@ export const addVehicleImages = async (req, res) => {
       return res.status(404).json({ message: 'Vehicle submission not found' });
     }
 
+    // Upload each image to Cloudinary
+    for (const file of req.files) {
+      try {
+        const filename = cloudinaryService.generateUniqueFilename(`vehicle-${id}`);
+        const cloudinaryUrl = await cloudinaryService.uploadImage(
+          file.buffer,
+          'vehicles',
+          filename
+        );
+        uploadedUrls.push(cloudinaryUrl);
+      } catch (uploadError) {
+        console.error('Cloudinary upload error:', uploadError);
+        // If any upload fails, clean up already uploaded images
+        if (uploadedUrls.length > 0) {
+          await cloudinaryService.deleteMultipleAssets(uploadedUrls, 'image');
+        }
+        return res.status(500).json({
+          message: `Failed to upload image: ${uploadError.message}`,
+        });
+      }
+    }
+
+    // Update vehicle with new Cloudinary URLs
     const existing = Array.isArray(vehicle.images) ? vehicle.images : [];
-    const combined = [...existing, ...newImages].slice(0, 5);
+    const combined = [...existing, ...uploadedUrls].slice(0, 5);
     vehicle.images = combined;
     vehicle.reviewedAt = new Date();
     vehicle.reviewedBy = req.user.id;
@@ -529,6 +551,10 @@ export const addVehicleImages = async (req, res) => {
     return res.json({ vehicle: toVehicleResponse(vehicle, req) });
   } catch (error) {
     console.error('Add vehicle images error:', error);
+    // Clean up uploaded images if database save failed
+    if (uploadedUrls.length > 0) {
+      await cloudinaryService.deleteMultipleAssets(uploadedUrls, 'image');
+    }
     return res.status(500).json({ message: 'Unable to add vehicle images' });
   }
 };
@@ -547,17 +573,6 @@ export const removeVehicleImage = async (req, res) => {
     return res.status(400).json({ message: 'Image path is required' });
   }
 
-  const toStoredPath = (input) => {
-    if (!input) return '';
-    const idx = input.lastIndexOf('vehicles/');
-    if (idx >= 0) {
-      return input.slice(idx);
-    }
-    return input;
-  };
-
-  const targetPath = toStoredPath(trimmedImage);
-
   try {
     const vehicle = await Vehicle.findById(id).populate(
       'driver',
@@ -569,12 +584,22 @@ export const removeVehicleImage = async (req, res) => {
     }
 
     const existing = Array.isArray(vehicle.images) ? vehicle.images : [];
-    const filtered = existing.filter((entry) => entry !== targetPath);
 
-    if (filtered.length === existing.length) {
+    // Find the image to remove (match by full URL or relative path)
+    let imageToRemove = null;
+    for (const img of existing) {
+      if (img === trimmedImage || img.includes(trimmedImage) || trimmedImage.includes(img)) {
+        imageToRemove = img;
+        break;
+      }
+    }
+
+    if (!imageToRemove) {
       return res.status(404).json({ message: 'Image not found on vehicle' });
     }
 
+    // Remove from database
+    const filtered = existing.filter((entry) => entry !== imageToRemove);
     vehicle.images = filtered;
     vehicle.reviewedAt = new Date();
     vehicle.reviewedBy = req.user.id;
@@ -582,12 +607,32 @@ export const removeVehicleImage = async (req, res) => {
     await vehicle.save();
     await vehicle.populate('driver', 'name email contactNumber address');
 
-    const absolutePath = path.join(process.cwd(), 'uploads', targetPath);
-    fs.unlink(absolutePath, (err) => {
-      if (err) {
-        console.warn('Unable to delete vehicle image file', absolutePath, err.message);
+    // Delete from Cloudinary if it's a Cloudinary URL
+    if (cloudinaryService.isCloudinaryUrl(imageToRemove)) {
+      try {
+        await cloudinaryService.deleteAsset(imageToRemove, 'image');
+      } catch (deleteError) {
+        console.warn('Failed to delete image from Cloudinary:', deleteError.message);
+        // Continue anyway - image removed from database
       }
-    });
+    } else {
+      // Legacy local file - try to delete but don't fail if it doesn't exist
+      const toStoredPath = (input) => {
+        if (!input) return '';
+        const idx = input.lastIndexOf('vehicles/');
+        if (idx >= 0) {
+          return input.slice(idx);
+        }
+        return input;
+      };
+      const localPath = toStoredPath(imageToRemove);
+      const absolutePath = path.join(process.cwd(), 'uploads', localPath);
+      fs.unlink(absolutePath, (err) => {
+        if (err) {
+          console.warn('Unable to delete local vehicle image file', absolutePath, err.message);
+        }
+      });
+    }
 
     return res.json({ vehicle: toVehicleResponse(vehicle, req) });
   } catch (error) {

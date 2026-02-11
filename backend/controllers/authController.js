@@ -10,6 +10,7 @@ import {
   sendPasswordChangedEmail,
 } from '../services/emailService.js';
 import { buildAssetUrl } from '../utils/assetUtils.js';
+import * as cloudinaryService from '../services/cloudinaryService.js';
 
 const buildVerificationUrl = (token) => {
   const url = new URL(buildAppUrl('/verify-email'));
@@ -350,9 +351,43 @@ export const updateProfile = async (req, res) => {
       }
     }
 
+    // Handle profile photo upload
     if (req.file) {
-      user.profilePhoto = `profiles/${req.file.filename}`;
+      try {
+        // Delete old profile photo from Cloudinary if it exists
+        if (user.profilePhoto && cloudinaryService.isCloudinaryUrl(user.profilePhoto)) {
+          try {
+            await cloudinaryService.deleteAsset(user.profilePhoto, 'image');
+          } catch (deleteError) {
+            console.warn('Failed to delete old profile photo from Cloudinary:', deleteError.message);
+            // Continue with upload even if delete fails
+          }
+        }
+
+        // Upload new profile photo to Cloudinary
+        const filename = cloudinaryService.generateUniqueFilename(`user-${user._id}`);
+        const cloudinaryUrl = await cloudinaryService.uploadImage(
+          req.file.buffer,
+          'profiles',
+          filename
+        );
+        user.profilePhoto = cloudinaryUrl;
+      } catch (uploadError) {
+        console.error('Profile photo upload error:', uploadError);
+        return res.status(500).json({
+          message: `Failed to upload profile photo: ${uploadError.message}`,
+        });
+      }
     } else if (parseBooleanLike(removeProfilePhoto)) {
+      // Delete from Cloudinary if removing
+      if (user.profilePhoto && cloudinaryService.isCloudinaryUrl(user.profilePhoto)) {
+        try {
+          await cloudinaryService.deleteAsset(user.profilePhoto, 'image');
+        } catch (deleteError) {
+          console.warn('Failed to delete profile photo from Cloudinary:', deleteError.message);
+          // Continue with removal even if delete fails
+        }
+      }
       user.profilePhoto = undefined;
     }
 

@@ -1,9 +1,5 @@
 import express from 'express';
 import { body } from 'express-validator';
-import multer from 'multer';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
 import {
   registerUser,
   loginUser,
@@ -17,43 +13,10 @@ import {
   resetPassword,
 } from '../controllers/authController.js';
 import { authenticate } from '../middleware/authMiddleware.js';
+import { conditionalProfileUpload } from '../middleware/cloudinaryUpload.js';
 import { USER_ROLES } from '../models/User.js';
 
 const router = express.Router();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const profileUploadDir = path.join(__dirname, '../../uploads/profiles');
-fs.mkdirSync(profileUploadDir, { recursive: true });
-
-const profileStorage = multer.diskStorage({
-  destination: profileUploadDir,
-  filename: (_req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const extension = path.extname(file.originalname) || '.jpg';
-    cb(null, `${uniqueSuffix}${extension}`);
-  },
-});
-
-const profileUpload = multer({
-  storage: profileStorage,
-  limits: { fileSize: 10 * 1024 * 1024 },
-  fileFilter: (_req, file, cb) => {
-    if (file.mimetype && file.mimetype.startsWith('image/')) {
-      return cb(null, true);
-    }
-    return cb(new Error('Only image uploads are allowed'));
-  },
-});
-
-const conditionalProfileUpload = (req, res, next) => {
-  const contentType = req.headers['content-type'] || '';
-  if (contentType.includes('multipart/form-data')) {
-    return profileUpload.single('profilePhoto')(req, res, next);
-  }
-  return next();
-};
 
 const passwordRules = body('password')
   .isLength({ min: 8 })

@@ -1,25 +1,9 @@
 import { validationResult } from 'express-validator';
 import mongoose from 'mongoose';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs/promises';
 import User, { DRIVER_STATUS } from '../models/User.js';
 import Vehicle, { VEHICLE_STATUS, VEHICLE_AVAILABILITY_STATUS } from '../models/Vehicle.js';
 import { mapAssetUrls, buildAssetUrl } from '../utils/assetUtils.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const uploadsDir = path.join(__dirname, '../../uploads/vehicles');
-
-const ensureUploadsDir = async () => {
-  try {
-    await fs.mkdir(uploadsDir, { recursive: true });
-  } catch (error) {
-    if (error.code !== 'EEXIST') {
-      throw error;
-    }
-  }
-};
+import * as cloudinaryService from '../services/cloudinaryService.js';
 
 const handleValidation = (req, res) => {
   const errors = validationResult(req);
@@ -317,9 +301,9 @@ export const createDriverVehicle = async (req, res) => {
     return validationError;
   }
 
-  try {
-    await ensureUploadsDir();
+  const uploadedUrls = [];
 
+  try {
     const {
       model,
       year,
@@ -360,10 +344,29 @@ export const createDriverVehicle = async (req, res) => {
       return res.status(400).json({ message: 'Seats must be at least 1' });
     }
 
-    const imagePaths =
-      Array.isArray(req.files) && req.files.length > 0
-        ? req.files.map((file) => `vehicles/${path.basename(file.path)}`)
-        : [];
+    // Upload images to Cloudinary
+    if (Array.isArray(req.files) && req.files.length > 0) {
+      for (const file of req.files) {
+        try {
+          const filename = cloudinaryService.generateUniqueFilename('vehicle');
+          const cloudinaryUrl = await cloudinaryService.uploadImage(
+            file.buffer,
+            'vehicles',
+            filename
+          );
+          uploadedUrls.push(cloudinaryUrl);
+        } catch (uploadError) {
+          console.error('Cloudinary upload error:', uploadError);
+          // Clean up already uploaded images
+          if (uploadedUrls.length > 0) {
+            await cloudinaryService.deleteMultipleAssets(uploadedUrls, 'image');
+          }
+          return res.status(500).json({
+            message: `Failed to upload image: ${uploadError.message}`,
+          });
+        }
+      }
+    }
 
     const vehicle = new Vehicle({
       driver: req.user.id,
@@ -373,7 +376,7 @@ export const createDriverVehicle = async (req, res) => {
       pricePerDay: normalizedPrice,
       seats: normalizedSeats,
       status: VEHICLE_STATUS.PENDING,
-      images: imagePaths,
+      images: uploadedUrls,
       englishSpeakingDriver: parseBoolean(englishSpeakingDriver),
       meetAndGreetAtAirport: parseBoolean(meetAndGreetAtAirport),
       fuelAndInsurance: parseBoolean(fuelAndInsurance),
@@ -387,6 +390,10 @@ export const createDriverVehicle = async (req, res) => {
     return res.status(201).json({ vehicle: serializeDriverVehicle(vehicle, req) });
   } catch (error) {
     console.error('Create driver vehicle error:', error);
+    // Clean up uploaded images if vehicle creation failed
+    if (uploadedUrls.length > 0) {
+      await cloudinaryService.deleteMultipleAssets(uploadedUrls, 'image');
+    }
     return res.status(500).json({ message: 'Unable to submit vehicle' });
   }
 };
@@ -403,9 +410,9 @@ export const updateDriverVehicle = async (req, res) => {
     return res.status(400).json({ message: 'Invalid vehicle identifier provided' });
   }
 
-  try {
-    await ensureUploadsDir();
+  const uploadedUrls = [];
 
+  try {
     const vehicle = await Vehicle.findOne({ _id: id, driver: req.user.id });
 
     if (!vehicle) {
@@ -452,10 +459,29 @@ export const updateDriverVehicle = async (req, res) => {
       return res.status(400).json({ message: 'Seats must be at least 1' });
     }
 
-    const newImagePaths =
-      Array.isArray(req.files) && req.files.length > 0
-        ? req.files.map((file) => `vehicles/${path.basename(file.path)}`)
-        : [];
+    // Upload new images to Cloudinary
+    if (Array.isArray(req.files) && req.files.length > 0) {
+      for (const file of req.files) {
+        try {
+          const filename = cloudinaryService.generateUniqueFilename(`vehicle-${id}`);
+          const cloudinaryUrl = await cloudinaryService.uploadImage(
+            file.buffer,
+            'vehicles',
+            filename
+          );
+          uploadedUrls.push(cloudinaryUrl);
+        } catch (uploadError) {
+          console.error('Cloudinary upload error:', uploadError);
+          // Clean up already uploaded images
+          if (uploadedUrls.length > 0) {
+            await cloudinaryService.deleteMultipleAssets(uploadedUrls, 'image');
+          }
+          return res.status(500).json({
+            message: `Failed to upload image: ${uploadError.message}`,
+          });
+        }
+      }
+    }
 
     vehicle.model = model.trim();
     vehicle.year = normalizedYear;
@@ -469,8 +495,9 @@ export const updateDriverVehicle = async (req, res) => {
     vehicle.parkingFeesAndTolls = parseBoolean(parkingFeesAndTolls);
     vehicle.allTaxes = parseBoolean(allTaxes);
 
-    if (newImagePaths.length > 0) {
-      const combinedImages = [...vehicle.images, ...newImagePaths].slice(0, 5);
+    // Combine existing images with new Cloudinary URLs (max 5 total)
+    if (uploadedUrls.length > 0) {
+      const combinedImages = [...vehicle.images, ...uploadedUrls].slice(0, 5);
       vehicle.images = combinedImages;
     }
 

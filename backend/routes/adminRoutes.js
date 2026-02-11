@@ -1,10 +1,7 @@
 import express from 'express';
-import fs from 'fs';
-import path from 'path';
-import multer from 'multer';
-import { fileURLToPath } from 'url';
 import { body, param } from 'express-validator';
 import { authenticate, authorizeRoles } from '../middleware/authMiddleware.js';
+import { vehicleImageUpload } from '../middleware/cloudinaryUpload.js';
 import {
   getDriverApplications,
   updateDriverStatus,
@@ -45,32 +42,6 @@ import {
 } from '../controllers/commissionDiscountController.js';
 
 const router = express.Router();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const vehicleUploadDir = path.join(__dirname, '../../uploads/vehicles');
-fs.mkdirSync(vehicleUploadDir, { recursive: true });
-
-const vehicleStorage = multer.diskStorage({
-  destination: vehicleUploadDir,
-  filename: (_req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const extension = path.extname(file.originalname);
-    cb(null, `${uniqueSuffix}${extension}`);
-  },
-});
-
-const vehicleUpload = multer({
-  storage: vehicleStorage,
-  limits: { fileSize: 10 * 1024 * 1024, files: 5 },
-  fileFilter: (_req, file, cb) => {
-    if (!file.mimetype.startsWith('image/')) {
-      return cb(new Error('Only image uploads are allowed'));
-    }
-    return cb(null, true);
-  },
-});
 
 router.use(authenticate);
 router.use(authorizeRoles(USER_ROLES.ADMIN));
@@ -171,7 +142,7 @@ router.patch(
 
 router.post(
   '/vehicles/:id/images',
-  vehicleUpload.array('images', 5),
+  vehicleImageUpload.array('images', 5),
   [param('id').isMongoId().withMessage('Invalid vehicle identifier')],
   addVehicleImages
 );

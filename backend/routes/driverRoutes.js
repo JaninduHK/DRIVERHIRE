@@ -1,10 +1,7 @@
 import express from 'express';
 import { body, param } from 'express-validator';
-import multer from 'multer';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
 import { authenticate, ensureApprovedDriver } from '../middleware/authMiddleware.js';
+import { vehicleImageUpload, commissionSlipUpload } from '../middleware/cloudinaryUpload.js';
 import {
   getDriverOverview,
   getDriverVehicles,
@@ -28,66 +25,12 @@ const router = express.Router();
 router.use(authenticate);
 router.use(ensureApprovedDriver);
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const uploadDir = path.join(__dirname, '../../uploads/vehicles');
-fs.mkdirSync(uploadDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: uploadDir,
-  filename: (_req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const extension = path.extname(file.originalname);
-    cb(null, `${uniqueSuffix}${extension}`);
-  },
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 10 * 1024 * 1024, files: 5 },
-  fileFilter: (_req, file, cb) => {
-    // Accept standard image formats (JPEG, PNG, WebP, etc.)
-    // Note: HEIC/HEIF should be converted to JPEG on frontend before upload
-    if (!file.mimetype.startsWith('image/')) {
-      return cb(new Error('Only image files are allowed. Please upload JPEG, PNG, or WebP images.'));
-    }
-    return cb(null, true);
-  },
-});
-
-const slipsDir = path.join(__dirname, '../../uploads/commissions');
-fs.mkdirSync(slipsDir, { recursive: true });
-
-const slipStorage = multer.diskStorage({
-  destination: slipsDir,
-  filename: (_req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const extension = path.extname(file.originalname);
-    cb(null, `${uniqueSuffix}${extension}`);
-  },
-});
-
-const slipUpload = multer({
-  storage: slipStorage,
-  limits: { fileSize: 10 * 1024 * 1024, files: 1 },
-  fileFilter: (_req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      return cb(null, true);
-    }
-    if (file.mimetype === 'application/pdf') {
-      return cb(null, true);
-    }
-    return cb(new Error('Only image or PDF uploads are allowed'));
-  },
-});
-
 router.get('/overview', getDriverOverview);
 router.post('/onboarding/profile-tour/complete', completeDriverProfileTour);
 router.get('/vehicles', getDriverVehicles);
 router.post(
   '/vehicles',
-  upload.array('images', 5),
+  vehicleImageUpload.array('images', 5),
   [
     body('model').trim().notEmpty().withMessage('Vehicle model is required'),
     body('year')
@@ -130,7 +73,7 @@ router.post(
 
 router.patch(
   '/vehicles/:id',
-  upload.array('images', 5),
+  vehicleImageUpload.array('images', 5),
   [
     param('id').isMongoId().withMessage('Invalid vehicle identifier'),
     body('model').trim().notEmpty().withMessage('Vehicle model is required'),
@@ -237,7 +180,7 @@ router.get('/earnings/history', getDriverEarningsHistory);
 router.post(
   '/earnings/:commissionId/payment-slip',
   [param('commissionId').isMongoId().withMessage('Invalid commission reference')],
-  slipUpload.single('slip'),
+  commissionSlipUpload.single('slip'),
   uploadCommissionPaymentSlip
 );
 

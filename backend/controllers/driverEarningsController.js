@@ -1,16 +1,10 @@
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import Booking, { BOOKING_STATUS, DEFAULT_COMMISSION_RATE } from '../models/Booking.js';
 import DriverCommission, {
   COMMISSION_STATUS,
 } from '../models/DriverCommission.js';
 import CommissionDiscount from '../models/CommissionDiscount.js';
 import { buildAssetUrl } from '../utils/assetUtils.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const COMMISSION_UPLOAD_DIR = path.join(__dirname, '../../uploads/commissions');
+import * as cloudinaryService from '../services/cloudinaryService.js';
 
 const BANK_DETAILS = {
   accountName: process.env.PLATFORM_BANK_ACCOUNT_NAME || 'Car With Driver Operations',
@@ -53,16 +47,6 @@ const clampRate = (value) => {
 
 const roundCurrency = (value) => Math.round((Number.isFinite(value) ? value : 0) * 100) / 100;
 const roundRate = (value) => Math.round((Number.isFinite(value) ? value : 0) * 10000) / 10000;
-
-const ensureUploadsDir = async () => {
-  try {
-    await fs.mkdir(COMMISSION_UPLOAD_DIR, { recursive: true });
-  } catch (error) {
-    if (error.code !== 'EEXIST') {
-      throw error;
-    }
-  }
-};
 
 const parseMonthParam = (value) => {
   if (!value || typeof value !== 'string') {
@@ -312,7 +296,6 @@ export const getDriverEarningsHistory = async (req, res) => {
 
 export const uploadCommissionPaymentSlip = async (req, res) => {
   try {
-    await ensureUploadsDir();
     const { commissionId } = req.params;
     if (!commissionId) {
       return res.status(400).json({ message: 'Commission reference is required.' });
@@ -331,27 +314,48 @@ export const uploadCommissionPaymentSlip = async (req, res) => {
       return res.status(400).json({ message: 'Payment slip not provided.' });
     }
 
-    if (commission.paymentSlipFilename && commission.paymentSlipFilename !== req.file.filename) {
-      const previousPath = path.join(COMMISSION_UPLOAD_DIR, commission.paymentSlipFilename);
+    // Delete old payment slip from Cloudinary if it exists
+    if (commission.paymentSlipUrl && cloudinaryService.isCloudinaryUrl(commission.paymentSlipUrl)) {
       try {
-        await fs.unlink(previousPath);
-      } catch (error) {
-        if (error.code !== 'ENOENT') {
-          console.warn('Unable to remove existing payment slip:', error);
-        }
+        // Determine resource type based on the old file (could be PDF or image)
+        const resourceType = commission.paymentSlipUrl.includes('.pdf') ? 'raw' : 'image';
+        await cloudinaryService.deleteAsset(commission.paymentSlipUrl, resourceType);
+      } catch (deleteError) {
+        console.warn('Failed to delete old payment slip from Cloudinary:', deleteError.message);
+        // Continue with upload even if delete fails
       }
     }
 
-    commission.paymentSlipUrl = `commissions/${req.file.filename}`;
-    commission.paymentSlipFilename = req.file.filename;
-    commission.paymentSlipUploadedAt = new Date();
-    commission.status = COMMISSION_STATUS.SUBMITTED;
-    await commission.save();
+    // Determine resource type based on MIME type
+    const isPdf = req.file.mimetype === 'application/pdf';
+    const resourceType = isPdf ? 'raw' : 'image';
 
-    return res.json({
-      message: 'Payment slip uploaded successfully.',
-      commission: shapeCommissionRecord(commission, req),
-    });
+    // Upload to Cloudinary
+    try {
+      const filename = cloudinaryService.generateUniqueFilename(`commission-${commissionId}`);
+      const cloudinaryUrl = await cloudinaryService.uploadFile(
+        req.file.buffer,
+        'commissions',
+        filename,
+        resourceType
+      );
+
+      commission.paymentSlipUrl = cloudinaryUrl;
+      commission.paymentSlipFilename = filename; // Store just the filename for reference
+      commission.paymentSlipUploadedAt = new Date();
+      commission.status = COMMISSION_STATUS.SUBMITTED;
+      await commission.save();
+
+      return res.json({
+        message: 'Payment slip uploaded successfully.',
+        commission: shapeCommissionRecord(commission, req),
+      });
+    } catch (uploadError) {
+      console.error('Cloudinary upload error:', uploadError);
+      return res.status(500).json({
+        message: `Failed to upload payment slip: ${uploadError.message}`,
+      });
+    }
   } catch (error) {
     console.error('Upload commission slip error:', error);
     return res.status(500).json({ message: 'Unable to upload payment slip right now.' });

@@ -114,9 +114,12 @@ export const buildAssetUrl = (value, req) => {
   if (!value) {
     return '';
   }
+  // Return absolute URLs as-is (including Cloudinary URLs)
+  // This maintains backward compatibility with both Cloudinary and legacy local paths
   if (ABSOLUTE_URL_REGEX.test(value)) {
     return value;
   }
+  // For relative paths (legacy local uploads), construct full URL
   const normalizedPath = typeof value === 'string' ? value.trim() : '';
   if (!normalizedPath) {
     return '';
