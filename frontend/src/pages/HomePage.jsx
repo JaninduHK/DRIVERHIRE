@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import {
   ArrowRight,
   Award,
@@ -311,288 +313,112 @@ const spreadOverlappingPins = (pins = []) => {
   });
 };
 
-const googleMapsLoader = (() => {
-  let loaderPromise = null;
-
-  const buildMapsApi = async () => {
-    const maps = window.google?.maps;
-    if (!maps) {
-      throw new Error('Google Maps unavailable.');
-    }
-
-    let MapCtor = maps.Map;
-    let OverlayViewCtor = maps.OverlayView;
-    let LatLngCtor = maps.LatLng;
-    let LatLngBoundsCtor = maps.LatLngBounds;
-
-    if (typeof maps.importLibrary === 'function') {
-      const [mapsLib, coreLib] = await Promise.all([
-        maps.importLibrary('maps'),
-        maps.importLibrary('core'),
-      ]);
-      MapCtor = MapCtor || mapsLib?.Map;
-      OverlayViewCtor = OverlayViewCtor || mapsLib?.OverlayView;
-      LatLngCtor = LatLngCtor || coreLib?.LatLng || mapsLib?.LatLng;
-      LatLngBoundsCtor = LatLngBoundsCtor || coreLib?.LatLngBounds || mapsLib?.LatLngBounds;
-    }
-
-    if (!MapCtor || !OverlayViewCtor || !LatLngCtor || !LatLngBoundsCtor) {
-      throw new Error('Google Maps failed to initialize.');
-    }
-
-    return {
-      Map: MapCtor,
-      OverlayView: OverlayViewCtor,
-      LatLng: LatLngCtor,
-      LatLngBounds: LatLngBoundsCtor,
-    };
-  };
-
-  return (apiKey) => {
-    if (typeof window === 'undefined') {
-      return Promise.reject(new Error('Google Maps is only available in the browser.'));
-    }
-    if (!apiKey) {
-      return Promise.reject(new Error('Google Maps API key missing.'));
-    }
-    if (window.google?.maps?.Map && !loaderPromise) {
-      loaderPromise = buildMapsApi();
-      return loaderPromise;
-    }
-    if (loaderPromise) {
-      return loaderPromise;
-    }
-
-    loaderPromise = new Promise((resolve, reject) => {
-      const finish = () =>
-        buildMapsApi()
-          .then(resolve)
-          .catch(reject);
-
-      const existing = document.querySelector('script[data-google-maps-loader]');
-      if (existing) {
-        if (window.google?.maps) {
-          finish();
-          return;
-        }
-        existing.addEventListener('load', finish, { once: true });
-        existing.addEventListener(
-          'error',
-          () => reject(new Error('Unable to load Google Maps.')),
-          { once: true }
-        );
-        return;
-      }
-
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(
-        apiKey
-      )}&libraries=maps,marker&loading=async`;
-      script.async = true;
-      script.defer = true;
-      script.dataset.googleMapsLoader = 'true';
-      script.addEventListener('load', finish, { once: true });
-      script.addEventListener(
-        'error',
-        () => reject(new Error('Unable to load Google Maps.')),
-        { once: true }
-      );
-      document.head.appendChild(script);
-    }).catch((err) => {
-      loaderPromise = null;
-      throw err;
-    });
-
-    return loaderPromise;
-  };
-})();
+const escHtml = (str) =>
+  String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 const LiveDriversMapCard = ({ drivers, loading, error, onReload }) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
-  const overlaysRef = useRef([]);
+  const markersRef = useRef([]);
   const [mapError, setMapError] = useState('');
-  const [mapLoading, setMapLoading] = useState(false);
   const pins = useMemo(
     () => spreadOverlappingPins(buildLiveDriverPins(drivers)),
     [drivers]
   );
 
   const clearMarkers = useCallback(() => {
-    overlaysRef.current.forEach((overlay) => {
+    markersRef.current.forEach((marker) => {
       try {
-        overlay.setMap(null);
+        marker.remove();
       } catch (e) {
         // ignore
       }
     });
-    overlaysRef.current = [];
+    markersRef.current = [];
   }, []);
 
-  const createDriverMarker = useCallback((maps, mapInstance, pin) => {
-    const container = document.createElement('div');
-    container.style.position = 'absolute';
-    container.style.transform = 'translate(-50%, -100%)';
-    container.style.cursor = 'pointer';
-    container.style.filter = 'drop-shadow(0 6px 12px rgba(0,0,0,0.25))';
-
-    const badge = document.createElement('div');
-    badge.style.display = 'flex';
-    badge.style.alignItems = 'center';
-    badge.style.gap = '8px';
-    badge.style.padding = '6px 10px';
-    badge.style.borderRadius = '999px';
-    badge.style.background = 'white';
-    badge.style.fontSize = '12px';
-    badge.style.fontWeight = '600';
-    badge.style.color = '#0f172a';
-    badge.style.boxShadow = '0 10px 25px rgba(15,23,42,0.25)';
-
-    const avatarWrapper = document.createElement('div');
-    avatarWrapper.style.width = '28px';
-    avatarWrapper.style.height = '28px';
-    avatarWrapper.style.borderRadius = '50%';
-    avatarWrapper.style.overflow = 'hidden';
-    avatarWrapper.style.border = '2px solid #d1fae5';
-    avatarWrapper.style.background = '#ecfdf3';
-
-    if (pin.avatar) {
-      const img = document.createElement('img');
-      img.src = pin.avatar;
-      img.alt = pin.name || 'Driver';
-      img.style.width = '100%';
-      img.style.height = '100%';
-      img.style.objectFit = 'cover';
-      avatarWrapper.appendChild(img);
-    } else {
-      const placeholder = document.createElement('div');
-      placeholder.style.width = '100%';
-      placeholder.style.height = '100%';
-      placeholder.style.display = 'flex';
-      placeholder.style.alignItems = 'center';
-      placeholder.style.justifyContent = 'center';
-      placeholder.style.color = '#10b981';
-      placeholder.style.fontWeight = '700';
-      placeholder.textContent = (pin.name || 'D')[0] || 'D';
-      avatarWrapper.appendChild(placeholder);
-    }
-
-    const textWrapper = document.createElement('div');
-    textWrapper.style.display = 'flex';
-    textWrapper.style.flexDirection = 'column';
-    textWrapper.style.lineHeight = '1.1';
-
-    const nameEl = document.createElement('span');
-    nameEl.textContent = (pin.name || 'Driver').split(' ')[0];
-    nameEl.style.fontSize = '12px';
-
-    const labelEl = document.createElement('span');
-    labelEl.textContent = pin.label || 'On the road';
-    labelEl.style.fontSize = '10px';
-    labelEl.style.color = '#475569';
-
-    textWrapper.appendChild(nameEl);
-    textWrapper.appendChild(labelEl);
-
-    badge.appendChild(avatarWrapper);
-    badge.appendChild(textWrapper);
-
-    const dot = document.createElement('div');
-    dot.style.width = '8px';
-    dot.style.height = '8px';
-    dot.style.borderRadius = '50%';
-    dot.style.background = '#10b981';
-    dot.style.margin = '6px auto 0';
-    dot.style.boxShadow = '0 0 10px 4px rgba(16,185,129,0.45)';
-
-    container.appendChild(badge);
-    container.appendChild(dot);
-
-    container.addEventListener('click', () => {
-      window.location.href = `/drivers/${pin.id}`;
-    });
-
-    class DriverOverlay extends maps.OverlayView {
-      constructor(position) {
-        super();
-        this.position = position;
-      }
-      onAdd() {
-        const panes = this.getPanes();
-        panes.overlayMouseTarget.appendChild(container);
-      }
-      draw() {
-        const overlayProjection = this.getProjection();
-        if (!overlayProjection) return;
-        const pos = overlayProjection.fromLatLngToDivPixel(this.position);
-        container.style.left = `${pos.x}px`;
-        container.style.top = `${pos.y}px`;
-      }
-      onRemove() {
-        if (container.parentNode) {
-          container.parentNode.removeChild(container);
-        }
-      }
-    }
-
-    const overlay = new DriverOverlay(new maps.LatLng(pin.lat, pin.lng));
-    overlay.setMap(mapInstance);
-    overlaysRef.current.push(overlay);
-  }, []);
-
+  // Destroy map on unmount
   useEffect(() => {
-    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-    if (!mapContainerRef.current) {
-      return;
-    }
-    if (loading || error) {
-      return;
-    }
-    if (!apiKey) {
-      setMapError('Add VITE_GOOGLE_MAPS_API_KEY to show the live driver map.');
-      return;
-    }
+    return () => {
+      clearMarkers();
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Initialize map and sync markers whenever pins change
+  useEffect(() => {
+    if (!mapContainerRef.current || loading || error) return;
+
     setMapError('');
-    setMapLoading(true);
 
-    googleMapsLoader(apiKey)
-      .then((maps) => {
-        setMapLoading(false);
-        if (!mapRef.current) {
-          mapRef.current = new maps.Map(mapContainerRef.current, {
-            center: { lat: 7.8731, lng: 80.7718 },
-            zoom: 7,
-            mapTypeControl: false,
-            streetViewControl: false,
-            fullscreenControl: false,
-          });
-        }
+    try {
+      if (!mapRef.current) {
+        mapRef.current = L.map(mapContainerRef.current, {
+          center: [7.8731, 80.7718],
+          zoom: 7,
+          zoomControl: true,
+          attributionControl: true,
+        });
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution:
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          maxZoom: 19,
+        }).addTo(mapRef.current);
+      }
 
-        clearMarkers();
+      clearMarkers();
 
-        if (!pins.length) {
-          return;
-        }
+      if (!pins.length) return;
 
-        const bounds = new maps.LatLngBounds();
-        pins.forEach((pin) => {
-          if (typeof pin.lat !== 'number' || typeof pin.lng !== 'number') {
-            return;
-          }
-          createDriverMarker(maps, mapRef.current, pin);
-          bounds.extend(new maps.LatLng(pin.lat, pin.lng));
+      const bounds = [];
+
+      pins.forEach((pin) => {
+        if (typeof pin.lat !== 'number' || typeof pin.lng !== 'number') return;
+
+        const firstName = escHtml((pin.name || 'Driver').split(' ')[0]);
+        const locationLabel = escHtml(pin.label || 'On the road');
+        const initial = escHtml((pin.name || 'D')[0] || 'D');
+        const avatarHtml = pin.avatar
+          ? `<img src="${escHtml(pin.avatar)}" alt="${firstName}" style="width:100%;height:100%;object-fit:cover" />`
+          : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#10b981;font-weight:700;font-size:12px">${initial}</div>`;
+
+        const icon = L.divIcon({
+          html: `<div onclick="window.location.href='/drivers/${encodeURIComponent(pin.id)}'"
+               style="position:absolute;transform:translate(-50%,-100%);filter:drop-shadow(0 6px 12px rgba(0,0,0,0.25));cursor:pointer;pointer-events:auto">
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:white;font-size:12px;font-weight:600;color:#0f172a;box-shadow:0 10px 25px rgba(15,23,42,0.25)">
+              <div style="width:28px;height:28px;border-radius:50%;overflow:hidden;border:2px solid #d1fae5;background:#ecfdf3">${avatarHtml}</div>
+              <div style="display:flex;flex-direction:column;line-height:1.1">
+                <span style="font-size:12px">${firstName}</span>
+                <span style="font-size:10px;color:#475569">${locationLabel}</span>
+              </div>
+            </div>
+            <div style="width:8px;height:8px;border-radius:50%;background:#10b981;margin:6px auto 0;box-shadow:0 0 10px 4px rgba(16,185,129,0.45)"></div>
+          </div>`,
+          className: '',
+          iconSize: [0, 0],
+          iconAnchor: [0, 0],
         });
 
-        if (!bounds.isEmpty()) {
-          mapRef.current.fitBounds(bounds);
-        }
-      })
-      .catch((loadError) => {
-        console.warn('Google Maps failed', loadError);
-        setMapLoading(false);
-        setMapError(loadError?.message || 'Unable to load map.');
+        const marker = L.marker([pin.lat, pin.lng], { icon });
+        marker.addTo(mapRef.current);
+        markersRef.current.push(marker);
+        bounds.push([pin.lat, pin.lng]);
       });
-  }, [pins, loading, error, clearMarkers, createDriverMarker]);
+
+      if (bounds.length > 1) {
+        mapRef.current.fitBounds(bounds, { padding: [60, 60] });
+      } else if (bounds.length === 1) {
+        mapRef.current.setView(bounds[0], 10);
+      }
+    } catch (initError) {
+      console.warn('Leaflet map failed', initError);
+      setMapError(initError?.message || 'Unable to load map.');
+    }
+  }, [pins, loading, error, clearMarkers]);
 
   return (
     <div className="relative mx-auto w-full max-w-[420px] overflow-hidden rounded-[30px] border border-white/60 bg-white/80 shadow-2xl shadow-emerald-200/60 backdrop-blur lg:max-w-[460px]">
@@ -615,7 +441,7 @@ const LiveDriversMapCard = ({ drivers, loading, error, onReload }) => {
           ref={mapContainerRef}
           className="absolute inset-0 h-full w-full overflow-hidden rounded-[30px] bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950"
         />
-        {(loading || mapLoading) && (
+        {loading && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-950/30 text-sm text-white backdrop-blur">
             Loading live map...
           </div>
@@ -632,7 +458,7 @@ const LiveDriversMapCard = ({ drivers, loading, error, onReload }) => {
             </button>
           </div>
         )}
-        {!loading && !mapLoading && !error && !mapError && !pins.length ? (
+        {!loading && !error && !mapError && !pins.length ? (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center text-sm text-slate-200 backdrop-blur-sm">
             <p>No live drivers to show yet.</p>
             <p className="mt-1 text-xs text-slate-400">Check back soon.</p>
