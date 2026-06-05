@@ -1,0 +1,31 @@
+# Override for running DRIVERHIRE BEHIND the existing site's Caddy proxy.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.proxied.yml up -d --build
+#
+# The existing site (shopstatesideglobal) runs Caddy, which already owns host
+# ports 80/443 and does automatic HTTPS. We therefore:
+#   - do NOT publish host ports from DRIVERHIRE's web container, and
+#   - attach that container to the existing site's network so Caddy can reach it
+#     at  http://driverhire-web:80
+# DRIVERHIRE's own nginx still serves the SPA + /api + /uploads internally; Caddy
+# just terminates TLS and forwards carwithdriver.lk to it.
+
+services:
+  driverhire-web:
+    # Caddy owns 80/443 — release them here.
+    ports: !override []
+    expose:
+      - "80"
+    networks:
+      # Reach our own backend...
+      driverhire: {}
+      # ...and be reachable by the existing site's Caddy.
+      shopstatesideglobal_internal:
+        aliases:
+          - driverhire-web
+
+networks:
+  # The network the existing shopstatesideglobal stack already created.
+  # Verify the exact name with:  docker network ls
+  shopstatesideglobal_internal:
+    external: true

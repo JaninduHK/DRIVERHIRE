@@ -9,6 +9,10 @@ frontend/dist/
 .env.local
 .env.production
 
+# Docker / Let's Encrypt runtime data
+certbot/
+backups/
+
 # Logs
 logs/
 *.log

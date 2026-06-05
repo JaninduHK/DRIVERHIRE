@@ -1,0 +1,84 @@
+# DRIVERHIRE - production Docker stack
+#
+#   web (nginx)  -> serves the React build, reverse-proxies /api and /uploads
+#   backend      -> Node.js + Express API (port 3000, internal)
+#   mongo        -> MongoDB 7 (internal, data persisted in a named volume)
+#
+# Quick start:
+#   1. cp .env.docker.example .env        and fill in the values
+#   2. cp backend/.env.example backend/.env   and fill in the values
+#   3. docker compose up -d --build
+#
+# See DOCKER_MIGRATION.md for the full migration walkthrough.
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    # No host port published by default — only the backend reaches it over the
+    # internal network. Uncomment to inspect from the host (e.g. Compass):
+    # ports:
+    #   - "127.0.0.1:27017:27017"
+    environment:
+      # Optional auth. If set, also update MONGO_URI in backend/.env to include
+      # the credentials, e.g. mongodb://USER:PASS@mongo:27017/driverhire?authSource=admin
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:-}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-}
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - driverhire
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - driverhire
+
+  # Named "driverhire-web" (not just "web") so it never collides with another
+  # site's "web" service alias when sharing a Docker network behind a proxy.
+  driverhire-web:
+    build:
+      context: ./frontend
+      args:
+        # VITE_* values are baked into the bundle at build time.
+        VITE_API_URL: ${VITE_API_URL:-/api}
+        VITE_GA_MEASUREMENT_ID: ${VITE_GA_MEASUREMENT_ID:-}
+        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY:-}
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Read-only access to uploaded images so nginx can serve them directly
+      - uploads_data:/app/uploads:ro
+      # Certbot mounts (used only when HTTPS is enabled — harmless otherwise)
+      - ./certbot/www:/var/www/certbot:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+    depends_on:
+      - backend
+    networks:
+      - driverhire
+
+volumes:
+  mongo_data:
+  uploads_data:
+
+networks:
+  driverhire:
+    driver: bridge

@@ -1,0 +1,35 @@
+# Shared reverse proxy for the VPS — owns ports 80/443 and routes each
+# domain to the right app container over the external "webproxy" network.
+# Add one server block per site under ./conf.d/.
+#
+#   docker network create webproxy        # once, if it doesn't exist
+#   cd proxy && docker compose up -d
+#
+# Certbot issues/renews Let's Encrypt certs for every domain routed here.
+
+services:
+  proxy:
+    image: nginx:1.27-alpine
+    container_name: shared-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./conf.d:/etc/nginx/conf.d:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+    networks:
+      - webproxy
+
+  certbot:
+    image: certbot/certbot:latest
+    volumes:
+      - ./certbot/www:/var/www/certbot:rw
+      - ./certbot/conf:/etc/letsencrypt:rw
+    networks:
+      - webproxy
+
+networks:
+  webproxy:
+    external: true

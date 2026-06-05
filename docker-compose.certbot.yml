@@ -1,0 +1,24 @@
+# Optional certbot helper for issuing/renewing Let's Encrypt certificates.
+# Used together with the main compose file:
+#
+#   Issue (first time):
+#     docker compose -f docker-compose.yml -f docker-compose.certbot.yml \
+#       run --rm certbot certonly --webroot -w /var/www/certbot \
+#       -d carwithdriver.lk -d www.carwithdriver.lk \
+#       --email you@example.com --agree-tos --no-eff-email
+#
+#   Renew (cron / manual):
+#     docker compose -f docker-compose.yml -f docker-compose.certbot.yml \
+#       run --rm certbot renew
+#     docker compose exec web nginx -s reload
+#
+# Certs land in ./certbot/conf and are mounted into the web (nginx) container.
+
+services:
+  certbot:
+    image: certbot/certbot:latest
+    volumes:
+      - ./certbot/www:/var/www/certbot:rw
+      - ./certbot/conf:/etc/letsencrypt:rw
+    networks:
+      - driverhire
