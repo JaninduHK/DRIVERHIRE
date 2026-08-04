@@ -3,17 +3,22 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import toast from 'react-hot-toast';
 import {
   AlertTriangle,
+  Calculator,
   CalendarDays,
-  CalendarRange,
   Car,
+  ChevronLeft,
   Loader2,
+  Mail,
   MapPin,
   MessageCircle,
+  PlusCircle,
+  Search,
   Send,
-  Settings,
-  ShieldCheck,
+  Settings as SettingsIcon,
   Star,
+  User2,
   Users,
+  X,
 } from 'lucide-react';
 import {
   fetchConversations,
@@ -37,42 +42,47 @@ import {
   createBrief as createTravelerBrief,
 } from '../services/briefApi.js';
 import { clearStoredToken, getStoredToken, saveReturnPath } from '../services/authToken.js';
+import { DashboardSidebar, DriverDrawer, MobileHeader, Sheet } from '../components/dashboard/mobile.jsx';
+import { Avatar } from '../components/dashboard/primitives.jsx';
 
-const tabs = [
-  {
-    id: 'bookings',
-    label: 'My Bookings',
-    icon: CalendarDays,
-    description: 'Upcoming and past trips at a glance.',
-  },
-  {
-    id: 'messages',
-    label: 'Messages',
-    icon: MessageCircle,
-    description: 'Stay in sync with drivers and support.',
-  },
-  {
-    id: 'requests',
-    label: 'My Requests',
-    icon: MapPin,
-    description: 'Track quotes and open itinerary requests.',
-  },
-  {
-    id: 'settings',
-    label: 'Settings',
-    icon: Settings,
-    description: 'Manage your traveller profile and preferences.',
-  },
+const NAV_ITEMS = [
+  { id: 'overview', label: 'Overview', icon: User2 },
+  { id: 'bookings', label: 'My Bookings', icon: CalendarDays },
+  { id: 'messages', label: 'Messages', icon: MessageCircle },
+  { id: 'requests', label: 'My Requests', icon: MapPin },
+  { id: 'settings', label: 'Settings', icon: SettingsIcon },
+];
+const VALID_TABS = NAV_ITEMS.map((item) => item.id);
+
+// External browse links surfaced in the mobile drawer (navigate to public pages, not dashboard tabs).
+const BROWSE_LINKS = [
+  { id: 'browse-vehicles', label: 'Vehicles', icon: Car, href: '/vehicles' },
+  { id: 'browse-drivers', label: 'Drivers', icon: Users, href: '/drivers' },
+  { id: 'browse-trip-cost', label: 'Trip Cost', icon: Calculator, href: '/trip-cost-calculator' },
 ];
 
+// Explicit order for the mobile drawer, interleaving dashboard tabs with browse links.
+const DRAWER_ORDER = [
+  'overview',
+  'browse-vehicles',
+  'browse-drivers',
+  'bookings',
+  'messages',
+  'requests',
+  'browse-trip-cost',
+  'settings',
+];
+
+const AVATAR_TONES = ['amber', 'purple', 'blue'];
+
+const inputCls =
+  'h-11 w-full min-w-0 rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 text-sm font-medium text-ink placeholder:font-normal placeholder:text-[#adb8c0] focus:border-brand focus:outline-none';
+const labelCls = 'text-[12.5px] font-bold text-ink-soft';
+
 const formatDateForInput = (value) => {
-  if (!value) {
-    return '';
-  }
+  if (!value) return '';
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return '';
-  }
+  if (Number.isNaN(date.getTime())) return '';
   return date.toISOString().slice(0, 10);
 };
 
@@ -88,12 +98,9 @@ const buildBookingEditForm = (booking) => ({
 });
 
 const toIsoDateString = (value, boundary = 'start') => {
-  if (!value) {
-    return undefined;
-  }
+  if (!value) return undefined;
   const suffix = boundary === 'end' ? 'T23:59:59.000Z' : 'T00:00:00.000Z';
-  const iso = `${value}${suffix}`;
-  const date = new Date(iso);
+  const date = new Date(`${value}${suffix}`);
   return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
 };
 
@@ -103,30 +110,39 @@ const BOOKING_CANCELLATION_NOTICE = [
   '100% of completed days and 50% of uncompleted days to be paid to driver if cancelling after start date.',
 ].join('\n\n');
 
-const VALID_TABS = ['bookings', 'messages', 'requests', 'settings'];
+const buildBriefForm = () => ({
+  startDate: '',
+  endDate: '',
+  startLocation: '',
+  endLocation: '',
+  adults: '2',
+  children: '0',
+  message: '',
+  country: '',
+});
+
+// Set by the homepage "Get driver quotes" form / "Price my own itinerary" button; read once here.
+const PENDING_BRIEF_KEY = 'carwithdriver:pending-brief';
+
+const buildTravelerProfileForm = (profile) => ({
+  name: profile?.name || '',
+  contactNumber: profile?.contactNumber || '',
+  address: profile?.address || '',
+});
 
 const TravelerDashboard = () => {
   const [searchParams] = useSearchParams();
-  const initialTab = VALID_TABS.includes(searchParams.get('tab')) ? searchParams.get('tab') : 'bookings';
+  const initialTab = VALID_TABS.includes(searchParams.get('tab'))
+    ? searchParams.get('tab')
+    : 'overview';
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [conversationsState, setConversationsState] = useState({
-    loading: true,
-    error: '',
-    items: [],
-  });
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [conversationsState, setConversationsState] = useState({ loading: true, error: '', items: [] });
   const [selectedConversationId, setSelectedConversationId] = useState('');
-  const [messagesState, setMessagesState] = useState({
-    loading: false,
-    error: '',
-    items: [],
-  });
+  const [messagesState, setMessagesState] = useState({ loading: false, error: '', items: [] });
   const [composerValue, setComposerValue] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
-  const [travelerBookingsState, setTravelerBookingsState] = useState({
-    loading: true,
-    error: '',
-    items: [],
-  });
+  const [travelerBookingsState, setTravelerBookingsState] = useState({ loading: true, error: '', items: [] });
   const [profileState, setProfileState] = useState({
     loading: true,
     error: '',
@@ -134,15 +150,12 @@ const TravelerDashboard = () => {
     savingProfile: false,
     savingPassword: false,
   });
-  const [travelerBriefsState, setTravelerBriefsState] = useState({
-    loading: true,
-    error: '',
-    items: [],
-  });
+  const [travelerBriefsState, setTravelerBriefsState] = useState({ loading: true, error: '', items: [] });
   const [creatingBrief, setCreatingBrief] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
+  const travelerName = profileState?.data?.name || 'Traveller';
   const travelerFirstName = profileState?.data?.name?.split(' ')?.[0] || 'traveller';
 
   const unreadMessageCount = useMemo(
@@ -150,17 +163,6 @@ const TravelerDashboard = () => {
     [conversationsState.items]
   );
 
-  const pendingBookingsCount = useMemo(
-    () => travelerBookingsState.items.filter((booking) => booking.status === 'pending').length,
-    [travelerBookingsState.items]
-  );
-
-  const requestsOffersCount = useMemo(
-    () => travelerBriefsState.items.reduce((sum, brief) => sum + (brief.offersCount || 0), 0),
-    [travelerBriefsState.items]
-  );
-
-  // Redirect to login if not authenticated
   useEffect(() => {
     const token = getStoredToken();
     if (!token) {
@@ -175,173 +177,79 @@ const TravelerDashboard = () => {
     navigate('/login');
   }, [navigate]);
 
-  const loadConversations = useCallback(
-    async ({ silent = false } = {}) => {
+  const loadConversations = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setConversationsState((prev) => ({ ...prev, loading: true, error: '' }));
+    try {
+      const data = await fetchConversations();
+      const items = Array.isArray(data?.conversations) ? data.conversations : [];
+      setConversationsState({ loading: false, error: '', items });
+    } catch (error) {
       if (!silent) {
-        setConversationsState((prev) => ({
-          ...prev,
-          loading: true,
-          error: '',
-        }));
+        setConversationsState({ loading: false, error: error?.message || 'Unable to load conversations.', items: [] });
       }
+    }
+  }, []);
+
+  const loadMessages = useCallback(async (conversationId, { silent = false } = {}) => {
+    if (!conversationId) {
+      setMessagesState({ loading: false, error: '', items: [] });
+      return;
+    }
+    if (!silent) setMessagesState((prev) => ({ ...prev, loading: true, error: '' }));
+    try {
+      const data = await fetchMessages(conversationId);
+      setMessagesState({ loading: false, error: '', items: Array.isArray(data?.messages) ? data.messages : [] });
       try {
-        const data = await fetchConversations();
-        const items = Array.isArray(data?.conversations) ? data.conversations : [];
-        setConversationsState({
-          loading: false,
-          error: '',
-          items,
-        });
-      } catch (error) {
-        const message = error?.message || 'Unable to load conversations.';
-        if (!silent) {
-          setConversationsState({
-            loading: false,
-            error: message,
-            items: [],
-          });
-        }
+        await markConversationRead(conversationId);
+      } catch (readError) {
+        console.warn('Unable to mark conversation as read:', readError);
       }
-    },
-    []
-  );
-
-  const loadMessages = useCallback(
-    async (conversationId, { silent = false } = {}) => {
-      if (!conversationId) {
-        setMessagesState({
-          loading: false,
-          error: '',
-          items: [],
-        });
-        return;
-      }
-      if (!silent) {
-        setMessagesState((prev) => ({
-          ...prev,
-          loading: true,
-          error: '',
-        }));
-      }
-      try {
-        const data = await fetchMessages(conversationId);
-        setMessagesState({
-          loading: false,
-          error: '',
-          items: Array.isArray(data?.messages) ? data.messages : [],
-        });
-        try {
-          await markConversationRead(conversationId);
-        } catch (readError) {
-          console.warn('Unable to mark conversation as read:', readError);
-        }
-        setConversationsState((prev) => ({
-          ...prev,
-          items: prev.items.map((item) =>
-            item.id === conversationId ? { ...item, unreadCount: 0 } : item
-          ),
-        }));
-      } catch (error) {
-        const message = error?.message || 'Unable to load messages.';
-        if (!silent) {
-          setMessagesState({
-            loading: false,
-            error: message,
-            items: [],
-          });
-        }
-      }
-    },
-    []
-  );
-
-  const loadTravelerBookings = useCallback(
-    async ({ silent = false } = {}) => {
-      if (!silent) {
-        setTravelerBookingsState((prev) => ({
-          ...prev,
-          loading: true,
-          error: '',
-        }));
-      }
-
-      try {
-        const data = await fetchTravelerBookings();
-        const items = Array.isArray(data?.bookings) ? data.bookings : [];
-        setTravelerBookingsState({
-          loading: false,
-          error: '',
-          items,
-        });
-      } catch (error) {
-        const message = error?.message || 'Unable to load your bookings right now.';
-        setTravelerBookingsState({
-          loading: false,
-          error: message,
-          items: [],
-        });
-      }
-    },
-    []
-  );
-
-  const loadTravelerBriefs = useCallback(
-    async ({ silent = false } = {}) => {
-      if (!silent) {
-        setTravelerBriefsState((prev) => ({
-          ...prev,
-          loading: true,
-          error: '',
-        }));
-      }
-      try {
-        const data = await fetchTravelerBriefs();
-        setTravelerBriefsState({
-          loading: false,
-          error: '',
-          items: Array.isArray(data?.briefs) ? data.briefs : [],
-        });
-      } catch (error) {
-        setTravelerBriefsState({
-          loading: false,
-          error: error?.message || 'Unable to load your tour briefs.',
-          items: [],
-        });
-      }
-    },
-    []
-  );
-
-  const loadTravelerProfile = useCallback(
-    async ({ silent = false } = {}) => {
-      setProfileState((prev) => ({
+      setConversationsState((prev) => ({
         ...prev,
-        loading: silent ? prev.loading : true,
-        error: silent ? prev.error : '',
+        items: prev.items.map((item) => (item.id === conversationId ? { ...item, unreadCount: 0 } : item)),
       }));
-      try {
-        const response = await fetchProfileCurrentUser();
-        setProfileState((prev) => ({
-          ...prev,
-          loading: false,
-          error: '',
-          data: response?.user || null,
-        }));
-      } catch (error) {
-        setProfileState((prev) => ({
-          ...prev,
-          loading: false,
-          data: null,
-          error: error?.message || 'Unable to load profile.',
-        }));
-      }
-    },
-    []
-  );
+    } catch (error) {
+      if (!silent) setMessagesState({ loading: false, error: error?.message || 'Unable to load messages.', items: [] });
+    }
+  }, []);
+
+  const loadTravelerBookings = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setTravelerBookingsState((prev) => ({ ...prev, loading: true, error: '' }));
+    try {
+      const data = await fetchTravelerBookings();
+      setTravelerBookingsState({ loading: false, error: '', items: Array.isArray(data?.bookings) ? data.bookings : [] });
+    } catch (error) {
+      setTravelerBookingsState({ loading: false, error: error?.message || 'Unable to load your bookings right now.', items: [] });
+    }
+  }, []);
+
+  const loadTravelerBriefs = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setTravelerBriefsState((prev) => ({ ...prev, loading: true, error: '' }));
+    try {
+      const data = await fetchTravelerBriefs();
+      setTravelerBriefsState({ loading: false, error: '', items: Array.isArray(data?.briefs) ? data.briefs : [] });
+    } catch (error) {
+      setTravelerBriefsState({ loading: false, error: error?.message || 'Unable to load your tour briefs.', items: [] });
+    }
+  }, []);
+
+  const loadTravelerProfile = useCallback(async ({ silent = false } = {}) => {
+    setProfileState((prev) => ({ ...prev, loading: silent ? prev.loading : true, error: silent ? prev.error : '' }));
+    try {
+      const response = await fetchProfileCurrentUser();
+      setProfileState((prev) => ({ ...prev, loading: false, error: '', data: response?.user || null }));
+    } catch (error) {
+      setProfileState((prev) => ({ ...prev, loading: false, data: null, error: error?.message || 'Unable to load profile.' }));
+    }
+  }, []);
 
   useEffect(() => {
     loadTravelerProfile({ silent: false });
   }, [loadTravelerProfile]);
+
+  useEffect(() => {
+    loadTravelerBookings();
+  }, [loadTravelerBookings]);
 
   useEffect(() => {
     loadConversations();
@@ -350,15 +258,7 @@ const TravelerDashboard = () => {
   }, [loadConversations]);
 
   useEffect(() => {
-    if (activeTab === 'bookings') {
-      loadTravelerBookings();
-    }
-  }, [activeTab, loadTravelerBookings]);
-
-  useEffect(() => {
-    if (activeTab === 'requests') {
-      loadTravelerBriefs();
-    }
+    if (activeTab === 'requests') loadTravelerBriefs();
   }, [activeTab, loadTravelerBriefs]);
 
   useEffect(() => {
@@ -368,39 +268,30 @@ const TravelerDashboard = () => {
   }, [activeTab, profileState.data, profileState.loading, loadTravelerProfile]);
 
   useEffect(() => {
-    if (!location.state) {
-      return;
-    }
+    if (!location.state) return;
     const { openTab, conversationId } = location.state;
-    if (openTab) {
-      setActiveTab(openTab);
-    }
-    if (conversationId) {
-      setSelectedConversationId(conversationId);
-    }
+    if (openTab) setActiveTab(openTab);
+    if (conversationId) setSelectedConversationId(conversationId);
     navigate(location.pathname, { replace: true, state: null });
   }, [location, navigate]);
 
+  // If the open conversation disappears, drop back to the inbox list.
   useEffect(() => {
     if (
-      conversationsState.items.length > 0 &&
-      (!selectedConversationId || !conversationsState.items.some((item) => item.id === selectedConversationId))
+      selectedConversationId &&
+      !conversationsState.items.some((item) => item.id === selectedConversationId)
     ) {
-      setSelectedConversationId(conversationsState.items[0].id);
+      setSelectedConversationId('');
     }
   }, [conversationsState.items, selectedConversationId]);
 
   useEffect(() => {
-    if (activeTab !== 'messages' || !selectedConversationId) {
-      return;
-    }
+    if (activeTab !== 'messages' || !selectedConversationId) return;
     loadMessages(selectedConversationId);
   }, [activeTab, selectedConversationId, loadMessages]);
 
   useEffect(() => {
-    if (activeTab !== 'messages' || !selectedConversationId) {
-      return;
-    }
+    if (activeTab !== 'messages' || !selectedConversationId) return;
     const id = setInterval(() => loadMessages(selectedConversationId, { silent: true }), 5000);
     return () => clearInterval(id);
   }, [activeTab, selectedConversationId, loadMessages]);
@@ -410,47 +301,33 @@ const TravelerDashboard = () => {
     [conversationsState.items, selectedConversationId]
   );
 
-  const handleConversationSelect = (conversationId) => {
+  const openConversation = useCallback((conversationId) => {
     setActiveTab('messages');
-    setSelectedConversationId(conversationId);
-  };
+    setSelectedConversationId(conversationId || '');
+  }, []);
 
   const handleSendMessage = async () => {
-    if (!selectedConversationId || !composerValue.trim()) {
-      return;
-    }
+    if (!selectedConversationId || !composerValue.trim()) return;
     setSendingMessage(true);
     try {
       const payload = await sendChatMessage(selectedConversationId, composerValue.trim());
       const newMessage = payload?.message;
-
       if (newMessage) {
-        setMessagesState((prev) => ({
-          loading: false,
-          error: '',
-          items: [...prev.items, newMessage],
-        }));
+        setMessagesState((prev) => ({ loading: false, error: '', items: [...prev.items, newMessage] }));
         setConversationsState((prev) => ({
           ...prev,
           items: prev.items.map((item) =>
             item.id === selectedConversationId
-              ? {
-                  ...item,
-                  lastMessage: newMessage,
-                  lastMessageAt: newMessage.createdAt,
-                  unreadCount: 0,
-                }
+              ? { ...item, lastMessage: newMessage, lastMessageAt: newMessage.createdAt, unreadCount: 0 }
               : item
           ),
         }));
       }
-
       setComposerValue('');
       await markConversationRead(selectedConversationId);
       loadConversations({ silent: true });
     } catch (error) {
-      const message = error?.message || 'Unable to send message.';
-      toast.error(message);
+      toast.error(error?.message || 'Unable to send message.');
     } finally {
       setSendingMessage(false);
     }
@@ -459,23 +336,13 @@ const TravelerDashboard = () => {
   const handleOfferBooking = (message) => {
     const vehicleRef = message?.offer?.vehicle;
     let vehicleId = null;
-
-    if (typeof vehicleRef === 'string') {
-      vehicleId = vehicleRef;
-    } else if (vehicleRef && typeof vehicleRef === 'object') {
-      vehicleId =
-        vehicleRef.id ||
-        vehicleRef._id ||
-        (typeof vehicleRef.toString === 'function' ? vehicleRef.toString() : null);
-    }
-
+    if (typeof vehicleRef === 'string') vehicleId = vehicleRef;
+    else if (vehicleRef && typeof vehicleRef === 'object') vehicleId = vehicleRef.id || vehicleRef._id || null;
     if (!vehicleId) {
       toast.error('Vehicle details are missing for this offer.');
       return;
     }
-    navigate(`/checkout/${vehicleId}?offer=${message.id}`, {
-      state: { offerId: message.id },
-    });
+    navigate(`/checkout/${vehicleId}?offer=${message.id}`, { state: { offerId: message.id } });
   };
 
   const handleTravelerProfileSave = useCallback(
@@ -525,193 +392,379 @@ const TravelerDashboard = () => {
     [loadTravelerBriefs]
   );
 
-  const tabContent = (() => {
-    switch (activeTab) {
-      case 'bookings':
-        return (
-          <BookingsPanel
-            bookingsState={travelerBookingsState}
-            onReload={() => loadTravelerBookings({ silent: false })}
-          />
-        );
-      case 'messages':
-        return (
-          <MessagesPanel
-            conversationsState={conversationsState}
-            selectedConversationId={selectedConversationId}
-            selectedConversation={selectedConversation}
-            onSelectConversation={handleConversationSelect}
-            messagesState={messagesState}
-            composerValue={composerValue}
-            onComposerChange={setComposerValue}
-            onSendMessage={handleSendMessage}
-            sending={sendingMessage}
-            onBookOffer={handleOfferBooking}
-            onReloadConversations={() => loadConversations({ silent: false })}
-          />
-        );
-      case 'requests':
-        return (
-          <RequestsPanel
-            briefsState={travelerBriefsState}
-            onReload={() => loadTravelerBriefs({ silent: false })}
-            onCreateBrief={handleTravelerBriefCreate}
-            creating={creatingBrief}
-          />
-        );
-      case 'settings':
-        return (
-          <SettingsPanel
-            state={profileState}
-            onSave={handleTravelerProfileSave}
-            onPasswordChange={handleTravelerPasswordChange}
-            onRetry={() => loadTravelerProfile({ silent: false })}
-          />
-        );
-      default:
-        return null;
+  const headerProps = { onMenu: () => setDrawerOpen(true), travelerName };
+
+  let screen = null;
+  if (activeTab === 'overview') {
+    screen = (
+      <TravelerOverview
+        {...headerProps}
+        firstName={travelerFirstName}
+        bookings={travelerBookingsState.items}
+        conversations={conversationsState.items}
+        unreadCount={unreadMessageCount}
+        onNavigate={setActiveTab}
+        onOpenConversation={openConversation}
+      />
+    );
+  } else if (activeTab === 'bookings') {
+    screen = (
+      <TravelerBookings
+        {...headerProps}
+        bookingsState={travelerBookingsState}
+        onReload={() => loadTravelerBookings({ silent: false })}
+        onOpenConversation={openConversation}
+      />
+    );
+  } else if (activeTab === 'messages') {
+    screen = (
+      <TravelerMessages
+        {...headerProps}
+        conversationsState={conversationsState}
+        selectedConversationId={selectedConversationId}
+        selectedConversation={selectedConversation}
+        onSelectConversation={setSelectedConversationId}
+        messagesState={messagesState}
+        composerValue={composerValue}
+        onComposerChange={setComposerValue}
+        onSendMessage={handleSendMessage}
+        sending={sendingMessage}
+        onBookOffer={handleOfferBooking}
+        onReloadConversations={() => loadConversations({ silent: false })}
+      />
+    );
+  } else if (activeTab === 'requests') {
+    screen = (
+      <TravelerRequests
+        {...headerProps}
+        briefsState={travelerBriefsState}
+        onReload={() => loadTravelerBriefs({ silent: false })}
+        onCreateBrief={handleTravelerBriefCreate}
+        creating={creatingBrief}
+        onOpenMessages={() => setActiveTab('messages')}
+      />
+    );
+  } else if (activeTab === 'settings') {
+    screen = (
+      <TravelerSettings
+        {...headerProps}
+        state={profileState}
+        onSave={handleTravelerProfileSave}
+        onPasswordChange={handleTravelerPasswordChange}
+        onRetry={() => loadTravelerProfile({ silent: false })}
+      />
+    );
+  }
+
+  const navItems = NAV_ITEMS.map((item) => ({
+    ...item,
+    active: item.id === activeTab,
+    badge: item.id === 'messages' ? unreadMessageCount : 0,
+  }));
+  // Mobile drawer interleaves dashboard tabs with public browse links per DRAWER_ORDER.
+  const drawerItemsById = {
+    ...Object.fromEntries(BROWSE_LINKS.map((link) => [link.id, link])),
+    ...Object.fromEntries(navItems.map((item) => [item.id, item])),
+  };
+  const drawerNavItems = DRAWER_ORDER.map((id) => drawerItemsById[id]).filter(Boolean);
+  const handleNavSelect = (item, event) => {
+    event?.preventDefault?.();
+    if (item.href) {
+      navigate(item.href);
+      return;
     }
-  })();
+    setActiveTab(item.id);
+  };
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-8">
-      <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
-        <aside className="rounded-2xl border border-slate-200 bg-white p-4">
-          <nav className="space-y-1">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              const badgeCount =
-                tab.id === 'messages'
-                  ? unreadMessageCount
-                  : tab.id === 'bookings'
-                  ? pendingBookingsCount
-                  : tab.id === 'requests'
-                  ? requestsOffersCount
-                  : 0;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm transition ${
-                    isActive
-                      ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200'
-                      : 'text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  <span className="flex items-center gap-3">
-                    <Icon className={`h-4 w-4 ${isActive ? 'text-emerald-600' : 'text-slate-400'}`} />
-                    <span className="font-medium">{tab.label}</span>
-                  </span>
-                  {badgeCount > 0 && (
-                    <span
-                      className={`inline-flex min-w-[1.5rem] justify-center rounded-full px-1.5 py-0.5 text-xs font-semibold ${
-                        isActive ? 'bg-emerald-600 text-white' : 'bg-emerald-100 text-emerald-700'
-                      }`}
-                    >
-                      {badgeCount}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-        </aside>
-
-        <div className="space-y-6">
-          <header className="rounded-2xl border border-slate-200 bg-white p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">
-                  Traveller dashboard
-                </p>
-                <h1 className="text-2xl font-semibold text-slate-900">
-                  Welcome back, {travelerFirstName}
-                </h1>
-                <p className="mt-1 text-sm text-slate-500">
-                  Manage your trips, conversations, and requests all in one place.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="inline-flex items-center justify-center rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-400 hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
-              >
-                Logout
-              </button>
-            </div>
-          </header>
-          <div className="rounded-2xl border border-slate-200 bg-white p-6">{tabContent}</div>
-        </div>
+    <div className="min-h-screen overflow-x-clip bg-[#e7ebef] font-sans text-ink lg:flex">
+      <DriverDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        navItems={drawerNavItems}
+        onSelect={handleNavSelect}
+        user={{ name: travelerName, roleLabel: 'Traveller' }}
+        onLogout={handleLogout}
+      />
+      <DashboardSidebar
+        navItems={navItems}
+        onSelect={(item) => setActiveTab(item.id)}
+        user={{ name: travelerName, roleLabel: 'Traveller' }}
+        onLogout={handleLogout}
+      />
+      <div className="mx-auto min-h-screen w-full max-w-[480px] bg-canvas shadow-[0_0_60px_rgba(15,31,45,0.06)] lg:mx-0 lg:max-w-none lg:flex-1 lg:shadow-none">
+        {screen}
       </div>
-    </section>
+    </div>
   );
 };
 
-const BookingsPanel = ({ bookingsState, onReload }) => {
+// ---------- Overview ----------
+const TravelerOverview = ({
+  onMenu,
+  travelerName,
+  firstName,
+  bookings = [],
+  conversations = [],
+  unreadCount = 0,
+  onNavigate,
+  onOpenConversation,
+}) => {
+  const now = Date.now();
+  const isCancelled = (b) => ['cancelled', 'rejected'].includes(b.status);
+  const upcoming = bookings.filter((b) => !isCancelled(b) && (!b.endDate || new Date(b.endDate).getTime() >= now));
+  const completed = bookings.filter((b) => b.endDate && new Date(b.endDate).getTime() < now && !isCancelled(b));
+  const totalSpent = bookings
+    .filter((b) => !isCancelled(b))
+    .reduce((sum, b) => sum + (typeof b.totalPrice === 'number' ? b.totalPrice : 0), 0);
+  const nextTrip =
+    [...upcoming].filter((b) => b.startDate).sort((a, b) => new Date(a.startDate) - new Date(b.startDate))[0] ||
+    upcoming[0] ||
+    null;
+  const recent = conversations.slice(0, 3);
+
+  return (
+    <>
+      <div className="lg:hidden">
+      <MobileHeader
+        onMenu={onMenu}
+        right={
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onNavigate('messages')}
+              aria-label="Messages"
+              className="relative grid h-10 w-10 place-items-center rounded-xl bg-white/[0.18] text-white transition hover:bg-white/25"
+            >
+              <Mail className="h-[17px] w-[17px]" strokeWidth={1.8} />
+              {unreadCount > 0 ? (
+                <span className="absolute right-2 top-2 h-2 w-2 rounded-full border-2 border-[#12924f] bg-[#ffd23f]" />
+              ) : null}
+            </button>
+            <Avatar name={travelerName} tone="light" className="h-10 w-10 text-[15px]" />
+          </div>
+        }
+      >
+        <div className="pt-3.5">
+          <p className="text-[12px] font-extrabold tracking-[0.08em] text-white/80">TRAVELLER DASHBOARD</p>
+          <h1 className="mt-1 text-[25px] font-extrabold leading-tight tracking-tight">Welcome back, {firstName}</h1>
+          <p className="mt-1.5 text-[13.5px] text-white/85">
+            Manage your trips, conversations, and requests all in one place.
+          </p>
+        </div>
+      </MobileHeader>
+
+      <Sheet>
+        <div className="flex gap-2.5">
+          <OverviewStat value={upcoming.length} label="Upcoming" />
+          <OverviewStat value={completed.length} label="Completed" />
+          <OverviewStat value={formatCurrency(totalSpent)} label="Total spent" />
+        </div>
+
+        {nextTrip ? (
+          <NextTripCard trip={nextTrip} />
+        ) : (
+          <div className="mt-3.5 rounded-[20px] bg-white p-5 text-center text-sm text-muted shadow-card">
+            No upcoming trips yet.{' '}
+            <Link to="/vehicles" className="font-bold text-brand-dark">
+              Browse vehicles
+            </Link>
+          </div>
+        )}
+
+        <div className="mb-2.5 mt-5 flex items-center gap-2.5 px-0.5">
+          <b className="text-base font-extrabold text-ink">Recent messages</b>
+          {unreadCount > 0 ? (
+            <span className="rounded-full bg-[#f43f5e] px-2 py-0.5 text-[11px] font-extrabold text-white">{unreadCount}</span>
+          ) : null}
+        </div>
+        {recent.length === 0 ? (
+          <div className="rounded-[18px] bg-white p-6 text-center text-sm text-muted shadow-card">
+            No conversations yet. Message a driver from a vehicle page.
+          </div>
+        ) : (
+          <div className="grid gap-3 lg:grid-cols-2">
+            {recent.map((conversation, index) => (
+              <OverviewMessageCard
+                key={conversation.id}
+                conversation={conversation}
+                tone={AVATAR_TONES[index % AVATAR_TONES.length]}
+                onOpen={() => onOpenConversation(conversation.id)}
+              />
+            ))}
+          </div>
+        )}
+      </Sheet>
+      </div>
+
+      <div className="hidden min-h-screen lg:block">
+        <div className="px-8 py-8">
+          <div
+            className="flex items-center justify-between gap-6 rounded-[20px] px-[30px] py-[26px] text-white"
+            style={{ background: 'linear-gradient(120deg,#0f7a45,#10a35a 60%,#18b866)' }}
+          >
+            <div>
+              <p className="text-[12px] font-extrabold tracking-[0.08em] text-white/80">TRAVELLER DASHBOARD</p>
+              <div className="mt-1 text-[28px] font-extrabold tracking-tight">Welcome back, {firstName}</div>
+              <p className="mt-1.5 text-[14px] text-white/85">Manage your trips, conversations, and requests all in one place.</p>
+            </div>
+            <div className="flex flex-shrink-0 gap-3.5">
+              <DeskStat value={upcoming.length} label="Upcoming" />
+              <DeskStat value={completed.length} label="Completed" />
+              <DeskStat value={formatCurrency(totalSpent)} label="Total spent" />
+            </div>
+          </div>
+
+          <div className="mt-[22px] grid grid-cols-[1.3fr_1fr] gap-5">
+            <div className="rounded-[18px] bg-white p-5 shadow-card">
+              <div className="mb-3.5 flex items-center justify-between">
+                <b className="text-[16px] text-ink">Upcoming trips</b>
+                <button type="button" onClick={() => onNavigate('bookings')} className="text-[13px] font-bold text-brand-dark">
+                  View all
+                </button>
+              </div>
+              {upcoming.length === 0 ? (
+                <p className="text-sm text-muted">No upcoming trips yet.</p>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {upcoming.slice(0, 4).map((b, i) => (
+                    <DeskTripRow key={b.id} booking={b} tone={AVATAR_TONES[i % AVATAR_TONES.length]} />
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="rounded-[18px] bg-white p-5 shadow-card">
+              <div className="mb-3.5 flex items-center justify-between">
+                <b className="text-[16px] text-ink">Recent messages</b>
+                {unreadCount > 0 ? (
+                  <span className="rounded-full bg-[#f43f5e] px-2 py-0.5 text-[11px] font-extrabold text-white">{unreadCount}</span>
+                ) : null}
+              </div>
+              {recent.length === 0 ? (
+                <p className="text-sm text-muted">No conversations yet.</p>
+              ) : (
+                <div className="flex flex-col gap-3.5">
+                  {recent.map((c, i) => (
+                    <DeskMsgRow key={c.id} conversation={c} tone={AVATAR_TONES[i % AVATAR_TONES.length]} onOpen={() => onOpenConversation(c.id)} />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+const OverviewStat = ({ value, label }) => (
+  <div className="flex-1 rounded-2xl bg-white p-[13px] shadow-card">
+    <div className="text-[22px] font-extrabold text-ink">{value}</div>
+    <div className="text-[11px] font-semibold text-muted-soft">{label}</div>
+  </div>
+);
+
+const NextTripCard = ({ trip }) => {
+  const now = Date.now();
+  const startMs = trip.startDate ? new Date(trip.startDate).getTime() : null;
+  const daysAway = startMs ? Math.ceil((startMs - now) / 86400000) : null;
+  const awayLabel =
+    daysAway === null ? 'Scheduled' : daysAway <= 0 ? 'In progress' : daysAway === 1 ? '1 day away' : `${daysAway} days away`;
+  const route =
+    trip.startPoint && trip.endPoint
+      ? `${trip.startPoint} → ${trip.endPoint}`
+      : trip.vehicle?.model || 'Upcoming trip';
+  const start = formatDateLabel(trip.startDate);
+  const end = formatDateLabel(trip.endDate);
+  const driverName = trip.driver?.name || 'your driver';
+  return (
+    <div className="mt-3.5 rounded-[20px] p-[17px] text-white" style={{ background: 'linear-gradient(135deg,#0f1f2d,#1c3345)' }}>
+      <div className="flex items-center justify-between">
+        <b className="text-[15px]">Your next trip</b>
+        <span className="rounded-full bg-white/15 px-[9px] py-1 text-[12px] font-extrabold">{awayLabel}</span>
+      </div>
+      <div className="mt-3 flex items-center gap-[11px]">
+        <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-[11px] bg-white/15">
+          <Car className="h-[18px] w-[18px]" strokeWidth={1.6} />
+        </div>
+        <div className="min-w-0">
+          <div className="truncate text-[14.5px] font-bold">{route}</div>
+          <div className="truncate text-[12px] text-white/75">
+            {start && end ? `${start} – ${end}` : 'Dates to confirm'} · with {driverName}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const OverviewMessageCard = ({ conversation, tone, onOpen }) => {
+  const driverName =
+    conversation.participants?.driver?.name || conversation.participants?.driver?.email || 'Driver';
+  const isOffer = conversation.lastMessage?.type === 'offer';
+  const preview = isOffer
+    ? `Sent an offer${conversation.vehicle?.model ? ` · ${conversation.vehicle.model}` : ''}`
+    : conversation.lastMessage?.body || 'Conversation started.';
+  return (
+    <div className="rounded-[18px] bg-white p-[15px] shadow-card" style={{ borderLeft: `4px solid ${isOffer ? '#10a35a' : '#d6e9fb'}` }}>
+      <div className="mb-2.5 flex items-center gap-[11px]">
+        <Avatar name={driverName} tone={tone} className="h-10 w-10 text-sm" />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[15px] font-bold text-ink">{driverName}</div>
+          <div className="truncate text-[12px] text-muted-soft">{preview}</div>
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onOpen}
+          className={`flex-1 rounded-[11px] py-[11px] text-[13.5px] font-bold transition ${
+            isOffer ? 'bg-brand text-white hover:bg-brand-dark' : 'border-[1.5px] border-[#e2e8ea] bg-white text-ink hover:border-muted-soft'
+          }`}
+        >
+          {isOffer ? 'View offer' : 'Open chat'}
+        </button>
+        {isOffer ? (
+          <button
+            type="button"
+            onClick={onOpen}
+            className="flex-shrink-0 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white px-4 py-[11px] text-[13.5px] font-bold text-ink transition hover:border-muted-soft"
+          >
+            Message
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+};
+
+// ---------- My Bookings ----------
+const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpenConversation }) => {
   const { loading, error, items } = bookingsState;
+  const [view, setView] = useState('upcoming');
+  const [expandedId, setExpandedId] = useState('');
   const [editingBooking, setEditingBooking] = useState(null);
   const [editForm, setEditForm] = useState(buildBookingEditForm({}));
   const [savingEdit, setSavingEdit] = useState(false);
   const [cancellingId, setCancellingId] = useState('');
   const [reviewingBooking, setReviewingBooking] = useState(null);
-  const [reviewForm, setReviewForm] = useState({ rating: '5', title: '', comment: '' });
+  const [reviewForm, setReviewForm] = useState({ rating: '5', title: '', comment: '', images: [] });
   const [submittingReview, setSubmittingReview] = useState(false);
-  const activeReviewStatus = reviewingBooking?.review?.status;
-  const activeReviewLabel =
-    activeReviewStatus === 'pending'
-      ? 'Awaiting approval'
-      : activeReviewStatus === 'approved'
-      ? 'Published'
-      : activeReviewStatus === 'rejected'
-      ? 'Declined'
-      : '';
-  const activeReviewBadgeClass = activeReviewStatus
-    ? reviewStatusStyles[activeReviewStatus] || 'bg-slate-200 text-slate-700'
-    : 'bg-slate-200 text-slate-700';
-
-  const statusStyles = {
-    pending: 'bg-amber-100 text-amber-700',
-    confirmed: 'bg-emerald-100 text-emerald-700',
-    cancelled: 'bg-rose-100 text-rose-700',
-    rejected: 'bg-rose-100 text-rose-700',
-  };
-  const reviewStatusStyles = {
-    pending: 'bg-amber-100 text-amber-700',
-    approved: 'bg-emerald-100 text-emerald-700',
-    rejected: 'bg-rose-100 text-rose-700',
-  };
-
-  const handleReload = () => {
-    if (typeof onReload === 'function') {
-      onReload();
-    }
-  };
 
   const openEditModal = (booking) => {
     setEditingBooking(booking);
     setEditForm(buildBookingEditForm(booking));
   };
-
   const closeEditModal = () => {
     setEditingBooking(null);
     setEditForm(buildBookingEditForm({}));
     setSavingEdit(false);
   };
-
-  const handleEditFieldChange = (field, value) => {
-    setEditForm((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
+  const handleEditFieldChange = (field, value) => setEditForm((prev) => ({ ...prev, [field]: value }));
 
   const handleEditSubmit = async (event) => {
     event.preventDefault();
-    if (!editingBooking) {
-      return;
-    }
+    if (!editingBooking) return;
     const canEditDates = !editingBooking.offerId;
     const payload = {
       flightNumber: editForm.flightNumber,
@@ -721,7 +774,6 @@ const BookingsPanel = ({ bookingsState, onReload }) => {
       endPoint: editForm.endPoint,
       specialRequests: editForm.specialRequests,
     };
-
     if (canEditDates) {
       if (!editForm.startDate || !editForm.endDate) {
         toast.error('Please select both start and end dates.');
@@ -736,37 +788,28 @@ const BookingsPanel = ({ bookingsState, onReload }) => {
       payload.startDate = startIso;
       payload.endDate = endIso;
     }
-
-    Object.keys(payload).forEach((key) => {
-      if (payload[key] === undefined) {
-        delete payload[key];
-      }
-    });
-
+    Object.keys(payload).forEach((key) => payload[key] === undefined && delete payload[key]);
     setSavingEdit(true);
     try {
       await updateTravelerBooking(editingBooking.id, payload);
       toast.success('Booking updated.');
       closeEditModal();
-      handleReload();
-    } catch (error) {
-      toast.error(error?.message || 'Unable to update booking.');
+      onReload();
+    } catch (err) {
+      toast.error(err?.message || 'Unable to update booking.');
       setSavingEdit(false);
     }
   };
 
   const handleCancelBooking = async (booking) => {
-    const confirmation = window.confirm(`${BOOKING_CANCELLATION_NOTICE}\n\nDo you want to cancel this booking?`);
-    if (!confirmation) {
-      return;
-    }
+    if (!window.confirm(`${BOOKING_CANCELLATION_NOTICE}\n\nDo you want to cancel this booking?`)) return;
     setCancellingId(booking.id);
     try {
       await cancelTravelerBooking(booking.id);
       toast.success('Booking cancelled.');
-      handleReload();
-    } catch (error) {
-      toast.error(error?.message || 'Unable to cancel booking.');
+      onReload();
+    } catch (err) {
+      toast.error(err?.message || 'Unable to cancel booking.');
     } finally {
       setCancellingId('');
     }
@@ -778,21 +821,27 @@ const BookingsPanel = ({ bookingsState, onReload }) => {
       rating: booking.review?.rating ? String(booking.review.rating) : '5',
       title: booking.review?.title || '',
       comment: booking.review?.comment || '',
+      images: [],
     });
   };
-
   const closeReviewModal = () => {
     setReviewingBooking(null);
-    setReviewForm({ rating: '5', title: '', comment: '' });
+    setReviewForm({ rating: '5', title: '', comment: '', images: [] });
     setSubmittingReview(false);
   };
-
-  const handleReviewFieldChange = (field, value) => {
-    setReviewForm((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+  const handleReviewFieldChange = (field, value) => setReviewForm((prev) => ({ ...prev, [field]: value }));
+  const handleReviewImages = (event) => {
+    const picked = Array.from(event.target.files || []).filter((file) => file.type.startsWith('image/'));
+    setReviewForm((prev) => ({ ...prev, images: [...prev.images, ...picked].slice(0, 4) }));
+    event.target.value = '';
   };
+  const removeReviewImage = (index) =>
+    setReviewForm((prev) => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }));
+  const reviewPreviews = useMemo(
+    () => reviewForm.images.map((file) => URL.createObjectURL(file)),
+    [reviewForm.images]
+  );
+  useEffect(() => () => reviewPreviews.forEach((url) => URL.revokeObjectURL(url)), [reviewPreviews]);
 
   const handleReviewSubmit = async (event) => {
     event.preventDefault();
@@ -815,537 +864,407 @@ const BookingsPanel = ({ bookingsState, onReload }) => {
         rating: ratingValue,
         title: reviewForm.title,
         comment: reviewForm.comment.trim(),
+        images: reviewForm.images,
       });
       toast.success('Review submitted for moderation.');
       closeReviewModal();
-      handleReload();
-    } catch (error) {
-      toast.error(error?.message || 'Unable to submit review.');
+      onReload();
+    } catch (err) {
+      toast.error(err?.message || 'Unable to submit review.');
       setSubmittingReview(false);
     }
   };
 
+  const head = (
+    <MobileHeader
+      onMenu={onMenu}
+      right={<Avatar name={travelerName} tone="light" className="h-10 w-10 text-[15px]" />}
+      eyebrow="TRIPS"
+      title="My Bookings"
+    />
+  );
+
   if (loading) {
     return (
-      <div className="flex h-60 flex-col items-center justify-center gap-3 text-sm text-slate-500">
-        <Loader2 className="h-5 w-5 animate-spin text-emerald-500" />
-        Loading your bookings...
-      </div>
+      <>
+        {head}
+        <Sheet>
+          <div className="flex min-h-[40vh] items-center justify-center gap-2 text-sm text-muted">
+            <Loader2 className="h-5 w-5 animate-spin text-brand" /> Loading your bookings…
+          </div>
+        </Sheet>
+      </>
     );
   }
 
   if (error) {
     return (
-      <div className="space-y-3 rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">
-        <p>{error}</p>
-        <button
-          type="button"
-          onClick={handleReload}
-          className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-rose-700 transition hover:border-rose-300 hover:text-rose-800"
-        >
-          Try again
-        </button>
-      </div>
+      <>
+        {head}
+        <Sheet>
+          <div className="rounded-[18px] bg-white p-6 text-center text-sm shadow-card">
+            <p className="text-[#e11d48]">{error}</p>
+            <button type="button" onClick={onReload} className="mt-3 rounded-full border border-[#e2e8ea] px-4 py-2 text-xs font-bold text-ink transition hover:border-muted-soft">
+              Try again
+            </button>
+          </div>
+        </Sheet>
+      </>
     );
   }
 
-  if (!items || items.length === 0) {
-    return (
-      <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-500">
-        <h2 className="text-base font-semibold text-slate-900">No trips booked yet</h2>
-        <p>
-          When you confirm a driver your itinerary will appear here. Head back to the vehicle catalog to
-          find your next adventure.
-        </p>
-        <Link
-          to="/vehicles"
-          className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700"
-        >
+  const now = Date.now();
+  const isCancelled = (b) => ['cancelled', 'rejected'].includes(b.status);
+  const isPast = (b) => b.endDate && new Date(b.endDate).getTime() < now;
+  const upcoming = (items || []).filter((b) => !isCancelled(b) && !isPast(b));
+  const completed = (items || []).filter((b) => isCancelled(b) || isPast(b));
+  const list = view === 'upcoming' ? upcoming : completed;
+
+  const desktopBookings =
+    items.length === 0 ? (
+      <div className="rounded-[18px] bg-white p-6 text-sm text-muted shadow-card">
+        <b className="mb-1 block text-ink">No trips booked yet</b>
+        When you confirm a driver your itinerary appears here.{' '}
+        <Link to="/vehicles" className="font-bold text-brand-dark">
           Browse vehicles
         </Link>
       </div>
+    ) : list.length === 0 ? (
+      <div className="rounded-[18px] bg-white p-6 text-sm text-muted shadow-card">
+        {view === 'upcoming' ? 'No upcoming trips.' : 'No completed trips yet.'}
+      </div>
+    ) : (
+      <div className="grid grid-cols-2 gap-4">
+        {list.map((booking, index) => (
+          <TravelerBookingCard
+            key={booking.id}
+            booking={booking}
+            tone={AVATAR_TONES[index % AVATAR_TONES.length]}
+            expanded={expandedId === booking.id}
+            onToggle={() => setExpandedId((prev) => (prev === booking.id ? '' : booking.id))}
+            onMessage={() => (booking.conversationId ? onOpenConversation(booking.conversationId) : toast('No conversation for this trip yet.'))}
+            onEdit={() => openEditModal(booking)}
+            onCancel={() => handleCancelBooking(booking)}
+            onReview={() => openReviewModal(booking)}
+            cancelling={cancellingId === booking.id}
+          />
+        ))}
+      </div>
     );
-  }
 
   return (
     <>
-      <div className="space-y-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-base font-semibold text-slate-900">My bookings</h2>
-            <p className="text-sm text-slate-500">Track upcoming trips and review past journeys.</p>
+      <div className="lg:hidden">
+      {head}
+      <Sheet>
+        {items.length === 0 ? (
+          <div className="rounded-[18px] bg-white p-6 text-center text-sm text-muted shadow-card">
+            <b className="mb-1 block text-ink">No trips booked yet</b>
+            When you confirm a driver your itinerary appears here.
+            <Link to="/vehicles" className="mt-3 block font-bold text-brand-dark">
+              Browse vehicles
+            </Link>
           </div>
-        <button
-          type="button"
-          onClick={handleReload}
-          className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600 transition hover:border-emerald-300 hover:text-emerald-700"
-        >
-          Refresh
-        </button>
-      </div>
-      <ul className="space-y-3">
-        {items.map((booking) => {
-          const start = formatDateLabel(booking.startDate);
-          const end = formatDateLabel(booking.endDate);
-          const vehicleName = booking.vehicle?.model || 'Vehicle to be confirmed';
-          const driverName = booking.driver?.name || 'Driver to be assigned';
-          const priceLabel =
-            typeof booking.totalPrice === 'number' && booking.totalPrice > 0
-              ? formatCurrency(booking.totalPrice)
-              : 'Rate on arrival';
-          const statusClass = statusStyles[booking.status] || 'bg-slate-100 text-slate-600';
-          const statusLabel = booking.status
-            ? booking.status.charAt(0).toUpperCase() + booking.status.slice(1)
-            : 'Pending';
-          const conversationState = booking.conversationId
-            ? { openTab: 'messages', conversationId: booking.conversationId }
-            : null;
-          const isPast = booking.endDate ? new Date(booking.endDate) < new Date() : false;
-          const offerLabel = booking.offerStatus
-            ? booking.offerStatus.charAt(0).toUpperCase() + booking.offerStatus.slice(1)
-            : null;
-          const canManage = !['cancelled', 'rejected'].includes(booking.status) && !isPast;
-          const reviewStatus = booking.review?.status;
-          const reviewStatusLabel =
-            reviewStatus === 'pending'
-              ? 'Awaiting approval'
-              : reviewStatus === 'approved'
-              ? 'Published'
-              : reviewStatus === 'rejected'
-              ? 'Declined'
-              : '';
-          const reviewBadgeClass = reviewStatus
-            ? reviewStatusStyles[reviewStatus] || 'bg-slate-100 text-slate-600'
-            : '';
-          const showReviewPrompt = booking.canReview && !booking.review;
-
-          return (
-            <li
-              key={booking.id}
-              className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition hover:border-emerald-200 hover:shadow-md sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div>
-                <div className="flex flex-wrap items-center gap-3 text-sm font-semibold text-slate-800">
-                  <ShieldCheck className="h-4 w-4 text-emerald-500" />
-                  {vehicleName}
-                  <span className={`rounded-full px-3 py-0.5 text-xs font-semibold uppercase tracking-wide ${statusClass}`}>
-                    {statusLabel}
-                  </span>
-                </div>
-                <p className="mt-2 text-sm text-slate-500">
-                  {start && end ? (
-                    <>
-                      {start} – {end}
-                    </>
-                  ) : (
-                    'Dates to be confirmed'
-                  )}
-                </p>
-                <p className="text-sm text-slate-500">
-                  Driver <span className="font-medium text-slate-700">{driverName}</span>
-                </p>
-                <p className="text-sm text-slate-500">
-                  Total <span className="font-medium text-slate-700">{priceLabel}</span>
-                </p>
-                {offerLabel ? (
-                  <p className="text-xs text-emerald-600">Offer status: {offerLabel}</p>
-                ) : null}
-                {isPast ? (
-                  <p className="mt-1 text-xs text-slate-400">Trip completed</p>
-                ) : null}
-                {booking.review ? (
-                  <div className="mt-3 space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <span
-                        className={`inline-flex items-center gap-2 rounded-full px-3 py-0.5 text-xs font-semibold uppercase tracking-wide ${reviewBadgeClass}`}
-                      >
-                        {reviewStatusLabel}
-                      </span>
-                      <span className="inline-flex items-center gap-1 text-sm font-semibold text-amber-500">
-                        <Star className="h-4 w-4" fill="currentColor" />
-                        {booking.review.rating}/5
-                      </span>
-                    </div>
-                    {booking.review.title ? (
-                      <p className="text-sm font-semibold text-slate-700">{booking.review.title}</p>
-                    ) : null}
-                    <p className="text-xs text-slate-500">{booking.review.comment}</p>
-                    <button
-                      type="button"
-                      onClick={() => openReviewModal(booking)}
-                      className="text-xs font-semibold text-emerald-600 transition hover:text-emerald-700"
-                    >
-                      View review
-                    </button>
-                  </div>
-                ) : null}
-                {showReviewPrompt ? (
-                  <button
-                    type="button"
-                    onClick={() => openReviewModal(booking)}
-                    className="mt-2 inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-emerald-600 transition hover:border-emerald-300 hover:text-emerald-700"
-                  >
-                    <Star className="h-4 w-4" />
-                    Leave a review
-                  </button>
-                ) : null}
-              </div>
-              <div className="flex flex-wrap items-center gap-2 text-sm text-emerald-600">
-                {conversationState ? (
-                  <Link
-                    to="/dashboard"
-                    state={conversationState}
-                    className="inline-flex items-center gap-2 rounded-full border border-emerald-200 px-3 py-1 text-xs font-semibold text-emerald-700 transition hover:border-emerald-300 hover:text-emerald-800"
-                  >
-                    Open chat
-                  </Link>
-                ) : null}
-                {booking.vehicle?.id ? (
-                  <Link
-                    to={`/vehicles/${booking.vehicle.id}`}
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-emerald-300 hover:text-emerald-700"
-                  >
-                    View vehicle
-                  </Link>
-                ) : null}
-                {canManage ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => openEditModal(booking)}
-                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-emerald-300 hover:text-emerald-700"
-                    >
-                      Edit details
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleCancelBooking(booking)}
-                      disabled={cancellingId === booking.id}
-                      className="inline-flex items-center gap-2 rounded-full border border-rose-200 px-3 py-1 text-xs font-semibold text-rose-600 transition hover:border-rose-300 hover:text-rose-700 disabled:cursor-not-allowed disabled:border-rose-200 disabled:text-rose-400"
-                    >
-                      {cancellingId === booking.id ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Cancelling...
-                        </>
-                      ) : (
-                        'Cancel booking'
-                      )}
-                    </button>
-                  </>
-                ) : null}
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-      </div>
-      {editingBooking ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 py-6">
-          <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="text-base font-semibold text-slate-900">Update booking</h3>
-                <p className="text-xs text-slate-500">
-                  {editingBooking.vehicle?.model
-                    ? `Adjust details for ${editingBooking.vehicle.model}.`
-                    : 'Update traveller details for this itinerary.'}
-                </p>
-                {editingBooking.offerId ? (
-                  <p className="mt-2 text-xs text-amber-600">
-                    Dates were confirmed through a driver offer. Message your driver to change the schedule.
-                  </p>
-                ) : null}
-              </div>
+        ) : (
+          <>
+            <div className="mb-3.5 flex gap-1.5 rounded-xl bg-[#eef1f0] p-1">
               <button
                 type="button"
-                onClick={closeEditModal}
-                className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
+                onClick={() => setView('upcoming')}
+                className={`flex-1 rounded-[9px] py-2 text-[13px] font-bold transition ${view === 'upcoming' ? 'bg-brand text-white' : 'text-muted'}`}
               >
-                Close
+                Upcoming{upcoming.length ? ` ${upcoming.length}` : ''}
               </button>
-            </div>
-            <form onSubmit={handleEditSubmit} className="mt-5 space-y-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Start date
-                  </label>
-                  <input
-                    type="date"
-                    value={editForm.startDate}
-                    onChange={(event) => handleEditFieldChange('startDate', event.target.value)}
-                    disabled={Boolean(editingBooking.offerId)}
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 disabled:cursor-not-allowed disabled:bg-slate-100"
-                    required={!editingBooking.offerId}
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    End date
-                  </label>
-                  <input
-                    type="date"
-                    value={editForm.endDate}
-                    onChange={(event) => handleEditFieldChange('endDate', event.target.value)}
-                    disabled={Boolean(editingBooking.offerId)}
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 disabled:cursor-not-allowed disabled:bg-slate-100"
-                    required={!editingBooking.offerId}
-                  />
-                </div>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Pickup location
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.startPoint}
-                    onChange={(event) => handleEditFieldChange('startPoint', event.target.value)}
-                    placeholder="Hotel or meeting point"
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Drop-off location
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.endPoint}
-                    onChange={(event) => handleEditFieldChange('endPoint', event.target.value)}
-                    placeholder="Final destination"
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                  />
-                </div>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Flight number (optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={editForm.flightNumber}
-                    onChange={(event) => handleEditFieldChange('flightNumber', event.target.value)}
-                    placeholder="e.g. UL 403"
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                  />
-                </div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Arrival time
-                    </label>
-                    <input
-                      type="text"
-                      value={editForm.arrivalTime}
-                      onChange={(event) => handleEditFieldChange('arrivalTime', event.target.value)}
-                      placeholder="e.g. 08:30"
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                      Departure time
-                    </label>
-                    <input
-                      type="text"
-                      value={editForm.departureTime}
-                      onChange={(event) => handleEditFieldChange('departureTime', event.target.value)}
-                      placeholder="e.g. 17:45"
-                      className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                    />
-                  </div>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Special requests
-                </label>
-                <textarea
-                  rows={3}
-                  value={editForm.specialRequests}
-                  onChange={(event) => handleEditFieldChange('specialRequests', event.target.value)}
-                  placeholder="Dietary needs, accessibility notes, or anything else you'd like your driver to know."
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={closeEditModal}
-                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-700"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingEdit}
-                  className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-600/60"
-                >
-                  {savingEdit ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    'Save changes'
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      ) : null}
-      {reviewingBooking ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 py-6">
-          <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="text-base font-semibold text-slate-900">
-                  {reviewingBooking.vehicle?.model
-                    ? `Review for ${reviewingBooking.vehicle.model}`
-                    : 'Share your trip feedback'}
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Let future travellers know what to expect from this experience.
-                </p>
-              </div>
               <button
                 type="button"
-                onClick={closeReviewModal}
-                className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
+                onClick={() => setView('completed')}
+                className={`flex-1 rounded-[9px] py-2 text-[13px] font-bold transition ${view === 'completed' ? 'bg-brand text-white' : 'text-muted'}`}
               >
-                Close
+                Completed{completed.length ? ` ${completed.length}` : ''}
               </button>
             </div>
-
-            {reviewingBooking.review ? (
-              <div className="mt-5 space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span
-                    className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${activeReviewBadgeClass}`}
-                  >
-                    {activeReviewLabel}
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-lg font-semibold text-amber-500">
-                    <Star className="h-5 w-5" fill="currentColor" />
-                    {reviewingBooking.review.rating}/5
-                  </span>
-                </div>
-                {reviewingBooking.review.title ? (
-                  <p className="text-sm font-semibold text-slate-700">
-                    {reviewingBooking.review.title}
-                  </p>
-                ) : null}
-                <p className="text-sm text-slate-600 whitespace-pre-line">
-                  {reviewingBooking.review.comment}
-                </p>
-                {reviewingBooking.review.adminNote ? (
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
-                    <p className="font-semibold">Admin note</p>
-                    <p>{reviewingBooking.review.adminNote}</p>
-                  </div>
-                ) : null}
-                <p className="text-xs text-slate-500">
-                  Submitted {formatDateLabel(reviewingBooking.review.submittedAt)}
-                </p>
+            {list.length === 0 ? (
+              <div className="rounded-[18px] bg-white p-6 text-center text-sm text-muted shadow-card">
+                {view === 'upcoming' ? 'No upcoming trips.' : 'No completed trips yet.'}
               </div>
             ) : (
-              <form onSubmit={handleReviewSubmit} className="mt-5 space-y-4">
-                <div>
-                  <label
-                    htmlFor="review-rating"
-                    className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
-                  >
-                    Rating
-                  </label>
-                  <select
-                    id="review-rating"
-                    value={reviewForm.rating}
-                    onChange={(event) => handleReviewFieldChange('rating', event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                  >
-                    {[5, 4, 3, 2, 1].map((value) => (
-                      <option key={value} value={String(value)}>
-                        {value} — {value === 5 ? 'Amazing' : value === 4 ? 'Great' : value === 3 ? 'Good' : value === 2 ? 'Okay' : 'Needs improvement'}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label
-                    htmlFor="review-title"
-                    className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
-                  >
-                    Review title (optional)
-                  </label>
-                  <input
-                    id="review-title"
-                    type="text"
-                    value={reviewForm.title}
-                    onChange={(event) => handleReviewFieldChange('title', event.target.value)}
-                    placeholder="Highlights from your trip"
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                    maxLength={120}
+              <div className="grid gap-3 lg:grid-cols-2">
+                {list.map((booking, index) => (
+                  <TravelerBookingCard
+                    key={booking.id}
+                    booking={booking}
+                    tone={AVATAR_TONES[index % AVATAR_TONES.length]}
+                    expanded={expandedId === booking.id}
+                    onToggle={() => setExpandedId((prev) => (prev === booking.id ? '' : booking.id))}
+                    onMessage={() => (booking.conversationId ? onOpenConversation(booking.conversationId) : toast('No conversation for this trip yet.'))}
+                    onEdit={() => openEditModal(booking)}
+                    onCancel={() => handleCancelBooking(booking)}
+                    onReview={() => openReviewModal(booking)}
+                    cancelling={cancellingId === booking.id}
                   />
-                </div>
-                <div>
-                  <label
-                    htmlFor="review-comment"
-                    className="block text-xs font-semibold uppercase tracking-wide text-slate-500"
-                  >
-                    Share your experience
-                  </label>
-                  <textarea
-                    id="review-comment"
-                    value={reviewForm.comment}
-                    onChange={(event) => handleReviewFieldChange('comment', event.target.value)}
-                    placeholder="Tell us about your driver, vehicle, and itinerary highlights."
-                    rows={5}
-                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                    required
-                    maxLength={1200}
-                  />
-                  <p className="mt-1 text-xs text-slate-400">Minimum 10 characters.</p>
-                </div>
-                <div className="flex items-center justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={closeReviewModal}
-                    className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 transition hover:border-slate-300 hover:text-slate-700"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submittingReview}
-                    className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    {submittingReview ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Submitting...
-                      </>
-                    ) : (
-                      'Submit review'
-                    )}
-                  </button>
-                </div>
-              </form>
+                ))}
+              </div>
             )}
-          </div>
+          </>
+        )}
+      </Sheet>
+      </div>
+
+      <div className="hidden lg:block">
+        <div className="px-8 py-8">
+          <DesktopTitleBar title="My Bookings">
+            {items.length ? (
+              <DeskTabs view={view} onView={setView} upcoming={upcoming.length} completed={completed.length} />
+            ) : null}
+          </DesktopTitleBar>
+          {desktopBookings}
         </div>
+      </div>
+
+      {editingBooking ? (
+        <BottomSheet title="Update booking" onClose={closeEditModal}>
+          {editingBooking.offerId ? (
+            <p className="mb-3 rounded-xl bg-[#fdf0d8] px-3 py-2 text-[12px] font-semibold text-[#a86a15]">
+              Dates were confirmed through a driver offer. Message your driver to change the schedule.
+            </p>
+          ) : null}
+          <form onSubmit={handleEditSubmit} className="flex flex-col gap-3">
+            <div className="flex gap-2.5">
+              <div className="min-w-0 flex-1">
+                <label className={labelCls}>Start date</label>
+                <input type="date" value={editForm.startDate} disabled={Boolean(editingBooking.offerId)} onChange={(e) => handleEditFieldChange('startDate', e.target.value)} className={`mt-1 ${inputCls} disabled:bg-[#eef1f0]`} required={!editingBooking.offerId} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <label className={labelCls}>End date</label>
+                <input type="date" value={editForm.endDate} disabled={Boolean(editingBooking.offerId)} onChange={(e) => handleEditFieldChange('endDate', e.target.value)} className={`mt-1 ${inputCls} disabled:bg-[#eef1f0]`} required={!editingBooking.offerId} />
+              </div>
+            </div>
+            <div className="flex gap-2.5">
+              <div className="min-w-0 flex-1">
+                <label className={labelCls}>Pickup</label>
+                <input type="text" value={editForm.startPoint} onChange={(e) => handleEditFieldChange('startPoint', e.target.value)} placeholder="Hotel or meeting point" className={`mt-1 ${inputCls}`} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <label className={labelCls}>Drop-off</label>
+                <input type="text" value={editForm.endPoint} onChange={(e) => handleEditFieldChange('endPoint', e.target.value)} placeholder="Final destination" className={`mt-1 ${inputCls}`} />
+              </div>
+            </div>
+            <div>
+              <label className={labelCls}>Flight number (optional)</label>
+              <input type="text" value={editForm.flightNumber} onChange={(e) => handleEditFieldChange('flightNumber', e.target.value)} placeholder="e.g. UL 403" className={`mt-1 ${inputCls}`} />
+            </div>
+            <div className="flex gap-2.5">
+              <div className="min-w-0 flex-1">
+                <label className={labelCls}>Arrival time</label>
+                <input type="text" value={editForm.arrivalTime} onChange={(e) => handleEditFieldChange('arrivalTime', e.target.value)} placeholder="e.g. 08:30" className={`mt-1 ${inputCls}`} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <label className={labelCls}>Departure time</label>
+                <input type="text" value={editForm.departureTime} onChange={(e) => handleEditFieldChange('departureTime', e.target.value)} placeholder="e.g. 17:45" className={`mt-1 ${inputCls}`} />
+              </div>
+            </div>
+            <div>
+              <label className={labelCls}>Special requests</label>
+              <textarea rows={3} value={editForm.specialRequests} onChange={(e) => handleEditFieldChange('specialRequests', e.target.value)} placeholder="Dietary needs, accessibility notes, anything your driver should know." className="mt-1 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 py-2.5 text-sm text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none" />
+            </div>
+            <button type="submit" disabled={savingEdit} className="mt-1 flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand py-[14px] text-[15px] font-extrabold text-white transition hover:bg-brand-dark disabled:opacity-70">
+              {savingEdit ? (<><Loader2 className="h-4 w-4 animate-spin" /> Saving…</>) : 'Save changes'}
+            </button>
+          </form>
+        </BottomSheet>
+      ) : null}
+
+      {reviewingBooking ? (
+        <BottomSheet
+          title={reviewingBooking.vehicle?.model ? `Review · ${reviewingBooking.vehicle.model}` : 'Trip feedback'}
+          onClose={closeReviewModal}
+        >
+          {reviewingBooking.review ? (
+            <div className="rounded-[16px] bg-white p-4 shadow-card">
+              <div className="flex items-center justify-between">
+                <span className={`rounded-lg px-2.5 py-1 text-[11px] font-extrabold uppercase ${reviewStatusChip(reviewingBooking.review.status)}`}>
+                  {reviewStatusLabel(reviewingBooking.review.status)}
+                </span>
+                <span className="inline-flex items-center gap-1 text-[15px] font-bold text-star">
+                  <Star className="h-4 w-4" fill="#f5b042" stroke="none" />
+                  {reviewingBooking.review.rating}/5
+                </span>
+              </div>
+              {reviewingBooking.review.title ? <p className="mt-2 text-[14px] font-bold text-ink">{reviewingBooking.review.title}</p> : null}
+              <p className="mt-1 whitespace-pre-line text-[13px] text-muted">{reviewingBooking.review.comment}</p>
+              {reviewingBooking.review.adminNote ? (
+                <div className="mt-2 rounded-lg bg-[#fdf0d8] px-3 py-2 text-[12px] text-[#a86a15]">
+                  <b>Admin note</b> {reviewingBooking.review.adminNote}
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <form onSubmit={handleReviewSubmit} className="flex flex-col gap-3">
+              <div>
+                <label className={labelCls}>Rating</label>
+                <select value={reviewForm.rating} onChange={(e) => handleReviewFieldChange('rating', e.target.value)} className={`mt-1 ${inputCls}`}>
+                  {[5, 4, 3, 2, 1].map((value) => (
+                    <option key={value} value={String(value)}>
+                      {value} — {value === 5 ? 'Amazing' : value === 4 ? 'Great' : value === 3 ? 'Good' : value === 2 ? 'Okay' : 'Needs improvement'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Review title (optional)</label>
+                <input type="text" value={reviewForm.title} onChange={(e) => handleReviewFieldChange('title', e.target.value)} maxLength={120} placeholder="Highlights from your trip" className={`mt-1 ${inputCls}`} />
+              </div>
+              <div>
+                <label className={labelCls}>Share your experience</label>
+                <textarea rows={5} value={reviewForm.comment} onChange={(e) => handleReviewFieldChange('comment', e.target.value)} maxLength={1200} required placeholder="Tell us about your driver, vehicle, and itinerary highlights." className="mt-1 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 py-2.5 text-sm text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none" />
+                <p className="mt-1 text-[11.5px] text-muted-soft">Minimum 10 characters.</p>
+              </div>
+              <div>
+                <label className={labelCls}>Photos (optional)</label>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  {reviewForm.images.map((file, index) => (
+                    <div key={`${file.name}-${index}`} className="relative h-16 w-16 overflow-hidden rounded-xl border border-[#e2e8ea]">
+                      <img src={reviewPreviews[index]} alt="" className="h-full w-full object-cover" />
+                      <button type="button" onClick={() => removeReviewImage(index)} aria-label="Remove photo" className="absolute right-0.5 top-0.5 grid h-5 w-5 place-items-center rounded-full bg-ink/70 text-white">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                  {reviewForm.images.length < 4 ? (
+                    <label className="grid h-16 w-16 cursor-pointer place-items-center rounded-xl border-[1.5px] border-dashed border-[#cbd5d1] text-muted-soft transition hover:border-brand hover:text-brand">
+                      <PlusCircle className="h-5 w-5" />
+                      <input type="file" accept="image/*" multiple onChange={handleReviewImages} className="hidden" />
+                    </label>
+                  ) : null}
+                </div>
+                <p className="mt-1 text-[11.5px] text-muted-soft">Add up to 4 photos from your trip.</p>
+              </div>
+              <button type="submit" disabled={submittingReview} className="mt-1 flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand py-[14px] text-[15px] font-extrabold text-white transition hover:bg-brand-dark disabled:opacity-70">
+                {submittingReview ? (<><Loader2 className="h-4 w-4 animate-spin" /> Submitting…</>) : 'Submit review'}
+              </button>
+            </form>
+          )}
+        </BottomSheet>
       ) : null}
     </>
   );
 };
 
-const MessagesPanel = ({
+const reviewStatusChip = (status) =>
+  status === 'approved' ? 'bg-brand-tint text-brand-dark' : status === 'rejected' ? 'bg-[#ffe4e9] text-[#e11d48]' : 'bg-[#fdf0d8] text-[#a86a15]';
+const reviewStatusLabel = (status) =>
+  status === 'approved' ? 'Published' : status === 'rejected' ? 'Declined' : 'Awaiting approval';
+
+const TravelerBookingCard = ({ booking, tone, expanded, onToggle, onMessage, onEdit, onCancel, onReview, cancelling }) => {
+  const now = Date.now();
+  const driverName = booking.driver?.name || 'Driver to be assigned';
+  const vehicleName = booking.vehicle?.model || 'Vehicle to be confirmed';
+  const seats = booking.vehicle?.seats;
+  const price = typeof booking.totalPrice === 'number' && booking.totalPrice > 0 ? formatCurrency(booking.totalPrice) : null;
+  const start = formatDateLabel(booking.startDate);
+  const end = formatDateLabel(booking.endDate);
+  const route = booking.startPoint && booking.endPoint ? `${booking.startPoint} → ${booking.endPoint}` : vehicleName;
+  const past = booking.endDate && new Date(booking.endDate).getTime() < now;
+  const cancelled = ['cancelled', 'rejected'].includes(booking.status);
+  const startMs = booking.startDate ? new Date(booking.startDate).getTime() : null;
+  const daysAway = startMs ? Math.ceil((startMs - now) / 86400000) : null;
+  const chip = cancelled
+    ? { text: booking.status.toUpperCase(), cls: 'bg-[#ffe4e9] text-[#e11d48]', border: '#f43f5e' }
+    : booking.status === 'confirmed' && daysAway !== null && daysAway > 0 && daysAway <= 3
+    ? { text: `STARTS IN ${daysAway} DAY${daysAway === 1 ? '' : 'S'}`, cls: 'bg-[#e5f0fb] text-[#1d6fb8]', border: '#d6e9fb' }
+    : booking.status === 'confirmed'
+    ? { text: 'CONFIRMED', cls: 'bg-brand-tint text-brand-dark', border: '#10a35a' }
+    : past
+    ? { text: 'COMPLETED', cls: 'bg-[#eef1f0] text-muted', border: '#d6e9fb' }
+    : { text: (booking.status || 'pending').toUpperCase(), cls: 'bg-[#fdf0d8] text-[#a86a15]', border: '#f0b429' };
+  const canManage = !cancelled && !past;
+  const showReviewPrompt = booking.canReview && !booking.review;
+
+  return (
+    <div className="rounded-[18px] bg-white p-[15px] shadow-card" style={{ borderLeft: `4px solid ${chip.border}` }}>
+      <div className="mb-2.5 flex items-center justify-between gap-2">
+        <span className={`rounded-lg px-2.5 py-1 text-[11px] font-extrabold uppercase ${chip.cls}`}>{chip.text}</span>
+        {price ? <b className="text-[16px] text-ink">{price}</b> : null}
+      </div>
+      <div className="flex items-center gap-[11px]">
+        <Avatar name={driverName} tone={tone} className="h-10 w-10 text-sm" />
+        <div className="min-w-0">
+          <div className="truncate text-[14.5px] font-bold text-ink">{driverName}</div>
+          <div className="truncate text-[12px] text-muted-soft">
+            {vehicleName}
+            {seats ? ` · ${seats} seats` : ''}
+          </div>
+        </div>
+      </div>
+      <div className="mt-3 rounded-xl bg-canvas px-[13px] py-[11px] text-[13px]">
+        <div className="flex items-center gap-1.5 font-bold text-ink">
+          <MapPin className="h-3.5 w-3.5 text-brand" />
+          <span className="truncate">{route}</span>
+        </div>
+        <div className="mt-1.5 flex items-center gap-1.5 text-muted">
+          <CalendarDays className="h-3.5 w-3.5 text-muted-soft" />
+          {start && end ? `${start} – ${end}` : 'Dates to be confirmed'}
+        </div>
+      </div>
+
+      {booking.review ? (
+        <div className="mt-2.5 flex items-center justify-between rounded-xl border border-hairline bg-canvas px-3 py-2">
+          <span className={`rounded-md px-2 py-0.5 text-[10.5px] font-extrabold uppercase ${reviewStatusChip(booking.review.status)}`}>
+            {reviewStatusLabel(booking.review.status)}
+          </span>
+          <span className="inline-flex items-center gap-1 text-[13px] font-bold text-star">
+            <Star className="h-3.5 w-3.5" fill="#f5b042" stroke="none" />
+            {booking.review.rating}/5
+          </span>
+        </div>
+      ) : null}
+
+      <div className="mt-3 flex gap-2">
+        <button type="button" onClick={onMessage} className="flex-1 rounded-[11px] bg-brand py-[11px] text-[13.5px] font-bold text-white transition hover:bg-brand-dark">
+          Message driver
+        </button>
+        <button type="button" onClick={onToggle} className="flex-shrink-0 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white px-4 py-[11px] text-[13.5px] font-bold text-ink transition hover:border-muted-soft">
+          Details
+        </button>
+      </div>
+
+      {expanded ? (
+        <div className="mt-3 flex flex-col gap-2 border-t border-hairline pt-3">
+          {booking.vehicle?.id ? (
+            <Link to={`/vehicles/${booking.vehicle.id}`} className="rounded-[10px] border-[1.5px] border-[#e2e8ea] py-2 text-center text-[12.5px] font-bold text-ink transition hover:border-muted-soft">
+              View vehicle
+            </Link>
+          ) : null}
+          {canManage ? (
+            <div className="flex gap-2">
+              <button type="button" onClick={onEdit} className="flex-1 rounded-[10px] border-[1.5px] border-[#e2e8ea] py-2 text-[12.5px] font-bold text-ink transition hover:border-muted-soft">
+                Edit details
+              </button>
+              <button type="button" onClick={onCancel} disabled={cancelling} className="flex-1 rounded-[10px] border-[1.5px] border-[#ffd3d9] py-2 text-[12.5px] font-bold text-[#f43f5e] transition hover:border-[#f43f5e] disabled:opacity-60">
+                {cancelling ? 'Cancelling…' : 'Cancel booking'}
+              </button>
+            </div>
+          ) : null}
+          {booking.review ? (
+            <button type="button" onClick={onReview} className="rounded-[10px] border-[1.5px] border-[#e2e8ea] py-2 text-[12.5px] font-bold text-ink transition hover:border-muted-soft">
+              View review
+            </button>
+          ) : showReviewPrompt ? (
+            <button type="button" onClick={onReview} className="flex items-center justify-center gap-1.5 rounded-[10px] bg-brand-tint py-2 text-[12.5px] font-bold text-brand-dark">
+              <Star className="h-3.5 w-3.5" /> Leave a review
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+};
+
+// ---------- Messages ----------
+const TravelerMessages = ({
+  onMenu,
+  travelerName,
   conversationsState,
-  selectedConversationId,
   selectedConversation,
   onSelectConversation,
   messagesState,
@@ -1356,269 +1275,258 @@ const MessagesPanel = ({
   onBookOffer,
   onReloadConversations,
 }) => {
+  const [search, setSearch] = useState('');
   const { loading: convLoading, error: convError, items: conversations } = conversationsState;
   const { loading: msgLoading, error: msgError, items: messages } = messagesState;
 
-  const handleSubmit = (event) => {
+  const driverNameOf = (conversation) =>
+    conversation?.participants?.driver?.name || conversation?.participants?.driver?.email || 'Driver';
+  const filtered = conversations.filter((c) => driverNameOf(c).toLowerCase().includes(search.trim().toLowerCase()));
+
+  const activeName = selectedConversation ? driverNameOf(selectedConversation) : '';
+  const activeSubtitle = selectedConversation?.vehicle?.model
+    ? `Discussing ${selectedConversation.vehicle.model}`
+    : 'General conversation';
+
+  const chatMessages =
+    msgLoading && messages.length === 0 ? (
+      <div className="flex flex-1 items-center justify-center gap-2 text-sm text-muted">
+        <Loader2 className="h-4 w-4 animate-spin text-brand" /> Loading messages…
+      </div>
+    ) : msgError ? (
+      <div className="flex flex-1 items-center justify-center text-sm text-[#e11d48]">{msgError}</div>
+    ) : messages.length === 0 ? (
+      <div className="flex flex-1 items-center justify-center px-8 text-center text-sm text-muted">
+        Send a message to introduce yourself to the driver.
+      </div>
+    ) : (
+      messages.map((message) => {
+        const isTraveller = message.sender?.role === 'guest' || message.senderRole === 'guest';
+        if (message.type === 'offer' && message.offer) {
+          return <TravelerOfferBubble key={message.id} message={message} align={isTraveller ? 'end' : 'start'} onBook={() => onBookOffer(message)} />;
+        }
+        return (
+          <div key={message.id} className={`flex ${isTraveller ? 'justify-end' : 'justify-start'}`}>
+            <div className={`max-w-[80%] px-[13px] py-[10px] text-[13.5px] shadow-[0_2px_8px_rgba(15,31,45,0.05)] ${isTraveller ? 'rounded-[14px_14px_4px_14px] bg-brand text-white' : 'rounded-[14px_14px_14px_4px] bg-white text-ink'}`}>
+              <div className="whitespace-pre-wrap">{message.body}</div>
+              {message.warning ? (
+                <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-[#fdf0d8] px-2 py-1.5 text-[11px] font-semibold text-[#a86a15]">
+                  <AlertTriangle className="mt-0.5 h-3 w-3 flex-none" />
+                  <span>{message.warning}</span>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        );
+      })
+    );
+
+  const submitMessage = (event) => {
     event.preventDefault();
-    if (!composerValue.trim()) {
-      return;
+    if (composerValue.trim()) onSendMessage();
+  };
+
+  const conversationList = (variant) => {
+    if (convLoading) {
+      return (
+        <div className="flex items-center justify-center gap-2 p-6 text-sm text-muted">
+          <Loader2 className="h-4 w-4 animate-spin text-brand" /> Loading conversations…
+        </div>
+      );
     }
-    onSendMessage();
+    if (convError) {
+      return (
+        <div className="m-4 rounded-[18px] bg-white p-6 text-center text-sm shadow-card">
+          <p className="text-[#e11d48]">{convError}</p>
+          <button type="button" onClick={onReloadConversations} className="mt-3 rounded-full border border-[#e2e8ea] px-4 py-2 text-xs font-bold text-ink transition hover:border-muted-soft">
+            Try again
+          </button>
+        </div>
+      );
+    }
+    if (filtered.length === 0) {
+      return (
+        <div className="m-4 rounded-[18px] bg-white p-6 text-center text-sm text-muted shadow-card">
+          {conversations.length === 0 ? 'Start a conversation from a vehicle page to see it here.' : 'No conversations match your search.'}
+        </div>
+      );
+    }
+    return filtered.map((conversation, index) => {
+      const name = driverNameOf(conversation);
+      const preview = conversation.lastMessage?.body || 'Conversation started.';
+      const timestamp = formatShortDateTime(conversation.lastMessageAt || conversation.updatedAt);
+      const unread = conversation.unreadCount > 0;
+      const active = variant === 'desktop' && conversation.id === selectedConversation?.id;
+      return (
+        <button
+          key={conversation.id}
+          type="button"
+          onClick={() => onSelectConversation(conversation.id)}
+          className={`flex w-full items-center gap-[11px] py-3.5 text-left ${
+            variant === 'desktop'
+              ? `px-[18px] border-l-[3px] ${active ? 'border-brand bg-[#f3fbf6]' : 'border-transparent hover:bg-canvas'}`
+              : `px-3.5 ${index > 0 ? 'border-t border-hairline' : ''} ${unread ? 'bg-[#f3fbf6]' : ''}`
+          }`}
+        >
+          <Avatar name={name} tone={AVATAR_TONES[index % AVATAR_TONES.length]} className="h-11 w-11 flex-shrink-0 rounded-[11px] text-sm" />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <span className="truncate text-[14.5px] font-bold text-ink">{name}</span>
+              <span className="flex-shrink-0 text-[11px] text-muted-soft">{timestamp}</span>
+            </div>
+            <div className="truncate text-[12.5px] text-ink-soft">{preview}</div>
+          </div>
+          {unread ? (
+            <span className="ml-1 min-w-[18px] rounded-full bg-brand px-[5px] py-0.5 text-center text-[11px] font-extrabold text-white">
+              {conversation.unreadCount}
+            </span>
+          ) : null}
+        </button>
+      );
+    });
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-base font-semibold text-slate-900">Conversations</h2>
-          <p className="text-sm text-slate-500">
-            Coordinate plans with drivers. Phone numbers, links, and emails are hidden automatically.
-          </p>
-        </div>
+    <>
+      {/* MOBILE: list <-> thread */}
+      <div className="lg:hidden">
+        {selectedConversation ? (
+          <div className="flex min-h-screen flex-col">
+            <div className="text-white" style={{ background: 'linear-gradient(160deg,#0f7a45,#10a35a 55%,#18b866)' }}>
+              <div className="flex items-center gap-3 px-4 pb-4 pt-4">
+                <button type="button" onClick={() => onSelectConversation('')} aria-label="Back" className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-white/[0.18] transition hover:bg-white/25">
+                  <ChevronLeft className="h-[18px] w-[18px]" strokeWidth={2} />
+                </button>
+                <Avatar name={activeName} tone="light" className="h-10 w-10 flex-shrink-0 text-[15px]" />
+                <div className="min-w-0">
+                  <div className="truncate text-[16px] font-extrabold">{activeName}</div>
+                  <div className="truncate text-[12px] text-white/80">{activeSubtitle}</div>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-1 flex-col">
+              <div className="flex flex-1 flex-col gap-2.5 px-4 py-4">{chatMessages}</div>
+              <div className="sticky bottom-0 z-10 border-t border-hairline bg-white px-4 py-3">
+                <form onSubmit={submitMessage} className="flex items-center gap-2.5">
+                  <input value={composerValue} onChange={(e) => onComposerChange(e.target.value)} placeholder="Message…" className="h-[38px] min-w-0 flex-1 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white px-3 text-[13px] text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none" />
+                  <button type="submit" disabled={!composerValue.trim() || sending} aria-label="Send" className="grid h-[38px] w-[38px] flex-shrink-0 place-items-center rounded-[11px] bg-brand transition hover:bg-brand-dark disabled:opacity-50">
+                    {sending ? <Loader2 className="h-4 w-4 animate-spin text-white" /> : <Send className="h-[17px] w-[17px] text-white" />}
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            <MobileHeader onMenu={onMenu} right={<Avatar name={travelerName} tone="light" className="h-10 w-10 text-[15px]" />} eyebrow="INBOX" title="Messages" />
+            <Sheet>
+              <div className="mb-3.5 flex items-center gap-2.5 rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 py-2.5">
+                <Search className="h-4 w-4 flex-shrink-0 text-muted-soft" />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search conversations" className="w-full min-w-0 bg-transparent text-[13.5px] text-ink placeholder:text-[#adb8c0] focus:outline-none" />
+              </div>
+              <div className="overflow-hidden rounded-[18px] bg-white shadow-card">{conversationList('mobile')}</div>
+            </Sheet>
+          </>
+        )}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
-        <aside className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
-          {convLoading ? (
-            <div className="flex min-h-[200px] items-center justify-center text-sm text-slate-500">
-              <Loader2 className="mr-2 h-4 w-4 animate-spin text-slate-400" />
-              Loading conversations...
+      {/* DESKTOP: conversation list + chat pane (navy sidebar is the 3rd pane) */}
+      <div className="hidden h-screen lg:flex">
+        <div className="flex w-[340px] flex-shrink-0 flex-col border-r border-hairline bg-white">
+          <div className="px-[18px] pb-3.5 pt-5">
+            <h1 className="mb-3 text-[20px] font-extrabold text-ink">Messages</h1>
+            <div className="flex items-center gap-2.5 rounded-[11px] border-[1.5px] border-[#e2e8ea] px-3 py-2.5">
+              <Search className="h-4 w-4 flex-shrink-0 text-muted-soft" />
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search conversations" className="w-full min-w-0 bg-transparent text-[13px] text-ink placeholder:text-[#adb8c0] focus:outline-none" />
             </div>
-          ) : convError ? (
-            <div className="flex min-h-[200px] flex-col items-center justify-center space-y-2 text-center text-sm text-rose-600">
-              <p>{convError}</p>
-              <button
-                type="button"
-                onClick={onReloadConversations}
-                className="inline-flex items-center rounded-full border border-rose-200 px-3 py-1 text-xs font-semibold text-rose-600 transition hover:border-rose-300"
-              >
-                Try again
-              </button>
-            </div>
-          ) : conversations.length === 0 ? (
-            <div className="flex min-h-[200px] items-center justify-center text-center text-sm text-slate-500">
-              Start a conversation from a vehicle page to see it here.
-            </div>
-          ) : (
-            <ul className="space-y-2">
-              {conversations.map((conversation) => {
-                const isActive = conversation.id === selectedConversationId;
-                const driverName =
-                  conversation.participants?.driver?.name ||
-                  conversation.participants?.driver?.email ||
-                  'Driver';
-                const vehicleLabel = conversation.vehicle?.model ? ` • ${conversation.vehicle.model}` : '';
-                const preview = conversation.lastMessage?.body || 'Conversation started.';
-                const timestamp = formatShortDateTime(conversation.lastMessageAt || conversation.updatedAt);
+          </div>
+          <div className="flex-1 overflow-y-auto">{conversationList('desktop')}</div>
+        </div>
 
-                return (
-                  <li key={conversation.id}>
-                    <button
-                      type="button"
-                      onClick={() => onSelectConversation(conversation.id)}
-                      className={`w-full rounded-xl border px-3 py-3 text-left transition ${
-                        isActive
-                          ? 'border-emerald-300 bg-white shadow-sm'
-                          : 'border-transparent bg-white/60 hover:border-slate-200 hover:bg-white'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-semibold text-slate-800">
-                          {driverName}
-                          {vehicleLabel}
-                        </span>
-                        <span className="text-xs text-slate-400">{timestamp}</span>
-                      </div>
-                      <p className="mt-1 line-clamp-2 text-xs text-slate-500">{preview}</p>
-                      {conversation.unreadCount > 0 ? (
-                        <span className="mt-2 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
-                          {conversation.unreadCount} new
-                        </span>
-                      ) : null}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </aside>
-
-        <section className="flex h-full flex-col rounded-2xl border border-slate-200 bg-slate-25">
+        <div className="flex flex-1 flex-col bg-canvas">
           {selectedConversation ? (
             <>
-              <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-900">
-                    {selectedConversation.participants?.driver?.name || 'Driver'}
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    {selectedConversation.vehicle?.model
-                      ? `Discussing ${selectedConversation.vehicle.model}`
-                      : 'General conversation'}
-                  </p>
+              <div className="flex h-[72px] flex-shrink-0 items-center gap-3 border-b border-hairline bg-white px-6">
+                <Avatar name={activeName} tone="brand" className="h-10 w-10 flex-shrink-0 rounded-[11px] text-[15px]" />
+                <div className="min-w-0">
+                  <b className="block truncate text-[15px] text-ink">{activeName}</b>
+                  <div className="truncate text-[12px] text-muted-soft">{activeSubtitle}</div>
                 </div>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
-                  Live chat
-                </span>
-              </header>
-
-              <div className="flex-1 space-y-3 overflow-y-auto bg-white px-4 py-4">
-                {msgLoading && messages.length === 0 ? (
-                  <div className="flex h-full items-center justify-center text-sm text-slate-500">
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin text-slate-400" />
-                    Loading messages...
-                  </div>
-                ) : msgError ? (
-                  <div className="flex h-full items-center justify-center text-sm text-rose-600">
-                    {msgError}
-                  </div>
-                ) : messages.length === 0 ? (
-                  <div className="flex h-full items-center justify-center text-sm text-slate-500">
-                    Send a message to introduce yourself to the driver.
-                  </div>
-                ) : (
-                  messages.map((message) => {
-                    const isTraveller = message.sender?.role === 'guest' || message.senderRole === 'guest';
-                    const containerClass = isTraveller
-                      ? 'justify-end'
-                      : 'justify-start';
-                    const bubbleClass = isTraveller
-                      ? 'bg-emerald-600 text-white'
-                      : 'bg-slate-100 text-slate-800 border border-slate-200';
-                    const timestamp = formatChatTimestamp(message.createdAt);
-
-                    return (
-                      <div key={message.id} className={`flex ${containerClass}`}>
-                        <div className={`max-w-full rounded-2xl px-4 py-3 text-sm shadow-sm ${bubbleClass}`}>
-                          <p className={`text-[11px] font-semibold ${isTraveller ? 'text-emerald-100/80' : 'text-slate-500'}`}>
-                            {isTraveller ? 'You' : message.sender?.name || 'Driver'} • {timestamp}
-                          </p>
-                          <div className="mt-1 whitespace-pre-wrap text-sm">
-                            {message.body}
-                          </div>
-                          {message.warning ? (
-                            <div
-                              className={`mt-2 flex items-start gap-2 rounded-xl border px-3 py-2 text-xs ${
-                                isTraveller
-                                  ? 'border-emerald-500/40 bg-emerald-700/40 text-emerald-50'
-                                  : 'border-amber-200 bg-amber-50 text-amber-700'
-                              }`}
-                            >
-                              <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-none" />
-                              <span>{message.warning}</span>
-                            </div>
-                          ) : null}
-                          {message.type === 'offer' && message.offer ? (
-                            <OfferDetails message={message} onBookOffer={onBookOffer} />
-                          ) : null}
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-                {msgLoading && messages.length > 0 ? (
-                  <div className="flex items-center justify-center text-xs text-slate-400">
-                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                    Refreshing...
-                  </div>
-                ) : null}
               </div>
-
-              <footer className="border-t border-slate-200 bg-white px-4 py-3">
-                <form onSubmit={handleSubmit} className="space-y-2">
-                  <textarea
-                    value={composerValue}
-                    onChange={(event) => onComposerChange(event.target.value)}
-                    placeholder="Write a message to your driver..."
-                    className="min-h-[80px] w-full resize-none rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                    disabled={!selectedConversationId}
-                  />
-                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-                    <p>Keep communication on Car With Driver. Personal contact details are hidden for your safety.</p>
-                    <button
-                      type="submit"
-                      disabled={!composerValue.trim() || sending}
-                      className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-not-allowed disabled:opacity-70"
-                    >
-                      {sending ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin text-white" />
-                          Sending...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="h-4 w-4" />
-                          Send message
-                        </>
-                      )}
-                    </button>
-                  </div>
+              <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto px-6 py-6">{chatMessages}</div>
+              <div className="flex-shrink-0 border-t border-hairline bg-white px-6 py-4">
+                <form onSubmit={submitMessage} className="flex items-center gap-2.5">
+                  <input value={composerValue} onChange={(e) => onComposerChange(e.target.value)} placeholder="Message…" className="h-[42px] min-w-0 flex-1 rounded-[12px] border-[1.5px] border-[#e2e8ea] bg-white px-3.5 text-[13.5px] text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none" />
+                  <button type="submit" disabled={!composerValue.trim() || sending} className="h-[42px] flex-shrink-0 rounded-[12px] bg-brand px-5 text-[13.5px] font-bold text-white transition hover:bg-brand-dark disabled:opacity-50">
+                    {sending ? 'Sending…' : 'Send'}
+                  </button>
                 </form>
-              </footer>
+              </div>
             </>
           ) : (
-            <div className="flex flex-1 items-center justify-center rounded-2xl bg-white text-sm text-slate-500">
-              Select a conversation to view messages.
-            </div>
+            <div className="flex flex-1 items-center justify-center text-sm text-muted">Select a conversation to view messages.</div>
           )}
-        </section>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
-const OfferDetails = ({ message, onBookOffer }) => {
+const TravelerOfferBubble = ({ message, align, onBook }) => {
   const { offer } = message;
   const start = formatDateLabel(offer.startDate);
   const end = formatDateLabel(offer.endDate);
-  const totalPrice = formatCurrency(offer.totalPrice);
-  const vehicleName = offer.vehicle?.model || 'Selected vehicle';
-
   return (
-    <div className="mt-3 space-y-2 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-3 text-sm text-emerald-800">
-      <div className="flex items-center gap-2 text-sm font-semibold">
-        <CalendarRange className="h-4 w-4" />
-        Offer details
+    <div className={`flex ${align === 'end' ? 'justify-end' : 'justify-start'}`}>
+      <div className="max-w-[88%] rounded-[16px] border-[1.5px] border-[#cdeede] bg-white p-3.5 shadow-[0_4px_14px_rgba(15,31,45,0.06)]">
+        <div className="mb-2 flex items-center justify-between gap-3">
+          <span className="rounded-[7px] bg-brand-tint px-2 py-[3px] text-[10.5px] font-extrabold uppercase text-brand-dark">Offer received</span>
+          <b className="text-[18px] text-ink">{formatCurrency(offer.totalPrice)}</b>
+        </div>
+        <div className="text-[13px] font-bold text-ink">
+          {offer.vehicle?.model || 'Selected vehicle'} · {start}–{end}
+        </div>
+        <div className="mt-0.5 text-[12px] text-muted-soft">
+          {offer.totalKms} km included · {formatRate(offer.pricePerExtraKm)} / extra km
+        </div>
+        {message.body ? <div className="mt-1.5 text-[12px] leading-relaxed text-muted">{message.body}</div> : null}
+        <div className="mt-3 flex gap-2">
+          <button type="button" onClick={onBook} className="flex-1 rounded-[11px] bg-brand py-[11px] text-[13.5px] font-bold text-white transition hover:bg-brand-dark">
+            Accept offer
+          </button>
+          <button type="button" onClick={() => toast('Reply in the chat to negotiate or decline.')} className="flex-shrink-0 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white px-4 py-[11px] text-[13.5px] font-bold text-ink transition hover:border-muted-soft">
+            Decline
+          </button>
+        </div>
       </div>
-      <p>
-        <strong>Vehicle:</strong> {vehicleName}
-      </p>
-      <p>
-        <strong>Dates:</strong> {start} to {end}
-      </p>
-      <p>
-        <strong>Total price:</strong> {totalPrice} ({offer.currency})
-      </p>
-      <p>
-        <strong>Included distance:</strong> {offer.totalKms} km · Extra km {formatCurrency(offer.pricePerExtraKm)}
-      </p>
-      <button
-        type="button"
-        onClick={() => onBookOffer(message)}
-        className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600"
-      >
-        <Car className="h-3.5 w-3.5" />
-        Book this offer
-      </button>
     </div>
   );
 };
 
-const buildBriefForm = () => ({
-  startDate: '',
-  endDate: '',
-  startLocation: '',
-  endLocation: '',
-  adults: '2',
-  children: '0',
-  message: '',
-  country: '',
-});
-
-const RequestsPanel = ({ briefsState, onReload, onCreateBrief, creating }) => {
+// ---------- My Requests ----------
+const TravelerRequests = ({ onMenu, travelerName, briefsState, onReload, onCreateBrief, creating, onOpenMessages }) => {
   const { loading, error, items } = briefsState;
+  const [formOpen, setFormOpen] = useState(false);
   const [formState, setFormState] = useState(() => buildBriefForm());
+
+  // Open + prefill the request form when arriving from the homepage quote form (post login/register).
+  useEffect(() => {
+    if (!getStoredToken()) return; // still a guest flash before the auth redirect; leave the stash intact.
+    let pending = null;
+    try {
+      const raw = sessionStorage.getItem(PENDING_BRIEF_KEY);
+      if (raw) {
+        pending = JSON.parse(raw);
+        sessionStorage.removeItem(PENDING_BRIEF_KEY);
+      }
+    } catch {
+      pending = null;
+    }
+    if (pending) {
+      setFormState((prev) => ({ ...prev, ...pending }));
+      setFormOpen(true);
+    }
+  }, []);
 
   const handleFieldChange = (event) => {
     const { name, value } = event.target;
@@ -1627,9 +1535,7 @@ const RequestsPanel = ({ briefsState, onReload, onCreateBrief, creating }) => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!onCreateBrief) {
-      return;
-    }
+    if (!onCreateBrief) return;
     const payload = {
       startDate: formState.startDate,
       endDate: formState.endDate,
@@ -1655,277 +1561,247 @@ const RequestsPanel = ({ briefsState, onReload, onCreateBrief, creating }) => {
     try {
       await onCreateBrief(payload);
       setFormState(buildBriefForm());
+      setFormOpen(false);
     } catch (submitError) {
       console.warn('Create brief failed', submitError);
     }
   };
 
+  const renderBriefCard = (brief) => {
+    const start = formatDateLabel(brief.startDate);
+    const end = formatDateLabel(brief.endDate);
+    const hasOffers = brief.offersCount > 0;
+    const guests = `${brief.adults} guest${brief.adults === 1 ? '' : 's'}${brief.children > 0 ? ` +${brief.children}` : ''}`;
+    return (
+      <article key={brief.id} className="rounded-[18px] bg-white p-4 shadow-card" style={hasOffers ? { borderLeft: '4px solid #10a35a' } : undefined}>
+        <div className="flex items-start justify-between gap-2">
+          <b className="min-w-0 truncate text-[15.5px] text-ink">
+            {brief.startLocation} → {brief.endLocation}
+          </b>
+          {hasOffers ? (
+            <span className="flex-shrink-0 rounded-lg bg-brand-tint px-2 py-1 text-[11px] font-extrabold uppercase text-brand-dark">
+              {brief.offersCount} offer{brief.offersCount === 1 ? '' : 's'}
+            </span>
+          ) : (
+            <span className="flex-shrink-0 text-[11px] font-bold text-muted-soft">Awaiting offers</span>
+          )}
+        </div>
+        <div className="my-3 flex flex-wrap gap-1.5">
+          {start && end ? <RequestTag>{`${start} – ${end}`}</RequestTag> : null}
+          <RequestTag>{guests}</RequestTag>
+          {brief.country ? <RequestTag>{brief.country}</RequestTag> : null}
+        </div>
+        {brief.message ? <p className="mb-3 text-[13px] leading-relaxed text-muted">{brief.message}</p> : null}
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onOpenMessages}
+            disabled={!hasOffers}
+            className={`flex-1 rounded-[11px] py-2.5 text-[13.5px] font-bold transition ${hasOffers ? 'bg-brand text-white hover:bg-brand-dark' : 'border-[1.5px] border-[#e2e8ea] bg-white text-muted'}`}
+          >
+            View offers
+          </button>
+          <button
+            type="button"
+            onClick={() => setFormOpen(true)}
+            className="flex-shrink-0 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white px-4 py-2.5 text-[13.5px] font-bold text-ink transition hover:border-muted-soft"
+          >
+            New
+          </button>
+        </div>
+      </article>
+    );
+  };
+
+  const head = (
+    <MobileHeader
+      onMenu={onMenu}
+      right={<Avatar name={travelerName} tone="light" className="h-10 w-10 text-[15px]" />}
+      eyebrow="MY REQUESTS"
+      title="Tour Requests"
+      subtitle="Trips you've posted for drivers to bid on."
+    />
+  );
+
   if (loading) {
     return (
-      <div className="flex h-60 flex-col items-center justify-center gap-3 text-sm text-slate-500">
-        <Loader2 className="h-5 w-5 animate-spin text-emerald-500" />
-        Loading your tour briefs...
-      </div>
+      <>
+        {head}
+        <Sheet>
+          <div className="flex min-h-[40vh] items-center justify-center gap-2 text-sm text-muted">
+            <Loader2 className="h-5 w-5 animate-spin text-brand" /> Loading your requests…
+          </div>
+        </Sheet>
+      </>
     );
   }
 
   if (error) {
     return (
-      <div className="space-y-3 rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">
-        <p>{error}</p>
-        <button
-          type="button"
-          onClick={onReload}
-          className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-rose-700 transition hover:border-rose-300 hover:text-rose-800"
-        >
-          Try again
-        </button>
-      </div>
+      <>
+        {head}
+        <Sheet>
+          <div className="rounded-[18px] bg-white p-6 text-center text-sm shadow-card">
+            <p className="text-[#e11d48]">{error}</p>
+            <button type="button" onClick={onReload} className="mt-3 rounded-full border border-[#e2e8ea] px-4 py-2 text-xs font-bold text-ink transition hover:border-muted-soft">
+              Try again
+            </button>
+          </div>
+        </Sheet>
+      </>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <header className="space-y-1">
-          <h2 className="text-base font-semibold text-slate-900">Share your next trip</h2>
-          <p className="text-sm text-slate-500">
-            Describe your itinerary so approved drivers can send tailored offers.
-          </p>
-        </header>
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Start date
-              </label>
-              <input
-                type="date"
-                name="startDate"
-                value={formState.startDate}
-                onChange={handleFieldChange}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                End date
-              </label>
-              <input
-                type="date"
-                name="endDate"
-                value={formState.endDate}
-                onChange={handleFieldChange}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                required
-              />
-            </div>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Start location
-              </label>
-              <input
-                type="text"
-                name="startLocation"
-                value={formState.startLocation}
-                onChange={handleFieldChange}
-                placeholder="e.g. Colombo airport"
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                End location
-              </label>
-              <input
-                type="text"
-                name="endLocation"
-                value={formState.endLocation}
-                onChange={handleFieldChange}
-                placeholder="e.g. Kandy"
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                required
-              />
-            </div>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Adults
-              </label>
-              <input
-                type="number"
-                min="1"
-                name="adults"
-                value={formState.adults}
-                onChange={handleFieldChange}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Children
-              </label>
-              <input
-                type="number"
-                min="0"
-                name="children"
-                value={formState.children}
-                onChange={handleFieldChange}
-                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Country of residence
-            </label>
-            <input
-              type="text"
-              name="country"
-              value={formState.country}
-              onChange={handleFieldChange}
-              placeholder="e.g. United Kingdom"
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Trip details
-            </label>
-            <textarea
-              name="message"
-              rows={4}
-              value={formState.message}
-              onChange={handleFieldChange}
-              placeholder="Share must-see stops, accommodation needs, languages, etc."
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-              required
-            />
-            <p className="mt-1 text-xs text-slate-400">Drivers receive this brief instantly.</p>
-          </div>
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={creating}
-              className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {creating ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Posting...
-                </>
-              ) : (
-                <>
-                  <Send className="h-4 w-4" />
-                  Post tour brief
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </section>
-
-      <section className="space-y-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-base font-semibold text-slate-900">Your tour briefs</h2>
-            <p className="text-sm text-slate-500">
-              Track driver interest and keep conversations moving.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onReload}
-            className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600 transition hover:border-emerald-300 hover:text-emerald-700"
-          >
-            Refresh
-          </button>
-        </div>
+    <>
+      <div className="lg:hidden">
+      {head}
+      <Sheet>
+        <button
+          type="button"
+          onClick={() => setFormOpen(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand py-[14px] text-[14.5px] font-extrabold text-white transition hover:bg-brand-dark"
+        >
+          <PlusCircle className="h-[18px] w-[18px]" strokeWidth={2} />
+          Post a new request
+        </button>
 
         {items.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 text-sm text-slate-500">
-            <p className="font-medium text-slate-800">No briefs published yet.</p>
-            <p className="mt-1">
-              Post your first itinerary above to invite vetted drivers to respond with offers.
-            </p>
+          <div className="mt-4 rounded-[18px] bg-white p-6 text-center text-sm text-muted shadow-card">
+            <b className="mb-1 block text-ink">No requests yet</b>
+            Post your first itinerary to invite vetted drivers to respond with offers.
           </div>
         ) : (
-          <ul className="space-y-3">
+          <div className="mt-3.5 grid gap-3 lg:grid-cols-2">
             {items.map((brief) => {
               const start = formatDateLabel(brief.startDate);
               const end = formatDateLabel(brief.endDate);
-              const dateLabel = start && end ? `${start} – ${end}` : 'Dates to be confirmed';
-              const offerLabel = brief.offersCount === 1 ? 'offer' : 'offers';
-              const lastResponse = brief.lastResponseAt
-                ? formatShortDateTime(brief.lastResponseAt)
-                : null;
-              const statusClass =
-                brief.status === 'open'
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'bg-slate-200 text-slate-600';
-
+              const hasOffers = brief.offersCount > 0;
+              const guests = `${brief.adults} guest${brief.adults === 1 ? '' : 's'}${brief.children > 0 ? ` +${brief.children}` : ''}`;
               return (
-                <li
-                  key={brief.id}
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition hover:border-emerald-200 hover:shadow-md"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">
-                        {brief.startLocation} → {brief.endLocation}
-                      </p>
-                      <p className="text-xs text-slate-500">{dateLabel}</p>
-                    </div>
-                    <span className={`rounded-full px-3 py-0.5 text-xs font-semibold uppercase tracking-wide ${statusClass}`}>
-                      {brief.status === 'open' ? 'Open' : 'Closed'}
-                    </span>
-                  </div>
-                  <p className="mt-3 text-sm text-slate-600 whitespace-pre-line">{brief.message}</p>
-                  <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                    <span className="inline-flex items-center gap-1">
-                      <Users className="h-3.5 w-3.5 text-slate-400" />
-                      {brief.adults} adult{brief.adults === 1 ? '' : 's'}
-                      {brief.children > 0 ? ` · ${brief.children} child${brief.children === 1 ? '' : 'ren'}` : ''}
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <MapPin className="h-3.5 w-3.5 text-slate-400" />
-                      {brief.country}
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <MessageCircle className="h-3.5 w-3.5 text-slate-400" />
-                      {brief.offersCount} {offerLabel}
-                    </span>
-                    {lastResponse ? (
-                      <span className="inline-flex items-center gap-1">
-                        <CalendarDays className="h-3.5 w-3.5 text-slate-400" />
-                        Last response {lastResponse}
+                <article key={brief.id} className="rounded-[18px] bg-white p-4 shadow-card" style={hasOffers ? { borderLeft: '4px solid #10a35a' } : undefined}>
+                  <div className="flex items-start justify-between gap-2">
+                    <b className="min-w-0 truncate text-[15.5px] text-ink">
+                      {brief.startLocation} → {brief.endLocation}
+                    </b>
+                    {hasOffers ? (
+                      <span className="flex-shrink-0 rounded-lg bg-brand-tint px-2 py-1 text-[11px] font-extrabold uppercase text-brand-dark">
+                        {brief.offersCount} offer{brief.offersCount === 1 ? '' : 's'}
                       </span>
-                    ) : null}
+                    ) : (
+                      <span className="flex-shrink-0 text-[11px] font-bold text-muted-soft">Awaiting offers</span>
+                    )}
                   </div>
-                </li>
+                  <div className="my-3 flex flex-wrap gap-1.5">
+                    {start && end ? <RequestTag>{`${start} – ${end}`}</RequestTag> : null}
+                    <RequestTag>{guests}</RequestTag>
+                    {brief.country ? <RequestTag>{brief.country}</RequestTag> : null}
+                  </div>
+                  {brief.message ? <p className="mb-3 line-clamp-2 text-[13px] leading-relaxed text-muted">{brief.message}</p> : null}
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={onOpenMessages}
+                      disabled={!hasOffers}
+                      className={`flex-1 rounded-[11px] py-2.5 text-[13.5px] font-bold transition ${hasOffers ? 'bg-brand text-white hover:bg-brand-dark' : 'border-[1.5px] border-[#e2e8ea] bg-white text-muted'}`}
+                    >
+                      View offers
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormOpen(true)}
+                      className="flex-shrink-0 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white px-4 py-2.5 text-[13.5px] font-bold text-ink transition hover:border-muted-soft"
+                    >
+                      New
+                    </button>
+                  </div>
+                </article>
               );
             })}
-          </ul>
+          </div>
         )}
-      </section>
-    </div>
+      </Sheet>
+      </div>
+
+      <div className="hidden lg:block">
+        <div className="px-8 py-8">
+          <DesktopTitleBar title="Tour Requests">
+            <button
+              type="button"
+              onClick={() => setFormOpen(true)}
+              className="rounded-[11px] bg-brand px-[18px] py-2.5 text-[14px] font-bold text-white transition hover:bg-brand-dark"
+            >
+              Post a new request
+            </button>
+          </DesktopTitleBar>
+          {items.length === 0 ? (
+            <div className="rounded-[18px] bg-white p-6 text-sm text-muted shadow-card">
+              <b className="mb-1 block text-ink">No requests yet</b>
+              Post your first itinerary to invite vetted drivers to respond with offers.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">{items.map(renderBriefCard)}</div>
+          )}
+        </div>
+      </div>
+
+      {formOpen ? (
+        <BottomSheet title="Post a request" onClose={() => setFormOpen(false)}>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+            <div className="flex gap-2.5">
+              <div className="min-w-0 flex-1">
+                <label className={labelCls}>Start date</label>
+                <input type="date" name="startDate" value={formState.startDate} onChange={handleFieldChange} className={`mt-1 ${inputCls}`} required />
+              </div>
+              <div className="min-w-0 flex-1">
+                <label className={labelCls}>End date</label>
+                <input type="date" name="endDate" value={formState.endDate} onChange={handleFieldChange} className={`mt-1 ${inputCls}`} required />
+              </div>
+            </div>
+            <div className="flex gap-2.5">
+              <div className="min-w-0 flex-1">
+                <label className={labelCls}>From</label>
+                <input type="text" name="startLocation" value={formState.startLocation} onChange={handleFieldChange} placeholder="Colombo airport" className={`mt-1 ${inputCls}`} required />
+              </div>
+              <div className="min-w-0 flex-1">
+                <label className={labelCls}>To</label>
+                <input type="text" name="endLocation" value={formState.endLocation} onChange={handleFieldChange} placeholder="Kandy" className={`mt-1 ${inputCls}`} required />
+              </div>
+            </div>
+            <div className="flex gap-2.5">
+              <div className="min-w-0 flex-1">
+                <label className={labelCls}>Adults</label>
+                <input type="number" min="1" name="adults" value={formState.adults} onChange={handleFieldChange} className={`mt-1 ${inputCls}`} required />
+              </div>
+              <div className="min-w-0 flex-1">
+                <label className={labelCls}>Children</label>
+                <input type="number" min="0" name="children" value={formState.children} onChange={handleFieldChange} className={`mt-1 ${inputCls}`} />
+              </div>
+            </div>
+            <div>
+              <label className={labelCls}>Country of residence</label>
+              <input type="text" name="country" value={formState.country} onChange={handleFieldChange} placeholder="United Kingdom" className={`mt-1 ${inputCls}`} required />
+            </div>
+            <div>
+              <label className={labelCls}>Trip details</label>
+              <textarea name="message" rows={4} value={formState.message} onChange={handleFieldChange} placeholder="Must-see stops, accommodation needs, languages, etc." className="mt-1 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 py-2.5 text-sm text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none" required />
+            </div>
+            <button type="submit" disabled={creating} className="mt-1 flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand py-[14px] text-[15px] font-extrabold text-white transition hover:bg-brand-dark disabled:opacity-70">
+              {creating ? (<><Loader2 className="h-4 w-4 animate-spin" /> Posting…</>) : 'Post tour brief'}
+            </button>
+          </form>
+        </BottomSheet>
+      ) : null}
+    </>
   );
 };
 
-const buildTravelerProfileForm = (profile) => ({
-  name: profile?.name || '',
-  contactNumber: profile?.contactNumber || '',
-  address: profile?.address || '',
-});
+const RequestTag = ({ children }) => (
+  <span className="rounded-lg bg-[#eef1f0] px-2.5 py-[5px] text-[11.5px] font-bold text-ink-soft">{children}</span>
+);
 
-const SettingsPanel = ({ state, onSave, onPasswordChange, onRetry }) => {
+// ---------- Settings ----------
+const TravelerSettings = ({ onMenu, travelerName, state, onSave, onPasswordChange, onRetry }) => {
   const { loading, error, data, savingProfile, savingPassword } = state;
   const [formState, setFormState] = useState(() => buildTravelerProfileForm(data));
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', password: '', confirmPassword: '' });
@@ -1943,13 +1819,9 @@ const SettingsPanel = ({ state, onSave, onPasswordChange, onRetry }) => {
     event.preventDefault();
     if (!onSave) return;
     try {
-      await onSave({
-        name: formState.name,
-        contactNumber: formState.contactNumber,
-        address: formState.address,
-      });
-    } catch (error) {
-      console.warn('Profile update failed', error);
+      await onSave({ name: formState.name, contactNumber: formState.contactNumber, address: formState.address });
+    } catch (err) {
+      console.warn('Profile update failed', err);
     }
   };
 
@@ -1966,247 +1838,287 @@ const SettingsPanel = ({ state, onSave, onPasswordChange, onRetry }) => {
       return;
     }
     try {
-      await onPasswordChange({
-        currentPassword: passwordForm.currentPassword,
-        password: passwordForm.password,
-      });
+      await onPasswordChange({ currentPassword: passwordForm.currentPassword, password: passwordForm.password });
       setPasswordForm({ currentPassword: '', password: '', confirmPassword: '' });
-    } catch (error) {
-      console.warn('Password update failed', error);
+    } catch (err) {
+      console.warn('Password update failed', err);
     }
   };
 
+  const head = (
+    <MobileHeader
+      onMenu={onMenu}
+      right={<Avatar name={travelerName} tone="light" className="h-10 w-10 text-[15px]" />}
+      eyebrow="ACCOUNT"
+      title="Settings"
+      subtitle="Tell us how to reach you while you travel."
+    />
+  );
+
   if (loading) {
     return (
-      <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-sm text-slate-500">
-        <Loader2 className="h-5 w-5 animate-spin text-emerald-500" />
-        Loading profile…
-      </div>
+      <>
+        {head}
+        <Sheet>
+          <div className="flex min-h-[40vh] items-center justify-center gap-2 text-sm text-muted">
+            <Loader2 className="h-5 w-5 animate-spin text-brand" /> Loading profile…
+          </div>
+        </Sheet>
+      </>
     );
   }
 
   if (error) {
     return (
-      <div className="flex min-h-[200px] flex-col items-center justify-center gap-3 text-center text-sm text-rose-600">
-        <p>{error}</p>
-        <button
-          type="button"
-          onClick={onRetry}
-          className="inline-flex items-center gap-2 rounded-full border border-rose-200 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-rose-600 transition hover:border-rose-300 hover:text-rose-700"
-        >
-          Retry
-        </button>
-      </div>
+      <>
+        {head}
+        <Sheet>
+          <div className="rounded-[18px] bg-white p-6 text-center text-sm shadow-card">
+            <p className="text-[#e11d48]">{error}</p>
+            <button type="button" onClick={onRetry} className="mt-3 rounded-full border border-[#e2e8ea] px-4 py-2 text-xs font-bold text-ink transition hover:border-muted-soft">
+              Retry
+            </button>
+          </div>
+        </Sheet>
+      </>
     );
   }
 
   if (!data) {
     return (
-      <div className="flex min-h-[200px] flex-col items-center justify-center text-center text-sm text-slate-500">
-        No profile details available.
-      </div>
+      <>
+        {head}
+        <Sheet>
+          <div className="rounded-[18px] bg-white p-6 text-center text-sm text-muted shadow-card">No profile details available.</div>
+        </Sheet>
+      </>
     );
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <header>
-          <h2 className="text-lg font-semibold text-slate-900">Profile details</h2>
-          <p className="text-sm text-slate-500">Tell us how to reach you while you travel.</p>
-        </header>
-        <form onSubmit={handleProfileSubmit} className="space-y-4">
+    <>
+      <div className="lg:hidden">
+      {head}
+      <Sheet>
+        <form onSubmit={handleProfileSubmit} className="rounded-[18px] bg-white p-4 shadow-card">
           <div>
-            <label htmlFor="traveler-name" className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Full name
-            </label>
-            <input
-              id="traveler-name"
-              name="name"
-              value={formState.name}
-              onChange={handleFieldChange}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-              required
-            />
+            <label className={labelCls} htmlFor="traveler-name">Full name</label>
+            <input id="traveler-name" name="name" value={formState.name} onChange={handleFieldChange} className={`mt-1 ${inputCls}`} required />
           </div>
-          <div>
-            <label htmlFor="traveler-email" className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Email
-            </label>
-            <input
-              id="traveler-email"
-              value={data.email}
-              readOnly
-              className="mt-1 w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500"
-            />
-            <p className="mt-1 text-xs text-slate-400">Need to change your email? Contact support.</p>
+          <div className="mt-3">
+            <label className={labelCls} htmlFor="traveler-email">Email</label>
+            <input id="traveler-email" value={data.email} readOnly className="mt-1 h-11 w-full cursor-not-allowed rounded-xl border-[1.5px] border-[#e2e8ea] bg-canvas px-3 text-sm font-medium text-muted-soft" />
+            <p className="mt-1 text-[11.5px] text-muted-soft">Need to change your email? Contact support.</p>
           </div>
-          <div>
-            <label htmlFor="traveler-contact" className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Contact number
-            </label>
-            <input
-              id="traveler-contact"
-              name="contactNumber"
-              value={formState.contactNumber}
-              onChange={handleFieldChange}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-              placeholder="e.g. +94 71 123 4567"
-            />
+          <div className="mt-3">
+            <label className={labelCls} htmlFor="traveler-contact">Contact number</label>
+            <input id="traveler-contact" name="contactNumber" value={formState.contactNumber} onChange={handleFieldChange} placeholder="e.g. +94 71 123 4567" className={`mt-1 ${inputCls}`} />
           </div>
-          <div>
-            <label htmlFor="traveler-address" className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Home base
-            </label>
-            <input
-              id="traveler-address"
-              name="address"
-              value={formState.address}
-              onChange={handleFieldChange}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-              placeholder="City, country"
-            />
+          <div className="mt-3">
+            <label className={labelCls} htmlFor="traveler-address">Home base</label>
+            <input id="traveler-address" name="address" value={formState.address} onChange={handleFieldChange} placeholder="City, country" className={`mt-1 ${inputCls}`} />
           </div>
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={savingProfile}
-              className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {savingProfile ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Saving…
-                </>
-              ) : (
-                'Save changes'
-              )}
-            </button>
-          </div>
+          <button type="submit" disabled={savingProfile} className="mt-4 flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand py-[14px] text-[15px] font-extrabold text-white transition hover:bg-brand-dark disabled:opacity-70">
+            {savingProfile ? (<><Loader2 className="h-4 w-4 animate-spin" /> Saving…</>) : 'Save changes'}
+          </button>
         </form>
-      </section>
 
-      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <header>
-          <h2 className="text-lg font-semibold text-slate-900">Reset password</h2>
-          <p className="text-sm text-slate-500">Update your password to keep your account secure.</p>
-        </header>
-        <form onSubmit={handlePasswordSubmit} className="space-y-4">
+        <form onSubmit={handlePasswordSubmit} className="mt-3 rounded-[18px] bg-white p-4 shadow-card">
+          <b className="text-[15px] text-ink">Reset password</b>
+          <p className="mb-3 mt-0.5 text-[12.5px] text-muted-soft">Update your password to keep your account secure.</p>
           <div>
-            <label htmlFor="traveler-password-current" className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Current password
-            </label>
-            <input
-              id="traveler-password-current"
-              name="currentPassword"
-              type="password"
-              value={passwordForm.currentPassword}
-              onChange={handlePasswordFieldChange}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-              required
-            />
+            <label className={labelCls} htmlFor="traveler-password-current">Current password</label>
+            <input id="traveler-password-current" name="currentPassword" type="password" value={passwordForm.currentPassword} onChange={handlePasswordFieldChange} className={`mt-1 ${inputCls}`} required />
           </div>
-          <div>
-            <label htmlFor="traveler-password-new" className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-              New password
-            </label>
-            <input
-              id="traveler-password-new"
-              name="password"
-              type="password"
-              value={passwordForm.password}
-              onChange={handlePasswordFieldChange}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-              required
-              minLength={8}
-            />
+          <div className="mt-3">
+            <label className={labelCls} htmlFor="traveler-password-new">New password</label>
+            <input id="traveler-password-new" name="password" type="password" value={passwordForm.password} onChange={handlePasswordFieldChange} className={`mt-1 ${inputCls}`} required minLength={8} />
           </div>
-          <div>
-            <label htmlFor="traveler-password-confirm" className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Confirm new password
-            </label>
-            <input
-              id="traveler-password-confirm"
-              name="confirmPassword"
-              type="password"
-              value={passwordForm.confirmPassword}
-              onChange={handlePasswordFieldChange}
-              className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-              required
-            />
+          <div className="mt-3">
+            <label className={labelCls} htmlFor="traveler-password-confirm">Confirm new password</label>
+            <input id="traveler-password-confirm" name="confirmPassword" type="password" value={passwordForm.confirmPassword} onChange={handlePasswordFieldChange} className={`mt-1 ${inputCls}`} required />
           </div>
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              disabled={savingPassword}
-              className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {savingPassword ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Updating…
-                </>
-              ) : (
-                'Update password'
-              )}
-            </button>
-          </div>
+          <button type="submit" disabled={savingPassword} className="mt-4 w-full rounded-[14px] border-[1.5px] border-[#e2e8ea] bg-white py-[13px] text-[14px] font-bold text-ink transition hover:border-muted-soft disabled:opacity-70">
+            {savingPassword ? 'Updating…' : 'Update password'}
+          </button>
         </form>
-      </section>
+      </Sheet>
+      </div>
+
+      <div className="hidden lg:block">
+        <div className="px-8 py-8">
+          <div className="mx-auto max-w-[560px]">
+            <h1 className="text-[24px] font-extrabold tracking-tight text-ink">Settings</h1>
+            <p className="mt-1 text-[14px] text-muted">Tell us how to reach you while you travel.</p>
+            <form onSubmit={handleProfileSubmit} className="mt-5 rounded-[18px] bg-white p-6 shadow-card">
+              <div className="flex gap-3.5">
+                <div className="min-w-0 flex-1">
+                  <label className={labelCls}>Full name</label>
+                  <input name="name" value={formState.name} onChange={handleFieldChange} className={`mt-1 ${inputCls}`} required />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <label className={labelCls}>Contact number</label>
+                  <input name="contactNumber" value={formState.contactNumber} onChange={handleFieldChange} placeholder="+94 71 123 4567" className={`mt-1 ${inputCls}`} />
+                </div>
+              </div>
+              <div className="mt-3.5">
+                <label className={labelCls}>Email</label>
+                <input value={data.email} readOnly className="mt-1 h-11 w-full cursor-not-allowed rounded-xl border-[1.5px] border-[#e2e8ea] bg-canvas px-3 text-sm font-medium text-muted-soft" />
+                <p className="mt-1 text-[11.5px] text-muted-soft">Need to change your email? Contact support.</p>
+              </div>
+              <div className="mt-3.5">
+                <label className={labelCls}>Home base</label>
+                <input name="address" value={formState.address} onChange={handleFieldChange} placeholder="City, country" className={`mt-1 ${inputCls}`} />
+              </div>
+              <div className="mt-4 flex justify-end">
+                <button type="submit" disabled={savingProfile} className="rounded-[12px] bg-brand px-6 py-3 text-[14px] font-extrabold text-white transition hover:bg-brand-dark disabled:opacity-70">
+                  {savingProfile ? 'Saving…' : 'Save changes'}
+                </button>
+              </div>
+            </form>
+            <form onSubmit={handlePasswordSubmit} className="mt-4 rounded-[18px] bg-white p-6 shadow-card">
+              <b className="text-[16px] text-ink">Reset password</b>
+              <p className="mb-3 mt-1 text-[13px] text-muted-soft">Update your password to keep your account secure.</p>
+              <div className="flex gap-3.5">
+                <div className="min-w-0 flex-1">
+                  <label className={labelCls}>Current password</label>
+                  <input name="currentPassword" type="password" value={passwordForm.currentPassword} onChange={handlePasswordFieldChange} className={`mt-1 ${inputCls}`} required />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <label className={labelCls}>New password</label>
+                  <input name="password" type="password" value={passwordForm.password} onChange={handlePasswordFieldChange} className={`mt-1 ${inputCls}`} required minLength={8} />
+                </div>
+              </div>
+              <div className="mt-3.5">
+                <label className={labelCls}>Confirm new password</label>
+                <input name="confirmPassword" type="password" value={passwordForm.confirmPassword} onChange={handlePasswordFieldChange} className={`mt-1 ${inputCls}`} required />
+              </div>
+              <div className="mt-4 flex justify-end">
+                <button type="submit" disabled={savingPassword} className="rounded-[12px] border-[1.5px] border-[#e2e8ea] bg-white px-5 py-2.5 text-[14px] font-bold text-ink transition hover:border-muted-soft disabled:opacity-70">
+                  {savingPassword ? 'Updating…' : 'Update password'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+// ---------- Desktop building blocks ----------
+const DeskStat = ({ value, label }) => (
+  <div className="rounded-[14px] bg-white/15 px-5 py-3.5 text-center">
+    <div className="text-[22px] font-extrabold">{value}</div>
+    <div className="text-[11.5px] text-white/80">{label}</div>
+  </div>
+);
+
+const DeskTripRow = ({ booking, tone }) => {
+  const driverName = booking.driver?.name || 'Driver';
+  const vehicleName = booking.vehicle?.model || 'Vehicle';
+  const route = booking.startPoint && booking.endPoint ? `${booking.startPoint} → ${booking.endPoint}` : vehicleName;
+  const start = formatDateLabel(booking.startDate);
+  const end = formatDateLabel(booking.endDate);
+  const dates = start && end ? `${start} – ${end}` : 'Dates TBD';
+  const price = typeof booking.totalPrice === 'number' && booking.totalPrice > 0 ? formatCurrency(booking.totalPrice) : null;
+  return (
+    <div className="flex items-center gap-[13px] rounded-[14px] border border-hairline p-[13px]">
+      <Avatar name={driverName} tone={tone} className="h-[42px] w-[42px] flex-shrink-0 text-sm" />
+      <div className="min-w-0 flex-1">
+        <b className="block truncate text-[14.5px] text-ink">{route}</b>
+        <div className="truncate text-[12.5px] text-muted-soft">
+          {driverName} · {dates} · {vehicleName}
+        </div>
+      </div>
+      {price ? <b className="flex-shrink-0 text-[15px] text-ink">{price}</b> : null}
     </div>
   );
 };
 
-const formatShortDateTime = (value) => {
-  if (!value) {
-    return '';
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return '';
-  }
-  return date.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+const DeskMsgRow = ({ conversation, tone, onOpen }) => {
+  const name = conversation.participants?.driver?.name || conversation.participants?.driver?.email || 'Driver';
+  const isOffer = conversation.lastMessage?.type === 'offer';
+  const preview = isOffer
+    ? `Sent an offer${conversation.vehicle?.model ? ` · ${conversation.vehicle.model}` : ''}`
+    : conversation.lastMessage?.body || 'Conversation started.';
+  return (
+    <button type="button" onClick={onOpen} className="flex w-full items-center gap-[11px] text-left">
+      <Avatar name={name} tone={tone} className="h-9 w-9 flex-shrink-0 rounded-[10px] text-[13px]" />
+      <div className="min-w-0 flex-1">
+        <b className="block truncate text-[13.5px] text-ink">{name}</b>
+        <div className="truncate text-[12px] text-muted-soft">{preview}</div>
+      </div>
+    </button>
+  );
 };
 
-const formatChatTimestamp = (value) => {
-  if (!value) {
-    return 'now';
-  }
+const DesktopTitleBar = ({ title, children }) => (
+  <div className="mb-5 flex items-center justify-between gap-4">
+    <h1 className="text-[24px] font-extrabold tracking-tight text-ink">{title}</h1>
+    {children}
+  </div>
+);
+
+const DeskTabs = ({ view, onView, upcoming, completed }) => (
+  <div className="flex gap-1.5 rounded-xl bg-[#eef1f0] p-1">
+    <button
+      type="button"
+      onClick={() => onView('upcoming')}
+      className={`rounded-[9px] px-4 py-2 text-[13px] font-bold transition ${view === 'upcoming' ? 'bg-brand text-white' : 'text-muted'}`}
+    >
+      Upcoming{upcoming ? ` ${upcoming}` : ''}
+    </button>
+    <button
+      type="button"
+      onClick={() => onView('completed')}
+      className={`rounded-[9px] px-4 py-2 text-[13px] font-bold transition ${view === 'completed' ? 'bg-brand text-white' : 'text-muted'}`}
+    >
+      Completed{completed ? ` ${completed}` : ''}
+    </button>
+  </div>
+);
+
+// ---------- Shared bottom sheet ----------
+const BottomSheet = ({ title, onClose, children }) => (
+  <div className="fixed inset-0 z-[70] flex items-end justify-center">
+    <div className="absolute inset-0 bg-ink/45" onClick={onClose} aria-hidden="true" />
+    <div className="relative mx-auto max-h-[90vh] w-full max-w-[480px] overflow-y-auto rounded-t-[24px] bg-canvas p-5 pb-8 shadow-drawer">
+      <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-[#cbd5db]" />
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <b className="min-w-0 truncate text-[17px] text-ink">{title}</b>
+        <button type="button" onClick={onClose} aria-label="Close" className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg bg-white shadow-soft">
+          <X className="h-4 w-4 text-ink" />
+        </button>
+      </div>
+      {children}
+    </div>
+  </div>
+);
+
+const formatShortDateTime = (value) => {
+  if (!value) return '';
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return 'now';
-  }
-  return date.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
 
 const formatDateLabel = (value) => {
-  if (!value) {
-    return '';
-  }
+  if (!value) return '';
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return '';
-  }
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
 const formatCurrency = (value) => {
-  if (typeof value !== 'number') {
-    return '$0';
-  }
+  if (typeof value !== 'number') return '$0';
   return `$${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
 };
+
+// Per-km rates are small decimals (e.g. $0.30), so keep the fractional part.
+const formatRate = (value) =>
+  typeof value === 'number'
+    ? `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 3 })}`
+    : '$0.00';
 
 export default TravelerDashboard;

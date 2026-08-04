@@ -73,3 +73,9 @@ export const googleAuth = async (credential) =>
     method: 'POST',
     body: JSON.stringify({ credential }),
   });
+
+export const facebookAuth = async (accessToken) =>
+  request('/facebook', {
+    method: 'POST',
+    body: JSON.stringify({ accessToken }),
+  });

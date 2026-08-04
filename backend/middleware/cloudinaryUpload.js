@@ -90,9 +90,44 @@ export const conditionalProfileUpload = (req, res, next) => {
   return next();
 };
 
+/**
+ * Review Image Upload Middleware
+ * - Accepts up to 4 image files (field name "images")
+ * - Maximum file size: 10MB per file
+ * - Only image files allowed
+ */
+export const reviewImageUpload = multer({
+  storage: memoryStorage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB per file
+    files: 4,
+  },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype && file.mimetype.startsWith('image/')) {
+      return cb(null, true);
+    }
+    return cb(new Error('Only image uploads are allowed'));
+  },
+});
+
+/**
+ * Conditional Review Image Upload Middleware
+ * - Applies multer only for multipart/form-data (photos attached);
+ *   plain JSON reviews pass straight through.
+ */
+export const conditionalReviewImageUpload = (req, res, next) => {
+  const contentType = req.headers['content-type'] || '';
+  if (contentType.includes('multipart/form-data')) {
+    return reviewImageUpload.array('images', 4)(req, res, next);
+  }
+  return next();
+};
+
 export default {
   vehicleImageUpload,
   profilePhotoUpload,
   commissionSlipUpload,
   conditionalProfileUpload,
+  reviewImageUpload,
+  conditionalReviewImageUpload,
 };

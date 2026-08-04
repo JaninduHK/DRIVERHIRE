@@ -33,6 +33,7 @@ import {
   removeVehicleImage as removeVehicleImageRequest,
   fetchReviews,
   createReview as createAdminReview,
+  bulkImportReviews,
   updateReviewStatus as updateReviewStatusRequest,
   fetchBookings as fetchAdminBookings,
   updateBooking as updateAdminBooking,
@@ -59,6 +60,7 @@ import {
   updatePassword as updatePasswordRequest,
 } from '../services/profileApi.js';
 import { clearStoredToken } from '../services/authToken.js';
+import { csvToObjects } from '../lib/csv.js';
 import { VEHICLE_FEATURES, getVehicleFeatureLabels } from '../constants/vehicleFeatures.js';
 
 const NAV_ITEMS = [
@@ -813,6 +815,20 @@ const AdminDashboard = () => {
     [loadReviews, reviewFilter]
   );
 
+  const handleReviewBulkImport = useCallback(
+    async (rows) => {
+      const response = await bulkImportReviews(rows);
+      if (response?.created > 0) {
+        toast.success(response.message || `${response.created} reviews imported.`);
+        await loadReviews(reviewFilter);
+      } else {
+        toast.error(response?.message || 'No reviews were imported.');
+      }
+      return response;
+    },
+    [loadReviews, reviewFilter]
+  );
+
   const handleAdminProfileSave = useCallback(
     async (payload) => {
       setProfileSaving(true);
@@ -1121,6 +1137,7 @@ const AdminDashboard = () => {
                 onRetry={() => loadReviews(reviewFilter)}
                 onStatusChange={handleReviewStatusChange}
                 onCreate={handleReviewCreate}
+                onBulkImport={handleReviewBulkImport}
                 drivers={driverState.items}
                 vehicles={vehicleState.items}
               />
@@ -3413,6 +3430,127 @@ const getReviewStatusLabel = (status) => {
   }
 };
 
+const REVIEW_CSV_TEMPLATE = `driverEmail,vehicleId,travelerName,rating,title,comment,visitedStartDate,visitedEndDate,status,imageUrls
+driver@example.com,,Anna & Mark,5,Great trip,"Fantastic driver, punctual and friendly across the whole island.",2026-05-01,2026-05-07,approved,https://example.com/photo1.jpg`;
+
+const ReviewBulkImport = ({ onImport }) => {
+  const [rows, setRows] = useState([]);
+  const [fileName, setFileName] = useState('');
+  const [parseError, setParseError] = useState('');
+  const [importing, setImporting] = useState(false);
+  const [result, setResult] = useState(null);
+
+  const validCount = useMemo(
+    () =>
+      rows.filter(
+        (row) =>
+          (row.driverEmail || row.driverId) &&
+          Number(row.rating) >= 1 &&
+          Number(row.rating) <= 5 &&
+          (row.comment || '').trim().length >= 10
+      ).length,
+    [rows]
+  );
+
+  const handleFile = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setParseError('');
+    setResult(null);
+    setFileName(file.name);
+    try {
+      const parsed = csvToObjects(await file.text());
+      if (!parsed.length) {
+        setRows([]);
+        setParseError('No data rows found. Include a header row and at least one review.');
+        return;
+      }
+      setRows(parsed);
+    } catch (err) {
+      setRows([]);
+      setParseError(err?.message || 'Unable to read the CSV file.');
+    }
+  };
+
+  const handleImport = async () => {
+    if (!rows.length || !onImport) return;
+    setImporting(true);
+    setResult(null);
+    try {
+      const response = await onImport(rows);
+      setResult(response);
+      if (response?.created > 0) {
+        setRows([]);
+        setFileName('');
+      }
+    } catch (err) {
+      setParseError(err?.message || 'Import failed.');
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const templateHref = `data:text/csv;charset=utf-8,${encodeURIComponent(REVIEW_CSV_TEMPLATE)}`;
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Bulk import</p>
+          <h3 className="text-lg font-semibold text-slate-900">Import reviews from CSV</h3>
+          <p className="mt-1 max-w-xl text-sm text-slate-500">
+            Required columns: <b>driverEmail</b> (or driverId), <b>rating</b>, <b>comment</b>. Optional: vehicleId,
+            travelerName, title, visitedStartDate, visitedEndDate, status, imageUrls (| separated).
+          </p>
+        </div>
+        <a
+          href={templateHref}
+          download="reviews-template.csv"
+          className="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-emerald-400"
+        >
+          Download template
+        </a>
+      </div>
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-emerald-400">
+          Choose CSV file
+          <input type="file" accept=".csv,text/csv" onChange={handleFile} className="hidden" />
+        </label>
+        {fileName ? (
+          <span className="text-sm text-slate-500">
+            {fileName} · {rows.length} row{rows.length === 1 ? '' : 's'} ({validCount} look valid)
+          </span>
+        ) : null}
+        <button
+          type="button"
+          onClick={handleImport}
+          disabled={!rows.length || importing}
+          className="ml-auto inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {importing ? 'Importing…' : `Import ${rows.length || ''} review${rows.length === 1 ? '' : 's'}`}
+        </button>
+      </div>
+      {parseError ? <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{parseError}</p> : null}
+      {result ? (
+        <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">
+          <p className="font-semibold text-slate-900">
+            {result.created} imported{result.failed ? `, ${result.failed} failed` : ''}.
+          </p>
+          {Array.isArray(result.errors) && result.errors.length ? (
+            <ul className="mt-1 list-disc pl-5 text-xs text-rose-600">
+              {result.errors.slice(0, 8).map((entry) => (
+                <li key={entry.row}>Row {entry.row}: {entry.message}</li>
+              ))}
+              {result.errors.length > 8 ? <li>…and {result.errors.length - 8} more</li> : null}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+};
+
 const ReviewsPanel = ({
   state,
   filter,
@@ -3420,6 +3558,7 @@ const ReviewsPanel = ({
   onRetry,
   onStatusChange,
   onCreate,
+  onBulkImport,
   drivers = [],
   vehicles = [],
 }) => {
@@ -3592,6 +3731,7 @@ const ReviewsPanel = ({
 
   return (
     <div className="space-y-4">
+      <ReviewBulkImport onImport={onBulkImport} />
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>

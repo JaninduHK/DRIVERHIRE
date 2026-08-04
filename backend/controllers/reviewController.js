@@ -4,8 +4,40 @@ import Booking, { BOOKING_STATUS } from '../models/Booking.js';
 import Vehicle, { VEHICLE_STATUS } from '../models/Vehicle.js';
 import User, { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
 import { mapAssetUrls } from '../utils/assetUtils.js';
+import { uploadImage, generateUniqueFilename } from '../services/cloudinaryService.js';
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
+
+const MAX_REVIEW_IMAGES = 4;
+
+// Upload attached review photos (multer memory buffers) to Cloudinary → array of URLs.
+const uploadReviewImages = async (files, ownerId) => {
+  if (!Array.isArray(files) || files.length === 0) {
+    return [];
+  }
+  const urls = [];
+  for (const file of files.slice(0, MAX_REVIEW_IMAGES)) {
+    if (!file?.buffer) continue;
+    const filename = generateUniqueFilename(`review-${ownerId || 'guest'}`);
+    // eslint-disable-next-line no-await-in-loop
+    const url = await uploadImage(file.buffer, 'reviews', filename);
+    if (url) urls.push(url);
+  }
+  return urls;
+};
+
+// Accept already-hosted image URLs (from bulk import): array or delimited string.
+const parseImageUrls = (value) => {
+  const list = Array.isArray(value)
+    ? value
+    : typeof value === 'string'
+      ? value.split(/[|;\n]/)
+      : [];
+  return list
+    .map((item) => (typeof item === 'string' ? item.trim() : ''))
+    .filter((item) => /^https?:\/\//i.test(item))
+    .slice(0, MAX_REVIEW_IMAGES);
+};
 
 const coerceRating = (value) => {
   const parsed = Number(value);
@@ -40,6 +72,7 @@ const shapePublicReview = (review) => ({
   rating: review.rating,
   title: review.title || '',
   comment: review.comment,
+  images: Array.isArray(review.images) ? review.images : [],
   visitedStartDate: review.visitedStartDate || null,
   visitedEndDate: review.visitedEndDate || null,
   publishedAt: review.publishedAt || review.updatedAt || review.createdAt,
@@ -168,6 +201,14 @@ export const createBookingReview = async (req, res) => {
       });
     }
 
+    let images = [];
+    try {
+      images = await uploadReviewImages(req.files, req.user.id);
+    } catch (uploadError) {
+      console.error('Review image upload failed:', uploadError);
+      return res.status(502).json({ message: 'We could not upload your photos. Please try again.' });
+    }
+
     const review = await Review.create({
       booking: booking._id,
       vehicle: booking.vehicle?._id || booking.vehicle,
@@ -177,6 +218,7 @@ export const createBookingReview = async (req, res) => {
       rating: normalizedRating,
       title: trimmedTitle || undefined,
       comment: trimmedComment,
+      images,
       visitedStartDate: booking.startDate,
       visitedEndDate: booking.endDate,
       status: REVIEW_STATUS.PENDING,
@@ -435,6 +477,7 @@ export const createAdminReview = async (req, res) => {
       rating: normalizedRating,
       title: trimmedTitle || undefined,
       comment: trimmedComment,
+      images: parseImageUrls(req.body?.imageUrls),
       visitedStartDate: startDate || undefined,
       visitedEndDate: endDate || undefined,
       status: normalizedStatus,
@@ -532,4 +575,125 @@ export const updateReviewStatus = async (req, res) => {
     console.error('Update review status error:', error);
     return res.status(500).json({ message: 'Unable to update review status.' });
   }
+};
+
+// Bulk-create reviews from an admin CSV import. Body: { reviews: [...] } (or a bare array).
+// Each row references a driver by `driverEmail` or `driverId`; `vehicleId` optional.
+export const createAdminReviewsBulk = async (req, res) => {
+  const rows = Array.isArray(req.body?.reviews)
+    ? req.body.reviews
+    : Array.isArray(req.body)
+      ? req.body
+      : null;
+
+  if (!rows || rows.length === 0) {
+    return res.status(400).json({ message: 'Provide a non-empty list of reviews to import.' });
+  }
+  if (rows.length > 500) {
+    return res.status(400).json({ message: 'You can import up to 500 reviews at a time.' });
+  }
+
+  const results = { created: 0, failed: 0, errors: [] };
+  const driverCache = new Map();
+  const statusValues = Object.values(REVIEW_STATUS);
+
+  for (let index = 0; index < rows.length; index += 1) {
+    const row = rows[index] || {};
+    const rowNumber = index + 1;
+    try {
+      const driverIdRaw = typeof row.driverId === 'string' ? row.driverId.trim() : '';
+      const driverEmailRaw = typeof row.driverEmail === 'string' ? row.driverEmail.trim().toLowerCase() : '';
+      const cacheKey = driverIdRaw || driverEmailRaw;
+      if (!cacheKey) {
+        throw new Error('driverId or driverEmail is required');
+      }
+
+      let driverDoc = driverCache.get(cacheKey);
+      if (driverDoc === undefined) {
+        if (driverIdRaw && isValidObjectId(driverIdRaw)) {
+          // eslint-disable-next-line no-await-in-loop
+          driverDoc = await User.findOne({ _id: driverIdRaw, role: USER_ROLES.DRIVER });
+        } else if (driverEmailRaw) {
+          // eslint-disable-next-line no-await-in-loop
+          driverDoc = await User.findOne({ email: driverEmailRaw, role: USER_ROLES.DRIVER });
+        } else {
+          driverDoc = null;
+        }
+        driverCache.set(cacheKey, driverDoc);
+      }
+      if (!driverDoc) {
+        throw new Error(`Driver not found (${driverEmailRaw || driverIdRaw})`);
+      }
+
+      const rating = coerceRating(row.rating);
+      if (rating === null) {
+        throw new Error('rating must be a whole number between 1 and 5');
+      }
+      const comment = typeof row.comment === 'string' ? row.comment.trim() : '';
+      if (comment.length < 10) {
+        throw new Error('comment must be at least 10 characters');
+      }
+      const title = typeof row.title === 'string' ? row.title.trim().slice(0, 120) : '';
+
+      let vehicleId;
+      if (row.vehicleId && isValidObjectId(String(row.vehicleId).trim())) {
+        // eslint-disable-next-line no-await-in-loop
+        const vehicleDoc = await Vehicle.findById(String(row.vehicleId).trim());
+        if (!vehicleDoc) {
+          throw new Error('vehicleId not found');
+        }
+        if (vehicleDoc.driver && vehicleDoc.driver.toString() !== driverDoc._id.toString()) {
+          throw new Error('vehicle does not belong to the referenced driver');
+        }
+        vehicleId = vehicleDoc._id;
+      } else {
+        // eslint-disable-next-line no-await-in-loop
+        const vehicleDoc = await Vehicle.findOne({
+          driver: driverDoc._id,
+          status: VEHICLE_STATUS.APPROVED,
+        });
+        vehicleId = vehicleDoc?._id;
+      }
+
+      const statusInput = typeof row.status === 'string' ? row.status.trim().toLowerCase() : '';
+      const status = statusValues.includes(statusInput) ? statusInput : REVIEW_STATUS.APPROVED;
+      const startDate = coerceDate(row.visitedStartDate);
+      const endDate = coerceDate(row.visitedEndDate);
+      const travelerName =
+        typeof row.travelerName === 'string' && row.travelerName.trim()
+          ? row.travelerName.trim().slice(0, 120)
+          : 'Guest';
+
+      // eslint-disable-next-line no-await-in-loop
+      await Review.create({
+        driver: driverDoc._id,
+        vehicle: vehicleId,
+        travelerUser: req.user.id,
+        travelerName,
+        rating,
+        title: title || undefined,
+        comment,
+        images: parseImageUrls(row.imageUrls),
+        visitedStartDate: startDate || undefined,
+        visitedEndDate: endDate || undefined,
+        status,
+        publishedAt:
+          status === REVIEW_STATUS.APPROVED ? endDate || startDate || new Date() : undefined,
+        createdByAdmin: true,
+      });
+      results.created += 1;
+    } catch (error) {
+      results.failed += 1;
+      results.errors.push({ row: rowNumber, message: error.message || 'Invalid row' });
+    }
+  }
+
+  return res.status(results.created > 0 ? 201 : 400).json({
+    message: `${results.created} review${results.created === 1 ? '' : 's'} imported${
+      results.failed ? `, ${results.failed} failed` : ''
+    }.`,
+    created: results.created,
+    failed: results.failed,
+    errors: results.errors.slice(0, 100),
+  });
 };

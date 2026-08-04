@@ -30,18 +30,33 @@ import VerifyEmail from './pages/VerifyEmail.jsx';
 const App = () => {
   const location = useLocation();
   const isHomePage = location.pathname === '/';
+  // The redesigned driver dashboard owns the full screen (its own top bar + drawer),
+  // so it renders without the marketing NavBar/Footer and content-width wrapper.
+  const isFullBleedDashboard =
+    location.pathname === '/portal/driver' ||
+    location.pathname === '/portal/driver/messages' ||
+    location.pathname === '/briefs' ||
+    location.pathname === '/dashboard';
+  // Public marketplace pages that own their full-width layout but keep the marketing NavBar/Footer.
+  const isWidePublic =
+    location.pathname === '/vehicles' ||
+    location.pathname === '/drivers' ||
+    location.pathname.startsWith('/vehicles/') ||
+    location.pathname.startsWith('/drivers/') ||
+    location.pathname.startsWith('/checkout/');
 
   useEffect(() => {
     trackPageView(`${location.pathname}${location.search}${location.hash}`);
   }, [location.pathname, location.search, location.hash]);
 
-  const mainClasses = isHomePage
-    ? 'w-full px-0 py-0'
-    : 'mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10';
+  const mainClasses =
+    isHomePage || isFullBleedDashboard || isWidePublic
+      ? 'w-full px-0 py-0'
+      : 'mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-10';
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      <NavBar />
+      {!isFullBleedDashboard && <NavBar />}
       <Toaster
         position="top-right"
         toastOptions={{
@@ -75,7 +90,7 @@ const App = () => {
           <Route path="/terms" element={<TermsConditions />} />
         </Routes>
       </main>
-      <Footer />
+      {!isFullBleedDashboard && <Footer />}
     </div>
   );
 };

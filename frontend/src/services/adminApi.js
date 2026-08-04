@@ -128,6 +128,12 @@ export const createReview = (payload) =>
     body: JSON.stringify(payload),
   });
 
+export const bulkImportReviews = (reviews) =>
+  request('/reviews/bulk', {
+    method: 'POST',
+    body: JSON.stringify({ reviews }),
+  });
+
 export const updateReviewStatus = (reviewId, payload) =>
   request(`/reviews/${reviewId}/status`, {
     method: 'PATCH',

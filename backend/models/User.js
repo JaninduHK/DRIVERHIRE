@@ -16,6 +16,7 @@ export const DRIVER_STATUS = {
 export const AUTH_PROVIDERS = {
   LOCAL: 'local',
   GOOGLE: 'google',
+  FACEBOOK: 'facebook',
 };
 
 const roleValues = Object.values(USER_ROLES);
@@ -53,6 +54,11 @@ const userSchema = new mongoose.Schema(
       },
     },
     googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    facebookId: {
       type: String,
       unique: true,
       sparse: true,

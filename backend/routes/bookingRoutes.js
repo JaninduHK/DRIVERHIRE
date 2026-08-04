@@ -9,6 +9,7 @@ import {
   cancelTravelerBooking,
 } from '../controllers/bookingController.js';
 import { createBookingReview } from '../controllers/reviewController.js';
+import { conditionalReviewImageUpload } from '../middleware/cloudinaryUpload.js';
 
 const router = express.Router();
 
@@ -19,6 +20,11 @@ router.get('/driver', ensureApprovedDriver, listDriverBookings);
 router.patch('/:id/status', ensureApprovedDriver, driverRespondToBooking);
 router.patch('/:id', authorizeRoles(USER_ROLES.GUEST), updateTravelerBooking);
 router.post('/:id/cancel', authorizeRoles(USER_ROLES.GUEST), cancelTravelerBooking);
-router.post('/:id/reviews', authorizeRoles(USER_ROLES.GUEST), createBookingReview);
+router.post(
+  '/:id/reviews',
+  authorizeRoles(USER_ROLES.GUEST),
+  conditionalReviewImageUpload,
+  createBookingReview
+);
 
 export default router;

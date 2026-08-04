@@ -1,55 +1,55 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  ArrowRight,
-  BadgeCheck,
-  Car,
-  Loader2,
-  MapPin,
-  Search,
-  SlidersHorizontal,
-  Star,
-  UserRoundCheck,
-} from 'lucide-react';
+import { Car, Check, ChevronDown, Loader2, Search, SlidersHorizontal, Star, X } from 'lucide-react';
 import { fetchDriverDirectory } from '../services/driverDirectoryApi.js';
+import { Avatar } from '../components/dashboard/primitives.jsx';
 
-const formatCurrency = (value) => {
-  if (!Number.isFinite(value)) {
-    return '$0';
-  }
-  return `$${value.toLocaleString('en-US', { minimumFractionDigits: 0 })}`;
-};
+const formatCurrency = (value) => (!Number.isFinite(value) ? '$0' : `$${value.toLocaleString('en-US')}`);
 
-const formatYears = (years) => {
-  const numeric = Number(years);
-  if (!Number.isFinite(numeric)) {
-    return 'Experience not provided';
-  }
-  const normalized = Math.max(0, Math.round(numeric));
-  if (normalized === 0) {
-    return 'New to guiding';
-  }
-  return `${normalized} year${normalized === 1 ? '' : 's'}`;
-};
-
-const sortOptions = [
-  { value: 'recommended', label: 'Recommended' },
-  { value: 'experience_desc', label: 'Experience (high to low)' },
-  { value: 'price_asc', label: 'Price (low to high)' },
-  { value: 'price_desc', label: 'Price (high to low)' },
-  { value: 'reviews_desc', label: 'Reviews (best first)' },
+const PERKS = ['English speaking', 'Airport meet & greet', 'Fuel included', 'Meals covered', 'Large luggage'];
+const PRICE_PRESETS = [
+  { label: 'Any', min: '', max: '' },
+  { label: 'Under $50', min: '', max: '50' },
+  { label: '$50 – $80', min: '50', max: '80' },
+  { label: '$80+', min: '80', max: '' },
 ];
+const RATING_OPTIONS = [
+  { value: '', label: 'Any' },
+  { value: '4', label: '4.0★ +' },
+  { value: '4.5', label: '4.5★ +' },
+];
+const EXPERIENCE_OPTIONS = [
+  { value: '', label: 'Any' },
+  { value: '5', label: '5+ yrs' },
+  { value: '10', label: '10+ yrs' },
+];
+const SORT_OPTIONS = [
+  { value: 'recommended', label: 'Recommended' },
+  { value: 'reviews_desc', label: 'Highest rated' },
+  { value: 'experience_desc', label: 'Most experienced' },
+];
+
+const defaultFilters = {
+  search: '',
+  sort: 'recommended',
+  perks: [],
+  minPrice: '',
+  maxPrice: '',
+  minReview: '',
+  minExperience: '',
+};
+
+const perkMatch = (driver, perk) => {
+  const badges = (driver.badges || []).join(' ').toLowerCase();
+  if (perk === 'English speaking') return Boolean(driver.hasEnglishDriver) || badges.includes('english');
+  const kw = perk.toLowerCase().split(' ')[0];
+  return badges.includes(kw);
+};
 
 const DriversDirectory = () => {
   const [state, setState] = useState({ loading: true, error: '', drivers: [] });
-  const [filters, setFilters] = useState({
-    search: '',
-    sort: 'recommended',
-    englishOnly: false,
-    minPrice: '',
-    maxPrice: '',
-    minReview: '',
-  });
+  const [filters, setFilters] = useState(defaultFilters);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const loadDrivers = useCallback(async () => {
     setState((prev) => ({ ...prev, loading: true, error: '' }));
@@ -57,11 +57,7 @@ const DriversDirectory = () => {
       const response = await fetchDriverDirectory();
       setState({ loading: false, error: '', drivers: response?.drivers || [] });
     } catch (error) {
-      setState({
-        loading: false,
-        error: error?.message || 'Unable to load drivers right now.',
-        drivers: [],
-      });
+      setState({ loading: false, error: error?.message || 'Unable to load drivers right now.', drivers: [] });
     }
   }, []);
 
@@ -74,44 +70,29 @@ const DriversDirectory = () => {
     const minPrice = Number(filters.minPrice);
     const maxPrice = Number(filters.maxPrice);
     const minReview = Number(filters.minReview);
+    const minExp = Number(filters.minExperience);
 
-    const matchesSearch = (driver) => {
-      if (!term) return true;
-      const haystack = [
-        driver.name,
-        driver.description,
-        driver.location?.label,
-        ...(driver.badges || []),
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      return haystack.includes(term);
-    };
-
-    const matchesEnglish = (driver) => !filters.englishOnly || driver.hasEnglishDriver;
-
-    const matchesPrice = (driver) => {
+    const matches = (driver) => {
+      if (term) {
+        const haystack = [driver.name, driver.description, driver.location?.label, ...(driver.badges || [])]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        if (!haystack.includes(term)) return false;
+      }
+      if (filters.perks.length && !filters.perks.every((p) => perkMatch(driver, p))) return false;
       const price = Number(driver.averagePricePerDay) || 0;
       if (filters.minPrice !== '' && Number.isFinite(minPrice) && price < minPrice) return false;
       if (filters.maxPrice !== '' && Number.isFinite(maxPrice) && price > maxPrice) return false;
+      if (filters.minReview !== '' && (Number(driver.reviewScore) || 0) < minReview) return false;
+      if (filters.minExperience !== '' && (Number(driver.experienceYears) || 0) < minExp) return false;
       return true;
-    };
-
-    const matchesReview = (driver) => {
-      if (filters.minReview === '') return true;
-      const score = Number(driver.reviewScore) || 0;
-      return score >= minReview;
     };
 
     const sortFn = (a, b) => {
       switch (filters.sort) {
         case 'experience_desc':
           return (b.experienceYears || 0) - (a.experienceYears || 0);
-        case 'price_asc':
-          return (a.averagePricePerDay || Infinity) - (b.averagePricePerDay || Infinity);
-        case 'price_desc':
-          return (b.averagePricePerDay || 0) - (a.averagePricePerDay || 0);
         case 'reviews_desc':
           return (b.reviewScore || 0) - (a.reviewScore || 0);
         default:
@@ -119,267 +100,327 @@ const DriversDirectory = () => {
       }
     };
 
-    return [...state.drivers]
-      .filter(
-        (driver) =>
-          matchesSearch(driver) &&
-          matchesEnglish(driver) &&
-          matchesPrice(driver) &&
-          matchesReview(driver)
-      )
-      .sort(sortFn);
+    return [...state.drivers].filter(matches).sort(sortFn);
   }, [filters, state.drivers]);
 
+  const set = (patch) => setFilters((prev) => ({ ...prev, ...patch }));
+  const englishOn = filters.perks.includes('English speaking');
+  const otherPerks = filters.perks.filter((p) => p !== 'English speaking');
+  const priceActive = Boolean(filters.minPrice || filters.maxPrice);
+  const activeCount =
+    filters.perks.length + (priceActive ? 1 : 0) + (filters.minReview ? 1 : 0) + (filters.minExperience ? 1 : 0);
+  const hasAnyFilter = activeCount > 0 || filters.search || filters.sort !== 'recommended';
+
   return (
-    <section className="space-y-6">
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Driver directory
-          </p>
-          <h1 className="text-3xl font-semibold text-slate-900">Find your perfect driver</h1>
-          <p className="text-sm text-slate-600">
-            Fine-tune the filters to search by speciality, language, price, and reviews. Every
-            profile is vetted by the Car With Driver team.
-          </p>
-        </div>
-
-        <div className="mt-6 space-y-4 rounded-2xl border border-slate-100 bg-slate-50/80 p-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <div className="flex flex-1 items-center rounded-full border border-slate-300 bg-white px-4 py-2 shadow-sm focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-500/20">
-              <Search className="mr-3 h-4 w-4 text-slate-400" />
+    <div className="min-h-screen bg-canvas font-sans text-ink">
+      <div className="sticky top-0 z-20 border-b border-hairline bg-white">
+        <div className="mx-auto max-w-6xl px-4 pb-2.5 pt-3 sm:px-6">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.06em] text-brand-dark">Driver directory</p>
+          <h1 className="mb-2.5 mt-1 text-[21px] font-extrabold tracking-tight text-ink lg:text-[26px]">Find your perfect driver</h1>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-soft" />
               <input
-                type="search"
                 value={filters.search}
-                onChange={(event) =>
-                  setFilters((prev) => ({ ...prev, search: event.target.value }))
-                }
-                placeholder="Search by name, perk, or destination"
-                className="w-full bg-transparent text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none"
+                onChange={(e) => set({ search: e.target.value })}
+                placeholder="Name, perk or destination"
+                className="h-[46px] w-full min-w-0 rounded-[14px] border-[1.5px] border-[#e2e8ea] bg-white pl-10 pr-3 text-[13.5px] text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none"
               />
             </div>
-            <div className="flex items-center gap-2">
-              <SlidersHorizontal className="h-4 w-4 text-slate-400" />
-              <select
-                value={filters.sort}
-                onChange={(event) =>
-                  setFilters((prev) => ({ ...prev, sort: event.target.value }))
-                }
-                className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
-              >
-                {sortOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <button
+              type="button"
+              onClick={() => setSheetOpen(true)}
+              aria-label="Filters"
+              className="relative grid h-[46px] w-[46px] flex-shrink-0 place-items-center rounded-[14px] bg-ink text-white"
+            >
+              <SlidersHorizontal className="h-[18px] w-[18px]" strokeWidth={1.8} />
+              {activeCount > 0 ? (
+                <span className="absolute -right-1.5 -top-1.5 grid min-w-[19px] place-items-center rounded-full border-2 border-white bg-brand px-1 text-[11px] font-extrabold text-white">
+                  {activeCount}
+                </span>
+              ) : null}
+            </button>
           </div>
-
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-            <label className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600">
-              <input
-                type="checkbox"
-                checked={filters.englishOnly}
-                onChange={(event) =>
-                  setFilters((prev) => ({ ...prev, englishOnly: event.target.checked }))
-                }
-                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-              />
-              English speaking only
-            </label>
-            <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600">
-              <span className="text-xs uppercase tracking-wide text-slate-400">Min price</span>
-              <input
-                type="number"
-                min="0"
-                value={filters.minPrice}
-                onChange={(event) =>
-                  setFilters((prev) => ({ ...prev, minPrice: event.target.value }))
-                }
-                className="w-full rounded-lg border border-slate-200 px-3 py-1 text-sm text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                placeholder="$"
-              />
-            </div>
-            <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600">
-              <span className="text-xs uppercase tracking-wide text-slate-400">Max price</span>
-              <input
-                type="number"
-                min="0"
-                value={filters.maxPrice}
-                onChange={(event) =>
-                  setFilters((prev) => ({ ...prev, maxPrice: event.target.value }))
-                }
-                className="w-full rounded-lg border border-slate-200 px-3 py-1 text-sm text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                placeholder="$"
-              />
-            </div>
-            <div className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600">
-              <span className="text-xs uppercase tracking-wide text-slate-400">Min reviews</span>
-              <input
-                type="number"
-                min="0"
-                max="5"
-                step="0.1"
-                value={filters.minReview}
-                onChange={(event) =>
-                  setFilters((prev) => ({ ...prev, minReview: event.target.value }))
-                }
-                className="w-full rounded-lg border border-slate-200 px-3 py-1 text-sm text-slate-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                placeholder="4.5+"
-              />
-            </div>
+          <div className="no-scrollbar mt-2.5 flex gap-2 overflow-x-auto pb-0.5">
+            <button
+              type="button"
+              onClick={() =>
+                set({ perks: englishOn ? filters.perks.filter((p) => p !== 'English speaking') : [...filters.perks, 'English speaking'] })
+              }
+              className={`flex flex-shrink-0 items-center gap-1.5 rounded-full px-[13px] text-[13px] font-bold transition ${
+                englishOn ? 'bg-brand py-[9px] text-white' : 'border-[1.5px] border-[#e2e8ea] bg-white py-2 font-semibold text-ink-soft'
+              }`}
+            >
+              English speaking
+              {englishOn ? <X className="h-[11px] w-[11px]" strokeWidth={2.5} /> : null}
+            </button>
+            {otherPerks.length ? (
+              <ActiveChip onClear={() => set({ perks: englishOn ? ['English speaking'] : [] })}>
+                {otherPerks.length === 1 ? otherPerks[0] : `${otherPerks.length} perks`}
+              </ActiveChip>
+            ) : (
+              <ChevronChip onClick={() => setSheetOpen(true)}>Perks</ChevronChip>
+            )}
+            {priceActive ? (
+              <ActiveChip onClear={() => set({ minPrice: '', maxPrice: '' })}>
+                ${filters.minPrice || '0'}{filters.maxPrice ? `–$${filters.maxPrice}` : '+'}
+              </ActiveChip>
+            ) : (
+              <ChevronChip onClick={() => setSheetOpen(true)}>Price</ChevronChip>
+            )}
+            {filters.minReview ? (
+              <ActiveChip onClear={() => set({ minReview: '' })}>{filters.minReview}★ +</ActiveChip>
+            ) : (
+              <ChevronChip onClick={() => setSheetOpen(true)}>Reviews</ChevronChip>
+            )}
           </div>
-
-          <p className="text-xs text-slate-500">
-            Showing {filteredDrivers.length} of {state.drivers.length} approved drivers
-          </p>
         </div>
       </div>
 
-      {state.loading ? (
-        <div className="flex min-h-[200px] items-center justify-center text-sm text-slate-500">
-          <Loader2 className="mr-2 h-5 w-5 animate-spin text-emerald-500" />
-          Loading drivers...
+      <div className="mx-auto max-w-6xl px-4 pb-20 pt-4 sm:px-6">
+        <div className="mb-3 flex items-center justify-between">
+          <span className="text-[12px] font-extrabold uppercase tracking-[0.05em] text-muted-soft">
+            {state.loading ? 'Loading…' : `${filteredDrivers.length} approved driver${filteredDrivers.length === 1 ? '' : 's'}`}
+          </span>
+          {hasAnyFilter ? (
+            <button type="button" onClick={() => setFilters(defaultFilters)} className="text-[12.5px] font-bold text-brand-dark">
+              Clear filters
+            </button>
+          ) : null}
         </div>
-      ) : state.error ? (
-        <div className="space-y-3 rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">
-          <p>{state.error}</p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={loadDrivers}
-              className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-rose-700 transition hover:border-rose-300 hover:text-rose-800"
-            >
+
+        {state.loading ? (
+          <div className="flex min-h-[40vh] items-center justify-center gap-2 text-sm text-muted">
+            <Loader2 className="h-5 w-5 animate-spin text-brand" /> Loading drivers…
+          </div>
+        ) : state.error ? (
+          <div className="rounded-[18px] bg-white p-6 text-center text-sm shadow-card">
+            <p className="text-[#e11d48]">{state.error}</p>
+            <button type="button" onClick={loadDrivers} className="mt-3 rounded-full border border-[#e2e8ea] px-4 py-2 text-xs font-bold text-ink transition hover:border-muted-soft">
               Try again
             </button>
           </div>
-        </div>
-      ) : filteredDrivers.length === 0 ? (
-        <div className="flex min-h-[200px] flex-col items-center justify-center text-center text-sm text-slate-500">
-          <Car className="mb-3 h-10 w-10 text-slate-300" />
-          <p>No drivers match your search. Try a different keyword.</p>
-        </div>
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {filteredDrivers.map((driver) => (
-            <DriverCard key={driver.id} driver={driver} />
-          ))}
-        </div>
-      )}
-    </section>
+        ) : filteredDrivers.length === 0 ? (
+          <div className="rounded-[18px] bg-white p-10 text-center text-sm text-muted shadow-card">
+            <Car className="mx-auto mb-3 h-9 w-9 text-muted-soft" />
+            No drivers match your search. Try a different keyword or clear filters.
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredDrivers.map((driver, index) => (
+              <DriverCard key={driver.id} driver={driver} tone={['amber', 'purple', 'blue'][index % 3]} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {sheetOpen ? (
+        <DriverFilterSheet
+          filters={filters}
+          set={set}
+          count={filteredDrivers.length}
+          onReset={() => setFilters(defaultFilters)}
+          onClose={() => setSheetOpen(false)}
+        />
+      ) : null}
+    </div>
   );
 };
 
-const DriverCard = ({ driver }) => {
-  const { featuredVehicle } = driver;
-  const locationLabel = driver.location?.label || driver.address || 'Based in Sri Lanka';
-  const ratingLabel = driver.reviewScore
-    ? `${driver.reviewScore.toFixed(1)} / 5`
-    : 'No reviews yet';
-  const activeDiscount = driver.activeDiscount;
+const ActiveChip = ({ children, onClear }) => (
+  <span className="flex flex-shrink-0 items-center gap-1.5 rounded-full bg-brand px-[13px] py-[9px] text-[13px] font-bold text-white">
+    {children}
+    <button type="button" onClick={onClear} aria-label="Clear" className="grid place-items-center">
+      <X className="h-[11px] w-[11px]" strokeWidth={2.5} />
+    </button>
+  </span>
+);
+
+const ChevronChip = ({ children, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className="flex flex-shrink-0 items-center gap-1.5 rounded-full border-[1.5px] border-[#e2e8ea] bg-white px-[13px] py-2 text-[13px] font-semibold text-ink-soft transition hover:border-muted-soft"
+  >
+    {children}
+    <ChevronDown className="h-3.5 w-3.5 text-muted-soft" />
+  </button>
+);
+
+const DriverCard = ({ driver, tone }) => {
+  const cityLabel = driver.location?.label || driver.address || 'Sri Lanka';
+  const badges = driver.badges || [];
+  const shown = badges.slice(0, 2);
+  const extra = badges.length - shown.length;
+  const hasReviews = Number(driver.reviewScore) > 0;
+
   return (
-    <Link
-      to={`/drivers/${driver.id}`}
-      role="article"
-      className="group flex h-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:border-emerald-200 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
-    >
-      {featuredVehicle?.image ? (
-        <div className="h-56 w-full overflow-hidden bg-slate-100">
-          <img
-            src={featuredVehicle.image}
-            alt={featuredVehicle.model}
-            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-          />
+    <Link to={`/drivers/${driver.id}`} className="block rounded-[18px] bg-white p-4 shadow-card transition hover:-translate-y-0.5 hover:shadow-lg">
+      <div className="flex items-center gap-3">
+        <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-full bg-[#eef1f0]">
+          {driver.profilePhoto ? (
+            <img src={driver.profilePhoto} alt={driver.name} className="h-full w-full object-cover" />
+          ) : (
+            <Avatar name={driver.name} tone={tone} className="h-full w-full rounded-full text-lg" />
+          )}
         </div>
-      ) : (
-        <div className="flex h-56 w-full items-center justify-center bg-slate-100 text-slate-400">
-          <Car className="h-10 w-10" />
-        </div>
-      )}
-      <div className="flex flex-1 flex-col gap-4 p-6">
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            <div className="h-14 w-14 overflow-hidden rounded-full border border-slate-200 bg-slate-50">
-              {driver.profilePhoto ? (
-                <img src={driver.profilePhoto} alt={driver.name} className="h-full w-full object-cover" />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-slate-400">
-                  <UserRoundCheck className="h-6 w-6" />
-                </div>
-              )}
-            </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-xl font-semibold text-slate-900">{driver.name}</h2>
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">
-                  <BadgeCheck className="h-3.5 w-3.5" />
-                  Verified
-                </span>
-                {activeDiscount?.discountPercent ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
-                    {activeDiscount.discountPercent}% off
-                  </span>
-                ) : null}
-              </div>
-              <div className="text-xs text-slate-500">
-                <MapPin className="mr-1 inline h-3 w-3 text-slate-400" />
-                {locationLabel}
-              </div>
-            </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <b className="text-[16px] text-ink">{driver.name}</b>
+            <span className="rounded-full bg-brand-tint px-2 py-[3px] text-[10.5px] font-bold text-brand-dark">Verified</span>
           </div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-slate-900">
-            <Star className="h-4 w-4 text-amber-500" />
-            {ratingLabel}
-            <span className="text-xs font-normal text-slate-400">
-              ({driver.reviewCount ?? 0})
-            </span>
-          </div>
-          <p className="line-clamp-3 text-sm text-slate-600">{driver.description}</p>
-        </div>
-        {driver.badges?.length ? (
-          <div className="flex flex-wrap gap-2">
-            {driver.badges.slice(0, 4).map((badge) => (
-              <span
-                key={badge}
-                className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600"
-              >
-                {badge}
+          <div className="mt-1 flex items-center gap-2.5 text-[12.5px] text-muted-soft">
+            <span className="truncate">{cityLabel}</span>
+            {hasReviews ? (
+              <span className="flex-shrink-0 font-bold text-ink">
+                {driver.reviewScore.toFixed(1)} ★ <span className="font-medium text-muted-soft">({driver.reviewCount ?? 0})</span>
               </span>
-            ))}
-            {driver.badges.length > 4 ? (
-              <span className="text-xs text-slate-500">+{driver.badges.length - 4} more</span>
-            ) : null}
+            ) : (
+              <span className="flex-shrink-0 text-muted-soft">No reviews yet</span>
+            )}
           </div>
-        ) : null}
-        <div className="grid grid-cols-3 gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm text-slate-600">
-          <div>
-            <p className="text-xs uppercase tracking-wide text-slate-400">Experience</p>
-            <p className="font-semibold text-slate-900">{formatYears(driver.experienceYears)}</p>
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-wide text-slate-400">Vehicles</p>
-            <p className="font-semibold text-slate-900">{driver.vehicleCount || 0}</p>
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-wide text-slate-400">Avg. rate</p>
-            <p className="font-semibold text-slate-900">
-              {driver.averagePricePerDay ? formatCurrency(driver.averagePricePerDay) : '$—'}
-            </p>
-          </div>
-        </div>
-        <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-4">
-          <div className="text-xs text-slate-500">
-            <MapPin className="mr-1 inline h-3.5 w-3.5 text-slate-400" />
-            {locationLabel}
-          </div>
-          <span className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 transition group-hover:border-emerald-300 group-hover:text-emerald-700">
-            View profile
-            <ArrowRight className="h-4 w-4" />
-          </span>
         </div>
       </div>
+      {shown.length > 0 ? (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {shown.map((b) => (
+            <span key={b} className="rounded-full bg-[#eef1f0] px-3 py-1.5 text-[11.5px] font-semibold text-ink-soft">{b}</span>
+          ))}
+          {extra > 0 ? (
+            <span className="rounded-full bg-[#eef1f0] px-3 py-1.5 text-[11.5px] font-semibold text-ink-soft">+{extra} more</span>
+          ) : null}
+        </div>
+      ) : null}
+      <div className="mt-3.5 flex items-center justify-between border-t border-hairline pt-3">
+        <div className="text-[12px] text-muted-soft">
+          <b className="text-[15px] text-ink">{driver.averagePricePerDay ? formatCurrency(driver.averagePricePerDay) : '$—'}</b>{' '}
+          avg / day · {driver.vehicleCount || 0} vehicle{driver.vehicleCount === 1 ? '' : 's'}
+        </div>
+        <span className="flex-shrink-0 rounded-full bg-brand px-4 py-2 text-[12.5px] font-bold text-white">Profile</span>
+      </div>
     </Link>
+  );
+};
+
+const Section = ({ label, children }) => (
+  <div>
+    <div className="text-[12px] font-extrabold uppercase tracking-[0.05em] text-muted-soft">{label}</div>
+    {children}
+  </div>
+);
+
+const DriverFilterSheet = ({ filters, set, count, onReset, onClose }) => {
+  const togglePerk = (perk) =>
+    set({ perks: filters.perks.includes(perk) ? filters.perks.filter((p) => p !== perk) : [...filters.perks, perk] });
+  const priceActive = (min, max) => (filters.minPrice || '') === min && (filters.maxPrice || '') === max;
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end justify-center">
+      <div className="absolute inset-0 bg-ink/45" onClick={onClose} aria-hidden="true" />
+      <div className="relative flex max-h-[88vh] w-full max-w-[480px] flex-col rounded-t-[26px] bg-white shadow-drawer">
+        <div className="grid place-items-center pt-2.5">
+          <div className="h-1.5 w-11 rounded-full bg-[#e2e8ea]" />
+        </div>
+        <div className="flex items-center justify-between px-[18px] py-3">
+          <b className="text-[18px] text-ink">Filters</b>
+          <button type="button" onClick={onReset} className="text-[13px] font-bold text-brand-dark">Clear all</button>
+        </div>
+        <div className="flex-1 space-y-5 overflow-y-auto px-[18px] pb-3.5">
+          <Section label="What matters to you">
+            <div className="mt-2.5 flex flex-wrap gap-2">
+              {PERKS.map((perk) => {
+                const on = filters.perks.includes(perk);
+                return (
+                  <button
+                    key={perk}
+                    type="button"
+                    onClick={() => togglePerk(perk)}
+                    className={`rounded-full px-[15px] py-2.5 text-[13px] font-bold transition ${on ? 'border-[1.5px] border-brand bg-brand-tint text-brand-dark' : 'bg-[#f2f4f3] text-muted'}`}
+                  >
+                    {perk}
+                  </button>
+                );
+              })}
+            </div>
+          </Section>
+
+          <Section label="Avg. price per day">
+            <div className="mt-2.5 flex flex-wrap gap-2">
+              {PRICE_PRESETS.map((b) => {
+                const on = priceActive(b.min, b.max);
+                return (
+                  <button
+                    key={b.label}
+                    type="button"
+                    onClick={() => set({ minPrice: b.min, maxPrice: b.max })}
+                    className={`rounded-full px-[15px] py-2.5 text-[13px] font-bold transition ${on ? 'border-[1.5px] border-brand bg-brand-tint text-brand-dark' : 'bg-[#f2f4f3] text-muted'}`}
+                  >
+                    {b.label}
+                  </button>
+                );
+              })}
+            </div>
+          </Section>
+
+          <Section label="Minimum rating">
+            <div className="mt-2.5 flex gap-2">
+              {RATING_OPTIONS.map((o) => {
+                const on = (filters.minReview || '') === o.value;
+                return (
+                  <button key={o.label} type="button" onClick={() => set({ minReview: o.value })} className={`flex-1 rounded-xl py-2.5 text-[13px] font-bold transition ${on ? 'bg-brand text-white' : 'bg-[#f2f4f3] text-muted'}`}>
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
+          </Section>
+
+          <Section label="Experience">
+            <div className="mt-2.5 flex gap-2">
+              {EXPERIENCE_OPTIONS.map((o) => {
+                const on = (filters.minExperience || '') === o.value;
+                return (
+                  <button key={o.label} type="button" onClick={() => set({ minExperience: o.value })} className={`flex-1 rounded-xl py-2.5 text-[13px] font-bold transition ${on ? 'bg-brand text-white' : 'bg-[#f2f4f3] text-muted'}`}>
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
+          </Section>
+
+          <Section label="Sort by">
+            <div className="mt-1 flex flex-col">
+              {SORT_OPTIONS.map((o, i) => {
+                const on = (filters.sort || 'recommended') === o.value;
+                return (
+                  <button
+                    key={o.value}
+                    type="button"
+                    onClick={() => set({ sort: o.value })}
+                    className={`flex items-center justify-between py-[13px] text-left ${i < SORT_OPTIONS.length - 1 ? 'border-b border-hairline' : ''}`}
+                  >
+                    <span className={`text-[14px] ${on ? 'font-bold text-ink' : 'font-semibold text-ink-soft'}`}>{o.label}</span>
+                    {on ? (
+                      <span className="grid h-[22px] w-[22px] place-items-center rounded-full bg-brand">
+                        <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          </Section>
+        </div>
+        <div className="flex gap-2.5 border-t border-hairline px-[18px] pb-6 pt-3.5">
+          <button type="button" onClick={onReset} className="flex-shrink-0 rounded-[14px] border-[1.5px] border-[#e2e8ea] px-5 py-[14px] text-[14px] font-bold text-ink">
+            Reset
+          </button>
+          <button type="button" onClick={onClose} className="flex-1 rounded-[14px] bg-brand py-[14px] text-[15px] font-extrabold text-white transition hover:bg-brand-dark">
+            Show {count} driver{count === 1 ? '' : 's'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 

@@ -1,7 +1,22 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { Menu, MessageSquare, X } from 'lucide-react';
+import {
+  Calculator,
+  CalendarCheck,
+  CalendarDays,
+  Car,
+  ClipboardList,
+  DollarSign,
+  FileText,
+  Home,
+  MapPin,
+  Menu,
+  MessageSquare,
+  Users,
+  X,
+} from 'lucide-react';
 import logoWhite from '../assets/Logo White.png';
+import { Avatar } from './dashboard/primitives.jsx';
 import {
   getStoredToken,
   getStoredUser,
@@ -9,23 +24,27 @@ import {
 } from '../services/authToken.js';
 
 const navLinks = [
-  { to: '/', label: 'Home' },
-  { to: '/vehicles', label: 'Vehicles' },
-  { to: '/drivers', label: 'Drivers' },
-  { to: '/trip-cost-calculator', label: 'Trip Cost' },
-  { to: '/dashboard?tab=requests', label: 'Get Quotes' },
-  { to: '/about', label: 'About Us' },
-  { to: '/contact', label: 'Contact' },
+  { to: '/', label: 'Home', icon: Home },
+  { to: '/vehicles', label: 'Vehicles', icon: Car },
+  { to: '/drivers', label: 'Drivers', icon: Users },
+  { to: '/trip-cost-calculator', label: 'Trip Cost', icon: Calculator },
+  { to: '/dashboard?tab=requests', label: 'Get Quotes', icon: FileText, highlight: true },
 ];
 
 const driverPortalLinks = [
-  { to: '/portal/driver#vehicles', label: 'My Vehicles' },
-  { to: '/portal/driver#bookings', label: 'My Bookings' },
-  { to: '/portal/driver/messages', label: 'Messages' },
-  { to: '/portal/driver#earnings', label: 'My Earnings' },
-  { to: '/portal/driver#availability', label: 'My Availability' },
-  { to: '/portal/driver#profile', label: 'My Profile' },
+  { to: '/portal/driver#vehicles', label: 'My Vehicles', icon: Car },
+  { to: '/portal/driver#bookings', label: 'My Bookings', icon: CalendarDays },
+  { to: '/portal/driver/messages', label: 'Messages', icon: MessageSquare },
+  { to: '/portal/driver#earnings', label: 'My Earnings', icon: DollarSign },
+  { to: '/portal/driver#availability', label: 'My Availability', icon: CalendarCheck },
+  { to: '/portal/driver#profile', label: 'My Profile', icon: ClipboardList },
 ];
+
+// Drawer nav-item styles, shared by the slide-in mobile menu (matches the driver dashboard drawer).
+const drawerItem =
+  'flex items-center gap-3 rounded-xl px-3 py-3 text-sm transition';
+const drawerItemActive = 'bg-brand-tint font-bold text-brand-dark';
+const drawerItemIdle = 'font-semibold text-ink-soft hover:bg-canvas';
 
 const baseNavLink =
   'relative px-3 py-2 text-sm font-medium transition-colors duration-150';
@@ -87,10 +106,26 @@ const NavBar = () => {
   const { isAuthenticated, dashboardPath, messagesPath, user } = authState;
   const isDriver = user?.role === 'driver';
   const messageDestination = isAuthenticated ? messagesPath : '/login';
+  const roleLabel =
+    user?.role === 'driver' ? 'Driver' : user?.role === 'admin' ? 'Admin' : 'Traveller';
+
+  // Lock body scroll and support Escape while the slide-in drawer is open.
+  useEffect(() => {
+    if (!mobileOpen) return undefined;
+    const onKey = (event) => event.key === 'Escape' && setMobileOpen(false);
+    document.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [mobileOpen]);
 
   return (
+    <>
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/70 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="relative mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -99,25 +134,49 @@ const NavBar = () => {
             aria-label="Toggle navigation"
             aria-expanded={mobileOpen}
           >
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            <Menu className="h-5 w-5" />
           </button>
-          <Link to="/" className="flex items-center gap-2">
-            <img src={logoWhite} alt="Driver Car Hire logo" className="h-14 w-auto" />
+          {/* Logo: centered on mobile, left-aligned from lg up. */}
+          <Link
+            to="/"
+            className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 lg:static lg:translate-x-0 lg:translate-y-0"
+          >
+            <img src={logoWhite} alt="Driver Car Hire logo" className="h-[3.75rem] w-auto lg:h-14" />
           </Link>
         </div>
 
         <nav className="hidden items-center gap-1 lg:flex">
-          {navLinks.map(({ to, label }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) =>
-                `${baseNavLink} ${isActive ? activeNavLink : inactiveNavLink}`
-              }
-            >
-              {label}
-            </NavLink>
-          ))}
+          {navLinks.map(({ to, label, highlight }) =>
+            highlight ? (
+              <NavLink
+                key={to}
+                to={to}
+                className={({ isActive }) =>
+                  `relative ml-1 inline-flex items-center px-3 py-2 text-sm font-bold transition ${
+                    isActive ? 'text-emerald-700' : 'text-emerald-600 hover:text-emerald-700'
+                  }`
+                }
+              >
+                <span className="relative">
+                  {label}
+                  <span className="absolute -right-2.5 -top-1 flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                  </span>
+                </span>
+              </NavLink>
+            ) : (
+              <NavLink
+                key={to}
+                to={to}
+                className={({ isActive }) =>
+                  `${baseNavLink} ${isActive ? activeNavLink : inactiveNavLink}`
+                }
+              >
+                {label}
+              </NavLink>
+            )
+          )}
         </nav>
 
         <div className="flex items-center gap-3">
@@ -170,92 +229,146 @@ const NavBar = () => {
           </div>
         </div>
       ) : null}
-
-      <div
-        className={`lg:hidden ${mobileOpen ? 'block' : 'hidden'} border-t border-slate-200 bg-white/95 backdrop-blur`}
-      >
-        <nav className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3 sm:px-6">
-          {navLinks.map(({ to, label }) => (
-            <NavLink
-              key={to}
-              to={to}
-              onClick={closeMobileMenu}
-              className={({ isActive }) =>
-                `rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150 ${
-                  isActive
-                    ? 'bg-emerald-50 text-emerald-700'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                }`
-              }
-            >
-              {label}
-            </NavLink>
-          ))}
-          {user?.role === 'driver' ? (
-            <NavLink
-              to="/briefs"
-              onClick={closeMobileMenu}
-              className={({ isActive }) =>
-                `rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150 ${
-                  isActive
-                    ? 'bg-emerald-50 text-emerald-700'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                }`
-              }
-            >
-              Briefs
-            </NavLink>
-          ) : null}
-          {isDriver ? (
-            <div className="mt-3 space-y-2 rounded-xl border border-emerald-100 bg-emerald-50 p-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-emerald-700">
-                Driver menu
-              </p>
-              <div className="grid grid-cols-1 gap-2">
-                {driverPortalLinks.map(({ to, label }) => (
-                  <Link
-                    key={to}
-                    to={to}
-                    onClick={closeMobileMenu}
-                    className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-emerald-800 shadow-sm transition hover:bg-emerald-50"
-                  >
-                    {label}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ) : null}
-          <div className="mt-3 flex items-center gap-2">
-            {isAuthenticated ? (
-              <NavLink
-                to={dashboardPath}
-                onClick={closeMobileMenu}
-                className="flex-1 rounded-full bg-emerald-500 px-4 py-2 text-center text-sm font-semibold text-white transition hover:bg-emerald-600"
-              >
-                Dashboard
-              </NavLink>
-            ) : (
-              <>
-                <NavLink
-                  to="/login"
-                  onClick={closeMobileMenu}
-                  className="flex-1 rounded-full border border-slate-300 px-4 py-2 text-center text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-900"
-                >
-                  Login
-                </NavLink>
-                <NavLink
-                  to="/register"
-                  onClick={closeMobileMenu}
-                  className="flex-1 rounded-full bg-emerald-500 px-4 py-2 text-center text-sm font-medium text-white transition hover:bg-emerald-600"
-                >
-                  Register
-                </NavLink>
-              </>
-            )}
-          </div>
-        </nav>
-      </div>
     </header>
+
+      {mobileOpen ? (
+        <div className="fixed inset-0 z-[60] lg:hidden">
+          <div className="absolute inset-0 bg-ink/45" onClick={closeMobileMenu} aria-hidden="true" />
+          <div className="absolute left-0 top-0 flex h-[100dvh] w-[290px] flex-col rounded-r-[28px] bg-white p-5 shadow-drawer">
+            <div className="mb-3 flex items-center justify-between">
+              <Link to="/" onClick={closeMobileMenu} className="flex items-center">
+                <img src={logoWhite} alt="carwithdriver.lk" className="h-11 w-auto" />
+              </Link>
+              <button
+                type="button"
+                onClick={closeMobileMenu}
+                className="grid h-9 w-9 place-items-center rounded-xl bg-canvas"
+                aria-label="Close menu"
+              >
+                <X className="h-4 w-4 text-ink" />
+              </button>
+            </div>
+
+            {isAuthenticated ? (
+              <div className="mb-1 flex items-center gap-3 rounded-2xl bg-canvas p-3">
+                <Avatar name={user?.name} className="h-11 w-11 text-[17px]" />
+                <div className="min-w-0">
+                  <div className="truncate font-bold text-ink">{user?.name || 'Traveller'}</div>
+                  <div className="text-xs font-bold text-brand">{roleLabel}</div>
+                </div>
+              </div>
+            ) : null}
+
+            <div className="mt-3 flex-1 overflow-y-auto">
+              <nav className="flex flex-col gap-0.5">
+                {navLinks.map((link) => {
+                  const Icon = link.icon;
+                  return (
+                    <NavLink
+                      key={link.to}
+                      to={link.to}
+                      end={link.to === '/'}
+                      onClick={closeMobileMenu}
+                      className={({ isActive }) =>
+                        link.highlight
+                          ? `${drawerItem} font-extrabold text-brand-dark`
+                          : `${drawerItem} ${isActive ? drawerItemActive : drawerItemIdle}`
+                      }
+                    >
+                      {({ isActive }) => (
+                        <>
+                          <Icon
+                            className={`h-[18px] w-[18px] ${
+                              link.highlight || isActive ? 'text-brand' : 'text-muted'
+                            }`}
+                            strokeWidth={1.8}
+                          />
+                          {link.label}
+                          {link.highlight ? (
+                            <span className="relative ml-auto flex h-2 w-2">
+                              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand opacity-75" />
+                              <span className="relative inline-flex h-2 w-2 rounded-full bg-brand" />
+                            </span>
+                          ) : null}
+                        </>
+                      )}
+                    </NavLink>
+                  );
+                })}
+
+                {isDriver ? (
+                  <>
+                    <NavLink
+                      to="/briefs"
+                      onClick={closeMobileMenu}
+                      className={({ isActive }) =>
+                        `${drawerItem} ${isActive ? drawerItemActive : drawerItemIdle}`
+                      }
+                    >
+                      {({ isActive }) => (
+                        <>
+                          <MapPin
+                            className={`h-[18px] w-[18px] ${isActive ? 'text-brand' : 'text-muted'}`}
+                            strokeWidth={1.8}
+                          />
+                          Tour Briefs
+                        </>
+                      )}
+                    </NavLink>
+                    <div className="mt-2 px-3 pb-1 pt-2 text-[11px] font-extrabold uppercase tracking-[0.14em] text-muted-soft">
+                      Driver menu
+                    </div>
+                    {driverPortalLinks.map((link) => {
+                      const Icon = link.icon;
+                      return (
+                        <Link
+                          key={link.to}
+                          to={link.to}
+                          onClick={closeMobileMenu}
+                          className={`${drawerItem} ${drawerItemIdle}`}
+                        >
+                          <Icon className="h-[18px] w-[18px] text-muted" strokeWidth={1.8} />
+                          {link.label}
+                        </Link>
+                      );
+                    })}
+                  </>
+                ) : null}
+              </nav>
+            </div>
+
+            <div className="mt-3">
+              {isAuthenticated ? (
+                <NavLink
+                  to={dashboardPath}
+                  onClick={closeMobileMenu}
+                  className="block rounded-full bg-brand px-4 py-2.5 text-center text-sm font-bold text-white transition hover:bg-brand-dark"
+                >
+                  Go to dashboard
+                </NavLink>
+              ) : (
+                <div className="flex gap-2">
+                  <NavLink
+                    to="/login"
+                    onClick={closeMobileMenu}
+                    className="flex-1 rounded-full border border-[#e2e8ea] px-4 py-2.5 text-center text-sm font-bold text-ink transition hover:border-muted-soft"
+                  >
+                    Login
+                  </NavLink>
+                  <NavLink
+                    to="/register"
+                    onClick={closeMobileMenu}
+                    className="flex-1 rounded-full bg-brand px-4 py-2.5 text-center text-sm font-bold text-white transition hover:bg-brand-dark"
+                  >
+                    Register
+                  </NavLink>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 };
 

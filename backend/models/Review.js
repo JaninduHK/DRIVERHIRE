@@ -57,6 +57,10 @@ const reviewSchema = new mongoose.Schema(
     },
     visitedStartDate: Date,
     visitedEndDate: Date,
+    images: {
+      type: [String],
+      default: [],
+    },
     status: {
       type: String,
       enum: statusValues,

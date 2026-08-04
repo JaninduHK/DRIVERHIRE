@@ -1,121 +1,88 @@
 import { Link } from 'react-router-dom';
-import { Facebook, Instagram, Linkedin, Mail, PhoneCall, Youtube } from 'lucide-react';
 import logoWhite from '../assets/Logo.png';
 
-const touristLinks = [
-  { label: 'Browse vehicles', to: '/vehicles' },
-  { label: 'Featured drivers', to: '/drivers' },
-  { label: 'My Quote Requests', to: '/briefs' },
-  { label: 'Chat Messages', to: '/dashboard' },
-];
-
-const driverLinks = [
-  { label: 'Apply as a driver', to: '/register/driver' },
-  { label: 'Driver portal', to: '/portal/driver' },
-  { label: 'Message center', to: '/portal/driver/messages' },
-  { label: 'Update availability', to: '/portal/driver' },
-];
-
-const helpLinks = [
-  { label: 'Contact support', to: '/contact' },
-  { label: 'Safety promise', to: '/about' },
-  { label: 'Privacy Policy', to: '/privacy-policy' },
-  { label: 'Terms & Conditions', to: '/terms' },
-];
-
-const socialLinks = [
-  { label: 'Instagram', href: 'https://instagram.com/driverhire', icon: Instagram },
-  { label: 'Facebook', href: 'https://facebook.com/driverhire', icon: Facebook },
-  { label: 'YouTube', href: 'https://youtube.com/@driverhire', icon: Youtube },
-  { label: 'LinkedIn', href: 'https://linkedin.com/company/driverhire', icon: Linkedin },
+const columns = [
+  {
+    title: 'Travellers',
+    links: [
+      { label: 'Browse vehicles', to: '/vehicles' },
+      { label: 'Featured drivers', to: '/drivers' },
+      { label: 'My quote requests', to: '/dashboard?tab=requests' },
+      { label: 'Chat messages', to: '/dashboard' },
+    ],
+  },
+  {
+    title: 'Drivers',
+    links: [
+      { label: 'Apply as a driver', to: '/register/driver' },
+      { label: 'Driver portal', to: '/portal/driver' },
+      { label: 'Message centre', to: '/portal/driver/messages' },
+      { label: 'Update availability', to: '/portal/driver' },
+    ],
+  },
+  {
+    title: 'Help',
+    links: [
+      { label: 'Contact support', to: '/contact' },
+      { label: 'Safety promise', to: '/about' },
+      { label: 'Privacy policy', to: '/privacy-policy' },
+      { label: 'Terms & conditions', to: '/terms' },
+    ],
+  },
 ];
 
 const Footer = () => {
-  const currentYear = new Date().getFullYear();
-
-  const renderNavLink = (item) => {
-    const baseClass =
-      'block text-sm text-slate-300 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500';
-
-    if (item.href) {
-      return (
-        <a key={item.label} href={item.href} className={baseClass} target="_blank" rel="noreferrer">
-          {item.label}
-        </a>
-      );
-    }
-
-    return (
-      <Link key={item.label} to={item.to} className={baseClass}>
-        {item.label}
-      </Link>
-    );
-  };
+  const year = new Date().getFullYear();
 
   return (
-    <footer className="mt-16 bg-slate-900 text-slate-100">
-      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="grid gap-10 pb-12 md:grid-cols-2 lg:grid-cols-4">
-          <div className="space-y-6">
-            <img src={logoWhite} alt="Car with Driver Sri Lanka" className="h-20 w-auto" />
-            <div className="space-y-4 text-sm text-slate-300">
-              <div>
-                <p className='mb-5'>We combine vetted drivers, modern vehicles with tourists to deliver five-star journeys.</p>
-                <a
-                  href="tel:+94770001234"
-                  className="mt-1 flex items-center gap-2 font-semibold text-white transition hover:text-emerald-200"
-                >
-                  <PhoneCall className="h-4 w-4 text-emerald-300" />
-                  +94 76 3021 483
-                </a>
-              </div>
-              <div>
-                
-                <a
-                  href="mailto:hello@carwithdriver.lk"
-                  className="mt-1 flex items-center gap-2 font-semibold text-white transition hover:text-emerald-200"
-                >
-                  <Mail className="h-4 w-4 text-emerald-300" />
-                  hello@carwithdriver.lk
-                </a>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              {socialLinks.map(({ label, href, icon: Icon }) => (
-                <a
-                  key={label}
-                  href={href}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={label}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white transition hover:border-emerald-400 hover:text-emerald-200"
-                >
-                  <Icon className="h-4 w-4" />
-                </a>
-              ))}
+    <footer className="bg-ink font-sans text-white">
+      <div className="mx-auto max-w-[1200px] px-[clamp(18px,4vw,40px)] py-[clamp(38px,4vw,60px)]">
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(min(50%,200px),1fr))] gap-[clamp(22px,3vw,40px)]">
+          {/* Brand column */}
+          <div>
+            <Link to="/" className="inline-flex items-center" aria-label="Car with Driver home">
+              <img src={logoWhite} alt="car with driver.lk" className="h-12 w-auto" />
+            </Link>
+            <p className="mt-4 max-w-[270px] text-[13.5px] leading-[1.6] text-white/[0.62]">
+              Vetted drivers and modern vehicles for travellers exploring Sri Lanka. Five-star journeys, island-wide.
+            </p>
+            <div className="mt-2.5 grid">
+              <a href="tel:+94763021483" className="flex min-h-[44px] items-center text-[13.5px] font-bold text-white transition hover:text-[#7fd9a8]">
+                +94 76 3021 483
+              </a>
+              <a href="mailto:hello@carwithdriver.lk" className="flex min-h-[44px] items-center text-[13.5px] font-bold text-[#7fd9a8] transition hover:text-white">
+                hello@carwithdriver.lk
+              </a>
             </div>
           </div>
 
-          {[{ title: 'Tourists', links: touristLinks }, { title: 'Drivers', links: driverLinks }, { title: 'Help', links: helpLinks }].map(
-            ({ title, links }) => (
-              <div key={title} className="space-y-4 text-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-200">{title}</p>
-                <div className="space-y-2">{links.map((link) => renderNavLink(link))}</div>
+          {/* Link groups */}
+          {columns.map((column) => (
+            <nav key={column.title} aria-label={column.title}>
+              <h2 className="mb-3.5 text-[12px] font-extrabold uppercase tracking-[0.08em] text-[#7fd9a8]">
+                {column.title}
+              </h2>
+              <div className="grid">
+                {column.links.map((link) => (
+                  <Link
+                    key={link.label}
+                    to={link.to}
+                    className="flex min-h-[40px] items-center text-[13.5px] text-white/[0.78] transition hover:text-white"
+                  >
+                    {link.label}
+                  </Link>
+                ))}
               </div>
-            ),
-          )}
+            </nav>
+          ))}
         </div>
 
-        <div className="flex flex-col gap-4 pt-12 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-          <p>© {currentYear} Car with Driver LK Sri Lanka. All rights reserved.</p>
-          <div className="flex gap-4">
-            <Link to="/about" className="transition hover:text-white">
-              About
-            </Link>
-            <Link to="/contact" className="transition hover:text-white">
-              Contact
-            </Link>
-        
+        {/* Bottom bar */}
+        <div className="mt-[clamp(28px,3vw,44px)] flex flex-wrap items-center justify-between gap-3.5 border-t border-white/[0.12] pt-[22px]">
+          <p className="text-[12.5px] text-white/50">© {year} Car With Driver LK. All rights reserved.</p>
+          <div className="flex gap-[18px]">
+            <Link to="/about" className="text-[12.5px] text-white/60 transition hover:text-white">About</Link>
+            <Link to="/contact" className="text-[12.5px] text-white/60 transition hover:text-white">Contact</Link>
           </div>
         </div>
       </div>

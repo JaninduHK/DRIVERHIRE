@@ -29,6 +29,7 @@ import {
   listAdminReviews,
   updateReviewStatus as updateReviewStatusController,
   createAdminReview,
+  createAdminReviewsBulk,
 } from '../controllers/reviewController.js';
 import { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
 import { VEHICLE_STATUS } from '../models/Vehicle.js';
@@ -180,6 +181,8 @@ router.post(
   ],
   createAdminReview
 );
+
+router.post('/reviews/bulk', createAdminReviewsBulk);
 
 router.patch(
   '/reviews/:id/status',

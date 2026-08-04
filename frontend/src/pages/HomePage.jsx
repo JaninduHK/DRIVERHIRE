@@ -1,1179 +1,760 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import {
-  ArrowRight,
-  Award,
-  Car,
-  Crown,
-  MapPin,
-  ShieldCheck,
-  Star,
-  UserRoundCheck,
-} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { fetchVehicles, fetchVehicleReviews } from '../services/vehicleCatalogApi.js';
 import { fetchDriverDirectory } from '../services/driverDirectoryApi.js';
-import sriLankaTouristMap from '../assets/sri lanka tourist map.jpg';
+import ReviewPhotos from '../components/ReviewPhotos.jsx';
+import { getStoredToken, saveReturnPath } from '../services/authToken.js';
 
-const formatCurrency = (value) => {
-  if (typeof value !== 'number' || Number.isNaN(value)) {
-    return null;
-  }
-  return `$${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}/day`;
+// Prefill stash read by the traveller "My Requests" tab to open a new quote request.
+const PENDING_BRIEF_KEY = 'carwithdriver:pending-brief';
+const REQUESTS_PATH = '/dashboard?tab=requests';
+
+// ---------- helpers ----------
+const money = (value) =>
+  typeof value === 'number' && !Number.isNaN(value)
+    ? `$${Math.round(value).toLocaleString('en-US')}`
+    : null;
+
+const yearsLabel = (years) => {
+  const n = Number(years);
+  if (!Number.isFinite(n) || n <= 0) return 'New guide';
+  return `${Math.round(n)} yrs`;
 };
 
-const formatExperience = (years) => {
-  const numeric = Number(years);
-  if (!Number.isFinite(numeric)) {
-    return 'Experienced guide';
-  }
-  const normalized = Math.max(0, Math.round(numeric));
-  if (normalized === 0) {
-    return 'New to guiding';
-  }
-  return `${normalized} year${normalized === 1 ? '' : 's'} guiding`;
-};
+const initialsOf = (name = '') =>
+  name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || 'D';
 
 const getVehicleImage = (vehicle) => {
-  if (Array.isArray(vehicle?.images) && vehicle.images.length) {
-    return vehicle.images[0];
-  }
-  if (vehicle?.image) {
-    return vehicle.image;
-  }
-  if (vehicle?.featuredImage) {
-    return vehicle.featuredImage;
-  }
-  return null;
+  if (Array.isArray(vehicle?.images) && vehicle.images.length) return vehicle.images[0];
+  return vehicle?.image || vehicle?.featuredImage || null;
 };
 
-const showcasePlaceholders = [0, 1, 2];
-
-const formatDateRange = (startDate, endDate) => {
-  const format = (value) => {
-    if (!value) return null;
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return null;
-    return parsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+const formatDateRange = (start, end) => {
+  const fmt = (v) => {
+    if (!v) return null;
+    const d = new Date(v);
+    return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
-
-  const start = format(startDate);
-  const end = format(endDate);
-
-  if (start && end) {
-    return `${start} – ${end}`;
-  }
-  return start || end || null;
+  const s = fmt(start);
+  const e = fmt(end);
+  if (s && e) return `${s} – ${e}`;
+  return s || e || null;
 };
 
-const formatReviewSubline = (review, vehicle) => {
-  const tripRange = formatDateRange(review?.visitedStartDate, review?.visitedEndDate);
-  if (tripRange && vehicle?.model) {
-    return `${tripRange} • ${vehicle.model}`;
-  }
-  if (vehicle?.model) {
-    return vehicle.model;
-  }
-  if (tripRange) {
-    return `${tripRange} • Private driver trip`;
-  }
-  return 'Chauffeur-driven Sri Lanka itinerary';
+const reviewSubline = (review, vehicle) => {
+  const range = formatDateRange(review?.visitedStartDate, review?.visitedEndDate);
+  if (range && vehicle?.model) return `${range} · ${vehicle.model}`;
+  return vehicle?.model || range || 'Chauffeur-driven Sri Lanka trip';
 };
 
-const heroFeatures = [
-  { icon: ShieldCheck, label: 'Licensed & insured drivers' },
-  { icon: MapPin, label: 'Island-wide coverage' },
-  { icon: Crown, label: 'Tailored chauffeur tours' },
-];
+const VEHICLE_TAGS = ['Best value', 'Group friendly', 'Long tours'];
+const skeletons = [0, 1, 2];
 
-const seoKeywords =
-  'Sri Lanka private driver | Car With Driver | chauffeur tours Sri Lanka | Sri Lanka car rentals with driver';
+// ---------- inline icons (match design) ----------
+const ArrowIcon = ({ stroke = '#fff' }) => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round">
+    <path d="M2.5 8h11M9.5 4l4 4-4 4" />
+  </svg>
+);
+const CheckIcon = () => (
+  <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="#10a35a" strokeWidth="2.2" strokeLinecap="round" className="shrink-0">
+    <path d="M4 10.5l4 4 8-9" />
+  </svg>
+);
+const StarIcon = ({ size = 15, fill = '#f5b400' }) => (
+  <svg width={size} height={size} viewBox="0 0 20 20" fill={fill}>
+    <path d="M10 1.5l2.6 5.3 5.9.8-4.3 4.1 1 5.8L10 14.6l-5.2 2.9 1-5.8L1.5 7.6l5.9-.8z" />
+  </svg>
+);
 
-const CITY_POSITIONS = [
+const TRUST_BADGES = [
   {
-    id: 'colombo',
-    label: 'Colombo',
-    top: '72%',
-    left: '27%',
-    keywords: ['colombo', 'cmb', 'negombo', 'katunayake', 'mount lavinia', 'kalutara'],
+    label: 'SLTDA Licensed drivers',
+    svg: (
+      <path d="M10 2l6 2.5v5c0 4-2.6 7-6 8.5-3.4-1.5-6-4.5-6-8.5v-5L10 2zM7.5 10l1.8 1.8L13 8" />
+    ),
   },
   {
-    id: 'galle',
-    label: 'Galle',
-    top: '84%',
-    left: '33%',
-    keywords: ['galle', 'matara', 'mirissa', 'hikkaduwa', 'unawatuna', 'weligama'],
+    label: 'Island-wide coverage',
+    svg: <path d="M10 18s6-4.8 6-9a6 6 0 1 0-12 0c0 4.2 6 9 6 9zM10 6.8a2.2 2.2 0 1 0 0 4.4 2.2 2.2 0 0 0 0-4.4z" />,
   },
   {
-    id: 'kandy',
-    label: 'Kandy',
-    top: '57%',
-    left: '47%',
-    keywords: ['kandy', 'peradeniya'],
+    label: 'Booked Price Guarantee',
+    svg: <path d="M3 16V8l7-4 7 4v8M8 16v-4h4v4" />,
   },
   {
-    id: 'nuwara-eliya',
-    label: 'Nuwara Eliya',
-    top: '63%',
-    left: '52%',
-    keywords: ['nuwara', 'eliya', 'ella', 'hatton', 'kitulgala'],
-  },
-  {
-    id: 'sigiriya',
-    label: 'Sigiriya',
-    top: '46%',
-    left: '50%',
-    keywords: ['sigiriya', 'dambulla', 'habanara', 'habarana'],
-  },
-  {
-    id: 'anuradhapura',
-    label: 'Anuradhapura',
-    top: '36%',
-    left: '44%',
-    keywords: ['anuradhapura'],
-  },
-  {
-    id: 'jaffna',
-    label: 'Jaffna',
-    top: '18%',
-    left: '46%',
-    keywords: ['jaffna'],
-  },
-  {
-    id: 'trincomalee',
-    label: 'Trincomalee',
-    top: '40%',
-    left: '68%',
-    keywords: ['trincomalee', 'nilaveli', 'kuchchaveli'],
-  },
-  {
-    id: 'batticaloa',
-    label: 'Batticaloa',
-    top: '60%',
-    left: '70%',
-    keywords: ['batticaloa', 'pasikuda', 'passekudah', 'arugam'],
-  },
-  {
-    id: 'hambantota',
-    label: 'Hambantota',
-    top: '86%',
-    left: '55%',
-    keywords: ['hambantota', 'yala', 'tissa', 'tissamaharama', 'udawalawe'],
+    label: '24/7 trip support',
+    svg: <path d="M10 2.5a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15zM10 6v4.3l3 1.8" />,
   },
 ];
 
-const detectCityFromAddress = (address = '') => {
-  const normalized = address.toLowerCase();
-  return (
-    CITY_POSITIONS.find((city) =>
-      city.keywords.some((keyword) => normalized.includes(keyword)),
-    ) || null
-  );
-};
+const FAQS = [
+  {
+    q: 'How much does a car with driver cost in Sri Lanka?',
+    a: "Drivers set their own rates, so you'll see a range. Sedans typically start around $43 a day and large touring vans reach about $95. Most daily rates cover the vehicle, fuel, unlimited island-wide kilometres, and the driver's meals and accommodation, and each listing spells out exactly what's included. For a figure based on your own route and dates, use the trip cost calculator.",
+  },
+  {
+    q: 'Is it free to book, and do I pay a deposit?',
+    a: "The platform is completely free for tourists: browsing, quotes, chat and booking all cost you nothing. There's no deposit and no advance either. You pay your driver directly on the first day of your trip.",
+  },
+  {
+    q: 'How do I get quotes for my own itinerary?',
+    a: 'Post your tour plan with your dates, passenger count and the places you want to see. Available drivers send you quotations free of charge, and you can compare them side by side, message any driver with questions, and negotiate before you commit.',
+  },
+  {
+    q: 'What if I need to cancel?',
+    bullets: [
+      'More than 2 days before your start date: free to cancel, nothing to pay.',
+      'Within 2 days of your start date: 50% of the total goes to the driver.',
+      'After the trip has started: 100% for the days already completed, plus 50% of the remaining days.',
+    ],
+    outro:
+      'Your driver turns down other bookings to hold your dates, so message them as soon as your plans change.',
+  },
+  {
+    q: 'Are your drivers licensed and insured?',
+    a: 'Every driver on the platform is SLTDA-registered and carries valid insurance, and licence and vehicle documents are checked before a profile goes live. Reviews come from tourists who actually travelled with that driver and stay on the profile permanently, good and bad, so read a few before you decide.',
+  },
+];
 
-const buildCityPinsFromAddress = (drivers = []) => {
-  if (!Array.isArray(drivers) || drivers.length === 0) {
-    return [];
-  }
+const PARTY_OPTIONS = ['1–3', '4–6', '7+'];
+const PARTY_TO_ADULTS = { '1–3': '2', '4–6': '4', '7+': '7' };
 
-  const usedDriverIndexes = new Set();
-  return CITY_POSITIONS.reduce((acc, city) => {
-    const matchIndex = drivers.findIndex((driver, index) => {
-      if (usedDriverIndexes.has(index)) {
-        return false;
-      }
-      if (!driver?.address) {
-        return false;
-      }
-      const normalized = driver.address.toLowerCase();
-      return city.keywords.some((keyword) => normalized.includes(keyword));
-    });
-
-    if (matchIndex === -1) {
-      return acc;
-    }
-
-    usedDriverIndexes.add(matchIndex);
-    const driver = drivers[matchIndex];
-
-    acc.push({
-      id: driver.id || `driver-${matchIndex}`,
-      name: driver.name || 'Driver',
-      city,
-      style: {
-        top: city.top,
-        left: city.left,
-      },
-      driverCount: drivers.filter((currentDriver, index) => {
-        if (!currentDriver?.address) {
-          return false;
-        }
-        const normalized = currentDriver.address.toLowerCase();
-        return city.keywords.some((keyword) => normalized.includes(keyword));
-      }).length,
-      label: city.label,
-      avatar: driver.profilePhoto || null,
-    });
-
-    return acc;
-  }, []);
-};
-
-const MAP_BOUNDS = {
-  minLat: 5.5,
-  maxLat: 10.1,
-  minLng: 79.4,
-  maxLng: 82.1,
-};
-
-const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
-
-const projectLatLng = (latitude, longitude) => {
-  const latRange = MAP_BOUNDS.maxLat - MAP_BOUNDS.minLat || 1;
-  const lngRange = MAP_BOUNDS.maxLng - MAP_BOUNDS.minLng || 1;
-  const normalizedLat =
-    (clamp(latitude, MAP_BOUNDS.minLat, MAP_BOUNDS.maxLat) - MAP_BOUNDS.minLat) / latRange;
-  const normalizedLng =
-    (clamp(longitude, MAP_BOUNDS.minLng, MAP_BOUNDS.maxLng) - MAP_BOUNDS.minLng) / lngRange;
-
-  return {
-    top: `${(1 - normalizedLat) * 100}%`,
-    left: `${normalizedLng * 100}%`,
-  };
-};
-
-const buildLiveDriverPins = (drivers = []) => {
-  if (!Array.isArray(drivers) || drivers.length === 0) {
-    return [];
-  }
-
-  const getLocation = (driver) => driver?.location || driver?.driverLocation;
-
-  const pinsWithCoordinates = drivers
-    .filter(
-      (driver) =>
-        typeof getLocation(driver)?.latitude === 'number' &&
-        typeof getLocation(driver)?.longitude === 'number'
-    )
-    .slice(0, 10)
-    .map((driver) => {
-      const location = getLocation(driver);
-      const detectedCity = detectCityFromAddress(driver.address || '');
-      return {
-        id: driver.id,
-        name: driver.name || 'Driver',
-        label: detectedCity?.label || 'On the road',
-        style: projectLatLng(location.latitude, location.longitude),
-        lat: location.latitude,
-        lng: location.longitude,
-        driverCount: 1,
-        avatar: driver.profilePhoto || null,
-      };
-    });
-
-  if (pinsWithCoordinates.length) {
-    return pinsWithCoordinates;
-  }
-
-  return buildCityPinsFromAddress(drivers);
-};
-
-const spreadOverlappingPins = (pins = []) => {
-  const clusters = pins.reduce((acc, pin) => {
-    const key = `${pin.style.top}|${pin.style.left}`;
-    if (!acc[key]) {
-      acc[key] = [];
-    }
-    acc[key].push(pin);
-    return acc;
-  }, {});
-
-  return pins.map((pin) => {
-    const key = `${pin.style.top}|${pin.style.left}`;
-    const cluster = clusters[key];
-
-    if (!cluster || cluster.length <= 1) {
-      return pin;
-    }
-
-    const index = cluster.indexOf(pin);
-    const angle = (index / cluster.length) * 2 * Math.PI;
-    const radius = 10 + cluster.length * 2;
-    const offset = {
-      x: Math.round(Math.cos(angle) * radius * 10) / 10,
-      y: Math.round(Math.sin(angle) * radius * 10) / 10,
-    };
-
-    return {
-      ...pin,
-      offset,
-      driverCount: Math.max(pin.driverCount || 1, cluster.length),
-    };
-  });
-};
-
-const escHtml = (str) =>
-  String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-
-const LiveDriversMapCard = ({ drivers, loading, error, onReload }) => {
-  const mapContainerRef = useRef(null);
-  const mapRef = useRef(null);
-  const markersRef = useRef([]);
-  const [mapError, setMapError] = useState('');
-  const pins = useMemo(
-    () => spreadOverlappingPins(buildLiveDriverPins(drivers)),
-    [drivers]
-  );
-
-  const clearMarkers = useCallback(() => {
-    markersRef.current.forEach((marker) => {
-      try {
-        marker.remove();
-      } catch (e) {
-        // ignore
-      }
-    });
-    markersRef.current = [];
-  }, []);
-
-  // Destroy map on unmount
-  useEffect(() => {
-    return () => {
-      clearMarkers();
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Initialize map and sync markers whenever pins change
-  useEffect(() => {
-    if (!mapContainerRef.current || loading || error) return;
-
-    setMapError('');
-
-    try {
-      if (!mapRef.current) {
-        mapRef.current = L.map(mapContainerRef.current, {
-          center: [7.8731, 80.7718],
-          zoom: 7,
-          zoomControl: true,
-          attributionControl: true,
-        });
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-          maxZoom: 19,
-        }).addTo(mapRef.current);
-      }
-
-      clearMarkers();
-
-      if (!pins.length) return;
-
-      const bounds = [];
-
-      pins.forEach((pin) => {
-        if (typeof pin.lat !== 'number' || typeof pin.lng !== 'number') return;
-
-        const firstName = escHtml((pin.name || 'Driver').split(' ')[0]);
-        const locationLabel = escHtml(pin.label || 'On the road');
-        const initial = escHtml((pin.name || 'D')[0] || 'D');
-        const avatarHtml = pin.avatar
-          ? `<img src="${escHtml(pin.avatar)}" alt="${firstName}" style="width:100%;height:100%;object-fit:cover" />`
-          : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#10b981;font-weight:700;font-size:12px">${initial}</div>`;
-
-        const icon = L.divIcon({
-          html: `<div onclick="window.location.href='/drivers/${encodeURIComponent(pin.id)}'"
-               style="position:absolute;transform:translate(-50%,-100%);filter:drop-shadow(0 6px 12px rgba(0,0,0,0.25));cursor:pointer;pointer-events:auto">
-            <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:white;font-size:12px;font-weight:600;color:#0f172a;box-shadow:0 10px 25px rgba(15,23,42,0.25)">
-              <div style="width:28px;height:28px;border-radius:50%;overflow:hidden;border:2px solid #d1fae5;background:#ecfdf3">${avatarHtml}</div>
-              <div style="display:flex;flex-direction:column;line-height:1.1">
-                <span style="font-size:12px">${firstName}</span>
-                <span style="font-size:10px;color:#475569">${locationLabel}</span>
-              </div>
-            </div>
-            <div style="width:8px;height:8px;border-radius:50%;background:#10b981;margin:6px auto 0;box-shadow:0 0 10px 4px rgba(16,185,129,0.45)"></div>
-          </div>`,
-          className: '',
-          iconSize: [0, 0],
-          iconAnchor: [0, 0],
-        });
-
-        const marker = L.marker([pin.lat, pin.lng], { icon });
-        marker.addTo(mapRef.current);
-        markersRef.current.push(marker);
-        bounds.push([pin.lat, pin.lng]);
-      });
-
-      if (bounds.length > 1) {
-        mapRef.current.fitBounds(bounds, { padding: [60, 60] });
-      } else if (bounds.length === 1) {
-        mapRef.current.setView(bounds[0], 10);
-      }
-    } catch (initError) {
-      console.warn('Leaflet map failed', initError);
-      setMapError(initError?.message || 'Unable to load map.');
-    }
-  }, [pins, loading, error, clearMarkers]);
-
-  return (
-    <div className="relative mx-auto w-full max-w-[420px] overflow-hidden rounded-[30px] border border-white/60 bg-white/80 shadow-2xl shadow-emerald-200/60 backdrop-blur lg:max-w-[460px]">
-      <div className="absolute inset-0 rounded-[30px] bg-gradient-to-tr from-emerald-300/20 to-transparent blur-3xl" />
-      <div className="relative h-[600px] w-full">
-        <div className="absolute left-0 top-0 z-30 rounded-br-2xl bg-slate-950/85 px-4 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-emerald-200 shadow-lg shadow-black/30">
-          Live driver map ·{' '}
-          <span className="text-white">{pins.length || (loading ? '—' : 0)} live pins</span>
-        </div>
-        <div className="absolute right-3 top-3 z-30 flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={onReload}
-            className="rounded-full bg-slate-900/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-emerald-100 shadow hover:bg-slate-900"
-          >
-            Refresh
-          </button>
-        </div>
-        <div
-          ref={mapContainerRef}
-          className="absolute inset-0 h-full w-full overflow-hidden rounded-[30px] bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950"
-        />
-        {loading && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-950/30 text-sm text-white backdrop-blur">
-            Loading live map...
-          </div>
-        )}
-        {(error || mapError) && !loading && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-slate-950/40 px-4 text-center text-sm text-amber-100 backdrop-blur">
-            <p>{mapError || error}</p>
-            <button
-              type="button"
-              onClick={onReload}
-              className="rounded-full border border-amber-200/60 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-white/10"
-            >
-              Try again
-            </button>
-          </div>
-        )}
-        {!loading && !error && !mapError && !pins.length ? (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center text-sm text-slate-200 backdrop-blur-sm">
-            <p>No live drivers to show yet.</p>
-            <p className="mt-1 text-xs text-slate-400">Check back soon.</p>
-          </div>
-        ) : null}
-      </div>
-    </div>
-  );
-};
+const inputCls =
+  'w-full rounded-xl border-[1.5px] border-[#e5ebe8] bg-[#fbfcfc] px-3.5 py-3 text-[14.5px] font-semibold text-ink outline-none transition focus:border-brand';
+const labelCls = 'mb-1.5 block text-xs font-bold text-muted';
 
 const HomePage = () => {
+  const navigate = useNavigate();
   const [vehicleState, setVehicleState] = useState({ loading: true, error: '', items: [] });
-  const [vehicleReloadKey, setVehicleReloadKey] = useState(0);
   const [driverState, setDriverState] = useState({ loading: true, error: '', items: [] });
-  const [driverReloadKey, setDriverReloadKey] = useState(0);
   const [reviewState, setReviewState] = useState({ loading: true, error: '', items: [] });
-  const [reviewReloadKey, setReviewReloadKey] = useState(0);
+
+  const [form, setForm] = useState({
+    startDate: '',
+    endDate: '',
+    pickup: '',
+    dropoff: '',
+    party: '1–3',
+    notes: '',
+  });
+  const setField = (key) => (event) => setForm((prev) => ({ ...prev, [key]: event.target.value }));
 
   useEffect(() => {
     let cancelled = false;
-
-    setVehicleState((prev) => ({ ...prev, loading: true, error: '' }));
-
     fetchVehicles({ sort: 'rating_desc' })
       .then(({ vehicles }) => {
-        if (cancelled) {
-          return;
-        }
-        setVehicleState({
-          loading: false,
-          error: '',
-          items: Array.isArray(vehicles) ? vehicles : [],
-        });
+        if (!cancelled) setVehicleState({ loading: false, error: '', items: Array.isArray(vehicles) ? vehicles : [] });
       })
       .catch((error) => {
-        if (cancelled) {
-          return;
-        }
-        setVehicleState({
-          loading: false,
-          error: error?.message || 'Unable to load vehicles right now.',
-          items: [],
-        });
+        if (!cancelled) setVehicleState({ loading: false, error: error?.message || 'Unable to load vehicles.', items: [] });
       });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [vehicleReloadKey]);
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
-
-    setDriverState((prev) => ({ ...prev, loading: true, error: '' }));
-
     fetchDriverDirectory()
       .then(({ drivers }) => {
-        if (cancelled) {
-          return;
-        }
-        setDriverState({
-          loading: false,
-          error: '',
-          items: Array.isArray(drivers) ? drivers : [],
-        });
+        if (!cancelled) setDriverState({ loading: false, error: '', items: Array.isArray(drivers) ? drivers : [] });
       })
       .catch((error) => {
-        if (cancelled) {
-          return;
-        }
-        setDriverState({
-          loading: false,
-          error: error?.message || 'Unable to load drivers right now.',
-          items: [],
-        });
+        if (!cancelled) setDriverState({ loading: false, error: error?.message || 'Unable to load drivers.', items: [] });
       });
+    return () => { cancelled = true; };
+  }, []);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [driverReloadKey]);
-
-  const featuredVehicles = useMemo(
-    () => vehicleState.items.slice(0, 3),
-    [vehicleState.items],
-  );
-  const featuredDrivers = useMemo(
-    () => driverState.items.slice(0, 3),
-    [driverState.items],
-  );
-
-  const retryVehicles = () => setVehicleReloadKey((prev) => prev + 1);
-  const retryDrivers = () => setDriverReloadKey((prev) => prev + 1);
-  const retryReviews = () => setReviewReloadKey((prev) => prev + 1);
+  const featuredVehicles = useMemo(() => vehicleState.items.slice(0, 3), [vehicleState.items]);
+  const featuredDrivers = useMemo(() => driverState.items.slice(0, 3), [driverState.items]);
 
   useEffect(() => {
     let cancelled = false;
-
-    if (vehicleState.loading) {
-      setReviewState((prev) => ({ ...prev, loading: true }));
-      return () => {
-        cancelled = true;
-      };
-    }
-
+    if (vehicleState.loading) return undefined;
     if (!featuredVehicles.length) {
       setReviewState({ loading: false, error: '', items: [] });
-      return () => {
-        cancelled = true;
-      };
+      return undefined;
     }
-
     setReviewState((prev) => ({ ...prev, loading: true, error: '' }));
-
-    const loadReviews = async () => {
+    (async () => {
       try {
         const responses = await Promise.all(
           featuredVehicles.map((vehicle) =>
             fetchVehicleReviews(vehicle.id)
-              .then((payload) => ({
-                vehicle,
-                reviews: Array.isArray(payload?.reviews) ? payload.reviews : [],
-              }))
+              .then((payload) => ({ vehicle, reviews: Array.isArray(payload?.reviews) ? payload.reviews : [] }))
               .catch(() => ({ vehicle, reviews: [] })),
           ),
         );
-
-        if (cancelled) {
-          return;
-        }
-
-        const aggregated = responses.flatMap(({ vehicle, reviews }) =>
-          reviews.slice(0, 2).map((review) => ({
-            review,
-            vehicle,
-          })),
-        );
-
-        const sorted = aggregated
+        if (cancelled) return;
+        const aggregated = responses
+          .flatMap(({ vehicle, reviews }) => reviews.slice(0, 2).map((review) => ({ review, vehicle })))
           .sort((a, b) => {
-            const aDate = new Date(a.review.publishedAt || a.review.createdAt || 0).getTime();
-            const bDate = new Date(b.review.publishedAt || b.review.createdAt || 0).getTime();
-            return bDate - aDate;
+            const aD = new Date(a.review.publishedAt || a.review.createdAt || 0).getTime();
+            const bD = new Date(b.review.publishedAt || b.review.createdAt || 0).getTime();
+            return bD - aD;
           })
           .slice(0, 3);
-
-        setReviewState({
-          loading: false,
-          error: '',
-          items: sorted,
-        });
+        setReviewState({ loading: false, error: '', items: aggregated });
       } catch (error) {
-        if (cancelled) {
-          return;
-        }
-        setReviewState({
-          loading: false,
-          error: error?.message || 'Unable to load guest reviews right now.',
-          items: [],
-        });
+        if (!cancelled) setReviewState({ loading: false, error: error?.message || 'Unable to load reviews.', items: [] });
       }
-    };
+    })();
+    return () => { cancelled = true; };
+  }, [vehicleState.loading, featuredVehicles]);
 
-    loadReviews();
+  // Route to the traveller "My Requests" tab to create a quote request, gating on auth.
+  // The prefill is stashed so the requests tab opens with the request form ready.
+  const goToRequests = (prefill = {}) => {
+    try {
+      sessionStorage.setItem(PENDING_BRIEF_KEY, JSON.stringify(prefill));
+    } catch {
+      /* ignore storage errors */
+    }
+    if (!getStoredToken()) {
+      saveReturnPath(REQUESTS_PATH);
+      navigate('/register');
+      return;
+    }
+    navigate(REQUESTS_PATH);
+  };
 
-    return () => {
-      cancelled = true;
-    };
-  }, [vehicleState.loading, featuredVehicles, reviewReloadKey]);
+  const handleQuoteSubmit = (event) => {
+    event.preventDefault();
+    goToRequests({
+      startDate: form.startDate,
+      endDate: form.endDate,
+      startLocation: form.pickup,
+      endLocation: form.dropoff,
+      adults: PARTY_TO_ADULTS[form.party] || '2',
+      children: '0',
+      message: form.notes,
+      country: '',
+    });
+  };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-emerald-50 text-slate-900">
-      {/* HERO */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-emerald-100/70 to-transparent blur-3xl" />
-        <div className="relative w-full px-6 pb-16 pt-24 sm:px-10 sm:pt-28 sm:pb-24 lg:px-16 xl:px-24">
-          <div className="grid gap-12 lg:grid-cols-2">
-            <div>
-              <p className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/80 px-3 py-1 text-xs font-semibold text-emerald-700 shadow-sm backdrop-blur">
-                Trusted Sri Lanka Car With Driver platform
-              </p>
-              <h1 className="mt-6 text-4xl font-extrabold leading-tight tracking-tight text-slate-900 sm:text-5xl">
-                Chauffeur-driven tours & car rentals designed for{' '}
-                <span className="text-emerald-600">Sri Lankan adventures</span>.
-              </h1>
-              <p className="mt-5 text-lg text-slate-600">
-                Book a private driver, customize your itinerary, and explore Sri Lanka&apos;s beaches, tea
-                mountains, and UNESCO sites with confidence. We combine vetted drivers, modern vehicles, and live
-                itinerary tracking to deliver five-star journeys.
-              </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <a
-                  href="/register"
-                  className="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-600/30 transition hover:bg-emerald-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                >
-                  Plan my Sri Lanka trip
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </a>
-                <a
-                  href="/vehicles"
-                  className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-900 shadow-sm transition hover:border-slate-300"
-                >
-                  Browse vehicles & drivers
-                </a>
-              </div>
-              <div className="mt-10 flex flex-wrap gap-4">
-                {heroFeatures.map(({ icon: Icon, label }) => (
-                  <div
-                    key={label}
-                    className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm"
-                  >
-                    <Icon className="h-4 w-4 text-emerald-500" />
-                    {label}
-                  </div>
-                ))}
-              </div>
-              <p className="mt-6 text-xs uppercase tracking-widest text-slate-400">
-                {seoKeywords}
-              </p>
-            </div>
-
-            <div className="flex justify-center lg:justify-end">
-              <LiveDriversMapCard
-                drivers={driverState.items}
-                loading={driverState.loading}
-                error={driverState.error}
-                onReload={retryDrivers}
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* VEHICLE COLLECTION */}
-      <section className="w-full px-6 py-16 sm:px-10 lg:px-16 xl:px-24">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+    <div id="top" className="bg-white font-sans text-ink">
+      {/* ===== HERO ===== */}
+      <section className="border-b border-[#eef2f0] bg-gradient-to-b from-[#f1f9f4] to-white">
+        <div className="mx-auto grid max-w-[1200px] items-center gap-[clamp(28px,4vw,54px)] px-[clamp(18px,4vw,40px)] pb-[clamp(30px,4vw,56px)] pt-[clamp(34px,5vw,72px)] lg:grid-cols-2">
+          {/* left */}
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-600">
-              Fleet for every journey
+            <span className="inline-flex items-center gap-2 rounded-full border border-[#d6ece0] bg-white px-3 py-[7px] text-[12.5px] font-bold text-brand-dark">
+              <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+              Trusted by 12,000+ travellers since 2014
+            </span>
+            <h1 className="mt-[18px] text-[clamp(33px,5vw,54px)] font-extrabold leading-[1.06] tracking-[-.03em]">
+              Sri Lanka car rentals <span className="text-brand">with a driver</span> who knows the island.
+            </h1>
+            <p className="mt-4 max-w-[560px] text-[clamp(15.5px,1.4vw,18px)] leading-[1.6] text-muted">
+              Licensed drivers, air-conditioned vehicles and itineraries built around your dates. Beaches, tea country,
+              UNESCO cities, all on one fixed daily rate with no hidden extras.
             </p>
-            <h2 className="mt-2 text-3xl font-bold text-slate-900">
-              Premium vehicles for island-wide car rentals in Sri Lanka
-            </h2>
-            <p className="mt-3 text-slate-600 max-w-2xl">
-              Choose from modern SUVs, executive sedans, and group-friendly vans. Each vehicle is professionally
-              maintained, GPS-enabled, and paired with a bilingual driver so you can relax from Colombo to Yala.
-            </p>
+            <div className="mt-[26px] grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <a
+                href="#quote"
+                className="inline-flex items-center justify-center gap-2.5 rounded-[13px] bg-brand px-6 py-[15px] text-[15.5px] font-bold text-white shadow-[0_12px_26px_-12px_rgba(16,163,90,.65)] transition hover:bg-brand-dark"
+              >
+                Plan my trip <ArrowIcon />
+              </a>
+              <Link
+                to="/vehicles"
+                className="inline-flex items-center justify-center gap-2.5 rounded-[13px] border-[1.5px] border-[#dde4e1] bg-white px-6 py-[15px] text-[15.5px] font-bold text-ink transition hover:border-brand"
+              >
+                Browse vehicles &amp; drivers
+              </Link>
+            </div>
+            <dl className="mt-8 grid grid-cols-3 gap-[clamp(8px,2.5vw,14px)] border-t border-[#e4ece7] pt-[26px] text-center">
+              <HeroStat label="Daily rate from" value="$43" suffix="/day" />
+              <HeroStat label="Guest rating" value="4.9" suffix=" / 5" />
+              <HeroStat label="Reply time" value="< 1 hr" />
+            </dl>
           </div>
-          <a
-            href="/vehicles"
-            className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:border-emerald-400"
-          >
-            View all vehicles
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </a>
-        </div>
-        <div className="mt-10">
-          {vehicleState.loading ? (
-            <div className="grid gap-6 md:grid-cols-3">
-              {showcasePlaceholders.map((placeholder) => (
-                <div
-                  key={`vehicle-skeleton-${placeholder}`}
-                  className="animate-pulse rounded-2xl border border-slate-100 bg-white/70 p-6 shadow-sm"
-                >
-                  <div className="h-40 w-full rounded-2xl bg-slate-100" />
-                  <div className="mt-4 h-4 w-3/4 rounded bg-slate-100" />
-                  <div className="mt-2 h-4 w-1/2 rounded bg-slate-100" />
-                  <div className="mt-6 h-8 w-2/3 rounded-full bg-slate-100" />
-                </div>
-              ))}
-            </div>
-          ) : vehicleState.error ? (
-            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">
-              <p>{vehicleState.error}</p>
-              <div className="mt-4 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={retryVehicles}
-                  className="inline-flex items-center rounded-full border border-rose-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-rose-700 transition hover:border-rose-300 hover:text-rose-800"
-                >
-                  Try again
-                </button>
-                <a
-                  href="/vehicles"
-                  className="inline-flex items-center rounded-full border border-rose-100 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-rose-700 transition hover:border-rose-200"
-                >
-                  Open catalog
-                </a>
-              </div>
-            </div>
-          ) : featuredVehicles.length === 0 ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600">
-              No vehicles are ready yet.{' '}
-              <a href="/vehicles" className="font-semibold text-emerald-600">
-                Browse the catalog
-              </a>{' '}
-              to see the latest additions.
-            </div>
-          ) : (
-            <div className="grid gap-6 md:grid-cols-3">
-              {featuredVehicles.map((vehicle) => {
-                const image = getVehicleImage(vehicle);
-                const discount = vehicle.activeDiscount;
-                const dailyRate = formatCurrency(
-                  typeof discount?.discountedPricePerDay === 'number'
-                    ? discount.discountedPricePerDay
-                    : vehicle.pricePerDay
-                ) || 'Custom quote';
-                const originalRate =
-                  discount && typeof vehicle.pricePerDay === 'number'
-                    ? formatCurrency(vehicle.pricePerDay)
-                    : null;
-                const seatLabel = vehicle.seats ? `${vehicle.seats} seats` : 'Seats on request';
-                const driverName = vehicle.driver?.name ?? 'Approved driver';
 
-                return (
-                  <Link
-                    key={vehicle.id}
-                    to={`/vehicles/${vehicle.id}`}
-                    className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
-                  >
-                    {image ? (
-                      <div className="h-48 w-full overflow-hidden bg-slate-100">
-                        <img
-                          src={image}
-                          alt={vehicle.model || 'Vehicle image'}
-                          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex h-48 w-full items-center justify-center bg-slate-100 text-slate-400">
-                        <Car className="h-10 w-10" />
-                      </div>
-                    )}
-                    <div className="flex flex-1 flex-col gap-4 p-6">
-                      <div className="space-y-2">
-                        <h3 className="text-lg font-semibold text-slate-900">
-                          {vehicle.model || 'Featured vehicle'}
-                        </h3>
-                        <p className="line-clamp-2 text-sm text-slate-600">
-                          {vehicle.description || 'Spacious, comfortable, and ready for Sri Lanka road trips.'}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
-                        <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1">
-                          {seatLabel}
-                        </span>
-                        {vehicle.year ? (
-                          <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1">
-                            Year {vehicle.year}
-                          </span>
-                        ) : null}
-                      </div>
-                      <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-4">
-                        <div>
-                          <p className="text-xs uppercase tracking-wide text-slate-400">Average rate</p>
-                          <p className="text-sm font-semibold text-slate-900">
-                            {dailyRate}
-                            {originalRate ? (
-                              <span className="ml-2 text-xs font-semibold text-slate-400 line-through">
-                                {originalRate}
-                              </span>
-                            ) : null}
-                          </p>
-                          {discount?.discountPercent ? (
-                            <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
-                              Save {discount.discountPercent}%
-                            </p>
-                          ) : null}
-                        </div>
-                        <p className="text-xs font-medium text-slate-500">By {driverName}</p>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
+          {/* right: quote form */}
+          <form
+            id="quote"
+            onSubmit={handleQuoteSubmit}
+            className="scroll-mt-24 rounded-[24px] border border-[#e5ebe8] bg-white p-[clamp(20px,2.4vw,28px)] shadow-[0_28px_60px_-32px_rgba(15,31,45,.28)]"
+          >
+            <h2 className="text-[19px] font-extrabold tracking-[-.01em]">Get driver quotes in minutes</h2>
+            <p className="mt-[7px] text-[13.5px] leading-[1.5] text-muted">
+              Tell us the basics and we match you with vetted drivers who send fixed prices.
+            </p>
+            <div className="mt-5 grid gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="block">
+                  <span className={labelCls}>Start date</span>
+                  <input type="date" value={form.startDate} onChange={setField('startDate')} className={inputCls} />
+                </label>
+                <label className="block">
+                  <span className={labelCls}>End date</span>
+                  <input type="date" value={form.endDate} min={form.startDate || undefined} onChange={setField('endDate')} className={inputCls} />
+                </label>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="block">
+                  <span className={labelCls}>Pick-up</span>
+                  <input type="text" value={form.pickup} onChange={setField('pickup')} placeholder="City, hotel or airport" className={inputCls} />
+                </label>
+                <label className="block">
+                  <span className={labelCls}>Drop-off</span>
+                  <input type="text" value={form.dropoff} onChange={setField('dropoff')} placeholder="City, hotel or airport" className={inputCls} />
+                </label>
+              </div>
+              <div>
+                <span className={labelCls}>Travellers</span>
+                <div className="flex flex-wrap gap-2">
+                  {PARTY_OPTIONS.map((p) => {
+                    const active = form.party === p;
+                    return (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => setForm((prev) => ({ ...prev, party: p }))}
+                        className={`min-h-[44px] rounded-full border-[1.5px] border-transparent px-[18px] py-3 text-[13.5px] font-bold transition ${
+                          active ? 'bg-ink text-white' : 'bg-[#f2f5f4] text-ink-soft hover:bg-[#e9efec]'
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <label className="block">
+                <span className="mb-1.5 flex items-center justify-between gap-2 text-xs font-bold text-muted">
+                  Itinerary details <span className="font-semibold text-[#a3b0bb]">Optional</span>
+                </span>
+                <textarea
+                  rows="3"
+                  value={form.notes}
+                  onChange={setField('notes')}
+                  placeholder="Places you want to see, flight times, kids or extra luggage. Anything that helps drivers quote accurately."
+                  className={`${inputCls} resize-y leading-[1.5]`}
+                />
+              </label>
+              <button
+                type="submit"
+                className="mt-1 rounded-[13px] bg-brand px-4 py-[15px] text-[15.5px] font-bold text-white transition hover:bg-brand-dark"
+              >
+                Get Quotes from Drivers
+              </button>
+              <p className="text-center text-xs leading-[1.5] text-muted-soft">
+                Free to request · No booking fee · Pay the driver directly
+              </p>
             </div>
-          )}
+          </form>
+        </div>
+
+        {/* trust badges */}
+        <div className="mx-auto grid max-w-[1200px] grid-cols-1 gap-3 px-[clamp(18px,4vw,40px)] pb-[clamp(28px,3vw,44px)] sm:grid-cols-2 lg:grid-cols-4">
+          {TRUST_BADGES.map((badge) => (
+            <div key={badge.label} className="flex items-center gap-2.5 rounded-[14px] border border-[#e8edeb] bg-white px-4 py-3.5">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#10a35a" strokeWidth="1.8" strokeLinecap="round" className="shrink-0">
+                {badge.svg}
+              </svg>
+              <span className="text-[13.5px] font-bold">{badge.label}</span>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* DRIVER TALENT */}
-      <section className="bg-white/70 py-16">
-        <div className="w-full px-6 sm:px-10 lg:px-16 xl:px-24">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-600">Driver partners</p>
-              <h2 className="mt-2 text-3xl font-bold text-slate-900">
-                Meet the chauffeurs trusted by thousands of tourists
-              </h2>
-              <p className="mt-3 text-slate-600 max-w-2xl">
-                Every driver is background-checked, insured, and trained in hospitality. They know hidden viewpoints,
-                heritage sites, and the best roadside cafes—making them the ultimate hosts on wheels.
-              </p>
+      {/* ===== HOW IT WORKS ===== */}
+      <section className="mx-auto max-w-[1200px] px-[clamp(18px,4vw,40px)] py-[clamp(44px,5vw,78px)]">
+        <Eyebrow>How it works</Eyebrow>
+        <h2 className="mt-3 max-w-[640px] text-[clamp(25px,3vw,36px)] font-extrabold leading-[1.15] tracking-[-.02em]">
+          Three steps from enquiry to airport pick-up
+        </h2>
+        <div className="mt-8 grid grid-cols-1 gap-[clamp(14px,2vw,22px)] md:grid-cols-3">
+          {[
+            { n: '1', t: 'Share your itinerary', d: 'Dates, group size and the places on your list. A rough idea is enough, and drivers help refine it.' },
+            { n: '2', t: 'Compare real quotes', d: 'See vehicle, daily rate, languages and reviews side by side. Message drivers before you commit.' },
+            { n: '3', t: 'Secure your booking', d: 'Agree the final itinerary and rate with your driver, then confirm. You get written trip details and direct contact before you fly.' },
+          ].map((step) => (
+            <article key={step.n} className="rounded-[20px] border border-[#e9efec] bg-[#f7faf8] p-6">
+              <span className="grid h-[38px] w-[38px] place-items-center rounded-xl bg-ink text-[15px] font-extrabold text-[#7fd9a8]">
+                {step.n}
+              </span>
+              <h3 className="mt-4 text-[17.5px] font-extrabold">{step.t}</h3>
+              <p className="mt-2 text-[14.5px] leading-[1.6] text-muted">{step.d}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* ===== FLEET ===== */}
+      <section id="fleet" className="border-y border-[#eef2f0] bg-[#f6f8f7]">
+        <div className="mx-auto max-w-[1200px] px-[clamp(18px,4vw,40px)] py-[clamp(44px,5vw,78px)]">
+          <SectionHead
+            eyebrow="Fleet for every journey"
+            title="Vehicles for island-wide car rentals in Sri Lanka"
+            copy="Modern SUVs, executive sedans and group vans, all maintained, GPS-enabled and paired with a bilingual driver."
+            to="/vehicles"
+            cta="View all vehicles"
+          />
+          <div className="mt-8 grid grid-cols-1 gap-[clamp(14px,2vw,22px)] sm:grid-cols-2 lg:grid-cols-3">
+            {vehicleState.loading ? (
+              skeletons.map((s) => <CardSkeleton key={s} withImage />)
+            ) : vehicleState.error ? (
+              <ErrorCard message={vehicleState.error} to="/vehicles" cta="Open catalog" />
+            ) : featuredVehicles.length === 0 ? (
+              <EmptyCard>
+                No vehicles yet. <Link to="/vehicles" className="font-bold text-brand-dark">Browse the catalog</Link>.
+              </EmptyCard>
+            ) : (
+              featuredVehicles.map((vehicle, i) => <VehicleCard key={vehicle.id} vehicle={vehicle} tag={VEHICLE_TAGS[i]} />)
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== DRIVERS ===== */}
+      <section id="drivers" className="bg-ink">
+        <div className="mx-auto max-w-[1200px] px-[clamp(18px,4vw,40px)] py-[clamp(44px,5vw,78px)]">
+          <SectionHead
+            dark
+            eyebrow="Driver partners"
+            title="Meet the drivers travellers ask for by name"
+            copy="Background-checked, insured and trained in hospitality. They know the viewpoints, the heritage sites and the best roadside cafés."
+            to="/drivers"
+            cta="Explore driver directory"
+          />
+          <div className="mt-8 grid grid-cols-1 gap-[clamp(14px,2vw,22px)] sm:grid-cols-2 lg:grid-cols-3">
+            {driverState.loading ? (
+              skeletons.map((s) => <CardSkeleton key={s} />)
+            ) : driverState.error ? (
+              <ErrorCard message={driverState.error} to="/drivers" cta="View directory" />
+            ) : featuredDrivers.length === 0 ? (
+              <EmptyCard>
+                No drivers published yet. <Link to="/drivers" className="font-bold text-brand-dark">Browse the directory</Link>.
+              </EmptyCard>
+            ) : (
+              featuredDrivers.map((driver) => <DriverCard key={driver.id} driver={driver} />)
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== PRICING ===== */}
+      <section id="pricing" className="mx-auto grid max-w-[1200px] items-start gap-[clamp(24px,3vw,44px)] px-[clamp(18px,4vw,40px)] py-[clamp(44px,5vw,78px)] lg:grid-cols-2">
+        <div>
+          <Eyebrow>Transparent trip cost</Eyebrow>
+          <h2 className="mt-3 text-[clamp(25px,3vw,36px)] font-extrabold leading-[1.15] tracking-[-.02em]">
+            One daily rate. Everything that matters included.
+          </h2>
+          <p className="mt-3 text-[15.5px] leading-[1.6] text-muted">
+            No commission on top, no per-kilometre surprises. You see the full figure before you confirm, and you pay your
+            driver directly.
+          </p>
+          <ul className="mt-[22px] grid gap-[11px]">
+            {[
+              'Driver fee, meals and accommodation',
+              'Fuel and unlimited island-wide kilometres',
+              'Full vehicle insurance and 24/7 support',
+              'Airport meet & greet on arrival day',
+            ].map((item) => (
+              <li key={item} className="flex items-center gap-2.5 text-[14.5px] font-semibold">
+                <CheckIcon />
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="rounded-[22px] border border-[#e5ebe8] bg-[#f7faf8] p-[clamp(20px,2.4vw,28px)]">
+          <div className="text-xs font-extrabold tracking-[.06em] text-muted-soft">SAMPLE 6-DAY TRIP · 1–3 TRAVELLERS</div>
+          <div className="mt-4 grid gap-3">
+            <PriceRow label="Vehicle & driver ($43 × 6 days)" value="$258" />
+            <PriceRow label="Fuel & unlimited km" value="Included" green />
+            <PriceRow label="Airport pick-up" value="Included" green />
+            <PriceRow label="Platform booking fee" value="$0" green />
+            <div className="flex items-center justify-between border-t border-[#e2e9e5] pt-3.5">
+              <span className="text-[15px] font-extrabold">Estimated total</span>
+              <span className="text-[24px] font-extrabold">$258</span>
             </div>
-            <a
-              href="/drivers"
-              className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:border-emerald-400"
-            >
-              Explore driver directory
-              <ArrowRight className="ml-2 h-4 w-4" />
+          </div>
+          <button
+            type="button"
+            onClick={() => goToRequests()}
+            className="mt-[18px] block w-full rounded-[13px] bg-ink py-3.5 text-center text-[15px] font-bold text-white transition hover:bg-ink/90"
+          >
+            Price my own itinerary
+          </button>
+        </div>
+      </section>
+
+      {/* ===== REVIEWS ===== */}
+      <section id="reviews" className="border-y border-[#e6f0ea] bg-[#f1f9f4]">
+        <div className="mx-auto max-w-[1200px] px-[clamp(18px,4vw,40px)] py-[clamp(44px,5vw,78px)]">
+          <Eyebrow tone="brand-dark">Guest stories</Eyebrow>
+          <h2 className="mt-3 max-w-[720px] text-[clamp(25px,3vw,36px)] font-extrabold leading-[1.15] tracking-[-.02em]">
+            4.9 out of 5 across driver-guided trips
+          </h2>
+          <div className="mt-8 grid grid-cols-1 gap-[clamp(14px,2vw,22px)] sm:grid-cols-2 lg:grid-cols-3">
+            {reviewState.loading ? (
+              skeletons.map((s) => <CardSkeleton key={s} />)
+            ) : reviewState.items.length === 0 ? (
+              <EmptyCard>
+                Be the first to share your journey.{' '}
+                <Link to="/vehicles" className="font-bold text-brand-dark">Plan your trip</Link>.
+              </EmptyCard>
+            ) : (
+              reviewState.items.map(({ review, vehicle }, i) => (
+                <ReviewCard key={review.id || `${vehicle?.id}-${i}`} review={review} vehicle={vehicle} />
+              ))
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== FAQ ===== */}
+      <section id="faq" className="mx-auto grid max-w-[1200px] items-start gap-[clamp(24px,3vw,48px)] px-[clamp(18px,4vw,40px)] py-[clamp(44px,5vw,78px)] lg:grid-cols-2">
+        <div>
+          <Eyebrow>FAQ</Eyebrow>
+          <h2 className="mt-3 text-[clamp(25px,3vw,36px)] font-extrabold leading-[1.15] tracking-[-.02em]">
+            Hiring a car with driver in Sri Lanka
+          </h2>
+          <p className="mt-3 text-[15.5px] leading-[1.6] text-muted">
+            Still unsure about something? Message us on WhatsApp at{' '}
+            <a href="tel:+94763021483" className="font-semibold text-brand-dark">+94 76 3021 483</a> and we usually reply
+            within the hour.
+          </p>
+        </div>
+        <div className="grid gap-3">
+          {FAQS.map((faq) => (
+            <details key={faq.q} className="group rounded-[16px] border border-[#e5ebe8] bg-white px-[18px] py-4">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3.5 [&::-webkit-details-marker]:hidden">
+                <h3 className="text-[15.5px] font-bold">{faq.q}</h3>
+                <span className="shrink-0 transition-transform duration-200 group-open:rotate-45">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#10a35a" strokeWidth="2.2" strokeLinecap="round">
+                    <path d="M8 2.5v11M2.5 8h11" />
+                  </svg>
+                </span>
+              </summary>
+              {faq.a ? <p className="mt-3 text-[14.5px] leading-[1.65] text-muted">{faq.a}</p> : null}
+              {faq.bullets ? (
+                <ul className="mt-3 grid list-disc gap-1.5 pl-5 text-[14.5px] leading-[1.65] text-muted">
+                  {faq.bullets.map((point) => (
+                    <li key={point}>{point}</li>
+                  ))}
+                </ul>
+              ) : null}
+              {faq.outro ? <p className="mt-3 text-[14.5px] leading-[1.65] text-muted">{faq.outro}</p> : null}
+            </details>
+          ))}
+        </div>
+      </section>
+
+      {/* ===== CTA ===== */}
+      <section className="mx-auto max-w-[1200px] px-[clamp(18px,4vw,40px)] pb-[clamp(44px,5vw,72px)]">
+        <div className="grid grid-cols-1 items-center gap-[22px] rounded-[26px] bg-brand p-[clamp(26px,3.4vw,48px)] lg:grid-cols-2">
+          <div>
+            <p className="text-[12.5px] font-extrabold uppercase tracking-[.1em] text-white/80">Car with driver · Sri Lanka tours</p>
+            <h2 className="mt-3 text-[clamp(23px,2.6vw,33px)] font-extrabold leading-[1.2] tracking-[-.02em] text-white">
+              Ready to secure the right driver for your itinerary?
+            </h2>
+            <p className="mt-2.5 max-w-[560px] text-[15px] leading-[1.6] text-white/90">
+              Share your dates, passenger count and wish list. We match you with the ideal vehicle and driver, and keep
+              you updated until arrival.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <a href="#quote" className="inline-flex items-center justify-center gap-2.5 rounded-[13px] bg-white px-6 py-[15px] text-[15.5px] font-bold text-ink">
+              Get a custom quote <ArrowIcon stroke="#0f1f2d" />
             </a>
-          </div>
-        <div className="mt-10">
-          {driverState.loading ? (
-            <div className="grid gap-6 md:grid-cols-3">
-              {showcasePlaceholders.map((placeholder) => (
-                <div
-                  key={`driver-skeleton-${placeholder}`}
-                  className="animate-pulse rounded-2xl border border-slate-100 bg-white/80 p-6 shadow-sm"
-                >
-                  <div className="h-6 w-1/2 rounded bg-slate-100" />
-                  <div className="mt-4 h-4 w-3/4 rounded bg-slate-100" />
-                  <div className="mt-2 h-4 w-2/3 rounded bg-slate-100" />
-                  <div className="mt-6 h-8 w-1/3 rounded-full bg-slate-100" />
-                </div>
-              ))}
-            </div>
-          ) : driverState.error ? (
-            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">
-              <p>{driverState.error}</p>
-              <div className="mt-4 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={retryDrivers}
-                  className="inline-flex items-center rounded-full border border-rose-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-rose-700 transition hover:border-rose-300 hover:text-rose-800"
-                >
-                  Try again
-                </button>
-                <a
-                  href="/drivers"
-                  className="inline-flex items-center rounded-full border border-rose-100 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-rose-700 transition hover:border-rose-200"
-                >
-                  View directory
-                </a>
-              </div>
-            </div>
-          ) : featuredDrivers.length === 0 ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600">
-              No drivers are published yet.{' '}
-              <a href="/drivers" className="font-semibold text-emerald-600">
-                Browse the full directory
-              </a>{' '}
-              for verified chauffeurs.
-            </div>
-          ) : (
-            <div className="grid gap-6 md:grid-cols-3">
-              {featuredDrivers.map((driver) => {
-                const heroImage =
-                  driver.featuredVehicle?.image ||
-                  driver.featuredVehicle?.coverImage ||
-                  driver.featuredVehicle?.media?.[0] ||
-                  null;
-                const ratingLabel = driver.reviewScore
-                  ? `${driver.reviewScore.toFixed(1)} • ${driver.reviewCount ?? 0} reviews`
-                  : 'No reviews yet';
-                const averageRate = formatCurrency(driver.averagePricePerDay) || 'Custom quote';
-                const locationLabel = driver.location?.label || driver.address || 'Island-wide';
-
-                return (
-                  <Link
-                    key={driver.id}
-                    to={`/drivers/${driver.id}`}
-                    className="group flex h-full flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
-                  >
-                    {heroImage ? (
-                      <div className="h-48 w-full overflow-hidden bg-slate-100">
-                        <img
-                          src={heroImage}
-                          alt={driver.name}
-                          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                        />
-                      </div>
-                    ) : null}
-                    <div className="flex flex-1 flex-col gap-4 p-6">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 overflow-hidden rounded-full border border-slate-200 bg-slate-100">
-                            {driver.profilePhoto ? (
-                              <img
-                                src={driver.profilePhoto}
-                                alt={driver.name}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-full w-full items-center justify-center text-slate-400">
-                                <UserRoundCheck className="h-4 w-4" />
-                              </div>
-                            )}
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h3 className="text-lg font-semibold text-slate-900">{driver.name}</h3>
-                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">
-                                <UserRoundCheck className="h-4 w-4" />
-                                Verified
-                              </span>
-                            </div>
-                            <p className="text-xs text-slate-500">{locationLabel}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                          <Star className="h-4 w-4 text-amber-500" />
-                          {ratingLabel}
-                        </div>
-                        <p className="line-clamp-2 text-sm text-slate-600">
-                          {driver.description || 'Trusted chauffeur for bespoke Sri Lanka tours.'}
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
-                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1">
-                          <Award className="h-3.5 w-3.5 text-emerald-500" />
-                          {driver.featuredVehicle?.model || 'Multiday tours'}
-                        </span>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1">
-                          {formatExperience(driver.experienceYears)}
-                        </span>
-                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1">
-                          {locationLabel}
-                        </span>
-                      </div>
-                      {driver.badges?.length ? (
-                        <div className="flex flex-wrap gap-2">
-                          {driver.badges.slice(0, 3).map((badge) => (
-                            <span
-                              key={badge}
-                              className="inline-flex items-center rounded-full bg-slate-900/5 px-3 py-1 text-xs font-medium text-slate-700"
-                            >
-                              {badge}
-                            </span>
-                          ))}
-                          {driver.badges.length > 3 ? (
-                            <span className="text-xs text-slate-500">+{driver.badges.length - 3} more</span>
-                          ) : null}
-                        </div>
-                      ) : null}
-                      <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-4">
-                        <div>
-                          <p className="text-xs uppercase tracking-wide text-slate-400">Avg. daily rate</p>
-                          <p className="text-sm font-semibold text-slate-900">{averageRate}</p>
-                        </div>
-                        <span className="inline-flex items-center gap-2 rounded-full border border-slate-300 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 transition group-hover:border-emerald-300 group-hover:text-emerald-600">
-                          View driver
-                          <ArrowRight className="h-4 w-4" />
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-        </div>
-        </div>
-      </section>
-
-      {/* REVIEWS */}
-      <section className="w-full px-6 py-16 sm:px-10 lg:px-16 xl:px-24">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-600">Guest stories</p>
-            <h2 className="mt-2 text-3xl font-bold text-slate-900">
-              4.9 ★ rated trips from beach breaks to cultural odysseys
-            </h2>
-            <p className="mt-3 text-slate-600 max-w-2xl">
-              Our reviews are packed with keywords tourists search for—car rentals with driver, Sri Lanka chauffeur
-              tours, hill country road trips—because we deliver on every promise.
-            </p>
-          </div>
-          <a
-            href="/drivers"
-            className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:border-emerald-400"
-          >
-            Read more reviews
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </a>
-        </div>
-        <div className="mt-10">
-          {reviewState.loading ? (
-            <div className="grid gap-6 md:grid-cols-3">
-              {showcasePlaceholders.map((placeholder) => (
-                <div
-                  key={`review-skeleton-${placeholder}`}
-                  className="animate-pulse rounded-2xl border border-slate-100 bg-white/80 p-6 shadow-sm"
-                >
-                  <div className="h-4 w-32 rounded bg-slate-100" />
-                  <div className="mt-4 h-3 w-1/2 rounded bg-slate-100" />
-                  <div className="mt-2 h-3 w-3/4 rounded bg-slate-100" />
-                  <div className="mt-2 h-3 w-full rounded bg-slate-100" />
-                  <div className="mt-6 h-10 w-1/3 rounded-full bg-slate-100" />
-                </div>
-              ))}
-            </div>
-          ) : reviewState.error ? (
-            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700">
-              <p>{reviewState.error}</p>
-              <div className="mt-4 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={retryReviews}
-                  className="inline-flex items-center rounded-full border border-rose-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-rose-700 transition hover:border-rose-300 hover:text-rose-800"
-                >
-                  Try again
-                </button>
-                <a
-                  href="/vehicles"
-                  className="inline-flex items-center rounded-full border border-rose-100 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-rose-700 transition hover:border-rose-200"
-                >
-                  Browse trips
-                </a>
-              </div>
-            </div>
-          ) : reviewState.items.length === 0 ? (
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 text-sm text-slate-600">
-              Be the first to leave a review after your chauffeur-driven tour.{' '}
-              <a href="/register" className="font-semibold text-emerald-600">
-                Plan your trip
-              </a>{' '}
-              and share your story.
-            </div>
-          ) : (
-            <div className="grid gap-6 md:grid-cols-3">
-              {reviewState.items.map(({ review, vehicle }, index) => {
-                const roundedRating = Math.max(1, Math.min(5, Math.round(review.rating || 0)));
-                const travelerName = review.travelerName || 'Traveler';
-                const summary = formatReviewSubline(review, vehicle);
-                const comment =
-                  review.comment ||
-                  review.title ||
-                  'This traveler shared a private rating for their car-with-driver journey.';
-                const reviewKey =
-                  review.id || `${vehicle?.id || 'vehicle'}-${review.booking || index}`;
-
-                return (
-                  <blockquote
-                    key={reviewKey}
-                    className="flex h-full flex-col rounded-2xl border border-slate-100 bg-white p-6 shadow-sm"
-                  >
-                    <div className="flex items-center gap-1 text-amber-500">
-                      {Array.from({ length: 5 }).map((_, index) => (
-                        <Star
-                          key={`${review.id}-star-${index}`}
-                          className={`h-4 w-4 ${index < roundedRating ? 'fill-current' : ''}`}
-                        />
-                      ))}
-                      <span className="ml-2 text-sm font-semibold text-slate-700">
-                        {Number(review.rating || 0).toFixed(1)} / 5
-                      </span>
-                    </div>
-                    <p className="mt-4 text-sm font-semibold uppercase tracking-widest text-emerald-600">
-                      {summary}
-                    </p>
-                    <p className="review-comment mt-3 text-sm text-slate-600">{comment}</p>
-                    <footer className="mt-6 flex items-center justify-between gap-3 text-sm font-semibold text-slate-900">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={`https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(travelerName)}`}
-                          alt={travelerName}
-                          className="h-9 w-9 rounded-full border border-slate-200 bg-white"
-                        />
-                        <div>
-                          <p>{travelerName}</p>
-                          <p className="text-xs font-normal text-slate-500">
-                            {vehicle?.model ? `Rode in ${vehicle.model}` : 'Car With Driver traveler'}
-                          </p>
-                        </div>
-                      </div>
-                      {vehicle?.id ? (
-                        <Link
-                          to={`/vehicles/${vehicle.id}`}
-                          className="inline-flex items-center gap-1 rounded-full border border-slate-300 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600 transition hover:border-emerald-300 hover:text-emerald-600"
-                        >
-                          View ride
-                          <ArrowRight className="h-3.5 w-3.5" />
-                        </Link>
-                      ) : null}
-                    </footer>
-                  </blockquote>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* SEO CTA */}
-      <section className="w-full px-6 py-10 sm:px-10 lg:px-16 xl:px-24">
-        <div className="rounded-3xl border border-emerald-100 bg-gradient-to-r from-emerald-600 to-emerald-500 px-6 py-10 text-white sm:px-10">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-sm uppercase tracking-[0.3em] text-emerald-100">
-                Car With Driver · Sri Lanka tours
-              </p>
-            <h2 className="mt-3 text-3xl font-bold">
-              Ready to secure the best driver for your Sri Lanka itinerary?
-            </h2>
-              <p className="mt-2 text-emerald-50">
-                Share your travel dates, passenger count, and wish list. We match you with the ideal vehicle and driver, and keep you updated.
-              </p>
-            </div>
-            <a
-              href="/register"
-              className="inline-flex items-center justify-center rounded-2xl bg-white px-6 py-3 text-sm font-semibold text-emerald-700 shadow-lg shadow-emerald-900/20 transition hover:translate-y-0.5"
-            >
-              Get a custom quote
-              <ArrowRight className="ml-2 h-4 w-4" />
+            <a href="tel:+94763021483" className="inline-flex items-center justify-center gap-2.5 rounded-[13px] border border-white/40 bg-white/[0.16] px-6 py-[15px] text-[15.5px] font-bold text-white">
+              Call +94 76 3021 483
             </a>
           </div>
         </div>
       </section>
-      <p className="mt-6 px-6 text-center text-xs uppercase tracking-[0.4em] text-emerald-500 sm:px-10 lg:px-16 xl:px-24">
-        Sri Lanka tourism · chauffeur tours · car rentals with driver · driver for tourists
-      </p>
-    </main>
+    </div>
   );
 };
+
+// ---------- sub-components ----------
+const HeroStat = ({ label, value, suffix }) => (
+  <div>
+    <dt className="text-[clamp(10px,2.6vw,12px)] font-bold uppercase leading-[1.3] tracking-[.03em] text-muted-soft">{label}</dt>
+    <dd className="mt-[5px] whitespace-nowrap text-[clamp(17px,4.4vw,21px)] font-extrabold">
+      {value}
+      {suffix ? <span className="text-[clamp(11px,2.8vw,13px)] font-semibold text-muted-soft">{suffix}</span> : null}
+    </dd>
+  </div>
+);
+
+const Eyebrow = ({ children, tone = 'brand' }) => (
+  <p className={`text-[12.5px] font-extrabold uppercase tracking-[.1em] ${tone === 'brand-dark' ? 'text-brand-dark' : 'text-brand'}`}>
+    {children}
+  </p>
+);
+
+const SectionHead = ({ eyebrow, title, copy, to, cta, dark = false }) => (
+  <div className="flex flex-wrap items-end justify-between gap-[18px]">
+    <div className="max-w-[660px]">
+      <p className={`text-[12.5px] font-extrabold uppercase tracking-[.1em] ${dark ? 'text-[#7fd9a8]' : 'text-brand'}`}>{eyebrow}</p>
+      <h2 className={`mt-3 text-[clamp(25px,3vw,36px)] font-extrabold leading-[1.15] tracking-[-.02em] ${dark ? 'text-white' : ''}`}>{title}</h2>
+      <p className={`mt-3 text-[15.5px] leading-[1.6] ${dark ? 'text-white/[.68]' : 'text-muted'}`}>{copy}</p>
+    </div>
+    <Link
+      to={to}
+      className={`inline-flex min-h-[44px] items-center gap-2 whitespace-nowrap rounded-xl px-[18px] text-[14px] font-bold ${
+        dark ? 'border border-white/20 bg-white/10 text-white' : 'border-[1.5px] border-[#dde4e1] bg-white text-ink'
+      }`}
+    >
+      {cta} <ArrowIcon stroke={dark ? '#fff' : '#0f1f2d'} />
+    </Link>
+  </div>
+);
+
+const Chip = ({ children }) => (
+  <span className="rounded-full bg-[#f2f5f4] px-[11px] py-1.5 text-xs font-semibold text-ink-soft">{children}</span>
+);
+
+const VehicleCard = ({ vehicle, tag }) => {
+  const image = getVehicleImage(vehicle);
+  const discount = vehicle.activeDiscount;
+  const rate =
+    money(typeof discount?.discountedPricePerDay === 'number' ? discount.discountedPricePerDay : vehicle.pricePerDay) || 'Quote';
+  const chips = [
+    vehicle.seats ? `${vehicle.seats} seats` : null,
+    vehicle.year ? `Year ${vehicle.year}` : null,
+    Array.isArray(vehicle.features) && vehicle.features.length ? vehicle.features[0] : null,
+  ].filter(Boolean).slice(0, 3);
+  return (
+    <article className="flex flex-col overflow-hidden rounded-[20px] border border-[#e9edeb] bg-white">
+      <div className="h-[186px] w-full bg-[#eef1f0]">
+        {image ? (
+          <img src={image} alt={vehicle.model || 'Vehicle'} className="h-full w-full object-cover" />
+        ) : (
+          <div className="grid h-full w-full place-items-center text-muted-soft">
+            <svg width="34" height="34" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><path d="M2.5 12.5h15M4 12.5l1.6-4.6A2 2 0 0 1 7.5 6.5h5a2 2 0 0 1 1.9 1.4l1.6 4.6" /><circle cx="6" cy="15" r="1.4" /><circle cx="14" cy="15" r="1.4" /></svg>
+          </div>
+        )}
+      </div>
+      <div className="flex flex-1 flex-col p-[18px]">
+        <div className="flex items-center justify-between gap-2.5">
+          <h3 className="text-[17.5px] font-extrabold">{vehicle.model || 'Featured vehicle'}</h3>
+          {tag ? <span className="rounded-full bg-[#e9f8ef] px-2.5 py-[5px] text-xs font-bold text-brand-dark">{tag}</span> : null}
+        </div>
+        <p className="mt-2.5 flex-1 text-[14px] leading-[1.55] text-muted line-clamp-3">
+          {vehicle.description || 'Comfortable and ready for Sri Lanka road trips, with strong air-conditioning.'}
+        </p>
+        {chips.length ? <div className="mt-3.5 flex flex-wrap gap-[7px]">{chips.map((c) => <Chip key={c}>{c}</Chip>)}</div> : null}
+        <div className="mt-4 flex items-center justify-between gap-2.5 border-t border-[#f0f3f2] pt-3.5">
+          <div>
+            <div className="text-[11px] font-bold tracking-[.04em] text-muted-soft">FROM</div>
+            <div className="text-[17px] font-extrabold">{rate}<span className="text-[12.5px] font-semibold text-muted-soft">/day</span></div>
+          </div>
+          <Link to={`/vehicles/${vehicle.id}`} className="inline-flex min-h-[44px] items-center rounded-[11px] bg-[#e9f8ef] px-4 text-[13.5px] font-bold text-brand-dark">
+            Get a quote
+          </Link>
+        </div>
+      </div>
+    </article>
+  );
+};
+
+const DriverCard = ({ driver }) => {
+  const rating = driver.reviewScore ? driver.reviewScore.toFixed(1) : '—';
+  const reviews = driver.reviewCount ?? 0;
+  const location = driver.location?.label || driver.address || 'Island-wide';
+  const rate = money(driver.averagePricePerDay) || 'Quote';
+  const chips = [driver.featuredVehicle?.model || 'Multiday tours', location].filter(Boolean);
+  return (
+    <article className="flex flex-col rounded-[20px] bg-white p-5">
+      <div className="flex items-center gap-3">
+        <span className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-full bg-[#e9f8ef] text-[21px] font-extrabold text-brand-dark">
+          {driver.profilePhoto ? (
+            <img src={driver.profilePhoto} alt={driver.name} className="h-full w-full object-cover" />
+          ) : (
+            initialsOf(driver.name)
+          )}
+        </span>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-[7px]">
+            <h3 className="text-[16.5px] font-extrabold">{driver.name}</h3>
+            <span className="rounded-full bg-[#e9f8ef] px-2 py-1 text-[10.5px] font-extrabold text-brand-dark">Verified</span>
+          </div>
+          <div className="mt-[3px] text-[12.5px] font-semibold text-muted-soft">{location}</div>
+        </div>
+      </div>
+      <div className="mt-3.5 flex flex-wrap items-center gap-1.5 text-[13.5px] font-bold">
+        <StarIcon />
+        {rating}
+        <span className="font-semibold text-muted-soft">· {reviews} reviews · {yearsLabel(driver.experienceYears)}</span>
+      </div>
+      <p className="mt-[11px] flex-1 text-[14px] leading-[1.6] text-muted line-clamp-3">
+        {driver.description || 'Trusted chauffeur for bespoke Sri Lanka tours across the island.'}
+      </p>
+      <div className="mt-3.5 flex flex-wrap gap-[7px]">{chips.map((c) => <Chip key={c}>{c}</Chip>)}</div>
+      <div className="mt-4 flex items-center justify-between gap-2.5 border-t border-[#f0f3f2] pt-3.5">
+        <div>
+          <div className="text-[11px] font-bold tracking-[.04em] text-muted-soft">AVG. DAILY RATE</div>
+          <div className="text-[17px] font-extrabold">{rate}<span className="text-[12.5px] font-semibold text-muted-soft">/day</span></div>
+        </div>
+        <Link to={`/drivers/${driver.id}`} className="inline-flex min-h-[44px] items-center rounded-[11px] bg-[#e9f8ef] px-4 text-[13.5px] font-bold text-brand-dark">
+          View driver
+        </Link>
+      </div>
+    </article>
+  );
+};
+
+const ReviewCard = ({ review, vehicle }) => {
+  const rating = Math.max(1, Math.min(5, Math.round(review.rating || 5)));
+  const name = review.travelerName || 'Traveller';
+  return (
+    <figure className="m-0 flex flex-col rounded-[20px] border border-[#e5ebe8] bg-white p-[22px]">
+      <div className="flex gap-[3px]">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <StarIcon key={i} fill={i < rating ? '#f5b400' : '#e3e8e5'} />
+        ))}
+      </div>
+      <blockquote className="mt-3.5 flex-1 text-[15px] leading-[1.65] text-[#26333f]">
+        {review.comment || review.title || 'A five-star car-with-driver journey across Sri Lanka.'}
+      </blockquote>
+      <ReviewPhotos images={review.images} />
+      <figcaption className="mt-[18px] flex items-center gap-[11px] border-t border-[#f0f3f2] pt-4">
+        <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#e7ddfb] text-sm font-extrabold text-[#6b3fc0]">
+          {name.charAt(0).toUpperCase()}
+        </span>
+        <span>
+          <b className="block text-sm">{name}</b>
+          <span className="text-[12.5px] font-semibold text-muted-soft">{reviewSubline(review, vehicle)}</span>
+        </span>
+      </figcaption>
+    </figure>
+  );
+};
+
+const PriceRow = ({ label, value, green = false }) => (
+  <div className="flex flex-wrap justify-between gap-2 text-[14.5px] font-semibold text-ink-soft">
+    <span>{label}</span>
+    <b className={green ? 'text-brand-dark' : 'text-ink'}>{value}</b>
+  </div>
+);
+
+const CardSkeleton = ({ withImage = false }) => (
+  <div className="animate-pulse rounded-[20px] border border-[#e9edeb] bg-white p-5">
+    {withImage ? <div className="mb-4 h-[160px] w-full rounded-xl bg-[#eef1f0]" /> : null}
+    <div className="h-4 w-2/3 rounded bg-[#eef1f0]" />
+    <div className="mt-3 h-3 w-full rounded bg-[#eef1f0]" />
+    <div className="mt-2 h-3 w-1/2 rounded bg-[#eef1f0]" />
+    <div className="mt-6 h-9 w-1/3 rounded-full bg-[#eef1f0]" />
+  </div>
+);
+
+const ErrorCard = ({ message, to, cta }) => (
+  <div className="rounded-[20px] border border-[#ffd7dd] bg-[#fff5f6] p-6 text-sm text-[#b23050] sm:col-span-2 lg:col-span-3">
+    <p>{message}</p>
+    <Link to={to} className="mt-3 inline-flex rounded-full border border-[#ffd7dd] bg-white px-4 py-2 text-xs font-bold uppercase tracking-wide text-[#b23050]">
+      {cta}
+    </Link>
+  </div>
+);
+
+const EmptyCard = ({ children }) => (
+  <div className="rounded-[20px] border border-[#e5ebe8] bg-white p-6 text-sm text-muted sm:col-span-2 lg:col-span-3">{children}</div>
+);
 
 export default HomePage;

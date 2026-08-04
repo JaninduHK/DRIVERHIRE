@@ -4,6 +4,7 @@ import {
   registerUser,
   loginUser,
   googleAuth,
+  facebookAuth,
   verifyEmail,
   resendVerificationEmail,
   getCurrentUser,
@@ -61,6 +62,12 @@ router.post(
   '/google',
   [body('credential').isString().notEmpty().withMessage('Google credential is required')],
   googleAuth
+);
+
+router.post(
+  '/facebook',
+  [body('accessToken').isString().notEmpty().withMessage('Facebook access token is required')],
+  facebookAuth
 );
 
 router.get('/verify-email', verifyEmail);

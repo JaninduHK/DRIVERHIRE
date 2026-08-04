@@ -45,8 +45,9 @@ const authHeaders = () => {
 };
 
 const request = async (path, options = {}) => {
+  const isFormData = options.body instanceof FormData;
   const headers = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...authHeaders(),
     ...(options.headers || {}),
   };
@@ -102,13 +103,22 @@ export const cancelTravelerBooking = (bookingId) =>
     body: JSON.stringify({}),
   });
 
-export const submitBookingReview = (bookingId, payload) => {
+export const submitBookingReview = (bookingId, { rating, title, comment, images } = {}) => {
   if (!bookingId) {
     return Promise.reject(new Error('Booking identifier is required to submit a review.'));
   }
+  // Send multipart only when photos are attached; otherwise keep the lightweight JSON path.
+  if (Array.isArray(images) && images.length > 0) {
+    const form = new FormData();
+    form.append('rating', String(rating));
+    if (title) form.append('title', title);
+    form.append('comment', comment);
+    images.forEach((file) => form.append('images', file));
+    return request(`/${bookingId}/reviews`, { method: 'POST', body: form });
+  }
   return request(`/${bookingId}/reviews`, {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ rating, title, comment }),
   });
 };
 

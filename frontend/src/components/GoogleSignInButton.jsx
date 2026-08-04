@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { googleAuth } from '../services/authApi.js';
-import { consumeReturnPath, persistAuthSession } from '../services/authToken.js';
+import { completeSocialAuth } from '../lib/authFlow.js';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 const GOOGLE_GSI_URL = 'https://accounts.google.com/gsi/client';
@@ -24,38 +24,7 @@ const GoogleSignInButton = ({ onLoadingChange, context = 'signin' }) => {
 
       try {
         const result = await googleAuth(response.credential);
-        persistAuthSession({ token: result.token, user: result.user });
-
-        const user = result?.user;
-        const firstName = user?.name?.split(' ')?.[0] || 'there';
-
-        if (result.isNewUser) {
-          toast.success(`Welcome to Car With Driver, ${firstName}!`);
-        } else {
-          toast.success(`Welcome back, ${firstName}!`);
-        }
-
-        const savedPath = consumeReturnPath();
-        const destinationFromReturn =
-          savedPath && !savedPath.startsWith('/register') ? savedPath : '';
-
-        let destination = destinationFromReturn || '/';
-
-        if (!destinationFromReturn) {
-          if (user?.role === 'admin') {
-            destination = '/admin';
-          } else if (user?.role === 'driver') {
-            if (user?.driverStatus === 'approved') {
-              destination = '/portal/driver';
-            } else {
-              toast('Your driver profile is pending approval.', { icon: '⏳' });
-            }
-          } else {
-            destination = '/dashboard';
-          }
-        }
-
-        navigate(destination);
+        completeSocialAuth(result, navigate);
       } catch (error) {
         toast.error(error.message || 'Unable to sign in with Google.');
       } finally {
@@ -72,13 +41,11 @@ const GoogleSignInButton = ({ onLoadingChange, context = 'signin' }) => {
       return;
     }
 
-    // Check if script already loaded
     if (window.google?.accounts?.id) {
       setScriptLoaded(true);
       return;
     }
 
-    // Check if script is loading
     const existingScript = document.querySelector(`script[src="${GOOGLE_GSI_URL}"]`);
     if (existingScript) {
       existingScript.addEventListener('load', () => setScriptLoaded(true));
@@ -86,7 +53,6 @@ const GoogleSignInButton = ({ onLoadingChange, context = 'signin' }) => {
       return;
     }
 
-    // Load script
     const script = document.createElement('script');
     script.src = GOOGLE_GSI_URL;
     script.async = true;
@@ -115,7 +81,7 @@ const GoogleSignInButton = ({ onLoadingChange, context = 'signin' }) => {
         size: 'large',
         text: context === 'signup' ? 'signup_with' : 'signin_with',
         shape: 'rectangular',
-        logo_alignment: 'left',
+        logo_alignment: 'center',
         width: buttonRef.current.offsetWidth || 320,
       });
     } catch (error) {
@@ -128,19 +94,13 @@ const GoogleSignInButton = ({ onLoadingChange, context = 'signin' }) => {
     return null;
   }
 
+  // AuthShell renders the "or" divider; this component only renders Google's button.
   return (
-    <div className="w-full">
-      <div className="relative my-6 flex items-center">
-        <div className="flex-grow border-t border-slate-200" />
-        <span className="mx-4 flex-shrink text-xs text-slate-400">or</span>
-        <div className="flex-grow border-t border-slate-200" />
-      </div>
-      <div
-        ref={buttonRef}
-        className="flex w-full items-center justify-center"
-        style={{ minHeight: '44px' }}
-      />
-    </div>
+    <div
+      ref={buttonRef}
+      className="flex w-full items-center justify-center"
+      style={{ minHeight: '50px', colorScheme: 'light' }}
+    />
   );
 };
 
