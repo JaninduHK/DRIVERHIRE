@@ -230,3 +230,14 @@ export const fetchUsers = () =>
   request('/users', {
     method: 'GET',
   });
+
+export const fetchSettings = () =>
+  request('/settings', {
+    method: 'GET',
+  });
+
+export const updateSettings = (payload) =>
+  request('/settings', {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });

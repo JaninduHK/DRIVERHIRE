@@ -53,6 +53,8 @@ import {
   deleteCommissionDiscount as deleteAdminDiscount,
   sendDriverEmail as sendDriverEmailRequest,
   fetchUsers,
+  fetchSettings as fetchAdminSettings,
+  updateSettings as updateAdminSettings,
 } from '../services/adminApi.js';
 import {
   fetchCurrentUser as fetchProfileCurrentUser,
@@ -1114,12 +1116,15 @@ const AdminDashboard = () => {
                 onReload={loadUsers}
               />
             ) : activeSection === 'drivers' ? (
-              <DriversPanel
-                state={driverState}
-                onRetry={loadDrivers}
-                onStatusChange={handleDriverStatusChange}
-                onSendMessage={handleDriverMessageSend}
-              />
+              <div className="space-y-4">
+                <DriverApprovalSetting />
+                <DriversPanel
+                  state={driverState}
+                  onRetry={loadDrivers}
+                  onStatusChange={handleDriverStatusChange}
+                  onSendMessage={handleDriverMessageSend}
+                />
+              </div>
             ) : activeSection === 'vehicles' ? (
               <VehiclesPanel
                 state={vehicleState}
@@ -2586,6 +2591,81 @@ const ConversationsPanel = ({ state, onReload, onStatusChange, onDelete }) => {
           );
         })
       )}
+    </div>
+  );
+};
+
+const DriverApprovalSetting = () => {
+  const [autoApproval, setAutoApproval] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchAdminSettings()
+      .then((data) => {
+        if (!cancelled) setAutoApproval(Boolean(data?.settings?.driverAutoApproval));
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleSet = async (value) => {
+    if (value === autoApproval || saving) return;
+    const previous = autoApproval;
+    setSaving(true);
+    setAutoApproval(value); // optimistic
+    try {
+      const response = await updateAdminSettings({ driverAutoApproval: value });
+      setAutoApproval(Boolean(response?.settings?.driverAutoApproval));
+      toast.success(response?.message || 'Setting updated.');
+    } catch (err) {
+      setAutoApproval(previous);
+      toast.error(err.message || 'Unable to update setting.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Driver approval</p>
+          <h3 className="text-lg font-semibold text-slate-900">New driver applications</h3>
+          <p className="mt-1 max-w-xl text-sm text-slate-500">
+            {autoApproval
+              ? 'New drivers are approved automatically and can start once they verify their email.'
+              : 'New drivers stay pending until you approve them here. Applies to new registrations.'}
+          </p>
+        </div>
+        <div className="inline-flex rounded-lg bg-slate-100 p-1" role="group" aria-label="Driver approval mode">
+          {[
+            { value: false, label: 'Manual' },
+            { value: true, label: 'Automatic' },
+          ].map((option) => {
+            const active = autoApproval === option.value;
+            return (
+              <button
+                key={option.label}
+                type="button"
+                disabled={loading || saving}
+                onClick={() => handleSet(option.value)}
+                className={`min-w-[92px] rounded-md px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                  active ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 };

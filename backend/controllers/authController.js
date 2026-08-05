@@ -3,6 +3,7 @@ import { validationResult } from 'express-validator';
 import User, { AUTH_PROVIDERS, DRIVER_STATUS, USER_ROLES } from '../models/User.js';
 import { verifyGoogleToken } from '../utils/googleAuth.js';
 import { verifyFacebookToken } from '../utils/facebookAuth.js';
+import { getSetting, SETTING_KEYS } from '../models/Setting.js';
 import { generateAccessToken } from '../utils/jwt.js';
 import buildAppUrl from '../utils/url.js';
 import {
@@ -120,7 +121,17 @@ export const registerUser = async (req, res) => {
         Math.min(60, Math.round(Number(experienceYears) || 0))
       );
       user.experienceYears = normalizedExperience;
-      user.driverStatus = DRIVER_STATUS.PENDING;
+
+      // Approve new drivers automatically when the admin has enabled that mode.
+      const autoApproveDrivers = Boolean(
+        await getSetting(SETTING_KEYS.DRIVER_AUTO_APPROVAL, false)
+      );
+      if (autoApproveDrivers) {
+        user.driverStatus = DRIVER_STATUS.APPROVED;
+        user.driverApprovedAt = new Date();
+      } else {
+        user.driverStatus = DRIVER_STATUS.PENDING;
+      }
     }
 
     await user.setPassword(password);

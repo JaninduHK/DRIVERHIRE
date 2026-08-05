@@ -24,6 +24,8 @@ import {
   deleteConversation,
   sendDriverDirectMessage,
   getUsersList,
+  getAdminSettings,
+  updateAdminSettings,
 } from '../controllers/adminController.js';
 import {
   listAdminReviews,
@@ -345,5 +347,12 @@ router.delete(
 );
 
 router.get('/users', getUsersList);
+
+router.get('/settings', getAdminSettings);
+router.patch(
+  '/settings',
+  [body('driverAutoApproval').optional().isBoolean().withMessage('driverAutoApproval must be a boolean')],
+  updateAdminSettings
+);
 
 export default router;

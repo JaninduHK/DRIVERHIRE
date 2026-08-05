@@ -8,6 +8,7 @@ import Review from '../models/Review.js';
 import TourBrief from '../models/TourBrief.js';
 import ChatConversation from '../models/ChatConversation.js';
 import ChatMessage from '../models/ChatMessage.js';
+import { getSetting, setSetting, SETTING_KEYS } from '../models/Setting.js';
 import {
   sendDriverStatusEmail,
   sendDriverProfileCompletionEmail,
@@ -1064,5 +1065,40 @@ export const getUsersList = async (_req, res) => {
   } catch (error) {
     console.error('List users error:', error);
     return res.status(500).json({ message: 'Unable to load users.' });
+  }
+};
+
+// ---- Platform settings (admin-configurable) ----
+
+// Read the current admin-configurable settings.
+export const getAdminSettings = async (_req, res) => {
+  try {
+    const driverAutoApproval = Boolean(
+      await getSetting(SETTING_KEYS.DRIVER_AUTO_APPROVAL, false)
+    );
+    return res.json({ settings: { driverAutoApproval } });
+  } catch (error) {
+    console.error('Get admin settings error:', error);
+    return res.status(500).json({ message: 'Unable to load settings.' });
+  }
+};
+
+// Update admin-configurable settings. Currently: driver approval mode.
+export const updateAdminSettings = async (req, res) => {
+  try {
+    const { driverAutoApproval } = req.body || {};
+    if (typeof driverAutoApproval === 'boolean') {
+      await setSetting(SETTING_KEYS.DRIVER_AUTO_APPROVAL, driverAutoApproval);
+    }
+    const current = Boolean(await getSetting(SETTING_KEYS.DRIVER_AUTO_APPROVAL, false));
+    return res.json({
+      message: current
+        ? 'New drivers are now approved automatically.'
+        : 'New drivers now require manual approval.',
+      settings: { driverAutoApproval: current },
+    });
+  } catch (error) {
+    console.error('Update admin settings error:', error);
+    return res.status(500).json({ message: 'Unable to update settings.' });
   }
 };
