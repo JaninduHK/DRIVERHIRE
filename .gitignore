@@ -4,10 +4,12 @@ node_modules/
 # Build outputs
 frontend/dist/
 
-# Environment files (contain secrets)
+# Environment files — never commit real secrets (backend/.env, frontend/.env, mobile/.env, etc.)
 .env
-.env.local
-.env.production
+.env.*
+# ...but keep example/template files tracked
+!.env.example
+!.env.*.example
 
 # Docker / Let's Encrypt runtime data
 certbot/
