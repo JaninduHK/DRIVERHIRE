@@ -13,8 +13,11 @@ import {
   Shield,
   Star,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { fetchDriverProfile } from '../services/driverDirectoryApi.js';
 import { fetchVehicleReviews } from '../services/vehicleCatalogApi.js';
+import { startConversation as startChatConversation } from '../services/chatApi.js';
+import { getStoredToken, saveReturnPath } from '../services/authToken.js';
 import { Avatar } from '../components/dashboard/primitives.jsx';
 import ReviewPhotos from '../components/ReviewPhotos.jsx';
 
@@ -72,6 +75,7 @@ const DriverDetails = () => {
   const navigate = useNavigate();
   const [state, setState] = useState({ loading: true, error: '', data: null });
   const [tab, setTab] = useState('about');
+  const [creatingConversation, setCreatingConversation] = useState(false);
 
   const loadProfile = useCallback(async () => {
     if (!id) {
@@ -127,9 +131,39 @@ const DriverDetails = () => {
   const expYears = Math.max(0, Math.round(Number(driver.experienceYears) || 0));
 
   const goBook = () => navigate(primaryVehicle ? `/vehicles/${primaryVehicle.id}` : '/vehicles');
-  const goMessage = () => navigate(primaryVehicle ? `/vehicles/${primaryVehicle.id}` : '/drivers');
 
-  const shared = { driver, vehicles, reviews, cover, cityLabel, perks, primaryVehicle, rateLabel, ratingLabel, expYears, tab, setTab, goBook, goMessage, navigate };
+  // Start (or reuse) a conversation with this driver and open the traveller inbox.
+  const goMessage = async () => {
+    const driverId = driver?.id || id;
+    if (!driverId) {
+      toast.error('Driver information is missing.');
+      return;
+    }
+    const token = getStoredToken();
+    if (!token) {
+      saveReturnPath(`/drivers/${driverId}`);
+      navigate('/register');
+      return;
+    }
+    if (creatingConversation) return;
+    setCreatingConversation(true);
+    try {
+      const response = await startChatConversation({ driverId });
+      const conversationId = response?.conversation?.id;
+      toast.success('Conversation ready in your inbox.');
+      navigate('/dashboard', { state: { openTab: 'messages', conversationId: conversationId || null } });
+    } catch (err) {
+      const message = err?.message || 'Unable to start a conversation right now.';
+      toast.error(message);
+      if (message.toLowerCase().includes('sign in') || message.toLowerCase().includes('auth')) {
+        navigate('/login', { state: { redirectTo: `/drivers/${driverId}` } });
+      }
+    } finally {
+      setCreatingConversation(false);
+    }
+  };
+
+  const shared = { driver, vehicles, reviews, cover, cityLabel, perks, primaryVehicle, rateLabel, ratingLabel, expYears, tab, setTab, goBook, goMessage, creatingConversation, navigate };
 
   return (
     <div className="bg-[#eef1f4] font-sans text-ink">
@@ -140,7 +174,7 @@ const DriverDetails = () => {
 };
 
 // ---------------- MOBILE ----------------
-const MobileProfile = ({ driver, vehicles, reviews, cover, cityLabel, perks, rateLabel, ratingLabel, expYears, tab, setTab, goBook, goMessage, navigate }) => {
+const MobileProfile = ({ driver, vehicles, reviews, cover, cityLabel, perks, rateLabel, ratingLabel, expYears, tab, setTab, goBook, goMessage, creatingConversation, navigate }) => {
   const scrollTo = (t) => {
     setTab(t);
     document.getElementById(`m-${t}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -262,8 +296,12 @@ const MobileProfile = ({ driver, vehicles, reviews, cover, cityLabel, perks, rat
           <div className="text-[16px] font-extrabold text-ink">{rateLabel || '—'}<span className="text-[11.5px] font-semibold text-muted-soft">/day</span></div>
           <div className="text-[11px] text-muted-soft">from</div>
         </div>
-        <button type="button" onClick={goMessage} aria-label="Message" className="grid h-[46px] w-[46px] flex-shrink-0 place-items-center rounded-[14px] border-[1.5px] border-[#e2e8ea]">
-          <MessageSquare className="h-[18px] w-[18px] text-ink" strokeWidth={1.7} />
+        <button type="button" onClick={goMessage} disabled={creatingConversation} aria-label="Message" className="grid h-[46px] w-[46px] flex-shrink-0 place-items-center rounded-[14px] border-[1.5px] border-[#e2e8ea] disabled:opacity-60">
+          {creatingConversation ? (
+            <Loader2 className="h-[18px] w-[18px] animate-spin text-muted-soft" />
+          ) : (
+            <MessageSquare className="h-[18px] w-[18px] text-ink" strokeWidth={1.7} />
+          )}
         </button>
         <button type="button" onClick={goBook} className="flex-1 rounded-[14px] bg-brand py-[14px] text-[14.5px] font-bold text-white transition hover:bg-brand-dark">
           Request booking
@@ -274,7 +312,7 @@ const MobileProfile = ({ driver, vehicles, reviews, cover, cityLabel, perks, rat
 };
 
 // ---------------- DESKTOP ----------------
-const DesktopProfile = ({ driver, vehicles, reviews, cover, cityLabel, perks, rateLabel, ratingLabel, expYears, goBook, goMessage, navigate }) => (
+const DesktopProfile = ({ driver, vehicles, reviews, cover, cityLabel, perks, rateLabel, ratingLabel, expYears, goBook, goMessage, creatingConversation, navigate }) => (
   <div className="hidden min-h-screen lg:block">
     <div className="relative h-[300px] w-full">
       {cover ? <img src={cover} alt="" className="h-full w-full object-cover" /> : <div className="h-full w-full bg-ink" />}
@@ -379,8 +417,12 @@ const DesktopProfile = ({ driver, vehicles, reviews, cover, cityLabel, perks, ra
             <button type="button" onClick={goBook} className="mt-4 w-full rounded-[14px] bg-brand py-[14px] text-[15px] font-extrabold text-white transition hover:bg-brand-dark">
               Request booking
             </button>
-            <button type="button" onClick={goMessage} className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-[14px] border-[1.5px] border-[#e2e8ea] py-[13px] text-[14px] font-bold text-ink transition hover:border-muted-soft">
-              <MessageSquare className="h-4 w-4" strokeWidth={1.7} /> Message {driver.name.split(' ')[0]}
+            <button type="button" onClick={goMessage} disabled={creatingConversation} className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-[14px] border-[1.5px] border-[#e2e8ea] py-[13px] text-[14px] font-bold text-ink transition hover:border-muted-soft disabled:opacity-60">
+              {creatingConversation ? (
+                <><Loader2 className="h-4 w-4 animate-spin text-muted-soft" /> Starting…</>
+              ) : (
+                <><MessageSquare className="h-4 w-4" strokeWidth={1.7} /> Message {driver.name.split(' ')[0]}</>
+              )}
             </button>
             <div className="mt-4 flex flex-col gap-2.5 border-t border-hairline pt-3.5 text-[12.5px] font-semibold text-muted">
               <span className="flex items-center gap-2.5"><Shield className="h-[15px] w-[15px] text-brand" /> Identity &amp; licence verified</span>

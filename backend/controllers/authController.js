@@ -580,14 +580,16 @@ export const googleAuth = async (req, res) => {
     const existingUser = await User.findOne({ email: googleData.email.toLowerCase() });
 
     if (existingUser) {
-      // Drivers and admins must use password authentication
-      if (existingUser.role === USER_ROLES.DRIVER || existingUser.role === USER_ROLES.ADMIN) {
+      // Admins must use password authentication. Drivers may use Google so the
+      // drivers-only mobile app can offer Google sign-in (Google asserts the
+      // email is verified, so we can safely link it to the existing driver).
+      if (existingUser.role === USER_ROLES.ADMIN) {
         return res.status(403).json({
           message: 'This account uses password authentication. Please sign in with your email and password.',
         });
       }
 
-      // Link Google account to existing guest user if not already linked
+      // Link Google account to the existing user (guest or driver) if not linked
       if (!existingUser.googleId) {
         existingUser.googleId = googleData.googleId;
         existingUser.authProvider = AUTH_PROVIDERS.GOOGLE;

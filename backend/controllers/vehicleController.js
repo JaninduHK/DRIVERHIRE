@@ -10,6 +10,7 @@ import {
   sendBookingRequestAlertEmail,
   sendBookingRequestConfirmationEmail,
 } from '../services/emailService.js';
+import { notifyUser } from '../services/expoPushService.js';
 import { mapAssetUrls, buildAssetUrl } from '../utils/assetUtils.js';
 
 const escapeRegex = (value = '') => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -814,6 +815,15 @@ export const createVehicleBooking = async (req, res) => {
         booking,
         vehicle: { model: vehicle.model },
       }).catch((error) => console.warn('Booking alert email failed:', error));
+    }
+
+    // Push the driver's mobile app about the new booking (best effort).
+    if (vehicle.driver?._id) {
+      notifyUser(vehicle.driver._id.toString(), {
+        title: offerMessage ? 'Booking confirmed' : 'New booking request',
+        body: `${trimmedName} · ${vehicle.model}`,
+        data: { type: 'booking', bookingId: booking._id.toString() },
+      });
     }
 
     if (offerMessage) {

@@ -121,6 +121,11 @@ const userSchema = new mongoose.Schema(
       max: 60,
     },
     driverLocation: driverLocationSchema,
+    // Expo push notification tokens for this user's devices (driver mobile app).
+    expoPushTokens: {
+      type: [String],
+      default: [],
+    },
   },
   {
     timestamps: true,
@@ -147,6 +152,7 @@ userSchema.set('toJSON', {
     delete ret.verificationTokenExpires;
     delete ret.passwordResetToken;
     delete ret.passwordResetExpires;
+    delete ret.expoPushTokens;
     return ret;
   },
 });

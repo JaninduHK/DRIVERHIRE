@@ -12,6 +12,8 @@ import {
   updateVehicleAvailability,
   deleteVehicleAvailability,
   completeDriverProfileTour,
+  registerPushToken,
+  unregisterPushToken,
 } from '../controllers/driverController.js';
 import {
   getDriverEarningsHistory,
@@ -27,6 +29,16 @@ router.use(ensureApprovedDriver);
 
 router.get('/overview', getDriverOverview);
 router.post('/onboarding/profile-tour/complete', completeDriverProfileTour);
+router.post(
+  '/push-token',
+  [body('token').isString().trim().notEmpty().withMessage('Push token is required')],
+  registerPushToken
+);
+router.delete(
+  '/push-token',
+  [body('token').isString().trim().notEmpty().withMessage('Push token is required')],
+  unregisterPushToken
+);
 router.get('/vehicles', getDriverVehicles);
 router.post(
   '/vehicles',

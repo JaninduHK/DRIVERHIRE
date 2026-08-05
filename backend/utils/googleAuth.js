@@ -1,5 +1,17 @@
 import { OAuth2Client } from 'google-auth-library';
 
+// Accept ID tokens issued to any of our OAuth clients: the web client (used by
+// the website) plus the Android/iOS clients used by the driver mobile app. A
+// native Google sign-in mints an ID token whose `aud` is the platform client id,
+// so all of them must be trusted audiences.
+const getAudiences = () => {
+  return [
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_ANDROID_CLIENT_ID,
+    process.env.GOOGLE_IOS_CLIENT_ID,
+  ].filter(Boolean);
+};
+
 const getClient = () => {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   if (!clientId) {
@@ -13,7 +25,7 @@ export const verifyGoogleToken = async (idToken) => {
 
   const ticket = await client.verifyIdToken({
     idToken,
-    audience: process.env.GOOGLE_CLIENT_ID,
+    audience: getAudiences(),
   });
 
   const payload = ticket.getPayload();

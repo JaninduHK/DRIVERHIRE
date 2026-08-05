@@ -1574,6 +1574,7 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
   const [pendingFiles, setPendingFiles] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState(null);
+  const [existingImages, setExistingImages] = useState([]);
 
   const clearPendingFiles = useCallback(() => {
     setPendingFiles((prev) => {
@@ -1703,6 +1704,7 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
   const handleEditVehicle = (vehicle) => {
     clearPendingFiles();
     setFormData(buildVehicleFormFromData(vehicle));
+    setExistingImages(Array.isArray(vehicle.images) ? [...vehicle.images] : []);
     setEditingVehicle(vehicle);
     setShowForm(true);
   };
@@ -1741,6 +1743,11 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
     if (parsedSeats) payload.append('seats', String(parsedSeats));
     if (formData.description.trim()) payload.append('description', formData.description.trim());
 
+    // When editing, tell the backend which existing images to keep (the rest are removed).
+    if (editingVehicle) {
+      payload.append('existingImages', JSON.stringify(existingImages));
+    }
+
     pendingFiles.slice(0, 5).forEach((file) => payload.append('images', file));
 
     VEHICLE_FEATURES.forEach(({ key }) => {
@@ -1758,6 +1765,7 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
       }
       setFormData(buildInitialVehicleForm());
       clearPendingFiles();
+      setExistingImages([]);
       setEditingVehicle(null);
       setShowForm(false);
     } catch (error) {
@@ -1913,19 +1921,47 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
               <div className="mt-0.5 text-[12px] text-muted-soft">Up to 5 images · under 10MB each</div>
             </div>
 
+            {editingVehicle && existingImages.length > 0 && (
+              <div>
+                <div className="mb-2 text-[12.5px] font-bold text-ink-soft">
+                  Current photos ({existingImages.length})
+                </div>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {existingImages.map((url, index) => (
+                    <div key={url || index} className="relative overflow-hidden rounded-xl border border-[#e2e8ea]">
+                      <img src={url} alt={`Vehicle photo ${index + 1}`} className="h-20 w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setExistingImages((prev) => prev.filter((u) => u !== url))}
+                        className="absolute right-1.5 top-1.5 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-bold text-[#e11d48] shadow"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-1.5 text-[12px] text-muted-soft">
+                  Remove any you don&apos;t want, then add new ones below (up to 5 total).
+                </div>
+              </div>
+            )}
+
             {pendingFiles.length > 0 && (
-              <div className="grid grid-cols-3 gap-2.5">
-                {pendingFiles.map((file) => (
-                  <div key={file.name} className="relative overflow-hidden rounded-xl border border-[#e2e8ea]">
-                    <img src={file.preview} alt={file.name} className="h-20 w-full object-cover" />
-                    <button
-                      type="button" onClick={() => handleRemoveFile(file.name)}
-                      className="absolute right-1.5 top-1.5 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-bold text-[#e11d48] shadow"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
+              <div>
+                <div className="mb-2 text-[12.5px] font-bold text-ink-soft">New photos</div>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {pendingFiles.map((file) => (
+                    <div key={file.name} className="relative overflow-hidden rounded-xl border border-[#e2e8ea]">
+                      <img src={file.preview} alt={file.name} className="h-20 w-full object-cover" />
+                      <button
+                        type="button" onClick={() => handleRemoveFile(file.name)}
+                        className="absolute right-1.5 top-1.5 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-bold text-[#e11d48] shadow"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 

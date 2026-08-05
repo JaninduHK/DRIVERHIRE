@@ -7,6 +7,7 @@ import User from '../models/User.js';
 import { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
 import { createChatMessage } from '../services/chatService.js';
 import { sendBriefAlertEmail } from '../services/emailService.js';
+import { sendExpoPushNotifications } from '../services/expoPushService.js';
 import { sanitizeMessageContent } from '../utils/chatSanitizer.js';
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
@@ -64,13 +65,22 @@ const notifyApprovedDriversOfBrief = async (brief) => {
       role: USER_ROLES.DRIVER,
       driverStatus: DRIVER_STATUS.APPROVED,
       email: { $exists: true, $ne: '' },
-    }).select('name email role driverStatus');
+    }).select('name email role driverStatus expoPushTokens');
 
     if (!drivers.length) {
       return;
     }
 
     await sendBriefAlertEmail({ drivers, brief });
+
+    // Push to approved drivers' mobile apps (best effort).
+    const tokens = drivers.flatMap((d) => d.expoPushTokens || []);
+    const route = [brief.startLocation, brief.endLocation].filter(Boolean).join(' to ');
+    sendExpoPushNotifications(tokens, {
+      title: 'New tour brief',
+      body: route ? `${route} — tap to send an offer.` : 'A traveller posted a new trip.',
+      data: { type: 'brief', briefId: brief.id },
+    });
   } catch (error) {
     console.error('Brief notification error:', error);
   }

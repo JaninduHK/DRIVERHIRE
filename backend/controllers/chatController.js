@@ -5,6 +5,7 @@ import User, { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
 import Vehicle, { VEHICLE_STATUS } from '../models/Vehicle.js';
 import { sanitizeMessageContent } from '../utils/chatSanitizer.js';
 import { createChatMessage } from '../services/chatService.js';
+import { notifyUser } from '../services/expoPushService.js';
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
@@ -289,6 +290,18 @@ export const sendMessage = async (req, res) => {
     const response = await ChatMessage.findById(message.id)
       .populate('sender', 'id name role')
       .lean();
+
+    // Push the recipient (best effort; only drivers have registered devices).
+    const recipientId =
+      senderRole === USER_ROLES.GUEST
+        ? conversation.driver.toString()
+        : conversation.traveler.toString();
+    const senderName = response?.sender?.name || 'New message';
+    notifyUser(recipientId, {
+      title: senderName,
+      body: (body || '').trim().slice(0, 140),
+      data: { type: 'message', conversationId },
+    });
 
     return res.status(201).json({
       message: {

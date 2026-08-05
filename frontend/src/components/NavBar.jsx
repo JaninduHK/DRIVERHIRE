@@ -12,6 +12,8 @@ import {
   MapPin,
   Menu,
   MessageSquare,
+  Settings,
+  User2,
   Users,
   X,
 } from 'lucide-react';
@@ -38,6 +40,15 @@ const driverPortalLinks = [
   { to: '/portal/driver#earnings', label: 'My Earnings', icon: DollarSign },
   { to: '/portal/driver#availability', label: 'My Availability', icon: CalendarCheck },
   { to: '/portal/driver#profile', label: 'My Profile', icon: ClipboardList },
+];
+
+// Traveller dashboard tabs (mirror of the driver menu), driven by the ?tab= param.
+const travelerPortalLinks = [
+  { to: '/dashboard?tab=overview', label: 'Overview', icon: User2 },
+  { to: '/dashboard?tab=bookings', label: 'My Bookings', icon: CalendarDays },
+  { to: '/dashboard?tab=messages', label: 'Messages', icon: MessageSquare },
+  { to: '/dashboard?tab=requests', label: 'My Requests', icon: MapPin },
+  { to: '/dashboard?tab=settings', label: 'Settings', icon: Settings },
 ];
 
 // Drawer nav-item styles, shared by the slide-in mobile menu (matches the driver dashboard drawer).
@@ -105,6 +116,7 @@ const NavBar = () => {
 
   const { isAuthenticated, dashboardPath, messagesPath, user } = authState;
   const isDriver = user?.role === 'driver';
+  const isTraveler = isAuthenticated && user?.role === 'guest';
   const messageDestination = isAuthenticated ? messagesPath : '/login';
   const roleLabel =
     user?.role === 'driver' ? 'Driver' : user?.role === 'admin' ? 'Admin' : 'Traveller';
@@ -213,22 +225,6 @@ const NavBar = () => {
           )}
         </div>
       </div>
-
-      {isDriver ? (
-        <div className="hidden border-t border-slate-200 bg-white/80 lg:block">
-          <div className="mx-auto flex max-w-6xl items-center gap-2 overflow-x-auto px-4 py-2 sm:px-6 lg:px-8">
-            {driverPortalLinks.map(({ to, label }) => (
-              <Link
-                key={to}
-                to={to}
-                className="whitespace-nowrap rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 transition hover:border-emerald-200 hover:bg-emerald-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
-              >
-                {label}
-              </Link>
-            ))}
-          </div>
-        </div>
-      ) : null}
     </header>
 
       {mobileOpen ? (
@@ -319,6 +315,28 @@ const NavBar = () => {
                       Driver menu
                     </div>
                     {driverPortalLinks.map((link) => {
+                      const Icon = link.icon;
+                      return (
+                        <Link
+                          key={link.to}
+                          to={link.to}
+                          onClick={closeMobileMenu}
+                          className={`${drawerItem} ${drawerItemIdle}`}
+                        >
+                          <Icon className="h-[18px] w-[18px] text-muted" strokeWidth={1.8} />
+                          {link.label}
+                        </Link>
+                      );
+                    })}
+                  </>
+                ) : null}
+
+                {isTraveler ? (
+                  <>
+                    <div className="mt-2 px-3 pb-1 pt-2 text-[11px] font-extrabold uppercase tracking-[0.14em] text-muted-soft">
+                      Traveller menu
+                    </div>
+                    {travelerPortalLinks.map((link) => {
                       const Icon = link.icon;
                       return (
                         <Link

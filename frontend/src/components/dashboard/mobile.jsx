@@ -97,7 +97,9 @@ export const Sheet = ({ children, className = '', pull = '-mt-10' }) => (
 export const DashboardSidebar = ({ navItems = [], onSelect, user, onLogout }) => (
   <aside className="sticky top-0 hidden h-screen w-[240px] flex-shrink-0 flex-col bg-ink p-4 lg:flex">
     <div className="px-2 pb-5 pt-2">
-      <img src={logoOnDark} alt="carwithdriver.lk" className="h-9 w-auto" />
+      <Link to="/" aria-label="Go to home" className="inline-flex">
+        <img src={logoOnDark} alt="carwithdriver.lk" className="h-9 w-auto" />
+      </Link>
     </div>
     <nav className="flex flex-col gap-1">
       {navItems.map((item) => {

@@ -495,11 +495,36 @@ export const updateDriverVehicle = async (req, res) => {
     vehicle.parkingFeesAndTolls = parseBoolean(parkingFeesAndTolls);
     vehicle.allTaxes = parseBoolean(allTaxes);
 
-    // Combine existing images with new Cloudinary URLs (max 5 total)
-    if (uploadedUrls.length > 0) {
-      const combinedImages = [...vehicle.images, ...uploadedUrls].slice(0, 5);
-      vehicle.images = combinedImages;
+    // Determine which existing images to keep. When the edit form sends an
+    // `existingImages` list (URLs to retain), remove the rest and delete them
+    // from Cloudinary. Falls back to keeping all when the field is absent.
+    let keptImages = vehicle.images;
+    if (req.body.existingImages !== undefined) {
+      let keepUrls = [];
+      try {
+        keepUrls = Array.isArray(req.body.existingImages)
+          ? req.body.existingImages
+          : JSON.parse(req.body.existingImages || '[]');
+      } catch {
+        keepUrls = [];
+      }
+      const keepSet = new Set((keepUrls || []).map(String));
+      keptImages = vehicle.images.filter(
+        (stored) => keepSet.has(buildAssetUrl(stored, req)) || keepSet.has(stored)
+      );
+      const removedImages = vehicle.images.filter((stored) => !keptImages.includes(stored));
+      const cloudinaryRemovals = removedImages.filter((url) =>
+        cloudinaryService.isCloudinaryUrl(url)
+      );
+      if (cloudinaryRemovals.length > 0) {
+        await cloudinaryService
+          .deleteMultipleAssets(cloudinaryRemovals, 'image')
+          .catch((cleanupError) => console.warn('Vehicle image cleanup failed:', cleanupError?.message));
+      }
     }
+
+    // Combine kept images with new Cloudinary URLs (max 5 total).
+    vehicle.images = [...keptImages, ...uploadedUrls].slice(0, 5);
 
     vehicle.status = VEHICLE_STATUS.PENDING;
     vehicle.rejectedReason = undefined;
@@ -536,5 +561,35 @@ export const completeDriverProfileTour = async (req, res) => {
   } catch (error) {
     console.error('Complete driver profile tour error:', error);
     return res.status(500).json({ message: 'Unable to update onboarding status' });
+  }
+};
+
+// --- Expo push token registration (driver mobile app) -----------------------
+
+export const registerPushToken = async (req, res) => {
+  const { token } = req.body || {};
+  if (!token || typeof token !== 'string') {
+    return res.status(400).json({ message: 'Push token is required' });
+  }
+  try {
+    await User.updateOne({ _id: req.user.id }, { $addToSet: { expoPushTokens: token } });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('registerPushToken error:', error);
+    return res.status(500).json({ message: 'Unable to register push token' });
+  }
+};
+
+export const unregisterPushToken = async (req, res) => {
+  const { token } = req.body || {};
+  if (!token || typeof token !== 'string') {
+    return res.status(400).json({ message: 'Push token is required' });
+  }
+  try {
+    await User.updateOne({ _id: req.user.id }, { $pull: { expoPushTokens: token } });
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('unregisterPushToken error:', error);
+    return res.status(500).json({ message: 'Unable to unregister push token' });
   }
 };
