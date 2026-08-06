@@ -1,15 +1,15 @@
 # GitLab CI/CD Pipeline for DRIVERHIRE
-# Automates testing, building, and deployment to VPS
+# On every push to `main`: lint, then auto-deploy to the VPS over SSH.
+# The VPS runs the app with Docker Compose, so the deploy just syncs the code
+# and runs `docker compose up -d --build`.
 
 stages:
   - test
-  - build
   - deploy
 
 variables:
   NODE_VERSION: "20"
 
-# Cache node_modules between jobs
 cache:
   key: ${CI_COMMIT_REF_SLUG}
   paths:
@@ -17,7 +17,7 @@ cache:
     - backend/node_modules/
 
 # ---------------------------------------------------------------------------
-# TEST STAGE - Run linting and tests
+# TEST STAGE — fast sanity checks (deploy won't run if these fail)
 # ---------------------------------------------------------------------------
 
 lint:frontend:
@@ -26,7 +26,7 @@ lint:frontend:
   script:
     - cd frontend
     - npm ci --prefer-offline
-    - npm run lint || true  # Allow lint warnings, don't fail the build
+    - npm run lint || true   # warnings shouldn't block a deploy
   allow_failure: true
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
@@ -45,37 +45,22 @@ lint:backend:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 # ---------------------------------------------------------------------------
-# BUILD STAGE - Build frontend for production
+# DEPLOY STAGE — SSH to the VPS and rebuild the Docker stack
 # ---------------------------------------------------------------------------
-
-build:frontend:
-  stage: build
-  image: node:${NODE_VERSION}-alpine
-  script:
-    - cd frontend
-    - npm ci --prefer-offline
-    - npm run build
-  artifacts:
-    paths:
-      - frontend/dist/
-    expire_in: 1 hour
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-
-# ---------------------------------------------------------------------------
-# DEPLOY STAGE - Deploy to VPS via SSH
+# Required CI/CD variables (Settings → CI/CD → Variables), pointed at the NEW VPS:
+#   VPS_HOST         new VPS public IP or hostname
+#   SSH_USER         SSH user on the VPS (e.g. root)
+#   APP_PATH         repo directory on the VPS (e.g. /root/DRIVERHIRE)
+#   SSH_PRIVATE_KEY  private key whose public key is in the VPS's ~/.ssh/authorized_keys
+#                    (mark it "Protected", and prefer type "File")
 # ---------------------------------------------------------------------------
 
 deploy:production:
   stage: deploy
   image: alpine:latest
   before_script:
-    # Install SSH client
-    - apk add --no-cache openssh-client rsync
-    # Setup SSH key
-    - mkdir -p ~/.ssh
-    - chmod 700 ~/.ssh
-    # Handle both File type and Variable type for SSH_PRIVATE_KEY
+    - apk add --no-cache openssh-client
+    - mkdir -p ~/.ssh && chmod 700 ~/.ssh
     - |
       if [ -f "$SSH_PRIVATE_KEY" ]; then
         cp "$SSH_PRIVATE_KEY" ~/.ssh/id_rsa
@@ -83,88 +68,21 @@ deploy:production:
         printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
       fi
     - chmod 600 ~/.ssh/id_rsa
-    # Debug - show variables are set (not the actual values)
-    - echo "VPS_HOST is set:" && test -n "$VPS_HOST" && echo "yes" || echo "no"
-    - echo "SSH_USER is set:" && test -n "$SSH_USER" && echo "yes" || echo "no"
-    - echo "APP_PATH is set:" && test -n "$APP_PATH" && echo "yes" || echo "no"
-    - echo "SSH key file size:" && wc -c < ~/.ssh/id_rsa
-    # Add host key to known_hosts
-    - ssh-keyscan -H $VPS_HOST >> ~/.ssh/known_hosts 2>/dev/null || true
-    # Disable strict host key checking as fallback
+    - ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
     - echo "StrictHostKeyChecking accept-new" >> ~/.ssh/config
   script:
-    # Create deployment script
+    - echo "Deploying to $SSH_USER@$VPS_HOST:${APP_PATH}"
     - |
-      cat > deploy.sh << 'DEPLOY_SCRIPT'
-      #!/bin/bash
-      set -e
-
-      # Source Node.js environment (nvm, fnm, or standard paths)
-      export PATH="/root/.nvm/versions/node/$(ls /root/.nvm/versions/node 2>/dev/null | tail -1)/bin:$PATH" 2>/dev/null || true
-      export PATH="/usr/local/bin:/usr/bin:$PATH"
-      export NVM_DIR="$HOME/.nvm"
-      [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" 2>/dev/null || true
-
-      APP_DIR="${APP_PATH:-/var/www/driverhire}"
-
-      echo "=== Starting deployment ==="
-      echo "Node version: $(node --version 2>/dev/null || echo 'not found')"
-      echo "npm version: $(npm --version 2>/dev/null || echo 'not found')"
-      cd "$APP_DIR"
-
-      # Pull latest changes
-      echo "Pulling latest code..."
-      git fetch origin main
-      git reset --hard origin/main
-
-      # Install backend dependencies
-      echo "Installing backend dependencies..."
-      cd backend
-      npm ci --omit=dev
-
-      # Restart backend service
-      echo "Restarting backend service..."
-      if command -v pm2 &> /dev/null; then
-        pm2 restart driverhire-backend || pm2 start server.js --name driverhire-backend
-      elif command -v systemctl &> /dev/null; then
-        sudo systemctl restart driverhire-backend || echo "No systemd service found"
-      else
-        echo "Warning: No process manager found. Please restart backend manually."
-      fi
-
-      echo "=== Deployment complete ==="
-      DEPLOY_SCRIPT
-
-    # Upload frontend build artifacts
-    - echo "Uploading frontend build..."
-    - rsync -avz --delete frontend/dist/ $SSH_USER@$VPS_HOST:$APP_PATH/frontend/dist/
-
-    # Upload and run deployment script
-    - echo "Running deployment on VPS..."
-    - scp deploy.sh $SSH_USER@$VPS_HOST:/tmp/deploy.sh
-    - ssh $SSH_USER@$VPS_HOST "chmod +x /tmp/deploy.sh && APP_PATH=$APP_PATH /tmp/deploy.sh"
-
-    # Reload Nginx to pick up any changes
-    - ssh $SSH_USER@$VPS_HOST "sudo nginx -t && sudo systemctl reload nginx"
-
-    - echo "Deployment successful!"
+      ssh "$SSH_USER@$VPS_HOST" "set -e; \
+        cd '${APP_PATH}'; \
+        git fetch origin main; \
+        git reset --hard origin/main; \
+        docker compose up -d --build; \
+        docker image prune -f"
+    - echo "Deployment complete."
   environment:
     name: production
     url: https://carwithdriver.lk
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
-      when: manual
-
-# ---------------------------------------------------------------------------
-# OPTIONAL: Auto-deploy on main branch (remove 'when: manual' above to enable)
-# ---------------------------------------------------------------------------
-
-# deploy:staging:
-#   stage: deploy
-#   extends: deploy:production
-#   environment:
-#     name: staging
-#     url: https://staging.carwithdriver.lk
-#   only:
-#     - develop
-#   when: on_success
+      when: on_success   # auto-deploy on every push to main
