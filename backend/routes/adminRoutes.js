@@ -1,7 +1,7 @@
 import express from 'express';
 import { body, param } from 'express-validator';
 import { authenticate, authorizeRoles } from '../middleware/authMiddleware.js';
-import { vehicleImageUpload } from '../middleware/cloudinaryUpload.js';
+import { vehicleImageUpload, conditionalReviewImageUpload } from '../middleware/cloudinaryUpload.js';
 import {
   getDriverApplications,
   updateDriverStatus,
@@ -163,6 +163,8 @@ router.get('/reviews', listAdminReviews);
 
 router.post(
   '/reviews',
+  // Parse attached photos (multipart) into req.files; JSON requests pass straight through.
+  conditionalReviewImageUpload,
   [
     body('driver').isMongoId().withMessage('Driver is required'),
     body('vehicle').optional().isMongoId().withMessage('Vehicle must be valid'),
@@ -174,8 +176,9 @@ router.post(
       .isLength({ min: 10, max: 1200 })
       .withMessage('Review comment must be between 10 and 1200 characters'),
     body('travelerName').optional().isString().trim().isLength({ min: 1, max: 120 }),
-    body('visitedStartDate').optional().isISO8601(),
-    body('visitedEndDate').optional().isISO8601(),
+    body('reviewDate').optional({ checkFalsy: true }).isISO8601(),
+    body('visitedStartDate').optional({ checkFalsy: true }).isISO8601(),
+    body('visitedEndDate').optional({ checkFalsy: true }).isISO8601(),
     body('status')
       .optional()
       .isIn(Object.values(REVIEW_STATUS))

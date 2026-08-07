@@ -75,6 +75,7 @@ const shapePublicReview = (review) => ({
   images: Array.isArray(review.images) ? review.images : [],
   visitedStartDate: review.visitedStartDate || null,
   visitedEndDate: review.visitedEndDate || null,
+  reviewDate: review.reviewDate || null,
   publishedAt: review.publishedAt || review.updatedAt || review.createdAt,
   createdAt: review.createdAt,
 });
@@ -376,11 +377,30 @@ export const listAdminReviews = async (req, res) => {
 
     const shaped = reviews.map((review) => shapeAdminReview(review, req));
 
+    // Global counts + average (independent of the active filter) so the summary cards stay
+    // accurate even when the list is filtered to a single status.
+    const [countsAgg, avgAgg] = await Promise.all([
+      Review.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+      Review.aggregate([
+        { $match: { status: REVIEW_STATUS.APPROVED } },
+        { $group: { _id: null, avg: { $avg: '$rating' } } },
+      ]),
+    ]);
+    const counts = { approved: 0, pending: 0, rejected: 0, total: 0 };
+    countsAgg.forEach((row) => {
+      if (row._id && counts[row._id] !== undefined) counts[row._id] = row.count;
+      counts.total += row.count;
+    });
+    const globalAverage =
+      avgAgg[0]?.avg != null ? Number(Number(avgAgg[0].avg).toFixed(1)) : null;
+
     return res.json({
       reviews: shaped,
       meta: {
         total: shaped.length,
         status: filters.status || 'all',
+        counts,
+        averageRating: globalAverage,
       },
     });
   } catch (error) {
@@ -397,6 +417,7 @@ export const createAdminReview = async (req, res) => {
     title,
     comment,
     travelerName,
+    reviewDate,
     visitedStartDate,
     visitedEndDate,
     status = REVIEW_STATUS.APPROVED,
@@ -431,6 +452,7 @@ export const createAdminReview = async (req, res) => {
   const normalizedStatus = Object.values(REVIEW_STATUS).includes(normalizedStatusInput)
     ? normalizedStatusInput
     : REVIEW_STATUS.APPROVED;
+  const reviewDateValue = coerceDate(reviewDate);
   const startDate = coerceDate(visitedStartDate);
   const endDate = coerceDate(visitedEndDate);
 
@@ -467,6 +489,22 @@ export const createAdminReview = async (req, res) => {
       });
     }
 
+    // Attached image files (multipart) upload to Cloudinary; already-hosted URLs (from the
+    // JSON / CSV path) are merged in after.
+    let uploadedImages = [];
+    try {
+      uploadedImages = await uploadReviewImages(req.files, req.user.id);
+    } catch (uploadError) {
+      console.error('Admin review image upload failed:', uploadError);
+      return res
+        .status(502)
+        .json({ message: 'We could not upload the review photos. Please try again.' });
+    }
+    const images = [...uploadedImages, ...parseImageUrls(req.body?.imageUrls)].slice(
+      0,
+      MAX_REVIEW_IMAGES
+    );
+
     const review = await Review.create({
       driver: driverDoc._id,
       vehicle: vehicleDoc?._id,
@@ -477,11 +515,13 @@ export const createAdminReview = async (req, res) => {
       rating: normalizedRating,
       title: trimmedTitle || undefined,
       comment: trimmedComment,
-      images: parseImageUrls(req.body?.imageUrls),
+      images,
+      reviewDate: reviewDateValue || undefined,
       visitedStartDate: startDate || undefined,
       visitedEndDate: endDate || undefined,
       status: normalizedStatus,
-      publishedAt: normalizedStatus === REVIEW_STATUS.APPROVED ? new Date() : undefined,
+      publishedAt:
+        normalizedStatus === REVIEW_STATUS.APPROVED ? reviewDateValue || new Date() : undefined,
       createdByAdmin: true,
     });
 
@@ -659,6 +699,7 @@ export const createAdminReviewsBulk = async (req, res) => {
       const status = statusValues.includes(statusInput) ? statusInput : REVIEW_STATUS.APPROVED;
       const startDate = coerceDate(row.visitedStartDate);
       const endDate = coerceDate(row.visitedEndDate);
+      const reviewDate = coerceDate(row.reviewDate) || startDate;
       const travelerName =
         typeof row.travelerName === 'string' && row.travelerName.trim()
           ? row.travelerName.trim().slice(0, 120)
@@ -674,11 +715,14 @@ export const createAdminReviewsBulk = async (req, res) => {
         title: title || undefined,
         comment,
         images: parseImageUrls(row.imageUrls),
+        reviewDate: reviewDate || undefined,
         visitedStartDate: startDate || undefined,
         visitedEndDate: endDate || undefined,
         status,
         publishedAt:
-          status === REVIEW_STATUS.APPROVED ? endDate || startDate || new Date() : undefined,
+          status === REVIEW_STATUS.APPROVED
+            ? reviewDate || endDate || startDate || new Date()
+            : undefined,
         createdByAdmin: true,
       });
       results.created += 1;

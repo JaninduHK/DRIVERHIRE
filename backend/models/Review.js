@@ -57,6 +57,8 @@ const reviewSchema = new mongoose.Schema(
     },
     visitedStartDate: Date,
     visitedEndDate: Date,
+    // Single date the trip/review refers to (admin-entered). Falls back to publishedAt on display.
+    reviewDate: Date,
     images: {
       type: [String],
       default: [],

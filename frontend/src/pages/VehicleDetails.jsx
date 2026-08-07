@@ -694,8 +694,9 @@ const ReviewsSection = ({
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {reviews.map((review) => {
-              const travelStart = formatDate(review.visitedStartDate);
-              const travelEnd = formatDate(review.visitedEndDate);
+              const reviewDateLabel = formatDate(
+                review.reviewDate || review.publishedAt || review.visitedStartDate || review.createdAt,
+              );
               const travelerName = review.travelerName || 'Traveller';
               return (
                 <article key={review.id} className="rounded-[16px] border border-[#eef1f0] bg-white p-4">
@@ -704,7 +705,7 @@ const ReviewsSection = ({
                       <Avatar name={travelerName} tone="purple" className="h-9 w-9 rounded-[11px] text-[13px]" />
                       <div>
                         <b className="text-[13.5px] text-ink">{travelerName}</b>
-                        <div className="text-[11px] text-muted-soft">{travelStart && travelEnd ? `${travelStart} – ${travelEnd}` : 'Recent trip'}</div>
+                        <div className="text-[11px] text-muted-soft">{reviewDateLabel || 'Recent trip'}</div>
                       </div>
                     </div>
                     <span className="flex items-center gap-1 text-[13px] font-extrabold text-ink"><Star className="h-3.5 w-3.5" fill="#f5b400" stroke="none" /> {review.rating}</span>

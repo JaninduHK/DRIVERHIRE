@@ -223,7 +223,7 @@ const AdminDashboard = () => {
   });
   const [driverState, setDriverState] = useState({ items: [], loading: true, error: '', updatingId: null });
   const [vehicleState, setVehicleState] = useState({ items: [], loading: true, error: '', updatingId: null });
-  const [reviewFilter, setReviewFilter] = useState('pending');
+  const [reviewFilter, setReviewFilter] = useState('all');
   const [pendingReviewCount, setPendingReviewCount] = useState(0);
   const [reviewState, setReviewState] = useState({
     items: [],
@@ -394,7 +394,11 @@ const AdminDashboard = () => {
         error: '',
         updatingId: null,
       }));
-      if (status === 'pending') {
+      // The pending count is now returned globally on every response.
+      const pendingCount = response.meta?.counts?.pending;
+      if (typeof pendingCount === 'number') {
+        setPendingReviewCount(pendingCount);
+      } else if (status === 'pending') {
         setPendingReviewCount(response.meta?.total ?? (response.reviews?.length ?? 0));
       }
       return response;
@@ -3510,8 +3514,8 @@ const getReviewStatusLabel = (status) => {
   }
 };
 
-const REVIEW_CSV_TEMPLATE = `driverEmail,vehicleId,travelerName,rating,title,comment,visitedStartDate,visitedEndDate,status,imageUrls
-driver@example.com,,Anna & Mark,5,Great trip,"Fantastic driver, punctual and friendly across the whole island.",2026-05-01,2026-05-07,approved,https://example.com/photo1.jpg`;
+const REVIEW_CSV_TEMPLATE = `driverEmail,vehicleId,travelerName,rating,title,comment,reviewDate,status,imageUrls
+driver@example.com,,Anna & Mark,5,Great trip,"Fantastic driver, punctual and friendly across the whole island.",2026-05-01,approved,https://example.com/photo1.jpg`;
 
 const ReviewBulkImport = ({ onImport }) => {
   const [rows, setRows] = useState([]);
@@ -3581,7 +3585,7 @@ const ReviewBulkImport = ({ onImport }) => {
           <h3 className="text-lg font-semibold text-slate-900">Import reviews from CSV</h3>
           <p className="mt-1 max-w-xl text-sm text-slate-500">
             Required columns: <b>driverEmail</b> (or driverId), <b>rating</b>, <b>comment</b>. Optional: vehicleId,
-            travelerName, title, visitedStartDate, visitedEndDate, status, imageUrls (| separated).
+            travelerName, title, reviewDate, status, imageUrls (| separated).
           </p>
         </div>
         <a
@@ -3658,11 +3662,31 @@ const ReviewsPanel = ({
     rating: '5',
     title: '',
     comment: '',
-    visitedStartDate: '',
-    visitedEndDate: '',
+    reviewDate: '',
     status: 'approved',
   });
+  const [imageFiles, setImageFiles] = useState([]);
   const [formError, setFormError] = useState('');
+
+  const handleImagesChange = (event) => {
+    const picked = Array.from(event.target.files || []);
+    event.target.value = '';
+    if (!picked.length) return;
+    setImageFiles((prev) => [...prev, ...picked].slice(0, 4));
+  };
+
+  const removeImageAt = (index) =>
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
+
+  // Object URLs for previews, created only when the file list changes and revoked after.
+  const imagePreviews = useMemo(
+    () => imageFiles.map((file) => URL.createObjectURL(file)),
+    [imageFiles],
+  );
+  useEffect(
+    () => () => imagePreviews.forEach((url) => URL.revokeObjectURL(url)),
+    [imagePreviews],
+  );
 
   const approvedDrivers = useMemo(
     () => drivers.filter((driver) => driver.driverStatus === 'approved'),
@@ -3685,6 +3709,14 @@ const ReviewsPanel = ({
   }, [formState.driverId, vehicles]);
 
   const statusCounts = useMemo(() => {
+    // Prefer the global counts from the API so the cards are correct under any filter.
+    if (meta?.counts) {
+      return {
+        approved: meta.counts.approved ?? 0,
+        pending: meta.counts.pending ?? 0,
+        rejected: meta.counts.rejected ?? 0,
+      };
+    }
     const counts = { approved: 0, pending: 0, rejected: 0 };
     const list = Array.isArray(items) ? items : [];
     list.forEach((review) => {
@@ -3694,9 +3726,13 @@ const ReviewsPanel = ({
       }
     });
     return counts;
-  }, [items]);
+  }, [items, meta]);
 
   const averageRating = useMemo(() => {
+    // Prefer the global average (published reviews) from the API.
+    if (meta && meta.averageRating !== undefined) {
+      return meta.averageRating;
+    }
     const list = Array.isArray(items) ? items : [];
     if (!list.length) {
       return null;
@@ -3716,7 +3752,7 @@ const ReviewsPanel = ({
       return null;
     }
     return Number((aggregate.sum / aggregate.count).toFixed(1));
-  }, [items]);
+  }, [items, meta]);
 
   const handleFilterClick = (value) => {
     if (value === filter) {
@@ -3754,32 +3790,27 @@ const ReviewsPanel = ({
       return;
     }
 
-    if (
-      formState.visitedStartDate &&
-      formState.visitedEndDate &&
-      formState.visitedEndDate < formState.visitedStartDate
-    ) {
-      setFormError('End date cannot be before start date.');
-      return;
-    }
-
-    const payload = {
+    // Fields common to both the JSON and multipart paths.
+    const fields = {
       driver: formState.driverId,
-      rating: Math.round(ratingValue),
-      travelerName: formState.travelerName.trim() || undefined,
-      title: formState.title.trim() || undefined,
+      rating: String(Math.round(ratingValue)),
       comment: trimmedComment,
       status: formState.status || 'approved',
     };
+    if (formState.vehicleId) fields.vehicle = formState.vehicleId;
+    if (formState.travelerName.trim()) fields.travelerName = formState.travelerName.trim();
+    if (formState.title.trim()) fields.title = formState.title.trim();
+    if (formState.reviewDate) fields.reviewDate = formState.reviewDate;
 
-    if (formState.vehicleId) {
-      payload.vehicle = formState.vehicleId;
-    }
-    if (formState.visitedStartDate) {
-      payload.visitedStartDate = formState.visitedStartDate;
-    }
-    if (formState.visitedEndDate) {
-      payload.visitedEndDate = formState.visitedEndDate;
+    let payload;
+    if (imageFiles.length) {
+      // Photos attached -> multipart FormData (files under "images").
+      const form = new FormData();
+      Object.entries(fields).forEach(([key, value]) => form.append(key, value));
+      imageFiles.forEach((file) => form.append('images', file));
+      payload = form;
+    } else {
+      payload = { ...fields, rating: Math.round(ratingValue) };
     }
 
     try {
@@ -3791,10 +3822,10 @@ const ReviewsPanel = ({
         rating: '5',
         title: '',
         comment: '',
-        visitedStartDate: '',
-        visitedEndDate: '',
+        reviewDate: '',
         status: 'approved',
       });
+      setImageFiles([]);
     } catch (createError) {
       setFormError(createError?.message || 'Unable to publish review.');
     }
@@ -3942,31 +3973,17 @@ const ReviewsPanel = ({
                 placeholder="e.g. Safe and flexible driver"
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="admin-review-start">
-                  Trip start (optional)
-                </label>
-                <input
-                  id="admin-review-start"
-                  type="date"
-                  value={formState.visitedStartDate}
-                  onChange={(event) => handleFormFieldChange('visitedStartDate', event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="admin-review-end">
-                  Trip end (optional)
-                </label>
-                <input
-                  id="admin-review-end"
-                  type="date"
-                  value={formState.visitedEndDate}
-                  onChange={(event) => handleFormFieldChange('visitedEndDate', event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="admin-review-date">
+                Review date (optional)
+              </label>
+              <input
+                id="admin-review-date"
+                type="date"
+                value={formState.reviewDate}
+                onChange={(event) => handleFormFieldChange('reviewDate', event.target.value)}
+                className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+              />
             </div>
           </div>
           <div>
@@ -3982,6 +3999,36 @@ const ReviewsPanel = ({
               placeholder="Summarize the traveller's experience in 2-3 sentences."
               required
             />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Photos (optional, up to 4)
+            </label>
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              {imageFiles.map((file, index) => (
+                <div
+                  key={`${file.name}-${file.lastModified}-${index}`}
+                  className="relative h-16 w-16 overflow-hidden rounded-lg border border-slate-300"
+                >
+                  <img src={imagePreviews[index]} alt="" className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => removeImageAt(index)}
+                    className="absolute right-0.5 top-0.5 rounded-full bg-slate-900/70 text-white"
+                    aria-label="Remove photo"
+                  >
+                    <XCircle className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+              {imageFiles.length < 4 ? (
+                <label className="flex h-16 w-16 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-slate-300 text-slate-400 transition hover:border-emerald-400 hover:text-emerald-500">
+                  <Upload className="h-4 w-4" />
+                  <span className="text-[10px] font-semibold">Add</span>
+                  <input type="file" accept="image/*" multiple onChange={handleImagesChange} className="hidden" />
+                </label>
+              ) : null}
+            </div>
           </div>
           {formError ? <p className="text-xs text-rose-600">{formError}</p> : null}
           <div className="flex justify-end">

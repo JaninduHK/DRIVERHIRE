@@ -547,7 +547,7 @@ const ReviewsSummary = ({ reviews, desktop = false }) => {
               <Avatar name={review.travelerName || 'Traveller'} tone="purple" className="h-8 w-8 rounded-[10px] text-[12px]" />
               <div>
                 <b className="text-[13px] text-ink">{review.travelerName || 'Traveller'}</b>
-                <div className="text-[11px] text-muted-soft">{formatDate(review.publishedAt) || 'Recent trip'}{review.vehicle?.model ? ` · ${review.vehicle.model}` : ''}</div>
+                <div className="text-[11px] text-muted-soft">{formatDate(review.reviewDate || review.publishedAt) || 'Recent trip'}{review.vehicle?.model ? ` · ${review.vehicle.model}` : ''}</div>
               </div>
             </div>
             {review.title ? <p className="mt-2 text-[13px] font-bold text-ink">{review.title}</p> : null}

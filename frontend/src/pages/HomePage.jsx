@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { fetchVehicles, fetchVehicleReviews } from '../services/vehicleCatalogApi.js';
 import { fetchDriverDirectory } from '../services/driverDirectoryApi.js';
 import { useLoaderData } from 'react-router';
-import ReviewPhotos from '../components/ReviewPhotos.jsx';
 import { getStoredToken, saveReturnPath } from '../services/authToken.js';
 
 // Prefill stash read by the traveller "My Requests" tab to open a new quote request.
@@ -813,26 +812,34 @@ const ReviewCard = ({ review, vehicle }) => {
   const name = review.travelerName || 'Traveller';
   const driverReviewsLink = vehicle?.driver?.id ? `/drivers/${vehicle.driver.id}#reviews` : null;
   const reviewText = review.comment || review.title || 'A five-star car-with-driver journey across Sri Lanka.';
+  // First attached photo becomes the card cover (same treatment as the vehicle cards).
+  const cover = Array.isArray(review.images) && review.images.length ? review.images[0] : null;
   return (
-    <figure className="m-0 flex flex-col rounded-[20px] border border-[#e5ebe8] bg-white p-[22px]">
-      <div className="flex gap-[3px]">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <StarIcon key={i} fill={i < rating ? '#f5b400' : '#e3e8e5'} />
-        ))}
+    <figure className="m-0 flex flex-col overflow-hidden rounded-[20px] border border-[#e5ebe8] bg-white">
+      {cover ? (
+        <div className="h-[186px] w-full bg-[#eef1f0]">
+          <img src={cover} alt={`${name}'s trip photo`} className="h-full w-full object-cover" />
+        </div>
+      ) : null}
+      <div className="flex flex-1 flex-col p-[22px]">
+        <div className="flex gap-[3px]">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <StarIcon key={i} fill={i < rating ? '#f5b400' : '#e3e8e5'} />
+          ))}
+        </div>
+        <div className="mt-3.5 flex-1">
+          <ClampedReviewText text={reviewText} to={driverReviewsLink} />
+        </div>
+        <figcaption className="mt-[18px] flex items-center gap-[11px] border-t border-[#f0f3f2] pt-4">
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#e7ddfb] text-sm font-extrabold text-[#6b3fc0]">
+            {name.charAt(0).toUpperCase()}
+          </span>
+          <span className="flex flex-col gap-0.5">
+            <b className="block text-sm leading-[1.1]">{name}</b>
+            <span className="text-[12.5px] leading-[1.1] font-semibold text-muted-soft">{reviewSubline(review)}</span>
+          </span>
+        </figcaption>
       </div>
-      <div className="mt-3.5 flex-1">
-        <ClampedReviewText text={reviewText} to={driverReviewsLink} />
-        <ReviewPhotos images={review.images} />
-      </div>
-      <figcaption className="mt-[18px] flex items-center gap-[11px] border-t border-[#f0f3f2] pt-4">
-        <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#e7ddfb] text-sm font-extrabold text-[#6b3fc0]">
-          {name.charAt(0).toUpperCase()}
-        </span>
-        <span className="flex flex-col gap-0.5">
-          <b className="block text-sm leading-[1.1]">{name}</b>
-          <span className="text-[12.5px] leading-[1.1] font-semibold text-muted-soft">{reviewSubline(review)}</span>
-        </span>
-      </figcaption>
     </figure>
   );
 };

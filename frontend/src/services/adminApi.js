@@ -125,7 +125,8 @@ export const fetchReviews = (filters = {}) =>
 export const createReview = (payload) =>
   request('/reviews', {
     method: 'POST',
-    body: JSON.stringify(payload),
+    // FormData when photos are attached (multipart); plain JSON otherwise.
+    body: payload instanceof FormData ? payload : JSON.stringify(payload),
   });
 
 export const bulkImportReviews = (reviews) =>
