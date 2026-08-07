@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useLoaderData } from 'react-router';
 import toast from 'react-hot-toast';
 import {
   Calendar,
@@ -72,7 +73,13 @@ const VehicleDetails = () => {
   const vehicleId = params.vehicleId || params.id;
   const navigate = useNavigate();
 
-  const [state, setState] = useState({ vehicle: null, loading: true, error: '' });
+  // Seeded by the route loader so the vehicle detail is in the SSR HTML.
+  const loaderData = useLoaderData();
+  const [state, setState] = useState(
+    loaderData?.vehicle
+      ? { vehicle: loaderData.vehicle, loading: false, error: '' }
+      : { vehicle: null, loading: true, error: '' },
+  );
   const [dateForm, setDateForm] = useState({ start: '', end: '' });
   const [guests, setGuests] = useState(2);
   const [availability, setAvailability] = useState(INITIAL_AVAILABILITY_STATE);
@@ -93,7 +100,7 @@ const VehicleDetails = () => {
       setState({ vehicle: null, loading: false, error: 'Vehicle not found.' });
       return () => { cancelled = true; };
     }
-    setState((prev) => ({ ...prev, loading: true, error: '' }));
+    setState((prev) => ({ ...prev, loading: prev.vehicle ? false : true, error: '' }));
     fetchVehicleDetails(vehicleId)
       .then(({ vehicle }) => {
         if (cancelled) return;

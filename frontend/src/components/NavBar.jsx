@@ -100,7 +100,14 @@ const buildAuthState = () => {
 const NavBar = () => {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [authState, setAuthState] = useState(() => buildAuthState());
+  // Start logged-out so the SSR HTML and the first client render match (no hydration
+  // mismatch); the effect below reads real auth from storage once mounted on the client.
+  const [authState, setAuthState] = useState({
+    isAuthenticated: false,
+    user: null,
+    dashboardPath: '/dashboard',
+    messagesPath: '/dashboard',
+  });
 
   useEffect(() => {
     setAuthState(buildAuthState());

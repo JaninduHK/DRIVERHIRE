@@ -4,10 +4,14 @@ import type { Brief } from '../types';
 export const getOpenBriefs = () => apiRequest<{ briefs: Brief[] } | Brief[]>('/briefs');
 
 export interface BriefResponsePayload {
-  totalPrice?: number;
-  message?: string;
+  vehicleId: string;
+  totalPrice: number;
+  totalKms: number;
+  pricePerExtraKm: number;
   note?: string;
-  vehicleId?: string;
+  message?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 export const respondToBrief = (briefId: string, payload: BriefResponsePayload) =>

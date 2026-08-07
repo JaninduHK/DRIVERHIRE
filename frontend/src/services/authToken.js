@@ -27,6 +27,10 @@ const promoteLegacyToken = () => {
 };
 
 export const getStoredToken = () => {
+  // No storage during SSR — the server has no auth context; the client hydrates it.
+  if (!hasWindow) {
+    return null;
+  }
   const token = localStorage.getItem(TOKEN_KEY);
   if (token) {
     if (localStorage.getItem(LEGACY_TOKEN_KEY)) {
@@ -51,6 +55,9 @@ export const persistToken = (token, { silent = false } = {}) => {
 };
 
 export const getStoredUser = () => {
+  if (!hasWindow) {
+    return null;
+  }
   const raw = localStorage.getItem(USER_KEY);
   if (!raw) {
     return null;

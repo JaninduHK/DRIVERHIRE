@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -23,19 +23,26 @@ export default function RequestDetail() {
   const { data: vehicles } = useVehicles();
   const brief = useMemo(() => (briefs ?? []).find((b) => b.id === id), [briefs, id]);
 
-  const activeVehicles = (vehicles ?? []).filter((v) => (v.status ?? 'approved').toLowerCase() === 'approved');
+  // Only approved vehicles can back an offer.
+  const activeVehicles = (vehicles ?? []).filter((v) => (v.status ?? '').toLowerCase() === 'approved');
   const [vehicleId, setVehicleId] = useState<string | undefined>(activeVehicles[0]?.id);
+  useEffect(() => {
+    if (!vehicleId && activeVehicles.length) setVehicleId(activeVehicles[0].id);
+  }, [activeVehicles, vehicleId]);
   const [price, setPrice] = useState(brief?.budget ? String(brief.budget) : '');
   const [includedKm, setIncludedKm] = useState('300');
+  const [extraKm, setExtraKm] = useState('0.30');
   const [note, setNote] = useState('');
 
   const respond = useMutation({
     mutationFn: () =>
       respondToBrief(String(id), {
-        totalPrice: Number(price) || 0,
+        vehicleId: String(vehicleId),
+        totalPrice: Number(price),
+        totalKms: Number(includedKm),
+        pricePerExtraKm: Number(extraKm),
         note: note.trim() || undefined,
         message: note.trim() || undefined,
-        vehicleId,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: qk.briefs });
@@ -46,7 +53,12 @@ export default function RequestDetail() {
     onError: (err) => Alert.alert('Could not send offer', err instanceof Error ? err.message : 'Try again.'),
   });
 
-  const canSend = Number(price) > 0 && !respond.isPending;
+  const canSend =
+    Number(price) > 0 &&
+    Boolean(vehicleId) &&
+    Number(includedKm) > 0 &&
+    Number(extraKm) >= 0 &&
+    !respond.isPending;
   const title = brief?.title || brief?.route || 'Quote request';
   const subtitle = [formatDateRange(brief?.startDate, brief?.endDate), brief?.guests ? `${brief.guests} guests` : null]
     .filter(Boolean)
@@ -87,8 +99,9 @@ export default function RequestDetail() {
               <Text className="font-heavy text-[14px] text-ink">Your offer</Text>
               <View className="mt-3 flex-row gap-2.5">
                 <TextField className="flex-1" label="Total price (USD)" value={price} onChangeText={setPrice} placeholder="420" keyboardType="number-pad" />
-                <TextField className="flex-1" label="Included km" value={includedKm} onChangeText={setIncludedKm} placeholder="300" keyboardType="number-pad" />
+                <TextField className="flex-1" label="Included kms" value={includedKm} onChangeText={setIncludedKm} placeholder="300" keyboardType="number-pad" />
               </View>
+              <TextField className="mt-3" label="Price per extra km (USD)" value={extraKm} onChangeText={setExtraKm} placeholder="0.30" keyboardType="decimal-pad" />
 
               {activeVehicles.length > 0 ? (
                 <>
@@ -104,7 +117,11 @@ export default function RequestDetail() {
                     ))}
                   </View>
                 </>
-              ) : null}
+              ) : (
+                <Text className="mt-3.5 font-med text-[12.5px] text-danger">
+                  You need an approved vehicle to send an offer.
+                </Text>
+              )}
 
               <TextField
                 className="mt-3.5"

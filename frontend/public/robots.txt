@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# Auth, dashboard, checkout and briefs pages carry a noindex meta tag, so they are left
+# crawlable here (Google must fetch them to see the directive) rather than Disallowed.
+
+Sitemap: https://carwithdriver.lk/sitemap.xml

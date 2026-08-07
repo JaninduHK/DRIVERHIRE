@@ -49,18 +49,36 @@ services:
     networks:
       - driverhire
 
-  # Named "driverhire-web" (not just "web") so it never collides with another
-  # site's "web" service alias when sharing a Docker network behind a proxy.
-  driverhire-web:
+  # SSR app server (React Router) — renders HTML and serves the client bundle. Internal
+  # only; the nginx front (driverhire-web) proxies public traffic to it.
+  ssr:
     build:
       context: ./frontend
+      dockerfile: Dockerfile
       args:
-        # VITE_* values are baked into the bundle at build time.
+        # VITE_* values are baked into the CLIENT bundle at build time.
         VITE_API_URL: ${VITE_API_URL:-/api}
         VITE_GA_MEASUREMENT_ID: ${VITE_GA_MEASUREMENT_ID:-}
         VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY:-}
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
         VITE_FACEBOOK_APP_ID: ${VITE_FACEBOOK_APP_ID:-}
+    restart: unless-stopped
+    environment:
+      # SSR route loaders reach the API over the internal network.
+      SSR_API_ORIGIN: http://backend:3000
+      PORT: "3000"
+    depends_on:
+      - backend
+    networks:
+      - driverhire
+
+  # nginx front: terminates TLS, proxies /api and /uploads to the backend, and proxies
+  # every other route to the SSR server. Named "driverhire-web" (not just "web") so it
+  # never collides with another site's "web" alias when sharing a Docker network.
+  driverhire-web:
+    build:
+      context: ./frontend
+      dockerfile: nginx.Dockerfile
     restart: unless-stopped
     ports:
       - "80:80"
@@ -72,6 +90,7 @@ services:
       - ./certbot/www:/var/www/certbot:ro
       - ./certbot/conf:/etc/letsencrypt:ro
     depends_on:
+      - ssr
       - backend
     networks:
       - driverhire

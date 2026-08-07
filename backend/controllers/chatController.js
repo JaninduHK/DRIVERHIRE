@@ -401,10 +401,11 @@ export const sendOffer = async (req, res) => {
     const vehicle = await Vehicle.findOne({
       _id: vehicleId,
       driver: req.user.id,
+      status: VEHICLE_STATUS.APPROVED,
     }).select('id model pricePerDay');
 
     if (!vehicle) {
-      return res.status(404).json({ message: 'Vehicle not found in your fleet.' });
+      return res.status(404).json({ message: 'Only an approved vehicle can be offered.' });
     }
 
     const { sanitized: sanitizedNote, violations, warning } = sanitizeMessageContent(note || '');

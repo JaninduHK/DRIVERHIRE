@@ -13,6 +13,7 @@
     },
     "android": {
       "package": "lk.carwithdriver.driver",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#00BF63",
         "foregroundImage": "./assets/adaptive-icon.png"

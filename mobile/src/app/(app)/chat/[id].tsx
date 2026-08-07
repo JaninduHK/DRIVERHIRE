@@ -20,6 +20,7 @@ import { Avatar } from '../../../components/Avatar';
 import { IconButton } from '../../../components/IconButton';
 import { Button } from '../../../components/Button';
 import { TextField } from '../../../components/TextField';
+import { Chip } from '../../../components/Chip';
 import { Loading } from '../../../components/states';
 import { useMessages, useConversations, useVehicles, qk } from '../../../hooks/queries';
 import { sendMessage, sendOffer } from '../../../api/chat';
@@ -148,7 +149,7 @@ export default function Chat() {
       <OfferModal
         visible={offerOpen}
         onClose={() => setOfferOpen(false)}
-        vehicles={(vehicles ?? []).filter((v) => (v.status ?? 'approved').toLowerCase() === 'approved')}
+        vehicles={(vehicles ?? []).filter((v) => (v.status ?? '').toLowerCase() === 'approved')}
         conversationId={conversationId}
         onSent={() => {
           setOfferOpen(false);
@@ -195,6 +196,8 @@ function Bubble({ message, mine }: { message: ChatMessage; mine: boolean }) {
   );
 }
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
 function OfferModal({
   visible,
   onClose,
@@ -204,53 +207,112 @@ function OfferModal({
 }: {
   visible: boolean;
   onClose: () => void;
+  // Only approved vehicles are passed in.
   vehicles: { id: string; model: string; seats?: number }[];
   conversationId: string;
   onSent: () => void;
 }) {
-  const [price, setPrice] = useState('');
-  const [includedKm, setIncludedKm] = useState('300');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [vehicleId, setVehicleId] = useState<string | undefined>(vehicles[0]?.id);
+  const [totalPrice, setTotalPrice] = useState('');
+  const [totalKms, setTotalKms] = useState('300');
   const [extraKm, setExtraKm] = useState('0.30');
   const [note, setNote] = useState('');
-  const vehicleId = vehicles[0]?.id;
+
+  // Keep a valid (approved) vehicle selected once the list loads.
+  useEffect(() => {
+    if (!vehicleId && vehicles.length) setVehicleId(vehicles[0].id);
+  }, [vehicles, vehicleId]);
 
   const submit = useMutation({
     mutationFn: () =>
       sendOffer(conversationId, {
-        totalPrice: Number(price) || 0,
-        includedKm: Number(includedKm) || undefined,
-        extraKmRate: Number(extraKm) || undefined,
-        vehicleId,
+        startDate,
+        endDate,
+        vehicleId: String(vehicleId),
+        totalPrice: Number(totalPrice),
+        totalKms: Number(totalKms),
+        pricePerExtraKm: Number(extraKm),
         note: note.trim() || undefined,
       }),
     onSuccess: onSent,
     onError: (err) => Alert.alert('Could not send offer', err instanceof Error ? err.message : 'Try again.'),
   });
 
+  const datesOk = ISO_DATE.test(startDate) && ISO_DATE.test(endDate);
+  const canSend =
+    datesOk &&
+    Boolean(vehicleId) &&
+    Number(totalPrice) > 0 &&
+    Number(totalKms) > 0 &&
+    Number(extraKm) >= 0 &&
+    !submit.isPending;
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View className="flex-1 justify-end bg-black/40">
-        <View className="rounded-t-[24px] bg-canvas px-[18px] pb-8 pt-4">
+        <View className="max-h-[88%] rounded-t-[24px] bg-canvas px-[18px] pb-8 pt-4">
           <View className="mb-3 flex-row items-center justify-between">
-            <Text className="font-xheavy text-[17px] text-ink">Send a formal offer</Text>
+            <Text className="font-xheavy text-[17px] text-ink">Send an offer</Text>
             <Pressable onPress={onClose} hitSlop={8} className="h-9 w-9 items-center justify-center rounded-xl bg-hairline">
               <X size={16} color={colors.ink} strokeWidth={2} />
             </Pressable>
           </View>
-          <View className="flex-row gap-2.5">
-            <TextField className="flex-1" label="Total price (USD)" value={price} onChangeText={setPrice} placeholder="420" keyboardType="number-pad" />
-            <TextField className="flex-1" label="Included km" value={includedKm} onChangeText={setIncludedKm} placeholder="300" keyboardType="number-pad" />
-          </View>
-          <TextField className="mt-3" label="Extra km rate (USD)" value={extraKm} onChangeText={setExtraKm} placeholder="0.30" keyboardType="decimal-pad" />
-          <TextField className="mt-3" label="Note" value={note} onChangeText={setNote} placeholder="What is included in this price" multiline />
-          <Button
-            title={price ? `Send offer, ${formatMoney(Number(price))}` : 'Send offer'}
-            variant="cta"
-            className="mt-4"
-            loading={submit.isPending}
-            disabled={!(Number(price) > 0)}
-            onPress={() => submit.mutate()}
-          />
+
+          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            {/* Dates */}
+            <View className="flex-row gap-2.5">
+              <TextField className="flex-1" label="Start date" value={startDate} onChangeText={setStartDate} placeholder="2026-02-12" autoCapitalize="none" />
+              <TextField className="flex-1" label="End date" value={endDate} onChangeText={setEndDate} placeholder="2026-02-14" autoCapitalize="none" />
+            </View>
+
+            {/* Vehicle — approved only */}
+            {vehicles.length > 0 ? (
+              <View className="mt-3">
+                <Text className="mb-1.5 font-heavy text-[12.5px] text-ink-soft">Vehicle</Text>
+                <View className="flex-row flex-wrap gap-1.5">
+                  {vehicles.map((v) => (
+                    <Chip
+                      key={v.id}
+                      label={`${v.model}${v.seats ? `, ${v.seats} seats` : ''}`}
+                      selected={vehicleId === v.id}
+                      onPress={() => setVehicleId(v.id)}
+                    />
+                  ))}
+                </View>
+              </View>
+            ) : (
+              <Text className="mt-3 font-med text-[12.5px] text-danger">
+                You need an approved vehicle to send an offer.
+              </Text>
+            )}
+
+            {/* Pricing */}
+            <View className="mt-3 flex-row gap-2.5">
+              <TextField className="flex-1" label="Total price (USD)" value={totalPrice} onChangeText={setTotalPrice} placeholder="420" keyboardType="number-pad" />
+              <TextField className="flex-1" label="Included kms" value={totalKms} onChangeText={setTotalKms} placeholder="300" keyboardType="number-pad" />
+            </View>
+            <TextField className="mt-3" label="Price per extra km (USD)" value={extraKm} onChangeText={setExtraKm} placeholder="0.30" keyboardType="decimal-pad" />
+
+            <TextField
+              className="mt-3"
+              label="Notes to traveller (optional)"
+              value={note}
+              onChangeText={setNote}
+              placeholder="Share highlights, inclusions, or expectations."
+              multiline
+            />
+
+            <Button
+              title={totalPrice ? `Send offer, ${formatMoney(Number(totalPrice))}` : 'Send offer'}
+              variant="cta"
+              className="mt-4"
+              loading={submit.isPending}
+              disabled={!canSend}
+              onPress={() => submit.mutate()}
+            />
+          </ScrollView>
         </View>
       </View>
     </Modal>

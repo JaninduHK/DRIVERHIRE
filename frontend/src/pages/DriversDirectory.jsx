@@ -1,10 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useLoaderData } from 'react-router';
 import { Car, Check, ChevronDown, Loader2, Search, SlidersHorizontal, Star, X } from 'lucide-react';
 import { fetchDriverDirectory } from '../services/driverDirectoryApi.js';
 import { Avatar } from '../components/dashboard/primitives.jsx';
 
 const formatCurrency = (value) => (!Number.isFinite(value) ? '$0' : `$${value.toLocaleString('en-US')}`);
+const yearsLabel = (years) => {
+  const value = Number(years);
+  if (!Number.isFinite(value) || value <= 0) return 'New guide';
+  return `${Math.round(value)} yrs`;
+};
 
 const PERKS = ['English speaking', 'Airport meet & greet', 'Fuel included', 'Meals covered', 'Large luggage'];
 const PRICE_PRESETS = [
@@ -47,17 +53,25 @@ const perkMatch = (driver, perk) => {
 };
 
 const DriversDirectory = () => {
-  const [state, setState] = useState({ loading: true, error: '', drivers: [] });
+  // Seeded by the server loader so the full list is in the SSR HTML (crawlable).
+  const loaderData = useLoaderData();
+  const seededDrivers = loaderData?.drivers || [];
+  const [state, setState] = useState({ loading: false, error: '', drivers: seededDrivers });
   const [filters, setFilters] = useState(defaultFilters);
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const loadDrivers = useCallback(async () => {
-    setState((prev) => ({ ...prev, loading: true, error: '' }));
+    // Only show the loading state when we have nothing yet — after SSR we refresh silently.
+    setState((prev) => ({ ...prev, loading: prev.drivers.length === 0, error: '' }));
     try {
       const response = await fetchDriverDirectory();
       setState({ loading: false, error: '', drivers: response?.drivers || [] });
     } catch (error) {
-      setState({ loading: false, error: error?.message || 'Unable to load drivers right now.', drivers: [] });
+      setState((prev) => ({
+        loading: false,
+        error: prev.drivers.length ? '' : error?.message || 'Unable to load drivers right now.',
+        drivers: prev.drivers,
+      }));
     }
   }, []);
 
@@ -249,56 +263,55 @@ const ChevronChip = ({ children, onClick }) => (
 
 const DriverCard = ({ driver, tone }) => {
   const cityLabel = driver.location?.label || driver.address || 'Sri Lanka';
-  const badges = driver.badges || [];
-  const shown = badges.slice(0, 2);
-  const extra = badges.length - shown.length;
-  const hasReviews = Number(driver.reviewScore) > 0;
+  const rating = Number(driver.reviewScore) > 0 ? Number(driver.reviewScore).toFixed(1) : '—';
+  const reviews = driver.reviewCount ?? 0;
+  const averagePrice = Number(driver.averagePricePerDay);
+  const rate = Number.isFinite(averagePrice) && averagePrice > 0 ? formatCurrency(averagePrice) : 'Quote';
+  const chips = [driver.featuredVehicle?.model || 'Multiday tours', cityLabel].filter(Boolean);
 
   return (
-    <Link to={`/drivers/${driver.id}`} className="block rounded-[18px] bg-white p-4 shadow-card transition hover:-translate-y-0.5 hover:shadow-lg">
+    <article className="flex flex-col rounded-[20px] border border-[#e9edeb] bg-white p-5 shadow-card transition hover:-translate-y-0.5 hover:shadow-lg">
       <div className="flex items-center gap-3">
-        <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-full bg-[#eef1f0]">
+        <div className="grid h-16 w-16 flex-shrink-0 place-items-center overflow-hidden rounded-full bg-[#e9f8ef] text-[21px] font-extrabold text-brand-dark">
           {driver.profilePhoto ? (
             <img src={driver.profilePhoto} alt={driver.name} className="h-full w-full object-cover" />
           ) : (
-            <Avatar name={driver.name} tone={tone} className="h-full w-full rounded-full text-lg" />
+            <Avatar name={driver.name} tone={tone} className="h-full w-full rounded-full text-[21px]" />
           )}
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <b className="text-[16px] text-ink">{driver.name}</b>
-            <span className="rounded-full bg-brand-tint px-2 py-[3px] text-[10.5px] font-bold text-brand-dark">Verified</span>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-[7px]">
+            <h3 className="text-[16.5px] font-extrabold">{driver.name}</h3>
+            <span className="rounded-full bg-[#e9f8ef] px-2 py-1 text-[10.5px] font-extrabold text-brand-dark">Verified</span>
           </div>
-          <div className="mt-1 flex items-center gap-2.5 text-[12.5px] text-muted-soft">
-            <span className="truncate">{cityLabel}</span>
-            {hasReviews ? (
-              <span className="flex-shrink-0 font-bold text-ink">
-                {driver.reviewScore.toFixed(1)} ★ <span className="font-medium text-muted-soft">({driver.reviewCount ?? 0})</span>
-              </span>
-            ) : (
-              <span className="flex-shrink-0 text-muted-soft">No reviews yet</span>
-            )}
-          </div>
+          <div className="mt-[3px] text-[12.5px] font-semibold text-muted-soft">{cityLabel}</div>
         </div>
       </div>
-      {shown.length > 0 ? (
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {shown.map((b) => (
-            <span key={b} className="rounded-full bg-[#eef1f0] px-3 py-1.5 text-[11.5px] font-semibold text-ink-soft">{b}</span>
-          ))}
-          {extra > 0 ? (
-            <span className="rounded-full bg-[#eef1f0] px-3 py-1.5 text-[11.5px] font-semibold text-ink-soft">+{extra} more</span>
-          ) : null}
-        </div>
-      ) : null}
-      <div className="mt-3.5 flex items-center justify-between border-t border-hairline pt-3">
-        <div className="text-[12px] text-muted-soft">
-          <b className="text-[15px] text-ink">{driver.averagePricePerDay ? formatCurrency(driver.averagePricePerDay) : '$—'}</b>{' '}
-          avg / day · {driver.vehicleCount || 0} vehicle{driver.vehicleCount === 1 ? '' : 's'}
-        </div>
-        <span className="flex-shrink-0 rounded-full bg-brand px-4 py-2 text-[12.5px] font-bold text-white">Profile</span>
+      <div className="mt-3.5 flex flex-wrap items-center gap-1.5 text-[13.5px] font-bold">
+        <Star className="h-[15px] w-[15px] fill-[#f5b400] text-[#f5b400]" />
+        {rating}
+        <span className="font-semibold text-muted-soft">· {reviews} reviews · {yearsLabel(driver.experienceYears)}</span>
       </div>
-    </Link>
+      <p className="mt-[11px] flex-1 text-[14px] leading-[1.6] text-muted line-clamp-3">
+        {driver.description || 'Trusted chauffeur for bespoke Sri Lanka tours across the island.'}
+      </p>
+      <div className="mt-3.5 flex flex-wrap gap-[7px]">
+        {chips.map((chip) => (
+          <span key={chip} className="rounded-full bg-[#eef1f0] px-3 py-1.5 text-[11.5px] font-semibold text-ink-soft">
+            {chip}
+          </span>
+        ))}
+      </div>
+      <div className="mt-4 flex items-center justify-between gap-2.5 border-t border-[#f0f3f2] pt-3.5">
+        <div>
+          <div className="text-[11px] font-bold tracking-[.04em] text-muted-soft">AVG. DAILY RATE</div>
+          <div className="text-[17px] font-extrabold">{rate}<span className="text-[12.5px] font-semibold text-muted-soft">/day</span></div>
+        </div>
+        <Link to={`/drivers/${driver.id}`} className="inline-flex min-h-[44px] items-center rounded-[11px] bg-[#e9f8ef] px-4 text-[13.5px] font-bold text-brand-dark">
+          View driver
+        </Link>
+      </div>
+    </article>
   );
 };
 

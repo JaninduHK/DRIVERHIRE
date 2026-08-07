@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useLoaderData } from 'react-router';
 import {
   Car,
   Check,
@@ -28,10 +29,14 @@ const formatDate = (value) => {
   return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-const useAggregatedReviews = (vehicles) => {
+const useAggregatedReviews = (vehicles, seed) => {
   const hasVehicles = Array.isArray(vehicles) && vehicles.length > 0;
   const [refreshIndex, setRefreshIndex] = useState(0);
-  const [state, setState] = useState({ loading: hasVehicles, error: '', reviews: [], meta: { total: 0, averageRating: null, counts: [0, 0, 0, 0, 0] } });
+  const [state, setState] = useState(
+    seed
+      ? { loading: false, error: '', reviews: seed.reviews || [], meta: seed.meta || { total: 0, averageRating: null, counts: [0, 0, 0, 0, 0] } }
+      : { loading: hasVehicles, error: '', reviews: [], meta: { total: 0, averageRating: null, counts: [0, 0, 0, 0, 0] } },
+  );
 
   useEffect(() => {
     let active = true;
@@ -40,7 +45,7 @@ const useAggregatedReviews = (vehicles) => {
       return () => { active = false; };
     }
     (async () => {
-      setState((prev) => ({ ...prev, loading: true, error: '' }));
+      setState((prev) => ({ ...prev, loading: prev.reviews.length === 0, error: '' }));
       try {
         const aggregated = [];
         const counts = [0, 0, 0, 0, 0];
@@ -61,7 +66,7 @@ const useAggregatedReviews = (vehicles) => {
         aggregated.sort((a, b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0));
         setState({ loading: false, error: '', reviews: aggregated, meta: { total, averageRating: total ? Number((sum / total).toFixed(1)) : null, counts } });
       } catch (error) {
-        if (active) setState({ loading: false, error: error?.message || 'Unable to load reviews.', reviews: [], meta: { total: 0, averageRating: null, counts: [0, 0, 0, 0, 0] } });
+        if (active) setState((prev) => ({ loading: false, error: prev.reviews.length ? '' : (error?.message || 'Unable to load reviews.'), reviews: prev.reviews, meta: prev.meta }));
       }
     })();
     return () => { active = false; };
@@ -72,8 +77,15 @@ const useAggregatedReviews = (vehicles) => {
 
 const DriverDetails = () => {
   const { id } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
-  const [state, setState] = useState({ loading: true, error: '', data: null });
+  // Seeded by the route loader so the profile, vehicles and reviews are in the SSR HTML.
+  const loaderData = useLoaderData();
+  const [state, setState] = useState(
+    loaderData?.driver
+      ? { loading: false, error: '', data: { driver: loaderData.driver, vehicles: loaderData.vehicles || [] } }
+      : { loading: true, error: '', data: null },
+  );
   const [tab, setTab] = useState('about');
   const [creatingConversation, setCreatingConversation] = useState(false);
 
@@ -82,12 +94,12 @@ const DriverDetails = () => {
       setState({ loading: false, error: 'Driver identifier missing.', data: null });
       return;
     }
-    setState((prev) => ({ ...prev, loading: true, error: '' }));
+    setState((prev) => ({ ...prev, loading: prev.data ? false : true, error: '' }));
     try {
       const response = await fetchDriverProfile(id);
       setState({ loading: false, error: '', data: response });
     } catch (error) {
-      setState({ loading: false, error: error?.message || 'Unable to load driver profile right now.', data: null });
+      setState((prev) => ({ loading: false, error: prev.data ? '' : (error?.message || 'Unable to load driver profile right now.'), data: prev.data }));
     }
   }, [id]);
 
@@ -97,7 +109,21 @@ const DriverDetails = () => {
 
   const driver = state.data?.driver;
   const vehicles = useMemo(() => state.data?.vehicles || [], [state.data]);
-  const reviews = useAggregatedReviews(vehicles);
+  const reviews = useAggregatedReviews(
+    vehicles,
+    loaderData?.reviews ? { reviews: loaderData.reviews, meta: loaderData.reviewMeta } : undefined,
+  );
+
+  useEffect(() => {
+    if (!driver || location.hash !== '#reviews') return undefined;
+    const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+    const targetId = isDesktop ? 'd-reviews' : 'm-reviews';
+    if (!isDesktop) setTab('reviews');
+    const frame = window.requestAnimationFrame(() => {
+      document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [driver, location.hash]);
 
   if (state.loading) {
     return (
@@ -198,7 +224,7 @@ const MobileProfile = ({ driver, vehicles, reviews, cover, cityLabel, perks, rat
 
       {/* Identity */}
       <div className="relative -mt-[26px] rounded-t-[26px] bg-white px-[18px] pb-[18px]">
-        <div className="-mt-[30px] flex items-end gap-3">
+        <div className="-mt-[30px] flex items-start gap-3 pt-[14px]">
           <div className="flex-shrink-0 rounded-full border-4 border-white">
             {driver.profilePhoto ? (
               <img src={driver.profilePhoto} alt={driver.name} className="h-[76px] w-[76px] rounded-full object-cover" />
@@ -206,24 +232,33 @@ const MobileProfile = ({ driver, vehicles, reviews, cover, cityLabel, perks, rat
               <Avatar name={driver.name} className="h-[76px] w-[76px] rounded-full text-2xl" />
             )}
           </div>
-          <div className="pb-1.5">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-tint px-2.5 py-[5px] text-[11px] font-extrabold text-brand-dark">
-              <Check className="h-3 w-3" strokeWidth={3} /> Verified driver
-            </span>
+          <div className="min-w-0 flex-1 self-start">
+            <h1 className="min-w-0 text-[25px] font-extrabold leading-[1.05] tracking-tight text-ink">{driver.name}</h1>
+            <div className="mt-2">
+              <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-brand-tint px-2.5 py-[5px] text-[11px] font-extrabold text-brand-dark">
+                <Check className="h-3 w-3" strokeWidth={3} /> Verified driver
+              </span>
+            </div>
           </div>
         </div>
-        <h1 className="mt-3 text-[25px] font-extrabold tracking-tight text-ink">{driver.name}</h1>
-        <div className="mt-1.5 flex items-center gap-2.5 text-[13.5px] font-semibold text-muted">
+        <div className="mt-3 flex items-center gap-2.5 text-[13.5px] font-semibold text-muted">
           {ratingLabel ? (
-            <span className="flex items-center gap-1.5">
-              <Star className="h-3.5 w-3.5" fill="#f5b400" stroke="none" />
-              <b className="text-ink">{ratingLabel}</b>({driver.reviewCount ?? 0})
-            </span>
+            <>
+              <span className="flex items-center gap-1.5">
+                <Star className="h-3.5 w-3.5" fill="#f5b400" stroke="none" />
+                <b className="text-ink">{ratingLabel}</b>
+                <span>({driver.reviewCount ?? 0})</span>
+              </span>
+              <span className="h-1 w-1 rounded-full bg-[#cfd8dd]" />
+              <span>{cityLabel}</span>
+            </>
           ) : (
-            <span className="text-muted-soft">No reviews yet</span>
+            <>
+              <span className="text-muted-soft">No reviews yet</span>
+              <span className="h-1 w-1 rounded-full bg-[#cfd8dd]" />
+              <span>{cityLabel}</span>
+            </>
           )}
-          <span className="h-1 w-1 rounded-full bg-[#cfd8dd]" />
-          <span>{cityLabel}</span>
         </div>
         <div className="mt-4 grid grid-cols-3 gap-2">
           <StatTile value={expYears ? `${expYears} yrs` : 'New'} label="Guiding" />

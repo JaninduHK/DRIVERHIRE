@@ -5,7 +5,7 @@ import { Check, Camera, X } from 'lucide-react-native';
 import { Card } from './Card';
 import { Button } from './Button';
 import { TextField } from './TextField';
-import { pickImages, imagePart } from '../lib/media';
+import { pickImages, appendImage } from '../lib/media';
 import { resolveAssetUrl } from '../api/client';
 import { colors } from '../theme/colors';
 import type { Vehicle } from '../types';
@@ -53,7 +53,7 @@ export function VehicleForm({ initial, submitLabel, submitting, onSubmit }: Vehi
     if (picked.length) setNewPhotos((p) => [...p, ...picked].slice(0, 5));
   };
 
-  const submit = () => {
+  const submit = async () => {
     if (!model.trim() || !year.trim() || !price.trim()) {
       Alert.alert('Missing details', 'Model, year and price per day are required.');
       return;
@@ -63,17 +63,23 @@ export function VehicleForm({ initial, submitLabel, submitting, onSubmit }: Vehi
       Alert.alert('Invalid price', 'Price per day must be between $35 and $250 USD.');
       return;
     }
-    const form = new FormData();
-    form.append('model', model.trim());
-    form.append('year', String(parseInt(year, 10)));
-    form.append('pricePerDay', String(priceNum));
-    form.append('seats', String(parseInt(seats, 10) || 1));
-    form.append('description', description.trim());
-    SERVICES.forEach(({ key }) => form.append(key, services[key] ? 'true' : 'false'));
-    // On edit, tell the backend which existing images to keep (removed ones are deleted).
-    if (initial) form.append('existingImages', JSON.stringify(existingPhotos));
-    newPhotos.forEach((uri) => form.append('images', imagePart(uri, 'vehicle')));
-    onSubmit(form);
+    try {
+      const form = new FormData();
+      form.append('model', model.trim());
+      form.append('year', String(parseInt(year, 10)));
+      form.append('pricePerDay', String(priceNum));
+      form.append('seats', String(parseInt(seats, 10) || 1));
+      form.append('description', description.trim());
+      SERVICES.forEach(({ key }) => form.append(key, services[key] ? 'true' : 'false'));
+      // On edit, tell the backend which existing images to keep (removed ones are deleted).
+      if (initial) form.append('existingImages', JSON.stringify(existingPhotos));
+      for (const uri of newPhotos) {
+        await appendImage(form, 'images', uri);
+      }
+      onSubmit(form);
+    } catch (err) {
+      Alert.alert('Could not prepare images', err instanceof Error ? err.message : 'Try again.');
+    }
   };
 
   return (

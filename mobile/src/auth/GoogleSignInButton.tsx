@@ -10,6 +10,11 @@ const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 const ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
 const IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
 
+// When no client id is set, we must NOT mount `useIdTokenAuthRequest` — on a
+// native device it throws during render and crashes the screen. So the hook
+// lives in a child component that only renders when Google is configured.
+const GOOGLE_CONFIGURED = Boolean(WEB_CLIENT_ID || ANDROID_CLIENT_ID || IOS_CLIENT_ID);
+
 const GoogleGlyph = () => (
   <Svg width={17} height={17} viewBox="0 0 18 18">
     <Path
@@ -34,8 +39,41 @@ interface GoogleSignInButtonProps {
   label?: string;
 }
 
-export function GoogleSignInButton({ onCredential, fullWidth, label = 'Google' }: GoogleSignInButtonProps) {
-  const configured = Boolean(WEB_CLIENT_ID || ANDROID_CLIENT_ID);
+function ButtonShell({
+  onPress,
+  disabled,
+  submitting,
+  fullWidth,
+  label,
+}: {
+  onPress: () => void;
+  disabled: boolean;
+  submitting: boolean;
+  fullWidth?: boolean;
+  label: string;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      className={`flex-row items-center justify-center gap-2 rounded-[11px] border-[1.5px] border-line bg-white px-4 py-[13px] active:bg-hairline ${
+        fullWidth ? 'w-full' : 'flex-1'
+      } ${disabled ? 'opacity-60' : ''}`}
+    >
+      {submitting ? (
+        <ActivityIndicator color="#0f1f2d" />
+      ) : (
+        <View className="flex-row items-center gap-2">
+          <GoogleGlyph />
+          <Text className="font-heavy text-[13.5px] text-ink">{label}</Text>
+        </View>
+      )}
+    </Pressable>
+  );
+}
+
+// Only mounted when at least one Google client id is present.
+function ConfiguredGoogleButton({ onCredential, fullWidth, label }: GoogleSignInButtonProps & { label: string }) {
   const [submitting, setSubmitting] = useState(false);
 
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
@@ -54,30 +92,32 @@ export function GoogleSignInButton({ onCredential, fullWidth, label = 'Google' }
       .finally(() => setSubmitting(false));
   }, [response, onCredential]);
 
-  const handlePress = () => {
-    if (!configured) {
-      Alert.alert('Google sign-in unavailable', 'Google client IDs are not configured for this build yet.');
-      return;
-    }
-    promptAsync();
-  };
-
   return (
-    <Pressable
-      onPress={handlePress}
+    <ButtonShell
+      onPress={() => promptAsync()}
       disabled={!request || submitting}
-      className={`flex-row items-center justify-center gap-2 rounded-[11px] border-[1.5px] border-line bg-white px-4 py-[13px] active:bg-hairline ${
-        fullWidth ? 'w-full' : 'flex-1'
-      } ${!request || submitting ? 'opacity-60' : ''}`}
-    >
-      {submitting ? (
-        <ActivityIndicator color="#0f1f2d" />
-      ) : (
-        <View className="flex-row items-center gap-2">
-          <GoogleGlyph />
-          <Text className="font-heavy text-[13.5px] text-ink">{label}</Text>
-        </View>
-      )}
-    </Pressable>
+      submitting={submitting}
+      fullWidth={fullWidth}
+      label={label}
+    />
   );
+}
+
+export function GoogleSignInButton({ onCredential, fullWidth, label = 'Google' }: GoogleSignInButtonProps) {
+  // Not configured → render a plain button (no auth hook) so the screen can't crash.
+  if (!GOOGLE_CONFIGURED) {
+    return (
+      <ButtonShell
+        onPress={() =>
+          Alert.alert('Google sign-in unavailable', 'Google client IDs are not configured for this build yet.')
+        }
+        disabled={false}
+        submitting={false}
+        fullWidth={fullWidth}
+        label={label}
+      />
+    );
+  }
+
+  return <ConfiguredGoogleButton onCredential={onCredential} fullWidth={fullWidth} label={label} />;
 }

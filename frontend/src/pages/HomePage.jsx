@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { fetchVehicles, fetchVehicleReviews } from '../services/vehicleCatalogApi.js';
 import { fetchDriverDirectory } from '../services/driverDirectoryApi.js';
+import { useLoaderData } from 'react-router';
 import ReviewPhotos from '../components/ReviewPhotos.jsx';
 import { getStoredToken, saveReturnPath } from '../services/authToken.js';
 
@@ -33,7 +34,7 @@ const formatDateRange = (start, end) => {
   const fmt = (v) => {
     if (!v) return null;
     const d = new Date(v);
-    return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
   const s = fmt(start);
   const e = fmt(end);
@@ -41,10 +42,10 @@ const formatDateRange = (start, end) => {
   return s || e || null;
 };
 
-const reviewSubline = (review, vehicle) => {
+const reviewSubline = (review) => {
   const range = formatDateRange(review?.visitedStartDate, review?.visitedEndDate);
-  if (range && vehicle?.model) return `${range} · ${vehicle.model}`;
-  return vehicle?.model || range || 'Chauffeur-driven Sri Lanka trip';
+  if (range) return range;
+  return formatDateRange(review?.publishedAt || review?.createdAt) || 'Sri Lanka trip';
 };
 
 const VEHICLE_TAGS = ['Best value', 'Group friendly', 'Long tours'];
@@ -126,8 +127,10 @@ const labelCls = 'mb-1.5 block text-xs font-bold text-muted';
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const [vehicleState, setVehicleState] = useState({ loading: true, error: '', items: [] });
-  const [driverState, setDriverState] = useState({ loading: true, error: '', items: [] });
+  // Seeded by the server loader so the featured vehicles and drivers are in the SSR HTML.
+  const loaderData = useLoaderData();
+  const [vehicleState, setVehicleState] = useState({ loading: false, error: '', items: loaderData?.vehicles || [] });
+  const [driverState, setDriverState] = useState({ loading: false, error: '', items: loaderData?.drivers || [] });
   const [reviewState, setReviewState] = useState({ loading: true, error: '', items: [] });
 
   const [form, setForm] = useState({
@@ -240,7 +243,7 @@ const HomePage = () => {
           <div>
             <span className="inline-flex items-center gap-2 rounded-full border border-[#d6ece0] bg-white px-3 py-[7px] text-[12.5px] font-bold text-brand-dark">
               <span className="h-1.5 w-1.5 rounded-full bg-brand" />
-              Trusted by 12,000+ travellers since 2014
+              Trusted with 1200+ genuine reviews 
             </span>
             <h1 className="mt-[18px] text-[clamp(33px,5vw,54px)] font-extrabold leading-[1.06] tracking-[-.03em]">
               Sri Lanka car rentals <span className="text-brand">with a driver</span> who knows the island.
@@ -700,9 +703,116 @@ const DriverCard = ({ driver }) => {
   );
 };
 
+const ClampedReviewText = ({ text, to }) => {
+  const textRef = useRef(null);
+  const measureRef = useRef(null);
+  const [display, setDisplay] = useState({ content: text, truncated: false });
+
+  useLayoutEffect(() => {
+    const node = textRef.current;
+    const measureNode = measureRef.current;
+    if (!node || !measureNode) return undefined;
+
+    const source = `${text || ''}`.trim();
+    const words = source.split(/\s+/).filter(Boolean);
+
+    const updateDisplay = (next) => {
+      setDisplay((prev) => (prev.content === next.content && prev.truncated === next.truncated ? prev : next));
+    };
+
+    const renderMeasure = (content, truncated) => {
+      measureNode.replaceChildren();
+      if (content) {
+        measureNode.append(document.createTextNode(content));
+      }
+      if (truncated) {
+        measureNode.append(document.createTextNode('... '));
+        if (to) {
+          const more = document.createElement('span');
+          more.textContent = 'Read More';
+          more.style.color = '#0c8a4b';
+          more.style.fontWeight = '700';
+          measureNode.append(more);
+        }
+      }
+      return measureNode.getBoundingClientRect().height;
+    };
+
+    const fitText = () => {
+      if (!source) {
+        updateDisplay({ content: '', truncated: false });
+        return;
+      }
+
+      measureNode.style.width = `${node.clientWidth}px`;
+      const lineHeight = parseFloat(window.getComputedStyle(node).lineHeight) || 24;
+      const maxHeight = lineHeight * 6 + 1;
+
+      if (renderMeasure(source, false) <= maxHeight) {
+        updateDisplay({ content: source, truncated: false });
+        return;
+      }
+
+      let low = 1;
+      let high = words.length;
+      let best = '';
+
+      while (low <= high) {
+        const mid = Math.floor((low + high) / 2);
+        const candidate = words.slice(0, mid).join(' ').replace(/[.,;:!?-–—\s]+$/u, '');
+        if (renderMeasure(candidate, true) <= maxHeight) {
+          best = candidate;
+          low = mid + 1;
+        } else {
+          high = mid - 1;
+        }
+      }
+
+      if (!best) {
+        let fallback = source;
+        while (fallback.length > 1 && renderMeasure(fallback, true) > maxHeight) {
+          fallback = fallback.slice(0, -1).trimEnd();
+        }
+        best = fallback.replace(/[.,;:!?-–—\s]+$/u, '');
+      }
+
+      updateDisplay({ content: best, truncated: true });
+    };
+
+    const frame = window.requestAnimationFrame(fitText);
+    if (typeof ResizeObserver === 'undefined') {
+      window.addEventListener('resize', fitText);
+      return () => {
+        window.cancelAnimationFrame(frame);
+        window.removeEventListener('resize', fitText);
+      };
+    }
+
+    const observer = new ResizeObserver(fitText);
+    observer.observe(node);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [text, to]);
+
+  return (
+    <div className="relative">
+      <blockquote ref={textRef} className="text-[15px] leading-[1.65] text-[#26333f]">
+        {display.content}
+        {display.truncated ? '... ' : null}
+        {display.truncated && to ? <Link to={to} className="font-bold text-brand-dark">Read More</Link> : null}
+      </blockquote>
+      <div ref={measureRef} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 -z-10 invisible text-[15px] leading-[1.65] text-[#26333f]" />
+    </div>
+  );
+};
+
 const ReviewCard = ({ review, vehicle }) => {
   const rating = Math.max(1, Math.min(5, Math.round(review.rating || 5)));
   const name = review.travelerName || 'Traveller';
+  const driverReviewsLink = vehicle?.driver?.id ? `/drivers/${vehicle.driver.id}#reviews` : null;
+  const reviewText = review.comment || review.title || 'A five-star car-with-driver journey across Sri Lanka.';
   return (
     <figure className="m-0 flex flex-col rounded-[20px] border border-[#e5ebe8] bg-white p-[22px]">
       <div className="flex gap-[3px]">
@@ -710,17 +820,17 @@ const ReviewCard = ({ review, vehicle }) => {
           <StarIcon key={i} fill={i < rating ? '#f5b400' : '#e3e8e5'} />
         ))}
       </div>
-      <blockquote className="mt-3.5 flex-1 text-[15px] leading-[1.65] text-[#26333f]">
-        {review.comment || review.title || 'A five-star car-with-driver journey across Sri Lanka.'}
-      </blockquote>
-      <ReviewPhotos images={review.images} />
+      <div className="mt-3.5 flex-1">
+        <ClampedReviewText text={reviewText} to={driverReviewsLink} />
+        <ReviewPhotos images={review.images} />
+      </div>
       <figcaption className="mt-[18px] flex items-center gap-[11px] border-t border-[#f0f3f2] pt-4">
         <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#e7ddfb] text-sm font-extrabold text-[#6b3fc0]">
           {name.charAt(0).toUpperCase()}
         </span>
-        <span>
-          <b className="block text-sm">{name}</b>
-          <span className="text-[12.5px] font-semibold text-muted-soft">{reviewSubline(review, vehicle)}</span>
+        <span className="flex flex-col gap-0.5">
+          <b className="block text-sm leading-[1.1]">{name}</b>
+          <span className="text-[12.5px] leading-[1.1] font-semibold text-muted-soft">{reviewSubline(review)}</span>
         </span>
       </figcaption>
     </figure>

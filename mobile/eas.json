@@ -11,7 +11,9 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://carwithdriver.lk/api"
+        "EXPO_PUBLIC_API_URL": "https://carwithdriver.lk/api",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "554846902852-lib8ng1snk1v3p6n1dgkmjcorkrq14fn.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "150112233642-rpf2ca43o07mcbqh8rntpupf7md20err.apps.googleusercontent.com"
       }
     },
     "preview": {
@@ -20,7 +22,9 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://carwithdriver.lk/api"
+        "EXPO_PUBLIC_API_URL": "https://carwithdriver.lk/api",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "554846902852-lib8ng1snk1v3p6n1dgkmjcorkrq14fn.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "150112233642-rpf2ca43o07mcbqh8rntpupf7md20err.apps.googleusercontent.com"
       }
     },
     "production": {
@@ -29,7 +33,9 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://carwithdriver.lk/api"
+        "EXPO_PUBLIC_API_URL": "https://carwithdriver.lk/api",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "554846902852-lib8ng1snk1v3p6n1dgkmjcorkrq14fn.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID": "150112233642-rpf2ca43o07mcbqh8rntpupf7md20err.apps.googleusercontent.com"
       }
     }
   },

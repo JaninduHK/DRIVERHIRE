@@ -12,7 +12,7 @@ import { IconButton } from '../../components/IconButton';
 import { Loading, EmptyState } from '../../components/states';
 import { useEarningsSummary, useEarningsHistory, qk } from '../../hooks/queries';
 import { uploadCommissionSlip } from '../../api/driver';
-import { pickImage, imagePart } from '../../lib/media';
+import { pickImage, appendImage } from '../../lib/media';
 import { formatMoney, formatDate, formatPercent } from '../../lib/format';
 import { colors } from '../../theme/colors';
 
@@ -56,7 +56,7 @@ export default function Earnings() {
       const id = summary?.commission?.id;
       if (!id) throw new Error('No commission to attach a slip to.');
       const form = new FormData();
-      form.append('slip', imagePart(uri, 'slip'));
+      await appendImage(form, 'slip', uri);
       await uploadCommissionSlip(id, form);
     },
     onSuccess: () => {

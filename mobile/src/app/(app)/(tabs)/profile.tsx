@@ -12,7 +12,7 @@ import { IconButton } from '../../../components/IconButton';
 import { useAuth } from '../../../auth/AuthContext';
 import { useOverview } from '../../../hooks/queries';
 import { updateProfile } from '../../../api/auth';
-import { pickImage, imagePart } from '../../../lib/media';
+import { pickImage, appendImage } from '../../../lib/media';
 import { initials } from '../../../lib/format';
 import { resolveAssetUrl } from '../../../api/client';
 import { colors, headerGradient } from '../../../theme/colors';
@@ -39,7 +39,7 @@ export default function Profile() {
     setUploading(true);
     try {
       const form = new FormData();
-      form.append('profilePhoto', imagePart(uri, 'profilePhoto'));
+      await appendImage(form, 'profilePhoto', uri);
       const updated = normalizeUser(await updateProfile(form));
       setUser(updated);
     } catch (err) {

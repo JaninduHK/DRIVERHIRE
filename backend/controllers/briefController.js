@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import TourBrief from '../models/TourBrief.js';
 import ChatConversation from '../models/ChatConversation.js';
 import ChatMessage from '../models/ChatMessage.js';
-import Vehicle from '../models/Vehicle.js';
+import Vehicle, { VEHICLE_STATUS } from '../models/Vehicle.js';
 import User from '../models/User.js';
 import { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
 import { createChatMessage } from '../services/chatService.js';
@@ -295,6 +295,7 @@ export const respondToBrief = async (req, res) => {
     const vehicle = await Vehicle.findOne({
       _id: vehicleId,
       driver: req.user.id,
+      status: VEHICLE_STATUS.APPROVED,
     }).select('id model status');
 
     if (!vehicle) {

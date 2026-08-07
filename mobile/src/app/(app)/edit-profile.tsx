@@ -13,7 +13,7 @@ import { IconButton } from '../../components/IconButton';
 import { Avatar } from '../../components/Avatar';
 import { useAuth } from '../../auth/AuthContext';
 import { updateProfile } from '../../api/auth';
-import { pickImage, imagePart } from '../../lib/media';
+import { pickImage, appendImage } from '../../lib/media';
 import { getDeviceLocation } from '../../lib/location';
 import { resolveAssetUrl } from '../../api/client';
 import { colors } from '../../theme/colors';
@@ -76,7 +76,7 @@ export default function EditProfile() {
         fd.append('currentLatitude', String(coords.latitude));
         fd.append('currentLongitude', String(coords.longitude));
       }
-      if (photoUri) fd.append('profilePhoto', imagePart(photoUri, 'profilePhoto'));
+      if (photoUri) await appendImage(fd, 'profilePhoto', photoUri);
       if (removePhoto) fd.append('removeProfilePhoto', 'true');
 
       const updated = normalizeUser(await updateProfile(fd));

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Car, Check, ChevronDown, RefreshCw, Search, SlidersHorizontal, Star, X } from 'lucide-react';
+import { useLoaderData } from 'react-router';
 import { fetchVehicles } from '../services/vehicleCatalogApi.js';
 import { getVehicleFeatureLabels } from '../constants/vehicleFeatures.js';
 
@@ -85,7 +86,9 @@ const VehicleCatalog = () => {
   const [appliedFilters, setAppliedFilters] = useState(initialFilters);
   const [refreshIndex, setRefreshIndex] = useState(0);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [state, setState] = useState({ items: [], loading: true, error: '' });
+  // Seeded by the server loader so the vehicle grid is in the SSR HTML (crawlable).
+  const loaderData = useLoaderData();
+  const [state, setState] = useState({ items: loaderData?.vehicles || [], loading: false, error: '' });
 
   useEffect(() => {
     setFormState(initialFilters);
@@ -94,7 +97,7 @@ const VehicleCatalog = () => {
 
   useEffect(() => {
     let cancelled = false;
-    setState((prev) => ({ ...prev, loading: true, error: '' }));
+    setState((prev) => ({ ...prev, loading: prev.items.length === 0, error: '' }));
     fetchVehicles(cleanFilters(appliedFilters))
       .then(({ vehicles }) => {
         if (cancelled) return;

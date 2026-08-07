@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1093284940553",
+    "project_id": "car-with-driver-38df7",
+    "storage_bucket": "car-with-driver-38df7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1093284940553:android:6fd7293c942d6a4f8e21d8",
+        "android_client_info": {
+          "package_name": "lk.carwithdriver.driver"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA6jdolTevqGXeNbKLzTaR8fSOUzw5b6vc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

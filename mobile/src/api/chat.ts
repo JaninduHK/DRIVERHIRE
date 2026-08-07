@@ -16,13 +16,13 @@ export const sendMessage = (conversationId: string, body: string) =>
   });
 
 export interface OfferPayload {
+  startDate: string;
+  endDate: string;
+  vehicleId: string;
   totalPrice: number;
-  includedKm?: number;
-  extraKmRate?: number;
-  vehicleId?: string;
+  totalKms: number;
+  pricePerExtraKm: number;
   note?: string;
-  startDate?: string;
-  endDate?: string;
 }
 
 export const sendOffer = (conversationId: string, payload: OfferPayload) =>

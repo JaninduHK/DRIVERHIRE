@@ -1,13 +1,15 @@
 import * as ImagePicker from 'expo-image-picker';
 import { Alert } from 'react-native';
 
-// RN multipart file part from a local asset URI.
-export const imagePart = (uri: string, fieldName = 'image') => {
-  const name = uri.split('/').pop() || `${fieldName}.jpg`;
-  const ext = (name.split('.').pop() || 'jpg').toLowerCase();
-  const type = ext === 'png' ? 'image/png' : ext === 'heic' ? 'image/heic' : 'image/jpeg';
-  // React Native's FormData accepts this shape for file uploads.
-  return { uri, name, type } as unknown as Blob;
+// Append a picked local image to a FormData for upload.
+// React Native 0.76+ (new architecture) uses a spec-strict FormData that rejects
+// the old { uri, name, type } object ("Unsupported FormDataPart implementation"),
+// so we read the file into a Blob and append that instead.
+export const appendImage = async (form: FormData, field: string, uri: string): Promise<void> => {
+  const response = await fetch(uri);
+  const blob = await response.blob();
+  const name = uri.split('/').pop()?.split('?')[0] || `${field}.jpg`;
+  form.append(field, blob, name);
 };
 
 const ensurePermission = async (): Promise<boolean> => {
