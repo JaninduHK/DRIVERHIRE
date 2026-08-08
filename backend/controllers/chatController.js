@@ -3,6 +3,7 @@ import ChatConversation from '../models/ChatConversation.js';
 import ChatMessage from '../models/ChatMessage.js';
 import User, { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
 import Vehicle, { VEHICLE_STATUS } from '../models/Vehicle.js';
+import Booking, { BOOKING_STATUS } from '../models/Booking.js';
 import { sanitizeMessageContent } from '../utils/chatSanitizer.js';
 import { createChatMessage } from '../services/chatService.js';
 import { notifyUser } from '../services/expoPushService.js';
@@ -192,6 +193,40 @@ export const listConversations = async (req, res) => {
   }
 };
 
+// The active booking (if any) between a conversation's two parties, shaped for the chat
+// notice + the booking-details view on both ends.
+const findConversationBooking = async (conversation) => {
+  const booking = await Booking.findOne({
+    driver: conversation.driver,
+    travelerUser: conversation.traveler,
+    status: { $nin: [BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED] },
+  })
+    .sort({ createdAt: -1 })
+    .populate('vehicle', 'model')
+    .lean();
+
+  if (!booking) {
+    return null;
+  }
+
+  return {
+    id: booking._id.toString(),
+    status: booking.status,
+    startDate: booking.startDate,
+    endDate: booking.endDate,
+    traveler: booking.traveler,
+    startPoint: booking.startPoint || null,
+    endPoint: booking.endPoint || null,
+    flightNumber: booking.flightNumber || null,
+    arrivalTime: booking.arrivalTime || null,
+    departureTime: booking.departureTime || null,
+    specialRequests: booking.specialRequests || null,
+    vehicleModel: booking.vehicle?.model || null,
+    totalPrice: booking.totalPrice,
+    totalDays: booking.totalDays,
+  };
+};
+
 export const fetchMessages = async (req, res) => {
   const { conversationId } = req.params;
   const limit = Math.min(Number(req.query.limit) || 50, 100);
@@ -239,12 +274,15 @@ export const fetchMessages = async (req, res) => {
 
     await markConversationAsRead(conversation, req.user.id);
 
+    const booking = await findConversationBooking(conversation);
+
     return res.json({
       messages: messages.reverse().map((message) => ({
         ...message,
         id: message._id.toString(),
         _id: undefined,
       })),
+      booking,
     });
   } catch (error) {
     console.error('Fetch messages error:', error);

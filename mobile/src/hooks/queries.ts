@@ -42,9 +42,17 @@ export const useConversations = () =>
   });
 
 export const useMessages = (conversationId: string) =>
-  useQuery<ChatMessage[]>({
+  useQuery<{ messages: ChatMessage[]; booking: Booking | null }>({
     queryKey: qk.messages(conversationId),
-    queryFn: async () => asList<ChatMessage>(await chatApi.getMessages(conversationId), 'messages'),
+    queryFn: async () => {
+      const res = (await chatApi.getMessages(conversationId)) as
+        | { messages?: ChatMessage[]; booking?: Booking | null }
+        | ChatMessage[];
+      return {
+        messages: asList<ChatMessage>(res, 'messages'),
+        booking: (Array.isArray(res) ? null : res?.booking) ?? null,
+      };
+    },
     enabled: Boolean(conversationId),
     refetchInterval: 8000,
   });

@@ -28,6 +28,7 @@ import {
 import { fetchDriverVehicles } from '../services/driverApi.js';
 import { DashboardSidebar, DriverDrawer, MobileHeader, Sheet } from '../components/dashboard/mobile.jsx';
 import { Avatar } from '../components/dashboard/primitives.jsx';
+import BookingDetailsModal from '../components/BookingDetailsModal.jsx';
 import { clearStoredToken, getStoredUser } from '../services/authToken.js';
 
 const HEADER_GRADIENT = 'linear-gradient(160deg,#0f7a45,#10a35a 55%,#18b866)';
@@ -44,7 +45,9 @@ const DriverMessages = () => {
     loading: false,
     error: '',
     items: [],
+    booking: null,
   });
+  const [bookingDetailOpen, setBookingDetailOpen] = useState(false);
   const [composerValue, setComposerValue] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const [offerForm, setOfferForm] = useState({
@@ -117,6 +120,7 @@ const DriverMessages = () => {
           loading: false,
           error: '',
           items: [],
+          booking: null,
         });
         return;
       }
@@ -133,6 +137,7 @@ const DriverMessages = () => {
           loading: false,
           error: '',
           items: Array.isArray(data?.messages) ? data.messages : [],
+          booking: data?.booking || null,
         });
         try {
           await markConversationRead(conversationId);
@@ -152,6 +157,7 @@ const DriverMessages = () => {
             loading: false,
             error: message,
             items: [],
+            booking: null,
           });
         }
       }
@@ -412,6 +418,28 @@ const DriverMessages = () => {
     if (composerValue.trim()) handleSendMessage();
   };
 
+  // Notice shown at the top of the thread when this traveller already has a booking with
+  // the driver. Tapping it opens the full booking-details view.
+  const conversationBooking = messagesState.booking;
+  const bookingNotice = conversationBooking ? (
+    <button
+      type="button"
+      onClick={() => setBookingDetailOpen(true)}
+      className="flex w-full items-center gap-2.5 rounded-[14px] border border-brand/25 bg-brand-tint px-3.5 py-2.5 text-left transition hover:border-brand"
+    >
+      <CalendarCheck className="h-5 w-5 flex-shrink-0 text-brand-dark" />
+      <span className="min-w-0 flex-1">
+        <span className="block text-[13px] font-extrabold text-ink">
+          {conversationBooking.status === 'confirmed'
+            ? 'Confirmed booking with this traveller'
+            : 'Booking request from this traveller'}
+        </span>
+        <span className="block truncate text-[12px] text-muted">Tap to view the trip details</span>
+      </span>
+      <span className="flex-shrink-0 text-[15px] font-extrabold text-brand-dark">›</span>
+    </button>
+  ) : null;
+
   const renderConvList = (variant) => {
     if (conversationsState.loading) {
       return (
@@ -516,6 +544,7 @@ const DriverMessages = () => {
 
             <div className="flex flex-1 flex-col">
               <div className="flex-1 space-y-2.5 px-4 py-4">
+                {bookingNotice}
                 {messagesState.loading && messages.length === 0 ? (
                   <div className="flex min-h-[30vh] items-center justify-center gap-2 text-sm text-muted">
                     <Loader2 className="h-4 w-4 animate-spin text-brand" /> Loading messages…
@@ -717,7 +746,10 @@ const DriverMessages = () => {
                     <div className="truncate text-[12px] text-muted-soft">{threadSubtitle}</div>
                   </div>
                 </div>
-                <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto px-6 py-6">{chatBody}</div>
+                <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto px-6 py-6">
+                  {bookingNotice}
+                  {chatBody}
+                </div>
                 <div className="flex-shrink-0 border-t border-hairline bg-white px-6 py-4">
                   <form onSubmit={submitMessage} className="flex items-center gap-2.5">
                     <button
@@ -826,6 +858,12 @@ const DriverMessages = () => {
             </form>
           </div>
         </div>
+      ) : null}
+      {bookingDetailOpen ? (
+        <BookingDetailsModal
+          booking={conversationBooking}
+          onClose={() => setBookingDetailOpen(false)}
+        />
       ) : null}
     </div>
   );

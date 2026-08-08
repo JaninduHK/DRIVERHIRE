@@ -56,6 +56,7 @@ import {
   updatePassword as updatePasswordRequest,
 } from '../services/profileApi.js';
 import { fetchDriverBookings, driverRespondToBooking } from '../services/bookingApi.js';
+import BookingDetailsModal from '../components/BookingDetailsModal.jsx';
 import { fetchOpenBriefs } from '../services/briefApi.js';
 import { fetchConversations } from '../services/chatApi.js';
 import { VEHICLE_FEATURES, getVehicleFeatureLabels } from '../constants/vehicleFeatures.js';
@@ -2072,6 +2073,7 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
 const DriverBookingsPanel = ({ onMenu, onNavigate, driverName, driverImage, bookingsState, onReload }) => {
   const { loading, error, items } = bookingsState;
   const [responding, setResponding] = useState({ id: '', action: '' });
+  const [selectedBooking, setSelectedBooking] = useState(null);
 
   const [view, setView] = useState('upcoming');
 
@@ -2180,16 +2182,20 @@ const DriverBookingsPanel = ({ onMenu, onNavigate, driverName, driverImage, book
                 responding={responding}
                 onRespond={handleRespond}
                 onMessage={() => onNavigate?.('messages')}
+                onView={setSelectedBooking}
               />
             ))}
           </div>
         )}
       </Sheet>
+      {selectedBooking ? (
+        <BookingDetailsModal booking={selectedBooking} onClose={() => setSelectedBooking(null)} />
+      ) : null}
     </>
   );
 };
 
-const BookingCard = ({ booking, tone = 'amber', responding, onRespond, onMessage }) => {
+const BookingCard = ({ booking, tone = 'amber', responding, onRespond, onMessage, onView }) => {
   const name = booking.traveler?.fullName || 'Traveller';
   const vehicleName = booking.vehicle?.model || 'Vehicle to confirm';
   const start = formatDate(booking.startDate);
@@ -2231,10 +2237,17 @@ const BookingCard = ({ booking, tone = 'amber', responding, onRespond, onMessage
           </div>
         </div>
       </div>
-      <div className="mt-3 rounded-xl bg-canvas px-[13px] py-[11px] text-[13px]">
-        <div className="flex items-center gap-1.5 font-bold text-ink">
-          <Car className="h-3.5 w-3.5 text-brand" />
-          {vehicleName}
+      <button
+        type="button"
+        onClick={() => onView?.(booking)}
+        className="mt-3 w-full rounded-xl bg-canvas px-[13px] py-[11px] text-left text-[13px] transition hover:bg-[#e9efec]"
+      >
+        <div className="flex items-center justify-between gap-1.5 font-bold text-ink">
+          <span className="flex min-w-0 items-center gap-1.5">
+            <Car className="h-3.5 w-3.5 flex-shrink-0 text-brand" />
+            <span className="truncate">{vehicleName}</span>
+          </span>
+          <span className="flex-shrink-0 text-[11px] font-extrabold text-brand-dark">View details ›</span>
         </div>
         <div className="mt-1.5 flex items-center gap-1.5 text-muted">
           <CalendarDays className="h-3.5 w-3.5 text-muted-soft" />
@@ -2243,7 +2256,7 @@ const BookingCard = ({ booking, tone = 'amber', responding, onRespond, onMessage
         {payoutLabel ? (
           <div className="mt-1.5 text-[12px] font-semibold text-brand-dark">Your payout: {payoutLabel}</div>
         ) : null}
-      </div>
+      </button>
       {isPending ? (
         <div className="mt-3 flex gap-2">
           <button

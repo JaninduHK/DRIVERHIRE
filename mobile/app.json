@@ -41,7 +41,8 @@
         {
           "photosPermission": "Allow Car With Driver to access your photos to add vehicle and profile images."
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": false,

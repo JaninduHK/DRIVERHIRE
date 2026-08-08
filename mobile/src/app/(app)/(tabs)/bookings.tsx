@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { View, Text, Alert } from 'react-native';
+import { View, Text, Alert, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MapPin, Calendar } from 'lucide-react-native';
@@ -11,6 +11,7 @@ import { Button } from '../../../components/Button';
 import { Avatar } from '../../../components/Avatar';
 import { SegmentedTabs } from '../../../components/SegmentedTabs';
 import { Loading, EmptyState } from '../../../components/states';
+import { BookingDetailsSheet } from '../../../components/BookingDetailsSheet';
 import { useBookings, qk } from '../../../hooks/queries';
 import { respondToBooking } from '../../../api/bookings';
 import { formatMoney, formatDateRange } from '../../../lib/format';
@@ -42,6 +43,7 @@ export default function Bookings() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<'upcoming' | 'completed'>('upcoming');
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const { data, isLoading, isRefetching, refetch } = useBookings();
 
   const respond = useMutation({
@@ -101,11 +103,17 @@ export default function Bookings() {
                   ])
                 }
                 onMessage={() => router.push('/(app)/(tabs)/messages')}
+                onView={() => setSelectedBooking(b)}
               />
             ))}
           </View>
         )}
       </BodySheet>
+      <BookingDetailsSheet
+        booking={selectedBooking}
+        visible={!!selectedBooking}
+        onClose={() => setSelectedBooking(null)}
+      />
     </Screen>
   );
 }
@@ -116,19 +124,24 @@ function BookingCard({
   onAccept,
   onReject,
   onMessage,
+  onView,
 }: {
   booking: Booking;
   busy: boolean;
   onAccept: () => void;
   onReject: () => void;
   onMessage: () => void;
+  onView: () => void;
 }) {
   const label = statusLabel(booking);
-  const travelerName = booking.traveler?.name || booking.travelerName || 'Traveller';
+  const travelerName =
+    booking.traveler?.fullName || booking.traveler?.name || booking.travelerName || 'Traveller';
   const vehicle = booking.vehicle?.model || booking.vehicleModel || 'Vehicle';
   const route =
     booking.route ||
-    [booking.pickupLocation, booking.dropoffLocation].filter(Boolean).join(' to ') ||
+    [booking.startPoint || booking.pickupLocation, booking.endPoint || booking.dropoffLocation]
+      .filter(Boolean)
+      .join(' to ') ||
     'Trip';
   const toneBorder =
     label.tone === 'brand' ? 'border-brand' : label.tone === 'info' ? 'border-[#d6e9fb]' : 'border-line';
@@ -159,10 +172,15 @@ function BookingCard({
         </View>
       </View>
 
-      <View className="mt-3 gap-1.5 rounded-xl bg-canvas px-3 py-3">
-        <View className="flex-row items-center gap-2">
-          <MapPin size={14} color={colors.brand} strokeWidth={1.8} />
-          <Text className="font-heavy text-[13px] text-ink">{route}</Text>
+      <Pressable onPress={onView} className="mt-3 gap-1.5 rounded-xl bg-canvas px-3 py-3 active:bg-hairline">
+        <View className="flex-row items-center justify-between gap-2">
+          <View className="min-w-0 flex-1 flex-row items-center gap-2">
+            <MapPin size={14} color={colors.brand} strokeWidth={1.8} />
+            <Text className="font-heavy text-[13px] text-ink" numberOfLines={1}>
+              {route}
+            </Text>
+          </View>
+          <Text className="font-xheavy text-[11px] text-brand-dark">Details ›</Text>
         </View>
         {formatDateRange(booking.startDate, booking.endDate) ? (
           <View className="flex-row items-center gap-2">
@@ -172,7 +190,7 @@ function BookingCard({
             </Text>
           </View>
         ) : null}
-      </View>
+      </Pressable>
 
       {isPending(booking) ? (
         <View className="mt-3 flex-row gap-2">

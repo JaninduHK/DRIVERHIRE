@@ -15,13 +15,15 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
-import { ChevronLeft, Send, FileText, X } from 'lucide-react-native';
+import { ChevronLeft, Send, FileText, X, CalendarCheck, ChevronRight } from 'lucide-react-native';
 import { Avatar } from '../../../components/Avatar';
 import { IconButton } from '../../../components/IconButton';
 import { Button } from '../../../components/Button';
 import { TextField } from '../../../components/TextField';
 import { Chip } from '../../../components/Chip';
 import { Loading } from '../../../components/states';
+import { BookingDetailsSheet } from '../../../components/BookingDetailsSheet';
+import { DatePickerField } from '../../../components/DatePickerField';
 import { useMessages, useConversations, useVehicles, qk } from '../../../hooks/queries';
 import { sendMessage, sendOffer } from '../../../api/chat';
 import { useAuth } from '../../../auth/AuthContext';
@@ -44,10 +46,13 @@ export default function Chat() {
   const { data: conversations } = useConversations();
   const { data: vehicles } = useVehicles();
   const conversation = useMemo(() => (conversations ?? []).find((c) => c.id === conversationId), [conversations, conversationId]);
-  const { data: messages, isLoading } = useMessages(conversationId);
+  const { data: messagesData, isLoading } = useMessages(conversationId);
+  const messages = messagesData?.messages;
+  const booking = messagesData?.booking ?? null;
 
   const [text, setText] = useState('');
   const [offerOpen, setOfferOpen] = useState(false);
+  const [bookingOpen, setBookingOpen] = useState(false);
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: qk.messages(conversationId) });
@@ -103,6 +108,23 @@ export default function Chat() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={insets.top + 8}
       >
+        {booking ? (
+          <Pressable
+            onPress={() => setBookingOpen(true)}
+            className="mx-4 mt-3 flex-row items-center gap-2.5 rounded-2xl border-[1.5px] border-[#cdeede] bg-brand-tint px-3.5 py-2.5 active:opacity-80"
+          >
+            <CalendarCheck size={18} color={colors.brand} strokeWidth={2} />
+            <View className="flex-1">
+              <Text className="font-xheavy text-[12.5px] text-ink">
+                {booking.status === 'confirmed'
+                  ? 'Confirmed booking with this traveller'
+                  : 'Booking request from this traveller'}
+              </Text>
+              <Text className="font-med text-[11.5px] text-muted-soft">Tap to view trip details</Text>
+            </View>
+            <ChevronRight size={16} color={colors.mutedSoft} strokeWidth={2} />
+          </Pressable>
+        ) : null}
         {isLoading ? (
           <Loading />
         ) : (
@@ -156,6 +178,8 @@ export default function Chat() {
           invalidate();
         }}
       />
+
+      <BookingDetailsSheet booking={booking} visible={bookingOpen} onClose={() => setBookingOpen(false)} />
     </View>
   );
 }
@@ -246,7 +270,7 @@ function OfferModal({
     onError: (err) => Alert.alert('Could not send offer', err instanceof Error ? err.message : 'Try again.'),
   });
 
-  const datesOk = ISO_DATE.test(startDate) && ISO_DATE.test(endDate);
+  const datesOk = ISO_DATE.test(startDate) && ISO_DATE.test(endDate) && endDate >= startDate;
   const canSend =
     datesOk &&
     Boolean(vehicleId) &&
@@ -269,8 +293,20 @@ function OfferModal({
           <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             {/* Dates */}
             <View className="flex-row gap-2.5">
-              <TextField className="flex-1" label="Start date" value={startDate} onChangeText={setStartDate} placeholder="2026-02-12" autoCapitalize="none" />
-              <TextField className="flex-1" label="End date" value={endDate} onChangeText={setEndDate} placeholder="2026-02-14" autoCapitalize="none" />
+              <DatePickerField
+                className="flex-1"
+                label="Start date"
+                value={startDate}
+                onChange={setStartDate}
+                minimumDate={new Date()}
+              />
+              <DatePickerField
+                className="flex-1"
+                label="End date"
+                value={endDate}
+                onChange={setEndDate}
+                minimumDate={startDate ? new Date(`${startDate}T00:00:00`) : new Date()}
+              />
             </View>
 
             {/* Vehicle — approved only */}

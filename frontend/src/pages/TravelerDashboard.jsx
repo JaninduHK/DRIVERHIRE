@@ -44,6 +44,7 @@ import {
 import { clearStoredToken, getStoredToken, saveReturnPath } from '../services/authToken.js';
 import { DashboardSidebar, DriverDrawer, MobileHeader, Sheet } from '../components/dashboard/mobile.jsx';
 import { Avatar } from '../components/dashboard/primitives.jsx';
+import BookingDetailsModal from '../components/BookingDetailsModal.jsx';
 
 const NAV_ITEMS = [
   { id: 'overview', label: 'Overview', icon: User2 },
@@ -139,7 +140,7 @@ const TravelerDashboard = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [conversationsState, setConversationsState] = useState({ loading: true, error: '', items: [] });
   const [selectedConversationId, setSelectedConversationId] = useState('');
-  const [messagesState, setMessagesState] = useState({ loading: false, error: '', items: [] });
+  const [messagesState, setMessagesState] = useState({ loading: false, error: '', items: [], booking: null });
   const [composerValue, setComposerValue] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const [travelerBookingsState, setTravelerBookingsState] = useState({ loading: true, error: '', items: [] });
@@ -192,13 +193,18 @@ const TravelerDashboard = () => {
 
   const loadMessages = useCallback(async (conversationId, { silent = false } = {}) => {
     if (!conversationId) {
-      setMessagesState({ loading: false, error: '', items: [] });
+      setMessagesState({ loading: false, error: '', items: [], booking: null });
       return;
     }
     if (!silent) setMessagesState((prev) => ({ ...prev, loading: true, error: '' }));
     try {
       const data = await fetchMessages(conversationId);
-      setMessagesState({ loading: false, error: '', items: Array.isArray(data?.messages) ? data.messages : [] });
+      setMessagesState({
+        loading: false,
+        error: '',
+        items: Array.isArray(data?.messages) ? data.messages : [],
+        booking: data?.booking || null,
+      });
       try {
         await markConversationRead(conversationId);
       } catch (readError) {
@@ -209,7 +215,7 @@ const TravelerDashboard = () => {
         items: prev.items.map((item) => (item.id === conversationId ? { ...item, unreadCount: 0 } : item)),
       }));
     } catch (error) {
-      if (!silent) setMessagesState({ loading: false, error: error?.message || 'Unable to load messages.', items: [] });
+      if (!silent) setMessagesState({ loading: false, error: error?.message || 'Unable to load messages.', items: [], booking: null });
     }
   }, []);
 
@@ -313,7 +319,7 @@ const TravelerDashboard = () => {
       const payload = await sendChatMessage(selectedConversationId, composerValue.trim());
       const newMessage = payload?.message;
       if (newMessage) {
-        setMessagesState((prev) => ({ loading: false, error: '', items: [...prev.items, newMessage] }));
+        setMessagesState((prev) => ({ ...prev, loading: false, error: '', items: [...prev.items, newMessage] }));
         setConversationsState((prev) => ({
           ...prev,
           items: prev.items.map((item) =>
@@ -1277,7 +1283,8 @@ const TravelerMessages = ({
 }) => {
   const [search, setSearch] = useState('');
   const { loading: convLoading, error: convError, items: conversations } = conversationsState;
-  const { loading: msgLoading, error: msgError, items: messages } = messagesState;
+  const { loading: msgLoading, error: msgError, items: messages, booking: conversationBooking } = messagesState;
+  const [bookingDetailOpen, setBookingDetailOpen] = useState(false);
 
   const driverNameOf = (conversation) =>
     conversation?.participants?.driver?.name || conversation?.participants?.driver?.email || 'Driver';
@@ -1325,6 +1332,26 @@ const TravelerMessages = ({
     event.preventDefault();
     if (composerValue.trim()) onSendMessage();
   };
+
+  // Notice at the top of the thread when there's a booking with this driver.
+  const bookingNotice = conversationBooking ? (
+    <button
+      type="button"
+      onClick={() => setBookingDetailOpen(true)}
+      className="flex w-full items-center gap-2.5 rounded-[14px] border border-brand/25 bg-brand-tint px-3.5 py-2.5 text-left transition hover:border-brand"
+    >
+      <CalendarDays className="h-5 w-5 flex-shrink-0 text-brand-dark" />
+      <span className="min-w-0 flex-1">
+        <span className="block text-[13px] font-extrabold text-ink">
+          {conversationBooking.status === 'confirmed'
+            ? 'Your booking with this driver is confirmed'
+            : 'You have a booking with this driver'}
+        </span>
+        <span className="block truncate text-[12px] text-muted">Tap to view your trip details</span>
+      </span>
+      <span className="flex-shrink-0 text-[15px] font-extrabold text-brand-dark">›</span>
+    </button>
+  ) : null;
 
   const conversationList = (variant) => {
     if (convLoading) {
@@ -1405,7 +1432,10 @@ const TravelerMessages = ({
               </div>
             </div>
             <div className="flex flex-1 flex-col">
-              <div className="flex flex-1 flex-col gap-2.5 px-4 py-4">{chatMessages}</div>
+              <div className="flex flex-1 flex-col gap-2.5 px-4 py-4">
+                {bookingNotice}
+                {chatMessages}
+              </div>
               <div className="sticky bottom-0 z-10 border-t border-hairline bg-white px-4 py-3">
                 <form onSubmit={submitMessage} className="flex items-center gap-2.5">
                   <input value={composerValue} onChange={(e) => onComposerChange(e.target.value)} placeholder="Message…" className="h-[38px] min-w-0 flex-1 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white px-3 text-[13px] text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none" />
@@ -1453,7 +1483,10 @@ const TravelerMessages = ({
                   <div className="truncate text-[12px] text-muted-soft">{activeSubtitle}</div>
                 </div>
               </div>
-              <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto px-6 py-6">{chatMessages}</div>
+              <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto px-6 py-6">
+                {bookingNotice}
+                {chatMessages}
+              </div>
               <div className="flex-shrink-0 border-t border-hairline bg-white px-6 py-4">
                 <form onSubmit={submitMessage} className="flex items-center gap-2.5">
                   <input value={composerValue} onChange={(e) => onComposerChange(e.target.value)} placeholder="Message…" className="h-[42px] min-w-0 flex-1 rounded-[12px] border-[1.5px] border-[#e2e8ea] bg-white px-3.5 text-[13.5px] text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none" />
@@ -1468,6 +1501,12 @@ const TravelerMessages = ({
           )}
         </div>
       </div>
+      {bookingDetailOpen ? (
+        <BookingDetailsModal
+          booking={conversationBooking}
+          onClose={() => setBookingDetailOpen(false)}
+        />
+      ) : null}
     </>
   );
 };

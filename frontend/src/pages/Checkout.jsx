@@ -676,9 +676,15 @@ const Checkout = () => {
                 <div className="flex items-start gap-3">
                   <ShieldCheck className="mt-0.5 h-6 w-6 flex-shrink-0 text-brand-dark" />
                   <div>
-                    <h2 className="text-[18px] font-extrabold text-ink">Booking request sent for {vehicleModel}</h2>
+                    <h2 className="text-[18px] font-extrabold text-ink">
+                      {bookingResult.status === 'confirmed'
+                        ? `Booking confirmed for ${vehicleModel}`
+                        : `Booking request sent for ${vehicleModel}`}
+                    </h2>
                     <p className="mt-1 text-[14px] leading-relaxed text-ink-soft">
-                      {bookingFeedback.message || 'Your driver will reach out shortly to confirm.'}
+                      {bookingResult.status === 'confirmed'
+                        ? `Your booking is confirmed — ${driverName} has agreed to your trip and will meet you as arranged. No further confirmation needed.`
+                        : `${driverName} will review your request and confirm by email shortly.`}
                     </p>
                   </div>
                 </div>
