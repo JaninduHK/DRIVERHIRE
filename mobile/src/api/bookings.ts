@@ -4,9 +4,9 @@ import type { Booking } from '../types';
 export const getDriverBookings = () =>
   apiRequest<{ bookings: Booking[] } | Booking[]>('/bookings/driver');
 
-// status: 'accepted' | 'rejected' (backend driverRespondToBooking)
-export const respondToBooking = (bookingId: string, status: string) =>
+// The backend expects { action: 'accept' | 'reject' } (driverRespondToBooking).
+export const respondToBooking = (bookingId: string, action: 'accept' | 'reject') =>
   apiRequest<{ booking: Booking }>(`/bookings/${bookingId}/status`, {
     method: 'PATCH',
-    body: { status },
+    body: { action },
   });

@@ -45,7 +45,7 @@ export default function Bookings() {
   const { data, isLoading, isRefetching, refetch } = useBookings();
 
   const respond = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) => respondToBooking(id, status),
+    mutationFn: ({ id, action }: { id: string; action: 'accept' | 'reject' }) => respondToBooking(id, action),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: qk.bookings });
       queryClient.invalidateQueries({ queryKey: qk.overview });
@@ -93,11 +93,11 @@ export default function Bookings() {
                 key={b.id}
                 booking={b}
                 busy={respond.isPending}
-                onAccept={() => respond.mutate({ id: b.id, status: 'accepted' })}
+                onAccept={() => respond.mutate({ id: b.id, action: 'accept' })}
                 onReject={() =>
                   Alert.alert('Decline booking?', 'The traveller will be notified.', [
                     { text: 'Cancel', style: 'cancel' },
-                    { text: 'Decline', style: 'destructive', onPress: () => respond.mutate({ id: b.id, status: 'rejected' }) },
+                    { text: 'Decline', style: 'destructive', onPress: () => respond.mutate({ id: b.id, action: 'reject' }) },
                   ])
                 }
                 onMessage={() => router.push('/(app)/(tabs)/messages')}

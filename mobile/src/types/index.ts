@@ -74,17 +74,24 @@ export interface Booking {
   id: string;
   status?: string;
   totalPrice?: number;
+  totalDays?: number;
   guests?: number;
   startDate?: string;
   endDate?: string;
   pickupLocation?: string;
   dropoffLocation?: string;
+  startPoint?: string;
+  endPoint?: string;
   route?: string;
   specialRequests?: string;
-  traveler?: { id?: string; name?: string; email?: string } | null;
+  flightNumber?: string | null;
+  arrivalTime?: string | null;
+  departureTime?: string | null;
+  traveler?: { id?: string; name?: string; fullName?: string; email?: string; phoneNumber?: string } | null;
   travelerName?: string;
   vehicle?: Vehicle | null;
   vehicleModel?: string;
+  vehicleLabel?: string;
   createdAt?: string;
 }
 
@@ -114,8 +121,10 @@ export interface Offer {
   id: string;
   status?: string;
   totalPrice?: number;
-  includedKm?: number;
-  extraKmRate?: number;
+  totalKms?: number;
+  pricePerExtraKm?: number;
+  includedKm?: number; // legacy alias
+  extraKmRate?: number; // legacy alias
   vehicle?: Vehicle | null;
   vehicleLabel?: string;
   note?: string;

@@ -25,7 +25,7 @@ import { Loading } from '../../../components/states';
 import { useMessages, useConversations, useVehicles, qk } from '../../../hooks/queries';
 import { sendMessage, sendOffer } from '../../../api/chat';
 import { useAuth } from '../../../auth/AuthContext';
-import { formatMoney, formatRate } from '../../../lib/format';
+import { formatMoney, formatRate, formatDateRange } from '../../../lib/format';
 import { colors, headerGradient } from '../../../theme/colors';
 import type { ChatMessage } from '../../../types';
 
@@ -163,6 +163,9 @@ export default function Chat() {
 function Bubble({ message, mine }: { message: ChatMessage; mine: boolean }) {
   if (message.type === 'offer' && message.offer) {
     const o = message.offer;
+    const kmIncluded = o.totalKms ?? o.includedKm;
+    const extraKmRate = o.pricePerExtraKm ?? o.extraKmRate;
+    const dateRange = formatDateRange(o.startDate, o.endDate);
     return (
       <View className="max-w-[88%] self-end rounded-2xl border-[1.5px] border-[#cdeede] bg-white p-3.5">
         <View className="mb-2 flex-row items-center justify-between">
@@ -174,9 +177,12 @@ function Bubble({ message, mine }: { message: ChatMessage; mine: boolean }) {
         {o.vehicleLabel || o.vehicle?.model ? (
           <Text className="font-heavy text-[13px] text-ink">{o.vehicleLabel || o.vehicle?.model}</Text>
         ) : null}
-        {o.includedKm ? (
+        {dateRange ? (
+          <Text className="mt-1 font-heavy text-[12px] text-brand-dark">{dateRange}</Text>
+        ) : null}
+        {kmIncluded ? (
           <Text className="mt-0.5 font-med text-[12px] text-muted-soft">
-            {o.includedKm} km included{o.extraKmRate ? `, ${formatRate(o.extraKmRate)} per extra km` : ''}
+            {kmIncluded} km included{extraKmRate != null ? `, ${formatRate(extraKmRate)} per extra km` : ''}
           </Text>
         ) : null}
         {o.note ? <Text className="mt-1.5 font-med text-[12px] leading-4 text-muted-soft">{o.note}</Text> : null}
