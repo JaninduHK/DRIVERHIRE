@@ -11,6 +11,7 @@ import { TextField } from '../../components/TextField';
 import { Chip } from '../../components/Chip';
 import { IconButton } from '../../components/IconButton';
 import { registerDriver } from '../../api/auth';
+import { useAuth } from '../../auth/AuthContext';
 import { colors } from '../../theme/colors';
 
 const LANGUAGES = ['English', 'Sinhala', 'Tamil', 'German', 'French', 'Russian'];
@@ -27,6 +28,7 @@ function ProgressBars({ step }: { step: number }) {
 
 export default function Register() {
   const router = useRouter();
+  const { applySession } = useAuth();
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -77,7 +79,7 @@ export default function Register() {
     setError('');
     setSubmitting(true);
     try {
-      await registerDriver({
+      const res = await registerDriver({
         name: name.trim(),
         email: email.trim().toLowerCase(),
         password,
@@ -86,6 +88,13 @@ export default function Register() {
         description: bio.trim() || `Driver based in ${city.trim()}.`,
         experienceYears: Math.max(0, parseInt(years, 10) || 0),
       });
+      // Admin auto-approval on → the API returns a session; open straight to the overview.
+      if (res.token && res.user) {
+        await applySession({ token: res.token, user: res.user });
+        router.replace('/(app)');
+        return;
+      }
+      // Otherwise the profile is pending admin review → show the confirmation screen.
       setSubmitted(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to submit application.');

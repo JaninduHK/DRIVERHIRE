@@ -92,6 +92,9 @@ export const registerUser = async (req, res) => {
       role: normalizedRole,
     });
 
+    // Set when an auto-approved driver should be logged straight in (no verification wall).
+    let autoApprovedDriver = false;
+
     if (normalizedRole === USER_ROLES.DRIVER) {
       const requiredDriverFields = [
         { key: 'contactNumber', value: contactNumber },
@@ -129,12 +132,28 @@ export const registerUser = async (req, res) => {
       if (autoApproveDrivers) {
         user.driverStatus = DRIVER_STATUS.APPROVED;
         user.driverApprovedAt = new Date();
+        // Auto-approved drivers go straight into the app, so skip the email-verification
+        // wall — the admin has opted into unattended onboarding.
+        user.isVerified = true;
+        autoApprovedDriver = true;
       } else {
         user.driverStatus = DRIVER_STATUS.PENDING;
       }
     }
 
     await user.setPassword(password);
+
+    // Auto-approved drivers get a session immediately so the app opens to the overview
+    // instead of the "application pending" screen.
+    if (autoApprovedDriver) {
+      await user.save();
+      const accessToken = generateAccessToken(user);
+      return res.status(201).json({
+        message: 'Registration successful.',
+        token: accessToken,
+        user: user.toJSON(),
+      });
+    }
 
     const { token, hash, expires } = createVerificationToken();
     user.verificationToken = hash;

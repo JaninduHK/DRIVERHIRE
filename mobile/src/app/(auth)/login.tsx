@@ -9,13 +9,12 @@ import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { TextField } from '../../components/TextField';
 import { IconButton } from '../../components/IconButton';
-import { GoogleSignInButton } from '../../auth/GoogleSignInButton';
 import { useAuth } from '../../auth/AuthContext';
 import type { User } from '../../types';
 
 export default function Login() {
   const router = useRouter();
-  const { login, loginWithGoogle } = useAuth();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -45,12 +44,6 @@ export default function Login() {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const handleGoogle = async (idToken: string) => {
-    setError('');
-    const user = await loginWithGoogle(idToken);
-    routeAfterLogin(user);
   };
 
   return (
@@ -94,15 +87,7 @@ export default function Login() {
             <Button title="Sign in" variant="cta" className="mt-[18px]" loading={submitting} onPress={handleSubmit} />
           </Card>
 
-          <View className="my-[18px] flex-row items-center gap-3 px-1">
-            <View className="h-px flex-1 bg-line" />
-            <Text className="font-heavy text-[12px] text-muted-soft">or</Text>
-            <View className="h-px flex-1 bg-line" />
-          </View>
-
-          <GoogleSignInButton onCredential={handleGoogle} fullWidth label="Continue with Google" />
-
-          <Pressable className="mt-5 flex-row justify-center" onPress={() => router.push('/(auth)/register')}>
+          <Pressable className="mt-6 flex-row justify-center" onPress={() => router.push('/(auth)/register')}>
             <Text className="font-med text-[13.5px] text-muted">New driver? </Text>
             <Text className="font-heavy text-[13.5px] text-brand-dark">Create an account</Text>
           </Pressable>

@@ -8,13 +8,6 @@ export const login = (email: string, password: string) =>
     body: { email, password },
   });
 
-export const googleAuth = (credential: string) =>
-  apiRequest<AuthResponse>('/auth/google', {
-    method: 'POST',
-    auth: false,
-    body: { credential },
-  });
-
 export const getMe = () => apiRequest<{ user: User } | User>('/auth/me');
 
 export interface DriverRegistrationPayload {
@@ -27,8 +20,10 @@ export interface DriverRegistrationPayload {
   experienceYears: number;
 }
 
+// When admin auto-approval is on, the API returns a session (token + user) so the app can
+// open straight to the overview; otherwise it returns just a message (pending review).
 export const registerDriver = (payload: DriverRegistrationPayload) =>
-  apiRequest<{ message: string }>('/auth/register', {
+  apiRequest<{ message: string; token?: string; user?: User }>('/auth/register', {
     method: 'POST',
     auth: false,
     body: { ...payload, role: 'driver' },

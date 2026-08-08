@@ -30,7 +30,7 @@ export const sendExpoPushNotifications = async (tokens, { title, body, data } = 
   for (let i = 0; i < messages.length; i += 100) {
     const chunk = messages.slice(i, i + 100);
     try {
-      await fetch(EXPO_PUSH_ENDPOINT, {
+      const response = await fetch(EXPO_PUSH_ENDPOINT, {
         method: 'POST',
         headers: {
           Accept: 'application/json',
@@ -38,6 +38,26 @@ export const sendExpoPushNotifications = async (tokens, { title, body, data } = 
         },
         body: JSON.stringify(chunk),
       });
+      const json = await response.json().catch(() => null);
+
+      // Expo replies with a "tickets" array (json.data). Surface per-message failures —
+      // e.g. missing/invalid FCM V1 credentials (MismatchSenderId / InvalidCredentials) or
+      // DeviceNotRegistered — so delivery problems are visible in the logs instead of silent.
+      const tickets = Array.isArray(json?.data) ? json.data : [];
+      tickets.forEach((ticket, idx) => {
+        if (ticket?.status === 'error') {
+          console.error(
+            'Expo push ticket error:',
+            ticket.message,
+            ticket.details?.error ? `(${ticket.details.error})` : '',
+            '->',
+            chunk[idx]?.to
+          );
+        }
+      });
+      if (json?.errors) {
+        console.error('Expo push request errors:', JSON.stringify(json.errors));
+      }
     } catch (error) {
       console.error('Expo push send error:', error.message);
     }

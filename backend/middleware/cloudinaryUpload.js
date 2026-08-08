@@ -4,6 +4,27 @@ import multer from 'multer';
 // Files will be available in req.file.buffer or req.files[].buffer
 const memoryStorage = multer.memoryStorage();
 
+// React Native / mobile clients frequently send an empty or generic ("application/
+// octet-stream") mimetype even for valid JPEG/PNG/WebP/HEIC photos, which made the old
+// `mimetype.startsWith('image/')` check reject genuine images. Fall back to the file
+// extension in that case. Cloudinary re-encodes everything to JPEG on upload
+// (resource_type: 'image', format: 'jpg'), so HEIC/HEIF are safe to accept here too.
+const IMAGE_EXTENSION = /\.(jpe?g|png|webp|gif|bmp|tiff?|heic|heif)$/i;
+
+const isImageUpload = (file) => {
+  const mimetype = (file && file.mimetype) || '';
+  if (mimetype.startsWith('image/')) {
+    return true;
+  }
+  if (
+    (mimetype === '' || mimetype === 'application/octet-stream') &&
+    IMAGE_EXTENSION.test((file && file.originalname) || '')
+  ) {
+    return true;
+  }
+  return false;
+};
+
 /**
  * Vehicle Image Upload Middleware
  * - Accepts up to 5 image files
@@ -18,8 +39,7 @@ export const vehicleImageUpload = multer({
     files: 5, // Maximum 5 files
   },
   fileFilter: (_req, file, cb) => {
-    // Only accept image files
-    if (!file.mimetype.startsWith('image/')) {
+    if (!isImageUpload(file)) {
       return cb(new Error('Only image uploads are allowed'));
     }
     return cb(null, true);
@@ -39,8 +59,7 @@ export const profilePhotoUpload = multer({
     fileSize: 10 * 1024 * 1024, // 10MB max
   },
   fileFilter: (_req, file, cb) => {
-    // Only accept image files
-    if (file.mimetype && file.mimetype.startsWith('image/')) {
+    if (isImageUpload(file)) {
       return cb(null, true);
     }
     return cb(new Error('Only image uploads are allowed'));
@@ -62,10 +81,10 @@ export const commissionSlipUpload = multer({
   },
   fileFilter: (_req, file, cb) => {
     // Accept images or PDFs
-    if (file.mimetype.startsWith('image/')) {
+    if (isImageUpload(file)) {
       return cb(null, true);
     }
-    if (file.mimetype === 'application/pdf') {
+    if (file.mimetype === 'application/pdf' || /\.pdf$/i.test(file.originalname || '')) {
       return cb(null, true);
     }
     return cb(new Error('Only image or PDF uploads are allowed'));
@@ -103,7 +122,7 @@ export const reviewImageUpload = multer({
     files: 4,
   },
   fileFilter: (_req, file, cb) => {
-    if (file.mimetype && file.mimetype.startsWith('image/')) {
+    if (isImageUpload(file)) {
       return cb(null, true);
     }
     return cb(new Error('Only image uploads are allowed'));

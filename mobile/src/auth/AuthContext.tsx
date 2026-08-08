@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { login as apiLogin, googleAuth as apiGoogleAuth, getMe } from '../api/auth';
+import { login as apiLogin, getMe } from '../api/auth';
 import { getCurrentPushToken, removePushRegistration } from '../lib/push';
 import { setAuthToken, setUnauthorizedHandler } from '../lib/session';
 import { saveToken, loadToken, deleteToken } from '../lib/tokenStore';
@@ -12,7 +12,7 @@ interface AuthContextValue {
   user: User | null;
   isApprovedDriver: boolean;
   login: (email: string, password: string) => Promise<User>;
-  loginWithGoogle: (credential: string) => Promise<User>;
+  applySession: (res: AuthResponse) => Promise<User>;
   logout: (pushToken?: string) => Promise<void>;
   refreshUser: () => Promise<void>;
   setUser: (user: User) => void;
@@ -88,11 +88,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [acceptSession]
   );
 
-  const loginWithGoogle = useCallback(
-    async (credential: string) => acceptSession(await apiGoogleAuth(credential)),
-    [acceptSession]
-  );
-
   const logout = useCallback(
     async (pushToken?: string) => {
       // Unregister this device so it stops receiving pushes for the account.
@@ -119,12 +114,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       isApprovedDriver: user?.role === 'driver' && user?.driverStatus === 'approved',
       login,
-      loginWithGoogle,
+      applySession: acceptSession,
       logout,
       refreshUser,
       setUser,
     }),
-    [status, user, login, loginWithGoogle, logout, refreshUser, setUser]
+    [status, user, login, acceptSession, logout, refreshUser, setUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
