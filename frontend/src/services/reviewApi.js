@@ -13,8 +13,13 @@ const safeJson = async (response) => {
 };
 
 // Latest approved reviews across all vehicles (homepage carousel).
-export const fetchLatestReviews = async (limit = 9) => {
-  const response = await fetch(`${REVIEWS_BASE_URL}/latest?limit=${limit}`, { method: 'GET' });
+// minRating (e.g. 5) restricts to that rating and above.
+export const fetchLatestReviews = async (limit = 9, minRating) => {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (minRating) {
+    params.set('minRating', String(minRating));
+  }
+  const response = await fetch(`${REVIEWS_BASE_URL}/latest?${params.toString()}`, { method: 'GET' });
   if (!response.ok) {
     throw new Error(`Request failed (${response.status})`);
   }

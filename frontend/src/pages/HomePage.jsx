@@ -175,7 +175,7 @@ const HomePage = () => {
   useEffect(() => {
     let cancelled = false;
     setReviewState((prev) => ({ ...prev, loading: true, error: '' }));
-    fetchLatestReviews(9)
+    fetchLatestReviews(9, 5)
       .then((payload) => {
         if (cancelled) return;
         const items = (Array.isArray(payload?.reviews) ? payload.reviews : [])

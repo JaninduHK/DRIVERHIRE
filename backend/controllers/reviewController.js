@@ -337,10 +337,15 @@ export const listVehicleReviews = async (req, res) => {
 // Not limited to featured vehicles, so admin-added reviews show up here too.
 export const listLatestReviews = async (req, res) => {
   const limit = Math.min(Number(req.query.limit) || 9, 24);
+  const minRating = coerceRating(req.query.minRating);
   try {
-    const reviews = await Review.find({ status: REVIEW_STATUS.APPROVED })
+    const filters = { status: REVIEW_STATUS.APPROVED };
+    if (minRating !== null) {
+      filters.rating = { $gte: minRating };
+    }
+    const reviews = await Review.find(filters)
       .sort({ publishedAt: -1, createdAt: -1 })
-      .limit(limit)
+      .limit(60)
       .populate({
         path: 'vehicle',
         select: 'model driver',
@@ -349,7 +354,11 @@ export const listLatestReviews = async (req, res) => {
       .populate({ path: 'driver', select: 'name' })
       .lean();
 
-    const shaped = reviews.map((review) => {
+    // Surface reviews that have photos first, so the homepage cards get cover images.
+    const hasImages = (review) => (Array.isArray(review.images) && review.images.length > 0 ? 1 : 0);
+    reviews.sort((a, b) => hasImages(b) - hasImages(a));
+
+    const shaped = reviews.slice(0, limit).map((review) => {
       const driverRef = review.vehicle?.driver || review.driver;
       return {
         ...shapePublicReview(review),
