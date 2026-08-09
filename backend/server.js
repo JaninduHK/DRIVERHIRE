@@ -10,6 +10,7 @@ import chatRoutes from './routes/chatRoutes.js';
 import bookingRoutes from './routes/bookingRoutes.js';
 import briefRoutes from './routes/briefRoutes.js';
 import publicDriverRoutes from './routes/publicDriverRoutes.js';
+import reviewRoutes from './routes/reviewRoutes.js';
 import supportRoutes from './routes/supportRoutes.js';
 import path from 'path';
 import fs from 'fs';
@@ -63,6 +64,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/briefs', briefRoutes);
 app.use('/api/drivers', publicDriverRoutes);
+app.use('/api/reviews', reviewRoutes);
 app.use('/api/support', supportRoutes);
 
 // Error handler for multer and other errors

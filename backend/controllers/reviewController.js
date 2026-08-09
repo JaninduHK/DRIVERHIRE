@@ -333,6 +333,45 @@ export const listVehicleReviews = async (req, res) => {
   }
 };
 
+// Public: the most recent approved reviews across ALL vehicles (homepage carousel).
+// Not limited to featured vehicles, so admin-added reviews show up here too.
+export const listLatestReviews = async (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 9, 24);
+  try {
+    const reviews = await Review.find({ status: REVIEW_STATUS.APPROVED })
+      .sort({ publishedAt: -1, createdAt: -1 })
+      .limit(limit)
+      .populate({
+        path: 'vehicle',
+        select: 'model driver',
+        populate: { path: 'driver', select: 'name' },
+      })
+      .populate({ path: 'driver', select: 'name' })
+      .lean();
+
+    const shaped = reviews.map((review) => {
+      const driverRef = review.vehicle?.driver || review.driver;
+      return {
+        ...shapePublicReview(review),
+        vehicle: review.vehicle
+          ? {
+              id: review.vehicle._id ? review.vehicle._id.toString() : review.vehicle.id,
+              model: review.vehicle.model,
+              driver: driverRef
+                ? { id: (driverRef._id ? driverRef._id : driverRef).toString(), name: driverRef.name }
+                : null,
+            }
+          : null,
+      };
+    });
+
+    return res.json({ reviews: shaped });
+  } catch (error) {
+    console.error('List latest reviews error:', error);
+    return res.status(500).json({ message: 'Unable to load reviews.' });
+  }
+};
+
 export const listAdminReviews = async (req, res) => {
   const { status, sort = 'recent' } = req.query || {};
 

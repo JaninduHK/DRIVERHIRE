@@ -63,6 +63,7 @@ import {
 } from '../services/profileApi.js';
 import { clearStoredToken } from '../services/authToken.js';
 import { csvToObjects } from '../lib/csv.js';
+import ReviewPhotos from '../components/ReviewPhotos.jsx';
 import { VEHICLE_FEATURES, getVehicleFeatureLabels } from '../constants/vehicleFeatures.js';
 
 const NAV_ITEMS = [
@@ -4189,6 +4190,7 @@ const ReviewsPanel = ({
                 <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-600">
                   {review.comment}
                 </p>
+                <ReviewPhotos images={review.images} />
                 {review.adminNote ? (
                   <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
                     <p className="font-semibold">Admin note</p>

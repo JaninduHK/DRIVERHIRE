@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { fetchVehicles, fetchVehicleReviews } from '../services/vehicleCatalogApi.js';
+import { fetchVehicles } from '../services/vehicleCatalogApi.js';
 import { fetchDriverDirectory } from '../services/driverDirectoryApi.js';
+import { fetchLatestReviews } from '../services/reviewApi.js';
 import { useLoaderData } from 'react-router';
 import { getStoredToken, saveReturnPath } from '../services/authToken.js';
 
@@ -169,39 +170,26 @@ const HomePage = () => {
   const featuredVehicles = useMemo(() => vehicleState.items.slice(0, 3), [vehicleState.items]);
   const featuredDrivers = useMemo(() => driverState.items.slice(0, 3), [driverState.items]);
 
+  // Latest approved reviews across ALL vehicles (so admin-added reviews appear too),
+  // not just the featured vehicles' reviews.
   useEffect(() => {
     let cancelled = false;
-    if (vehicleState.loading) return undefined;
-    if (!featuredVehicles.length) {
-      setReviewState({ loading: false, error: '', items: [] });
-      return undefined;
-    }
     setReviewState((prev) => ({ ...prev, loading: true, error: '' }));
-    (async () => {
-      try {
-        const responses = await Promise.all(
-          featuredVehicles.map((vehicle) =>
-            fetchVehicleReviews(vehicle.id)
-              .then((payload) => ({ vehicle, reviews: Array.isArray(payload?.reviews) ? payload.reviews : [] }))
-              .catch(() => ({ vehicle, reviews: [] })),
-          ),
-        );
+    fetchLatestReviews(9)
+      .then((payload) => {
         if (cancelled) return;
-        const aggregated = responses
-          .flatMap(({ vehicle, reviews }) => reviews.slice(0, 2).map((review) => ({ review, vehicle })))
-          .sort((a, b) => {
-            const aD = new Date(a.review.publishedAt || a.review.createdAt || 0).getTime();
-            const bD = new Date(b.review.publishedAt || b.review.createdAt || 0).getTime();
-            return bD - aD;
-          })
-          .slice(0, 3);
-        setReviewState({ loading: false, error: '', items: aggregated });
-      } catch (error) {
+        const items = (Array.isArray(payload?.reviews) ? payload.reviews : [])
+          .slice(0, 3)
+          .map((review) => ({ review, vehicle: review.vehicle }));
+        setReviewState({ loading: false, error: '', items });
+      })
+      .catch((error) => {
         if (!cancelled) setReviewState({ loading: false, error: error?.message || 'Unable to load reviews.', items: [] });
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [vehicleState.loading, featuredVehicles]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Route to the traveller "My Requests" tab to create a quote request, gating on auth.
   // The prefill is stashed so the requests tab opens with the request form ready.
