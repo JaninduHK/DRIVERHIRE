@@ -294,6 +294,14 @@ export const listVehicleReviews = async (req, res) => {
 
     const reviews = await Review.find(filters).sort(sortOption).lean();
 
+    // Surface reviews that have photos first (stable within the requested sort) so their
+    // images are visible near the top instead of being buried by newer photo-less reviews.
+    reviews.sort((a, b) => {
+      const ai = Array.isArray(a.images) && a.images.length ? 1 : 0;
+      const bi = Array.isArray(b.images) && b.images.length ? 1 : 0;
+      return bi - ai;
+    });
+
     if (reviews.length === 0) {
       return res.json({
         reviews: [],

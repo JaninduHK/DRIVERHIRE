@@ -63,7 +63,12 @@ const useAggregatedReviews = (vehicles, seed) => {
         }
         if (!active) return;
         const total = aggregated.length;
-        aggregated.sort((a, b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0));
+        aggregated.sort((a, b) => {
+          const ai = Array.isArray(a.images) && a.images.length ? 1 : 0;
+          const bi = Array.isArray(b.images) && b.images.length ? 1 : 0;
+          if (ai !== bi) return bi - ai;
+          return new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0);
+        });
         setState({ loading: false, error: '', reviews: aggregated, meta: { total, averageRating: total ? Number((sum / total).toFixed(1)) : null, counts } });
       } catch (error) {
         if (active) setState((prev) => ({ loading: false, error: prev.reviews.length ? '' : (error?.message || 'Unable to load reviews.'), reviews: prev.reviews, meta: prev.meta }));
