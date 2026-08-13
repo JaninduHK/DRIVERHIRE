@@ -10,7 +10,7 @@ import { Chip } from '../../components/Chip';
 import { IconButton } from '../../components/IconButton';
 import { Loading, EmptyState } from '../../components/states';
 import { useBriefs } from '../../hooks/queries';
-import { formatDateRange, formatMoney, relativeTime } from '../../lib/format';
+import { formatDateRange, relativeTime } from '../../lib/format';
 import type { Brief } from '../../types';
 
 export default function Briefs() {
@@ -50,22 +50,31 @@ export default function Briefs() {
 }
 
 function BriefCard({ brief, fresh, onPress }: { brief: Brief; fresh: boolean; onPress: () => void }) {
+  const route = [brief.startLocation, brief.endLocation].filter(Boolean).join(' → ') || brief.route || 'Trip request';
+  const adults = brief.adults ?? 0;
+  const children = brief.children ?? 0;
+  const guestsLabel =
+    adults || children
+      ? `${adults} adult${adults === 1 ? '' : 's'}${children > 0 ? ` + ${children} child${children === 1 ? '' : 'ren'}` : ''}`
+      : null;
   const tags = [
     formatDateRange(brief.startDate, brief.endDate),
-    brief.guests ? `${brief.guests} guests` : null,
-    brief.budget ? `About ${formatMoney(brief.budget)}` : brief.budgetHint || null,
+    guestsLabel,
+    brief.country || null,
+    brief.offersCount ? `${brief.offersCount} offer${brief.offersCount === 1 ? '' : 's'}` : null,
   ].filter(Boolean) as string[];
+  const message = brief.message || brief.description;
 
   return (
     <Card className={`p-4 ${fresh ? 'border-l-4 border-brand' : ''}`}>
-      <View className="flex-row items-center justify-between">
-        <Text className="flex-1 font-heavy text-[15.5px] text-ink" numberOfLines={1}>
-          {brief.title || brief.route || 'Trip request'}
+      <View className="flex-row items-start justify-between gap-2">
+        <Text className="flex-1 font-heavy text-[15.5px] text-ink" numberOfLines={2}>
+          {route}
         </Text>
         {fresh ? (
           <Chip label="NEW" tone="brand" />
         ) : (
-          <Text className="font-heavy text-[11px] text-muted-soft">{relativeTime(brief.createdAt)}</Text>
+          <Text className="mt-1 font-heavy text-[11px] text-muted-soft">{relativeTime(brief.createdAt)}</Text>
         )}
       </View>
       {tags.length ? (
@@ -75,9 +84,9 @@ function BriefCard({ brief, fresh, onPress }: { brief: Brief; fresh: boolean; on
           ))}
         </View>
       ) : null}
-      {brief.description ? (
+      {message ? (
         <Text className="mt-3 font-med text-[13px] leading-5 text-muted" numberOfLines={3}>
-          {brief.description}
+          {message}
         </Text>
       ) : null}
       <View className="mt-3 flex-row gap-2">

@@ -59,10 +59,20 @@ export default function RequestDetail() {
     Number(includedKm) > 0 &&
     Number(extraKm) >= 0 &&
     !respond.isPending;
-  const title = brief?.title || brief?.route || 'Quote request';
-  const subtitle = [formatDateRange(brief?.startDate, brief?.endDate), brief?.guests ? `${brief.guests} guests` : null]
+  const route = [brief?.startLocation, brief?.endLocation].filter(Boolean).join(' → ') || brief?.route || 'Quote request';
+  const adults = brief?.adults ?? 0;
+  const children = brief?.children ?? 0;
+  const guestsLabel =
+    adults || children
+      ? `${adults} adult${adults === 1 ? '' : 's'}${children > 0 ? ` + ${children} child${children === 1 ? '' : 'ren'}` : ''}`
+      : '—';
+  const travelerName =
+    brief && typeof brief.traveler === 'object' && brief.traveler ? brief.traveler.name : undefined;
+  const message = brief?.message || brief?.description;
+  const title = route;
+  const subtitle = [formatDateRange(brief?.startDate, brief?.endDate), guestsLabel !== '—' ? guestsLabel : null]
     .filter(Boolean)
-    .join(', ');
+    .join(' · ');
 
   return (
     <Screen edges={[]}>
@@ -84,13 +94,14 @@ export default function RequestDetail() {
             <Card className="p-4">
               <Text className="font-heavy text-[14px] text-ink">Trip details</Text>
               <View className="mt-3 gap-2.5">
-                <DetailRow label="Route" value={brief?.route || title} />
+                <DetailRow label="Route" value={route} />
                 <DetailRow label="Dates" value={formatDateRange(brief?.startDate, brief?.endDate) || '—'} />
-                <DetailRow label="Guests" value={brief?.guests ? `${brief.guests}` : '—'} />
-                <DetailRow label="Budget hint" value={brief?.budget ? `About ${formatMoney(brief.budget)}` : brief?.budgetHint || '—'} />
+                <DetailRow label="Guests" value={guestsLabel} />
+                {brief?.country ? <DetailRow label="Country" value={brief.country} /> : null}
+                {travelerName ? <DetailRow label="Traveller" value={travelerName} /> : null}
               </View>
-              {brief?.description ? (
-                <Text className="mt-3 font-med text-[13px] leading-5 text-muted">{brief.description}</Text>
+              {message ? (
+                <Text className="mt-3 font-med text-[13px] leading-5 text-muted">{message}</Text>
               ) : null}
             </Card>
 

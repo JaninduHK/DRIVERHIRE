@@ -134,19 +134,28 @@ export interface Offer {
 
 export interface Brief {
   id: string;
-  title?: string;
-  route?: string;
-  pickupLocation?: string;
-  dropoffLocation?: string;
+  // Fields as returned by the backend brief shape.
+  startLocation?: string;
+  endLocation?: string;
   startDate?: string;
   endDate?: string;
+  adults?: number;
+  children?: number;
+  country?: string;
+  message?: string;
+  offersCount?: number;
+  traveler?: { id?: string; name?: string; email?: string } | string | null;
+  status?: string;
+  createdAt?: string;
+  hasResponded?: boolean;
+  isOwner?: boolean;
+  // Legacy/optional aliases (kept for compatibility).
+  title?: string;
+  route?: string;
   guests?: number;
   budget?: number;
   budgetHint?: string;
   description?: string;
-  status?: string;
-  createdAt?: string;
-  hasResponded?: boolean;
 }
 
 export interface EarningsBooking {
