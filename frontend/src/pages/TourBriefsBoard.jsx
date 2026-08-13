@@ -373,7 +373,7 @@ const TourBriefsBoard = () => {
                     const hasResponded = Boolean(brief.hasResponded);
                     const noVehicles = vehiclesState.items.length === 0;
                     return (
-                      <article key={brief.id} id={`brief-${brief.id}`} className="rounded-[18px] bg-white p-4 shadow-card">
+                      <article key={brief.id} id={`brief-${brief.id}`} className="min-w-0 rounded-[18px] bg-white p-4 shadow-card">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex min-w-0 items-center gap-1.5 text-[15px] font-extrabold text-ink">
                             <MapPin className="h-4 w-4 flex-shrink-0 text-brand" />
