@@ -1350,7 +1350,7 @@ const QuoteRequestCard = ({ brief, tone = 'amber', onRespond }) => {
   const borderColor = tone === 'amber' ? '#10a35a' : '#d6e9fb';
   return (
     <div
-      className="rounded-[18px] bg-white p-[15px] shadow-card"
+      className="min-w-0 rounded-[18px] bg-white p-[15px] shadow-card"
       style={{ borderLeft: `4px solid ${borderColor}` }}
     >
       <div className="mb-2.5 flex items-center gap-[11px]">

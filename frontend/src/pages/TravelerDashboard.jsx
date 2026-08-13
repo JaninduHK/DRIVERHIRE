@@ -1612,7 +1612,7 @@ const TravelerRequests = ({ onMenu, travelerName, briefsState, onReload, onCreat
     const hasOffers = brief.offersCount > 0;
     const guests = `${brief.adults} guest${brief.adults === 1 ? '' : 's'}${brief.children > 0 ? ` +${brief.children}` : ''}`;
     return (
-      <article key={brief.id} className="rounded-[18px] bg-white p-4 shadow-card" style={hasOffers ? { borderLeft: '4px solid #10a35a' } : undefined}>
+      <article key={brief.id} className="min-w-0 rounded-[18px] bg-white p-4 shadow-card" style={hasOffers ? { borderLeft: '4px solid #10a35a' } : undefined}>
         <div className="flex items-start justify-between gap-2">
           <b className="min-w-0 truncate text-[15.5px] text-ink">
             {brief.startLocation} → {brief.endLocation}
@@ -1630,7 +1630,7 @@ const TravelerRequests = ({ onMenu, travelerName, briefsState, onReload, onCreat
           <RequestTag>{guests}</RequestTag>
           {brief.country ? <RequestTag>{brief.country}</RequestTag> : null}
         </div>
-        {brief.message ? <p className="mb-3 text-[13px] leading-relaxed text-muted">{brief.message}</p> : null}
+        {brief.message ? <p className="mb-3 line-clamp-2 text-[13px] leading-relaxed text-muted">{brief.message}</p> : null}
         <div className="flex gap-2">
           <button
             type="button"
@@ -1718,7 +1718,7 @@ const TravelerRequests = ({ onMenu, travelerName, briefsState, onReload, onCreat
               const hasOffers = brief.offersCount > 0;
               const guests = `${brief.adults} guest${brief.adults === 1 ? '' : 's'}${brief.children > 0 ? ` +${brief.children}` : ''}`;
               return (
-                <article key={brief.id} className="rounded-[18px] bg-white p-4 shadow-card" style={hasOffers ? { borderLeft: '4px solid #10a35a' } : undefined}>
+                <article key={brief.id} className="min-w-0 rounded-[18px] bg-white p-4 shadow-card" style={hasOffers ? { borderLeft: '4px solid #10a35a' } : undefined}>
                   <div className="flex items-start justify-between gap-2">
                     <b className="min-w-0 truncate text-[15.5px] text-ink">
                       {brief.startLocation} → {brief.endLocation}
