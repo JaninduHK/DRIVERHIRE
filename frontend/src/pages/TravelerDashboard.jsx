@@ -168,14 +168,14 @@ const TravelerDashboard = () => {
     const token = getStoredToken();
     if (!token) {
       saveReturnPath();
-      navigate('/login', { replace: true });
+      navigate('/traveller/sign-in', { replace: true });
     }
   }, [navigate]);
 
   const handleLogout = useCallback(() => {
     clearStoredToken();
     toast.success('You have been logged out.');
-    navigate('/login');
+    navigate('/traveller/sign-in');
   }, [navigate]);
 
   const loadConversations = useCallback(async ({ silent = false } = {}) => {

@@ -4,7 +4,15 @@ const USER_KEY = 'carwithdriver_user';
 const AUTH_CHANGE_EVENT = 'carwithdriver:auth-change';
 const AUTH_MESSAGE_KEY = 'carwithdriver:auth-message';
 const AUTH_RETURN_PATH_KEY = 'carwithdriver:return-path';
-const DISALLOWED_RETURN_PATHS = ['/login', '/register', '/register/driver', '/forgot-password', '/reset-password'];
+const DISALLOWED_RETURN_PATHS = [
+  '/login',
+  '/register',
+  '/register/driver',
+  '/forgot-password',
+  '/reset-password',
+  '/traveller/sign-in',
+  '/auth/callback',
+];
 
 const hasWindow = typeof window !== 'undefined';
 const hasSessionStorage = hasWindow && typeof window.sessionStorage !== 'undefined';
@@ -113,13 +121,18 @@ export const subscribeToAuthChanges = (callback) => {
 };
 
 const shouldRememberPath = (path) => {
-  if (!path) {
+  if (!path || path === '/') {
     return false;
   }
   return !DISALLOWED_RETURN_PATHS.some((blocked) => path.startsWith(blocked));
 };
 
 export const handleSessionExpired = (message = 'Your session expired. Please sign in again.') => {
+  // Read role before clearStoredToken wipes it — travellers (role 'guest')
+  // go back through SSO, drivers/admins go back to the local login form.
+  const wasTraveller = getStoredUser()?.role === 'guest';
+  const signInPath = wasTraveller ? '/traveller/sign-in' : '/login';
+
   clearStoredToken({ silent: true });
 
   if (hasSessionStorage) {
@@ -132,8 +145,8 @@ export const handleSessionExpired = (message = 'Your session expired. Please sig
     sessionStorage.setItem(AUTH_MESSAGE_KEY, message);
   }
 
-  if (hasWindow && window.location.pathname !== '/login') {
-    window.location.assign('/login');
+  if (hasWindow && window.location.pathname !== signInPath) {
+    window.location.assign(signInPath);
   }
 
   emitAuthChange();

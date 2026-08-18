@@ -4,6 +4,7 @@ import { fetchVehicles } from '../services/vehicleCatalogApi.js';
 import { fetchDriverDirectory } from '../services/driverDirectoryApi.js';
 import { fetchLatestReviews } from '../services/reviewApi.js';
 import { useLoaderData } from 'react-router';
+import { buildApiUrl } from '../constants/api.js';
 import { getStoredToken, saveReturnPath } from '../services/authToken.js';
 
 // Prefill stash read by the traveller "My Requests" tab to open a new quote request.
@@ -192,7 +193,9 @@ const HomePage = () => {
   }, []);
 
   // Route to the traveller "My Requests" tab to create a quote request, gating on auth.
-  // The prefill is stashed so the requests tab opens with the request form ready.
+  // The prefill is stashed so the requests tab opens with the request form ready — this
+  // mini form doesn't collect everything a brief needs (e.g. country), so the traveller
+  // still finishes it there rather than being auto-submitted.
   const goToRequests = (prefill = {}) => {
     try {
       sessionStorage.setItem(PENDING_BRIEF_KEY, JSON.stringify(prefill));
@@ -200,8 +203,10 @@ const HomePage = () => {
       /* ignore storage errors */
     }
     if (!getStoredToken()) {
+      // Straight to Asgardeo's hosted sign-in/registration, same as /get-quotes — skips
+      // the /traveller/sign-in landing page so this doesn't cost an extra click.
       saveReturnPath(REQUESTS_PATH);
-      navigate('/register');
+      window.location.href = buildApiUrl('/auth/sso/login');
       return;
     }
     navigate(REQUESTS_PATH);

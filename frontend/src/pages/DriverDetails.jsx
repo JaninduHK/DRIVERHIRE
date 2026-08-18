@@ -173,7 +173,7 @@ const DriverDetails = () => {
     const token = getStoredToken();
     if (!token) {
       saveReturnPath(`/drivers/${driverId}`);
-      navigate('/register');
+      navigate('/traveller/sign-in');
       return;
     }
     if (creatingConversation) return;
@@ -187,7 +187,8 @@ const DriverDetails = () => {
       const message = err?.message || 'Unable to start a conversation right now.';
       toast.error(message);
       if (message.toLowerCase().includes('sign in') || message.toLowerCase().includes('auth')) {
-        navigate('/login', { state: { redirectTo: `/drivers/${driverId}` } });
+        saveReturnPath(`/drivers/${driverId}`);
+        navigate('/traveller/sign-in');
       }
     } finally {
       setCreatingConversation(false);

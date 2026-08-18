@@ -1,46 +1,21 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 
-// Shared chrome for the redesigned Sign in / Create account pages (Login and Register.dc.html).
-// The green marketing panel is hidden on mobile; the tabs navigate between /login and /register.
+// Chrome for the driver/admin sign-in page. Traveller sign-in/sign-up moved
+// to Asgardeo SSO (see TravellerSignIn.jsx) — this shell now serves a single
+// audience and a single mode, so there's no more tab switcher or "create
+// account" variant to carry around.
 
 const GREEN_PANEL = 'linear-gradient(160deg,#0f7a45 0%,#10a35a 55%,#18b866 100%)';
 
-const PANEL = {
-  signin: {
-    badge: 'Welcome back',
-    title: 'Pick up where your trip planning left off.',
-    blurb: 'Sign in to see new quotes, reply to drivers and manage upcoming journeys.',
-  },
-  register: {
-    badge: 'Traveller account',
-    title: 'One account for every trip you plan.',
-    blurb: 'Create your free account to request quotes, chat with drivers and keep your bookings together.',
-  },
-};
-
 const PANEL_POINTS = [
-  'Compare fixed quotes from vetted drivers, side by side.',
-  'Message a driver before you commit to anything.',
-  'Keep every trip, quote and receipt in one place.',
-  'Free to join, no booking fee, pay the driver directly.',
+  'Manage your vehicle listings and availability.',
+  'Track bookings, payouts and driver reviews.',
+  'Message travellers directly from your portal.',
+  'Admins get full oversight of drivers and bookings.',
 ];
 
-const STATS = [
-  { v: '12,000+', l: 'Travellers hosted' },
-  { v: '4.9 / 5', l: 'Driver rating' },
-  { v: '< 1 hr', l: 'Quote reply time' },
-];
-
-const FORM_COPY = {
-  signin: { title: 'Sign in to your account', sub: 'Use the email address you signed up with.' },
-  register: {
-    title: 'Create your free account',
-    sub: 'A few details and you are in. Trip preferences can wait until later.',
-  },
-};
-
-// Shared field styles / helpers used by both pages.
+// Shared field styles / helpers, also used by ForgotPassword/ResetPassword.
 export const authInputCls =
   'w-full min-h-[50px] rounded-[13px] border-[1.5px] border-[#e5ebe8] bg-[#fbfcfc] px-[15px] py-[13px] text-[15px] font-semibold text-ink outline-none transition placeholder:text-[#a3b0bb] focus:border-brand focus:bg-white focus:shadow-[0_0_0_3px_rgba(16,163,90,0.14)]';
 
@@ -74,16 +49,7 @@ export const AuthPasswordInput = ({ label = 'Password', rightSlot, hint, ...inpu
   );
 };
 
-const tabCls = (active) =>
-  `flex min-h-[44px] items-center justify-center rounded-[11px] text-[14.5px] font-bold transition ${
-    active ? 'bg-white text-ink shadow-[0_2px_8px_-3px_rgba(15,31,45,.3)]' : 'bg-transparent text-muted hover:text-ink'
-  }`;
-
-const AuthShell = ({ mode, children, social, footerNote }) => {
-  const isSignin = mode === 'signin';
-  const panel = PANEL[mode];
-  const copy = FORM_COPY[mode];
-
+const AuthShell = ({ children, footerNote }) => {
   return (
     <div className="flex min-h-[70vh] w-full items-center justify-center py-2 font-sans">
       <div className="grid w-full max-w-[1000px] overflow-hidden rounded-[clamp(18px,2.4vw,26px)] border border-[#e5ebe8] bg-white shadow-[0_30px_70px_-40px_rgba(15,31,45,.35)] md:grid-cols-2">
@@ -94,12 +60,14 @@ const AuthShell = ({ mode, children, social, footerNote }) => {
         >
           <div>
             <span className="inline-flex items-center gap-2 rounded-full bg-white/[.18] px-[13px] py-[7px] text-xs font-bold tracking-[.02em]">
-              {panel.badge}
+              Driver &amp; admin sign in
             </span>
             <h1 className="mt-[18px] text-[clamp(25px,2.9vw,34px)] font-extrabold leading-[1.14] tracking-[-.025em]">
-              {panel.title}
+              Sign in to your operator account.
             </h1>
-            <p className="mt-3 max-w-[36ch] text-[15px] leading-[1.6] text-white/85">{panel.blurb}</p>
+            <p className="mt-3 max-w-[36ch] text-[15px] leading-[1.6] text-white/85">
+              Manage your listings, bookings and payouts, or access the admin console.
+            </p>
           </div>
           <ul className="m-0 grid list-none gap-3.5 p-0">
             {PANEL_POINTS.map((point) => (
@@ -112,50 +80,27 @@ const AuthShell = ({ mode, children, social, footerNote }) => {
               </li>
             ))}
           </ul>
-          <div className="mt-auto flex flex-wrap gap-x-[22px] gap-y-2.5 border-t border-white/20 pt-2">
-            {STATS.map((stat) => (
-              <div key={stat.l}>
-                <div className="text-[19px] font-extrabold">{stat.v}</div>
-                <div className="text-[11.5px] font-semibold uppercase tracking-[.03em] text-white/75">{stat.l}</div>
-              </div>
-            ))}
-          </div>
         </section>
 
         {/* Form */}
         <section className="p-[clamp(24px,3.2vw,42px)]">
-          <div role="tablist" aria-label="Account access" className="grid grid-cols-2 gap-1 rounded-[14px] bg-[#f2f5f4] p-1">
-            <Link to="/login" role="tab" aria-selected={isSignin} className={tabCls(isSignin)}>Sign in</Link>
-            <Link to="/register" role="tab" aria-selected={!isSignin} className={tabCls(!isSignin)}>Create account</Link>
-          </div>
-
-          <h2 className="mt-6 text-[clamp(21px,2.2vw,25px)] font-extrabold tracking-[-.02em]">{copy.title}</h2>
-          <p className="mt-[7px] text-[14px] leading-[1.55] text-muted">{copy.sub}</p>
+          <h2 className="text-[clamp(21px,2.2vw,25px)] font-extrabold tracking-[-.02em]">Sign in to your account</h2>
+          <p className="mt-[7px] text-[14px] leading-[1.55] text-muted">Use the email address you signed up with.</p>
 
           {children}
 
-          {social ? (
-            <div className="mt-5">
-              <div className="flex items-center gap-3 text-xs font-bold text-[#a3b0bb]">
-                <span className="h-px flex-1 bg-[#e5ebe8]" />
-                or
-                <span className="h-px flex-1 bg-[#e5ebe8]" />
-              </div>
-              <div className="mt-4">{social}</div>
-            </div>
-          ) : null}
-
           <p className="mt-5 text-[13.5px] leading-[1.6] text-muted">
-            {isSignin ? 'New to Car With Driver? ' : 'Already have an account? '}
-            <Link to={isSignin ? '/register' : '/login'} className="font-bold text-brand-dark">
-              {isSignin ? 'Create a free account' : 'Sign in instead'}
+            Booking a trip?{' '}
+            <Link to="/traveller/sign-in" className="font-bold text-brand-dark">
+              Continue as a traveller
             </Link>
+            .
           </p>
 
           {footerNote}
 
           <p className="mt-2.5 text-[12.5px] leading-[1.6] text-muted-soft">
-            {isSignin ? 'By signing in you agree to our' : 'By creating an account you agree to our'}{' '}
+            By signing in you agree to our{' '}
             <Link to="/terms" className="font-bold text-brand-dark">Terms of Service</Link> and{' '}
             <Link to="/privacy-policy" className="font-bold text-brand-dark">Privacy Policy</Link>.
           </p>

@@ -19,18 +19,27 @@ import {
 } from 'lucide-react';
 import logoWhite from '../assets/Logo White.png';
 import { Avatar } from './dashboard/primitives.jsx';
+import { buildApiUrl } from '../constants/api.js';
 import {
   getStoredToken,
   getStoredUser,
   subscribeToAuthChanges,
 } from '../services/authToken.js';
 
+// Full-page navigation to the backend, not a client-side route — it starts
+// the OAuth request (PKCE + state) and redirects to Asgardeo's hosted
+// sign-in page, which has its own "Register" link. Linking straight to an
+// Asgardeo registration URL instead would skip that OAuth initiation and
+// risk losing the authorization request context (the exact bug that made
+// registration land on Asgardeo's My Account portal instead of back here).
+const SSO_LOGIN_URL = buildApiUrl('/auth/sso/login');
+
 const navLinks = [
   { to: '/', label: 'Home', icon: Home },
   { to: '/vehicles', label: 'Vehicles', icon: Car },
   { to: '/drivers', label: 'Drivers', icon: Users },
   { to: '/trip-cost-calculator', label: 'Trip Cost', icon: Calculator },
-  { to: '/dashboard?tab=requests', label: 'Get Quotes', icon: FileText, highlight: true },
+  { to: '/get-quotes', label: 'Get Quotes', icon: FileText, highlight: true },
 ];
 
 const driverPortalLinks = [
@@ -124,7 +133,7 @@ const NavBar = () => {
   const { isAuthenticated, dashboardPath, messagesPath, user } = authState;
   const isDriver = user?.role === 'driver';
   const isTraveler = isAuthenticated && user?.role === 'guest';
-  const messageDestination = isAuthenticated ? messagesPath : '/login';
+  const messageDestination = isAuthenticated ? messagesPath : '/traveller/sign-in';
   const roleLabel =
     user?.role === 'driver' ? 'Driver' : user?.role === 'admin' ? 'Admin' : 'Traveller';
 
@@ -216,18 +225,18 @@ const NavBar = () => {
             </NavLink>
           ) : (
             <>
-              <NavLink
-                to="/login"
+              <a
+                href={SSO_LOGIN_URL}
                 className="hidden items-center justify-center rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:text-slate-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 sm:inline-flex"
               >
                 Login
-              </NavLink>
-              <NavLink
-                to="/register"
+              </a>
+              <a
+                href={SSO_LOGIN_URL}
                 className="hidden items-center justify-center rounded-full bg-emerald-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 sm:inline-flex"
               >
                 Register
-              </NavLink>
+              </a>
             </>
           )}
         </div>
@@ -373,20 +382,20 @@ const NavBar = () => {
                 </NavLink>
               ) : (
                 <div className="flex gap-2">
-                  <NavLink
-                    to="/login"
+                  <a
+                    href={SSO_LOGIN_URL}
                     onClick={closeMobileMenu}
                     className="flex-1 rounded-full border border-[#e2e8ea] px-4 py-2.5 text-center text-sm font-bold text-ink transition hover:border-muted-soft"
                   >
                     Login
-                  </NavLink>
-                  <NavLink
-                    to="/register"
+                  </a>
+                  <a
+                    href={SSO_LOGIN_URL}
                     onClick={closeMobileMenu}
                     className="flex-1 rounded-full bg-brand px-4 py-2.5 text-center text-sm font-bold text-white transition hover:bg-brand-dark"
                   >
                     Register
-                  </NavLink>
+                  </a>
                 </div>
               )}
             </div>

@@ -230,7 +230,7 @@ const VehicleDetails = () => {
     const token = getStoredToken();
     if (!token) {
       saveReturnPath(checkoutPath);
-      navigate('/register');
+      navigate('/traveller/sign-in');
       return;
     }
     navigate(checkoutPath, {
@@ -257,7 +257,8 @@ const VehicleDetails = () => {
       const message = err?.message || 'Unable to start a conversation right now.';
       toast.error(message);
       if (message.toLowerCase().includes('sign in') || message.toLowerCase().includes('auth')) {
-        navigate('/login', { state: { redirectTo: `/vehicles/${vehicleId}` } });
+        saveReturnPath(`/vehicles/${vehicleId}`);
+        navigate('/traveller/sign-in');
       }
     } finally {
       setCreatingConversation(false);

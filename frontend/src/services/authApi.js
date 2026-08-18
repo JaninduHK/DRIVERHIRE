@@ -68,14 +68,8 @@ export const resetPassword = async (payload) =>
     body: JSON.stringify(payload),
   });
 
-export const googleAuth = async (credential) =>
-  request('/google', {
+export const ssoExchange = async (code) =>
+  request('/sso/exchange', {
     method: 'POST',
-    body: JSON.stringify({ credential }),
-  });
-
-export const facebookAuth = async (accessToken) =>
-  request('/facebook', {
-    method: 'POST',
-    body: JSON.stringify({ accessToken }),
+    body: JSON.stringify({ code }),
   });

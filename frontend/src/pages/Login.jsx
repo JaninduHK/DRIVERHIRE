@@ -3,8 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { login } from '../services/authApi.js';
 import { consumeAuthMessage, consumeReturnPath, persistAuthSession } from '../services/authToken.js';
-import GoogleSignInButton from '../components/GoogleSignInButton.jsx';
-import FacebookSignInButton from '../components/FacebookSignInButton.jsx';
 import AuthShell, { authInputCls, authSubmitCls, AuthLabel, AuthPasswordInput } from '../components/AuthShell.jsx';
 
 const Login = () => {
@@ -68,12 +66,14 @@ const Login = () => {
 
   return (
     <AuthShell
-      mode="signin"
-      social={
-        <div className="grid gap-2.5">
-          <GoogleSignInButton onLoadingChange={setLoading} context="signin" />
-          <FacebookSignInButton onLoadingChange={setLoading} context="signin" />
-        </div>
+      footerNote={
+        <p className="mt-3 text-[12.5px] leading-[1.6] text-muted-soft">
+          Not a driver yet?{' '}
+          <Link to="/register/driver" className="font-bold text-brand-dark">
+            Submit your application here
+          </Link>
+          .
+        </p>
       }
     >
       <form className="mt-5 grid gap-4" onSubmit={handleSubmit} noValidate>
