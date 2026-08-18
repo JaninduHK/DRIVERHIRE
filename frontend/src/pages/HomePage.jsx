@@ -4,8 +4,7 @@ import { fetchVehicles } from '../services/vehicleCatalogApi.js';
 import { fetchDriverDirectory } from '../services/driverDirectoryApi.js';
 import { fetchLatestReviews } from '../services/reviewApi.js';
 import { useLoaderData } from 'react-router';
-import { buildApiUrl } from '../constants/api.js';
-import { getStoredToken, saveReturnPath } from '../services/authToken.js';
+import { getStoredToken, redirectToSsoLogin } from '../services/authToken.js';
 
 // Prefill stash read by the traveller "My Requests" tab to open a new quote request.
 const PENDING_BRIEF_KEY = 'carwithdriver:pending-brief';
@@ -203,10 +202,8 @@ const HomePage = () => {
       /* ignore storage errors */
     }
     if (!getStoredToken()) {
-      // Straight to Asgardeo's hosted sign-in/registration, same as /get-quotes — skips
-      // the /traveller/sign-in landing page so this doesn't cost an extra click.
-      saveReturnPath(REQUESTS_PATH);
-      window.location.href = buildApiUrl('/auth/sso/login');
+      // Straight to Asgardeo's hosted sign-in/registration, same as /get-quotes.
+      redirectToSsoLogin(REQUESTS_PATH);
       return;
     }
     navigate(REQUESTS_PATH);

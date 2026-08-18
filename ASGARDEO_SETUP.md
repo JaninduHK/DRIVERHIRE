@@ -21,7 +21,7 @@ Application** → OpenID Connect:
   - `https://carwithdriver.lk/api/auth/sso/callback` (production)
   - `http://localhost:3000/api/auth/sso/callback` (local dev)
 - Scopes: `openid email profile`
-- Allowed post-logout redirect URLs: `https://carwithdriver.lk/traveller/sign-in` and `http://localhost:5173/traveller/sign-in`
+- Allowed post-logout redirect URLs: `https://carwithdriver.lk/` and `http://localhost:5173/`
 
 Copy the generated **Client ID** and **Client Secret**.
 
@@ -34,7 +34,7 @@ ASGARDEO_ISSUER_URL=https://api.asgardeo.io/t/<your-org-name>
 ASGARDEO_CLIENT_ID=<from step 2>
 ASGARDEO_CLIENT_SECRET=<from step 2>
 ASGARDEO_REDIRECT_URI=https://carwithdriver.lk/api/auth/sso/callback              # or the localhost one for dev
-ASGARDEO_POST_LOGOUT_REDIRECT_URI=https://carwithdriver.lk/traveller/sign-in      # or the localhost one for dev
+ASGARDEO_POST_LOGOUT_REDIRECT_URI=https://carwithdriver.lk/      # or the localhost one for dev
 ```
 
 `ASGARDEO_REDIRECT_URI` must be our **backend's** callback route (as
@@ -94,4 +94,7 @@ Much simpler than the self-hosted setup:
    redirect/post-logout URIs.
 3. Run the backend (`npm run dev`, no special TLS flag needed) and frontend
    (`npm run dev`) as normal.
-4. Visit `http://localhost:5173/traveller/sign-in` and walk the flow.
+4. Visit `http://localhost:5173/` and click "Login"/"Register" in the nav bar
+   (or any other sign-in-gated action, e.g. `/get-quotes`) to walk the flow —
+   there's no dedicated sign-in page anymore, every entry point goes straight
+   to Asgardeo's hosted login/registration.

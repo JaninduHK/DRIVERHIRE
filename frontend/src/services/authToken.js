@@ -10,9 +10,18 @@ const DISALLOWED_RETURN_PATHS = [
   '/register/driver',
   '/forgot-password',
   '/reset-password',
-  '/traveller/sign-in',
   '/auth/callback',
 ];
+
+// Full-page redirect straight into Asgardeo's hosted login/registration —
+// the only traveller sign-in entry point now that there's no /traveller/sign-in
+// landing page in between. A bare relative path, not one built from
+// API_BASE_URL: this needs to be correct even when triggered from a
+// component that renders during real SSR (e.g. NavBar), where the API base
+// resolves to the internal Docker-network origin server-side rather than a
+// browser-reachable one — baking that into a public <a href> sends real
+// browsers to an address only reachable inside the Docker network.
+export const SSO_LOGIN_URL = '/api/auth/sso/login';
 
 const hasWindow = typeof window !== 'undefined';
 const hasSessionStorage = hasWindow && typeof window.sessionStorage !== 'undefined';
@@ -127,13 +136,34 @@ const shouldRememberPath = (path) => {
   return !DISALLOWED_RETURN_PATHS.some((blocked) => path.startsWith(blocked));
 };
 
+// Imperative version of the redirect above, for a caught 401 or an
+// auth-gated action, that also remembers where to return to after sign-in.
+// With no explicit path, defaults to the current page (same default
+// saveReturnPath() itself uses).
+export const redirectToSsoLogin = (returnPath) => {
+  saveReturnPath(returnPath);
+  if (hasWindow) {
+    window.location.href = SSO_LOGIN_URL;
+  }
+};
+
 export const handleSessionExpired = (message = 'Your session expired. Please sign in again.') => {
   // Read role before clearStoredToken wipes it — travellers (role 'guest')
-  // go back through SSO, drivers/admins go back to the local login form.
+  // go straight back through Asgardeo, drivers/admins go back to the local
+  // login form.
   const wasTraveller = getStoredUser()?.role === 'guest';
-  const signInPath = wasTraveller ? '/traveller/sign-in' : '/login';
 
   clearStoredToken({ silent: true });
+
+  if (hasSessionStorage) {
+    sessionStorage.setItem(AUTH_MESSAGE_KEY, message);
+  }
+
+  if (wasTraveller) {
+    redirectToSsoLogin();
+    emitAuthChange();
+    return;
+  }
 
   if (hasSessionStorage) {
     const currentPath = hasWindow
@@ -142,11 +172,10 @@ export const handleSessionExpired = (message = 'Your session expired. Please sig
     if (shouldRememberPath(currentPath)) {
       sessionStorage.setItem(AUTH_RETURN_PATH_KEY, currentPath);
     }
-    sessionStorage.setItem(AUTH_MESSAGE_KEY, message);
   }
 
-  if (hasWindow && window.location.pathname !== signInPath) {
-    window.location.assign(signInPath);
+  if (hasWindow && window.location.pathname !== '/login') {
+    window.location.assign('/login');
   }
 
   emitAuthChange();

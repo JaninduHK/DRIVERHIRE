@@ -41,7 +41,7 @@ import {
   fetchMyBriefs as fetchTravelerBriefs,
   createBrief as createTravelerBrief,
 } from '../services/briefApi.js';
-import { clearStoredToken, getStoredToken, saveReturnPath } from '../services/authToken.js';
+import { clearStoredToken, getStoredToken, redirectToSsoLogin } from '../services/authToken.js';
 import { DashboardSidebar, DriverDrawer, MobileHeader, Sheet } from '../components/dashboard/mobile.jsx';
 import { Avatar } from '../components/dashboard/primitives.jsx';
 import BookingDetailsModal from '../components/BookingDetailsModal.jsx';
@@ -167,15 +167,14 @@ const TravelerDashboard = () => {
   useEffect(() => {
     const token = getStoredToken();
     if (!token) {
-      saveReturnPath();
-      navigate('/traveller/sign-in', { replace: true });
+      redirectToSsoLogin();
     }
   }, [navigate]);
 
   const handleLogout = useCallback(() => {
     clearStoredToken();
     toast.success('You have been logged out.');
-    navigate('/traveller/sign-in');
+    navigate('/');
   }, [navigate]);
 
   const loadConversations = useCallback(async ({ silent = false } = {}) => {

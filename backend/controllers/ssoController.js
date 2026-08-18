@@ -11,7 +11,10 @@ const EXCHANGE_TTL_MS = 60 * 1000;
 const buildFrontendUrl = (path) => new URL(path, process.env.CLIENT_ORIGIN);
 
 const redirectWithError = (res, code) => {
-  const url = buildFrontendUrl('/traveller/sign-in');
+  // There's no /traveller/sign-in landing page anymore — /auth/callback
+  // handles both the success (?xc=) and failure (?error=) outcomes of the
+  // Asgardeo round-trip.
+  const url = buildFrontendUrl('/auth/callback');
   url.searchParams.set('error', code);
   return res.redirect(url.href);
 };

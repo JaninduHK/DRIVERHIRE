@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Loader2 } from 'lucide-react';
-import { buildApiUrl } from '../constants/api.js';
-import { getStoredToken, getStoredUser, saveReturnPath } from '../services/authToken.js';
+import { getStoredToken, getStoredUser, redirectToSsoLogin } from '../services/authToken.js';
 import { createBrief } from '../services/briefApi.js';
 
 // Stashed here right before handing off to Asgardeo; AuthCallback.jsx reads
@@ -96,8 +95,7 @@ const GetQuotes = () => {
     } catch {
       /* ignore storage errors */
     }
-    saveReturnPath(REQUESTS_PATH);
-    window.location.href = buildApiUrl('/auth/sso/login');
+    redirectToSsoLogin(REQUESTS_PATH);
   };
 
   return (

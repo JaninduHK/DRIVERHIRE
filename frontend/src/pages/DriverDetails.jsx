@@ -18,7 +18,7 @@ import toast from 'react-hot-toast';
 import { fetchDriverProfile } from '../services/driverDirectoryApi.js';
 import { fetchVehicleReviews } from '../services/vehicleCatalogApi.js';
 import { startConversation as startChatConversation } from '../services/chatApi.js';
-import { getStoredToken, saveReturnPath } from '../services/authToken.js';
+import { getStoredToken, redirectToSsoLogin } from '../services/authToken.js';
 import { Avatar } from '../components/dashboard/primitives.jsx';
 import ReviewPhotos from '../components/ReviewPhotos.jsx';
 
@@ -172,8 +172,7 @@ const DriverDetails = () => {
     }
     const token = getStoredToken();
     if (!token) {
-      saveReturnPath(`/drivers/${driverId}`);
-      navigate('/traveller/sign-in');
+      redirectToSsoLogin(`/drivers/${driverId}`);
       return;
     }
     if (creatingConversation) return;
@@ -187,8 +186,7 @@ const DriverDetails = () => {
       const message = err?.message || 'Unable to start a conversation right now.';
       toast.error(message);
       if (message.toLowerCase().includes('sign in') || message.toLowerCase().includes('auth')) {
-        saveReturnPath(`/drivers/${driverId}`);
-        navigate('/traveller/sign-in');
+        redirectToSsoLogin(`/drivers/${driverId}`);
       }
     } finally {
       setCreatingConversation(false);

@@ -26,7 +26,7 @@ import {
   checkVehicleAvailability,
   fetchVehicleReviews,
 } from '../services/vehicleCatalogApi.js';
-import { getStoredToken, saveReturnPath } from '../services/authToken.js';
+import { getStoredToken, redirectToSsoLogin } from '../services/authToken.js';
 import { getVehicleFeatureLabels } from '../constants/vehicleFeatures.js';
 import { startConversation as startChatConversation } from '../services/chatApi.js';
 import { Avatar } from '../components/dashboard/primitives.jsx';
@@ -229,8 +229,7 @@ const VehicleDetails = () => {
     const checkoutPath = `/checkout/${vehicleId}?${searchParams.toString()}`;
     const token = getStoredToken();
     if (!token) {
-      saveReturnPath(checkoutPath);
-      navigate('/traveller/sign-in');
+      redirectToSsoLogin(checkoutPath);
       return;
     }
     navigate(checkoutPath, {
@@ -257,8 +256,7 @@ const VehicleDetails = () => {
       const message = err?.message || 'Unable to start a conversation right now.';
       toast.error(message);
       if (message.toLowerCase().includes('sign in') || message.toLowerCase().includes('auth')) {
-        saveReturnPath(`/vehicles/${vehicleId}`);
-        navigate('/traveller/sign-in');
+        redirectToSsoLogin(`/vehicles/${vehicleId}`);
       }
     } finally {
       setCreatingConversation(false);

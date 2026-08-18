@@ -23,6 +23,7 @@ import {
   getStoredToken,
   getStoredUser,
   subscribeToAuthChanges,
+  SSO_LOGIN_URL,
 } from '../services/authToken.js';
 
 // Full-page navigation to the backend, not a client-side route — it starts
@@ -31,17 +32,6 @@ import {
 // Asgardeo registration URL instead would skip that OAuth initiation and
 // risk losing the authorization request context (the exact bug that made
 // registration land on Asgardeo's My Account portal instead of back here).
-//
-// Deliberately a bare relative path, NOT buildApiUrl(): NavBar renders during
-// real SSR (it's not behind clientOnly), and buildApiUrl() resolves to
-// SSR_API_ORIGIN server-side — the internal Docker hostname (e.g.
-// http://backend:3000) used so the Node SSR process can reach the backend
-// container. That's correct for server-side data fetching, but baking it
-// into a public <a href> sends real browsers to an address only reachable
-// inside the Docker network. A same-origin relative path is valid in both
-// the server-rendered HTML and the client, so it sidesteps the mismatch
-// entirely instead of relying on hydration to patch it.
-const SSO_LOGIN_URL = '/api/auth/sso/login';
 
 const navLinks = [
   { to: '/', label: 'Home', icon: Home },
@@ -142,7 +132,6 @@ const NavBar = () => {
   const { isAuthenticated, dashboardPath, messagesPath, user } = authState;
   const isDriver = user?.role === 'driver';
   const isTraveler = isAuthenticated && user?.role === 'guest';
-  const messageDestination = isAuthenticated ? messagesPath : '/traveller/sign-in';
   const roleLabel =
     user?.role === 'driver' ? 'Driver' : user?.role === 'admin' ? 'Admin' : 'Traveller';
 
@@ -217,14 +206,25 @@ const NavBar = () => {
         </nav>
 
         <div className="flex items-center gap-3">
-          <Link
-            to={messageDestination}
-            className="relative flex h-10 w-10 items-center justify-center rounded-full border border-transparent bg-slate-100 text-slate-700 transition hover:bg-slate-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
-            aria-label="Messages"
-          >
-            <MessageSquare className="h-5 w-5" strokeWidth={1.75} />
-            <span className="absolute right-2 top-2 inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-          </Link>
+          {isAuthenticated ? (
+            <Link
+              to={messagesPath}
+              className="relative flex h-10 w-10 items-center justify-center rounded-full border border-transparent bg-slate-100 text-slate-700 transition hover:bg-slate-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+              aria-label="Messages"
+            >
+              <MessageSquare className="h-5 w-5" strokeWidth={1.75} />
+              <span className="absolute right-2 top-2 inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </Link>
+          ) : (
+            <a
+              href={SSO_LOGIN_URL}
+              className="relative flex h-10 w-10 items-center justify-center rounded-full border border-transparent bg-slate-100 text-slate-700 transition hover:bg-slate-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
+              aria-label="Messages"
+            >
+              <MessageSquare className="h-5 w-5" strokeWidth={1.75} />
+              <span className="absolute right-2 top-2 inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            </a>
+          )}
           {isAuthenticated ? (
             <NavLink
               to={dashboardPath}

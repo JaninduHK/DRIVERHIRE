@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { SSO_LOGIN_URL } from '../services/authToken.js';
 
 // Chrome for the driver/admin sign-in page. Traveller sign-in/sign-up moved
-// to Asgardeo SSO (see TravellerSignIn.jsx) — this shell now serves a single
+// to Asgardeo SSO (goes straight to SSO_LOGIN_URL, no local page) — this shell now serves a single
 // audience and a single mode, so there's no more tab switcher or "create
 // account" variant to carry around.
 
@@ -91,9 +92,9 @@ const AuthShell = ({ children, footerNote }) => {
 
           <p className="mt-5 text-[13.5px] leading-[1.6] text-muted">
             Booking a trip?{' '}
-            <Link to="/traveller/sign-in" className="font-bold text-brand-dark">
+            <a href={SSO_LOGIN_URL} className="font-bold text-brand-dark">
               Continue as a traveller
-            </Link>
+            </a>
             .
           </p>
 

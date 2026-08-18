@@ -3,7 +3,21 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { ssoExchange } from '../services/authApi.js';
 import { createBrief } from '../services/briefApi.js';
-import { consumeReturnPath, persistAuthSession } from '../services/authToken.js';
+import { consumeAuthMessage, consumeReturnPath, persistAuthSession, SSO_LOGIN_URL } from '../services/authToken.js';
+
+// Shown when Asgardeo redirects back with ?error=<code> instead of a code to
+// exchange — e.g. the traveller cancelled, or the backend rejected the
+// callback (see ssoController.js's redirectWithError). Moved here from the
+// old /traveller/sign-in landing page, which no longer exists — this route
+// is now the single place both success and failure land after Asgardeo.
+const ERROR_MESSAGES = {
+  account_role_conflict:
+    'That email already belongs to a driver or admin account. Sign in at /login instead.',
+  email_not_verified: 'Please verify your email with the provider before continuing.',
+  missing_email: 'We could not read an email address from your account. Please try again.',
+  expired_state: 'That sign-in link expired. Please try again.',
+  sso_failed: 'Something went wrong signing you in. Please try again.',
+};
 
 // Stashed by GetQuotes.jsx right before the Asgardeo hand-off. Submitted here,
 // in parallel with landing on the dashboard, so the traveller's quote request
@@ -39,6 +53,7 @@ const AuthCallback = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const code = searchParams.get('xc') || '';
+  const errorCode = searchParams.get('error') || '';
 
   const [error, setError] = useState('');
   // The exchange code is single-use server-side; React StrictMode's dev-mode
@@ -52,6 +67,10 @@ const AuthCallback = () => {
   const hasExchanged = useRef(false);
 
   useEffect(() => {
+    if (errorCode) {
+      setError(ERROR_MESSAGES[errorCode] || 'Unable to sign you in. Please try again.');
+      return;
+    }
     if (!code) {
       setError('Missing sign-in code. Please try again.');
       return;
@@ -70,6 +89,14 @@ const AuthCallback = () => {
         const firstName = response?.user?.name?.split(' ')?.[0] || 'there';
         toast.success(`Welcome, ${firstName}!`);
 
+        // Set by handleSessionExpired() before it redirected here — e.g. "Your
+        // session expired, please sign in again" — surfaced now that they're
+        // actually back, since there was no page in between to show it on.
+        const pendingMessage = consumeAuthMessage();
+        if (pendingMessage) {
+          toast(pendingMessage);
+        }
+
         const savedPath = consumeReturnPath();
         navigate(savedPath || '/dashboard', { replace: true });
         submitPendingBrief();
@@ -79,19 +106,24 @@ const AuthCallback = () => {
     };
 
     exchange();
-  }, [code, navigate]);
+  }, [code, errorCode, navigate]);
 
   if (error) {
     return (
       <section className="mx-auto flex min-h-[50vh] max-w-xl flex-col items-center justify-center gap-4 px-4 text-center">
         <h1 className="text-[22px] font-extrabold text-ink">Sign-in didn&apos;t complete</h1>
         <p className="text-[14.5px] leading-[1.6] text-muted">{error}</p>
-        <Link
-          to="/traveller/sign-in"
-          className="inline-flex min-h-[46px] items-center justify-center rounded-full bg-brand px-5 text-[14px] font-bold text-white transition hover:bg-brand-dark"
-        >
-          Try again
-        </Link>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <a
+            href={SSO_LOGIN_URL}
+            className="inline-flex min-h-[46px] items-center justify-center rounded-full bg-brand px-5 text-[14px] font-bold text-white transition hover:bg-brand-dark"
+          >
+            Try again
+          </a>
+          <Link to="/" className="text-[13.5px] font-bold text-muted-soft hover:text-ink">
+            Back to homepage
+          </Link>
+        </div>
       </section>
     );
   }

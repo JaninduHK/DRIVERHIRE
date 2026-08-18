@@ -10,11 +10,12 @@ export default [
   index('routes/home.jsx'),
 
   // Auth (client-only, noindex)
-  // /login is driver/admin only; traveller sign-in/sign-up goes through Asgardeo SSO.
+  // /login is driver/admin only; traveller sign-in/sign-up goes straight to
+  // Asgardeo's hosted login (SSO_LOGIN_URL in authToken.js) — there's no
+  // local landing page for it. /auth/callback is where Asgardeo redirects back.
   route('login', 'routes/login.jsx'),
   route('register', 'routes/register.jsx'), // kept as a redirect so old links don't 404
   route('register/driver', 'routes/register.driver.jsx'),
-  route('traveller/sign-in', 'routes/traveller.sign-in.jsx'),
   route('auth/callback', 'routes/auth.callback.jsx'),
   route('get-quotes', 'routes/get-quotes.jsx'),
   route('forgot-password', 'routes/forgot-password.jsx'),
