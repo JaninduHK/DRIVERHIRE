@@ -77,11 +77,17 @@ PUBLIC_ASSET_BASE_URL=https://carwithdriver.lk/uploads
 ADMIN_SETUP_CODE=...
 EMAIL_FROM=hello@carwithdriver.lk
 BREVO_API_KEY=...
-GOOGLE_CLIENT_ID=...
 CLOUDINARY_CLOUD_NAME=...
 CLOUDINARY_API_KEY=...
 CLOUDINARY_API_SECRET=...
 CLOUDINARY_FOLDER_PREFIX=driverhire
+
+# Traveller SSO (see ASGARDEO_SETUP.md):
+ASGARDEO_ISSUER_URL=https://api.asgardeo.io/t/your-org-name
+ASGARDEO_CLIENT_ID=...
+ASGARDEO_CLIENT_SECRET=...
+ASGARDEO_REDIRECT_URI=https://carwithdriver.lk/api/auth/sso/callback
+ASGARDEO_POST_LOGOUT_REDIRECT_URI=https://carwithdriver.lk/login
 ```
 > Generate a secret: `openssl rand -hex 32`
 
@@ -90,7 +96,7 @@ CLOUDINARY_FOLDER_PREFIX=driverhire
 cp .env.docker.example .env
 nano .env
 ```
-Fill in `VITE_GOOGLE_CLIENT_ID`, `VITE_GA_MEASUREMENT_ID`, etc. Leave `VITE_API_URL=/api`.
+Fill in `VITE_GA_MEASUREMENT_ID`, etc. Leave `VITE_API_URL=/api`.
 > These are baked into the JS bundle **at build time**. If you change them later you must rebuild: `docker compose build web`.
 
 ---

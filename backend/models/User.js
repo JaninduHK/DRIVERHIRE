@@ -17,6 +17,7 @@ export const AUTH_PROVIDERS = {
   LOCAL: 'local',
   GOOGLE: 'google',
   FACEBOOK: 'facebook',
+  ASGARDEO: 'asgardeo',
 };
 
 const roleValues = Object.values(USER_ROLES);
@@ -59,6 +60,11 @@ const userSchema = new mongoose.Schema(
       sparse: true,
     },
     facebookId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
+    asgardeoSub: {
       type: String,
       unique: true,
       sparse: true,
@@ -148,6 +154,7 @@ userSchema.set('toJSON', {
     delete ret.__v;
     delete ret.passwordHash;
     delete ret.googleId;
+    delete ret.asgardeoSub;
     delete ret.verificationToken;
     delete ret.verificationTokenExpires;
     delete ret.passwordResetToken;

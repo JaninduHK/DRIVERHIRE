@@ -19,7 +19,6 @@ import {
 } from 'lucide-react';
 import logoWhite from '../assets/Logo White.png';
 import { Avatar } from './dashboard/primitives.jsx';
-import { buildApiUrl } from '../constants/api.js';
 import {
   getStoredToken,
   getStoredUser,
@@ -32,7 +31,17 @@ import {
 // Asgardeo registration URL instead would skip that OAuth initiation and
 // risk losing the authorization request context (the exact bug that made
 // registration land on Asgardeo's My Account portal instead of back here).
-const SSO_LOGIN_URL = buildApiUrl('/auth/sso/login');
+//
+// Deliberately a bare relative path, NOT buildApiUrl(): NavBar renders during
+// real SSR (it's not behind clientOnly), and buildApiUrl() resolves to
+// SSR_API_ORIGIN server-side — the internal Docker hostname (e.g.
+// http://backend:3000) used so the Node SSR process can reach the backend
+// container. That's correct for server-side data fetching, but baking it
+// into a public <a href> sends real browsers to an address only reachable
+// inside the Docker network. A same-origin relative path is valid in both
+// the server-rendered HTML and the client, so it sidesteps the mismatch
+// entirely instead of relying on hydration to patch it.
+const SSO_LOGIN_URL = '/api/auth/sso/login';
 
 const navLinks = [
   { to: '/', label: 'Home', icon: Home },

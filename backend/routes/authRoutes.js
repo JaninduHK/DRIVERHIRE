@@ -3,8 +3,6 @@ import { body } from 'express-validator';
 import {
   registerUser,
   loginUser,
-  googleAuth,
-  facebookAuth,
   verifyEmail,
   resendVerificationEmail,
   getCurrentUser,
@@ -56,18 +54,6 @@ router.post(
     body('password').notEmpty().withMessage('Password is required'),
   ],
   loginUser
-);
-
-router.post(
-  '/google',
-  [body('credential').isString().notEmpty().withMessage('Google credential is required')],
-  googleAuth
-);
-
-router.post(
-  '/facebook',
-  [body('accessToken').isString().notEmpty().withMessage('Facebook access token is required')],
-  facebookAuth
 );
 
 router.get('/verify-email', verifyEmail);

@@ -1,8 +1,6 @@
 import crypto from 'crypto';
 import { validationResult } from 'express-validator';
-import User, { AUTH_PROVIDERS, DRIVER_STATUS, USER_ROLES } from '../models/User.js';
-import { verifyGoogleToken } from '../utils/googleAuth.js';
-import { verifyFacebookToken } from '../utils/facebookAuth.js';
+import User, { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
 import { getSetting, SETTING_KEYS } from '../models/Setting.js';
 import { generateAccessToken } from '../utils/jwt.js';
 import buildAppUrl from '../utils/url.js';
@@ -77,6 +75,12 @@ export const registerUser = async (req, res) => {
 
     if (!Object.values(USER_ROLES).includes(normalizedRole)) {
       return res.status(400).json({ message: 'Invalid role provided' });
+    }
+
+    if (normalizedRole === USER_ROLES.GUEST) {
+      return res.status(400).json({
+        message: 'Traveller accounts must sign in with SSO.',
+      });
     }
 
     if (normalizedRole === USER_ROLES.ADMIN) {
@@ -575,164 +579,5 @@ export const resetPassword = async (req, res) => {
   } catch (error) {
     console.error('Password reset error:', error);
     return res.status(500).json({ message: 'Unable to reset password right now.' });
-  }
-};
-
-export const googleAuth = async (req, res) => {
-  const { credential } = req.body || {};
-
-  if (!credential) {
-    return res.status(400).json({ message: 'Google credential is required' });
-  }
-
-  try {
-    const googleData = await verifyGoogleToken(credential);
-
-    if (!googleData.email) {
-      return res.status(400).json({ message: 'Unable to retrieve email from Google account' });
-    }
-
-    if (!googleData.emailVerified) {
-      return res.status(400).json({ message: 'Please verify your Google email first' });
-    }
-
-    const existingUser = await User.findOne({ email: googleData.email.toLowerCase() });
-
-    if (existingUser) {
-      // Admins must use password authentication. Drivers may use Google so the
-      // drivers-only mobile app can offer Google sign-in (Google asserts the
-      // email is verified, so we can safely link it to the existing driver).
-      if (existingUser.role === USER_ROLES.ADMIN) {
-        return res.status(403).json({
-          message: 'This account uses password authentication. Please sign in with your email and password.',
-        });
-      }
-
-      // Link Google account to the existing user (guest or driver) if not linked
-      if (!existingUser.googleId) {
-        existingUser.googleId = googleData.googleId;
-        existingUser.authProvider = AUTH_PROVIDERS.GOOGLE;
-        if (!existingUser.isVerified) {
-          existingUser.isVerified = true;
-          existingUser.verificationToken = undefined;
-          existingUser.verificationTokenExpires = undefined;
-        }
-        await existingUser.save();
-      }
-
-      const token = generateAccessToken(existingUser);
-      return res.json({
-        token,
-        user: existingUser.toJSON(),
-      });
-    }
-
-    // Create new guest user with Google account
-    const newUser = new User({
-      name: googleData.name || googleData.email.split('@')[0],
-      email: googleData.email.toLowerCase(),
-      googleId: googleData.googleId,
-      authProvider: AUTH_PROVIDERS.GOOGLE,
-      role: USER_ROLES.GUEST,
-      isVerified: true,
-    });
-
-    if (googleData.picture) {
-      newUser.profilePhoto = googleData.picture;
-    }
-
-    await newUser.save();
-
-    const token = generateAccessToken(newUser);
-    return res.json({
-      token,
-      user: newUser.toJSON(),
-      isNewUser: true,
-    });
-  } catch (error) {
-    console.error('Google auth error:', error);
-    if (error.message?.includes('Token used too late') || error.message?.includes('Invalid token')) {
-      return res.status(401).json({ message: 'Google sign-in expired. Please try again.' });
-    }
-    return res.status(500).json({ message: 'Unable to authenticate with Google' });
-  }
-};
-
-export const facebookAuth = async (req, res) => {
-  const { accessToken } = req.body || {};
-
-  if (!accessToken) {
-    return res.status(400).json({ message: 'Facebook access token is required' });
-  }
-
-  try {
-    const fbData = await verifyFacebookToken(accessToken);
-
-    if (!fbData.email) {
-      return res.status(400).json({
-        message:
-          'We could not read an email from your Facebook account. Please sign up with your email address instead.',
-      });
-    }
-
-    const existingUser = await User.findOne({ email: fbData.email.toLowerCase() });
-
-    if (existingUser) {
-      // Drivers and admins must use password authentication.
-      if (existingUser.role === USER_ROLES.DRIVER || existingUser.role === USER_ROLES.ADMIN) {
-        return res.status(403).json({
-          message: 'This account uses password authentication. Please sign in with your email and password.',
-        });
-      }
-
-      // Link Facebook to an existing guest account if not already linked.
-      if (!existingUser.facebookId) {
-        existingUser.facebookId = fbData.facebookId;
-        if (existingUser.authProvider === AUTH_PROVIDERS.LOCAL && !existingUser.passwordHash) {
-          existingUser.authProvider = AUTH_PROVIDERS.FACEBOOK;
-        }
-        if (!existingUser.isVerified) {
-          existingUser.isVerified = true;
-          existingUser.verificationToken = undefined;
-          existingUser.verificationTokenExpires = undefined;
-        }
-        await existingUser.save();
-      }
-
-      const token = generateAccessToken(existingUser);
-      return res.json({
-        token,
-        user: existingUser.toJSON(),
-      });
-    }
-
-    // Create a new guest user from the Facebook profile.
-    const newUser = new User({
-      name: fbData.name || fbData.email.split('@')[0],
-      email: fbData.email.toLowerCase(),
-      facebookId: fbData.facebookId,
-      authProvider: AUTH_PROVIDERS.FACEBOOK,
-      role: USER_ROLES.GUEST,
-      isVerified: true,
-    });
-
-    if (fbData.picture) {
-      newUser.profilePhoto = fbData.picture;
-    }
-
-    await newUser.save();
-
-    const token = generateAccessToken(newUser);
-    return res.json({
-      token,
-      user: newUser.toJSON(),
-      isNewUser: true,
-    });
-  } catch (error) {
-    console.error('Facebook auth error:', error);
-    if (error.message?.includes('Invalid Facebook token')) {
-      return res.status(401).json({ message: 'Facebook sign-in expired. Please try again.' });
-    }
-    return res.status(500).json({ message: 'Unable to authenticate with Facebook' });
   }
 };

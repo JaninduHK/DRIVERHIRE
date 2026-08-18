@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDatabase from './config/database.js';
 import authRoutes from './routes/authRoutes.js';
+import ssoRoutes from './routes/ssoRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import driverRoutes from './routes/driverRoutes.js';
 import vehicleRoutes from './routes/vehicleRoutes.js';
@@ -57,6 +58,7 @@ app.get('/', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/auth/sso', ssoRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/vehicles', vehicleRoutes);
 app.use('/api/driver', driverRoutes);

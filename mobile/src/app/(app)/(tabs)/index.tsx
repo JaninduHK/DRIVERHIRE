@@ -14,7 +14,7 @@ import { Badge } from '../../../components/Badge';
 import { Loading, EmptyState } from '../../../components/states';
 import { useAuth } from '../../../auth/AuthContext';
 import { useOverview, useEarningsSummary, useBookings, useBriefs } from '../../../hooks/queries';
-import { formatMoney, formatDateRange } from '../../../lib/format';
+import { formatMoney } from '../../../lib/format';
 import { colors } from '../../../theme/colors';
 import type { Brief } from '../../../types';
 
@@ -114,30 +114,50 @@ export default function Overview() {
 }
 
 function RequestCard({ brief, onPress }: { brief: Brief; onPress: () => void }) {
-  const title = brief.title || brief.route || 'Trip request';
+  const travelerName =
+    (brief.traveler && typeof brief.traveler === 'object' ? brief.traveler.name : undefined) || 'Traveller';
+  const route =
+    [brief.startLocation, brief.endLocation].filter(Boolean).join(' → ') || brief.route || 'Trip request';
+  const adults = brief.adults ?? 0;
+  const children = brief.children ?? 0;
+  const guestsLabel =
+    adults || children
+      ? `${adults} adult${adults === 1 ? '' : 's'}${children > 0 ? ` + ${children} child${children === 1 ? '' : 'ren'}` : ''}`
+      : null;
   const meta = [
-    formatDateRange(brief.startDate, brief.endDate),
-    brief.guests ? `${brief.guests} guests` : null,
+    guestsLabel,
+    brief.country || null,
+    brief.offersCount ? `${brief.offersCount} offer${brief.offersCount === 1 ? '' : 's'}` : null,
   ]
     .filter(Boolean)
     .join(' · ');
+  const message = brief.message || brief.description;
   return (
-    <Card className="border-l-4 border-brand p-[15px]">
-      <View className="mb-2.5 flex-row items-center gap-3">
-        <Avatar name={title} size={40} rounded={11} />
-        <View className="flex-1">
-          <Text className="font-heavy text-[15px] text-ink" numberOfLines={1}>
-            {title}
-          </Text>
-          <Text className="font-med text-[12px] text-muted-soft" numberOfLines={1}>
-            {meta || brief.route}
-          </Text>
+    <Card className="border-l-4 border-brand p-4">
+      <Pressable onPress={onPress}>
+        <View className="flex-row items-center gap-3">
+          <Avatar name={travelerName} size={42} rounded={12} />
+          <View className="min-w-0 flex-1">
+            <Text className="font-heavy text-[15px] text-ink" numberOfLines={1}>
+              {travelerName}
+            </Text>
+            <Text className="mt-0.5 font-med text-[12px] text-muted-soft" numberOfLines={1}>
+              {route}
+            </Text>
+          </View>
         </View>
-      </View>
-      <View className="flex-row gap-2">
-        <Button title="Send offer" variant="primary" className="flex-1" onPress={onPress} />
-        <Button title="View" variant="secondary" onPress={onPress} />
-      </View>
+        {meta ? (
+          <Text className="mt-2.5 font-semi text-[12.5px] text-muted" numberOfLines={1}>
+            {meta}
+          </Text>
+        ) : null}
+        {message ? (
+          <Text className="mt-1.5 font-med text-[13px] leading-5 text-muted" numberOfLines={2}>
+            {message}
+          </Text>
+        ) : null}
+      </Pressable>
+      <Button title="Send offer" variant="primary" className="mt-3.5" onPress={onPress} />
     </Card>
   );
 }

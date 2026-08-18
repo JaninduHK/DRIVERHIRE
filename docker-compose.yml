@@ -4,6 +4,10 @@
 #   backend      -> Node.js + Express API (port 3000, internal)
 #   mongo        -> MongoDB 7 (internal, data persisted in a named volume)
 #
+# Traveller SSO is handled by Asgardeo (WSO2's managed cloud identity
+# service) — no local identity-provider infrastructure to run. See
+# ASGARDEO_SETUP.md for the one-time tenant/app setup.
+#
 # Quick start:
 #   1. cp .env.docker.example .env        and fill in the values
 #   2. cp backend/.env.example backend/.env   and fill in the values
@@ -60,8 +64,6 @@ services:
         VITE_API_URL: ${VITE_API_URL:-/api}
         VITE_GA_MEASUREMENT_ID: ${VITE_GA_MEASUREMENT_ID:-}
         VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY:-}
-        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
-        VITE_FACEBOOK_APP_ID: ${VITE_FACEBOOK_APP_ID:-}
     restart: unless-stopped
     environment:
       # SSR route loaders reach the API over the internal network.
