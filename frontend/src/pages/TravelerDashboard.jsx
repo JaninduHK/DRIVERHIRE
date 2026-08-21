@@ -1823,6 +1823,9 @@ const TravelerRequests = ({ onMenu, travelerName, briefsState, onReload, onCreat
             <div>
               <label className={labelCls}>Trip details</label>
               <textarea name="message" rows={4} value={formState.message} onChange={handleFieldChange} placeholder="Must-see stops, accommodation needs, languages, etc." className="mt-1 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 py-2.5 text-sm text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none" required />
+              <span className="mt-1.5 block text-[11.5px] leading-[1.5] text-muted-soft">
+                Please don&apos;t include phone numbers or emails here — we&apos;ll share contact details once you accept an offer and your booking is confirmed.
+              </span>
             </div>
             <button type="submit" disabled={creating} className="mt-1 flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand py-[14px] text-[15px] font-extrabold text-white transition hover:bg-brand-dark disabled:opacity-70">
               {creating ? (<><Loader2 className="h-4 w-4 animate-spin" /> Posting…</>) : 'Post tour brief'}

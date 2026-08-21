@@ -15,7 +15,7 @@ const footerStyles =
   'margin:0 0 6px 0;color:#94a3b8;font-size:13px;line-height:1.6;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;';
 
 const getDefaultFooterLines = () => [
-  `Need help? Reply to this email or reach us at ${getSupportEmail()}.`,
+  `This is an automated message — please don't reply to this email. Need help? Contact us at ${getSupportEmail()}.`,
   `You are receiving this email because you have an active account on ${getBrandName()}.`,
   `© ${new Date().getFullYear()} ${getBrandName()}`,
 ];

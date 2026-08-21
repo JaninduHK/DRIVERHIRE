@@ -213,6 +213,9 @@ const GetQuotes = () => {
               placeholder="Places you want to see, flight times, kids or extra luggage. Anything that helps drivers quote accurately."
               className={`${inputCls} resize-y leading-[1.5]`}
             />
+            <span className="mt-1.5 block text-[11.5px] leading-[1.5] text-muted-soft">
+              Please don&apos;t include phone numbers or emails here — we&apos;ll share contact details once you accept an offer and your booking is confirmed.
+            </span>
           </label>
 
           <button

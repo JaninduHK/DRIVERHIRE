@@ -33,6 +33,17 @@ const toPlainBrief = (brief, currentUserId = null) => {
     typeof source.traveler === 'object' && source.traveler !== null && source.traveler.id
       ? source.traveler.id
       : source.traveler?.toString?.();
+  const isOwner = Boolean(currentUserId) && travelerId === currentUserId;
+
+  // Drivers browse every traveller's message on the open-briefs board, so it's
+  // redacted here for anyone but the traveller themselves — otherwise a phone
+  // number or email in the free-text description lets a driver contact them
+  // directly, bypassing chat before a booking exists. Sanitizing on read
+  // (rather than at creation) means it applies to briefs already in the
+  // database too, not just new ones.
+  const { sanitized: displayMessage, violations } = isOwner
+    ? { sanitized: source.message, violations: [] }
+    : sanitizeMessageContent(source.message);
 
   return {
     id: source.id || source._id?.toString(),
@@ -43,7 +54,8 @@ const toPlainBrief = (brief, currentUserId = null) => {
     endLocation: source.endLocation,
     adults: source.adults,
     children: source.children,
-    message: source.message,
+    message: displayMessage,
+    contactHidden: violations.length > 0,
     country: source.country,
     status: source.status,
     offersCount: typeof source.offersCount === 'number' ? source.offersCount : responses.length,
@@ -55,7 +67,7 @@ const toPlainBrief = (brief, currentUserId = null) => {
       responses.some(
         (response) => response.driver?.toString?.() === currentUserId
       ),
-    isOwner: Boolean(currentUserId) && travelerId === currentUserId,
+    isOwner,
   };
 };
 
@@ -142,7 +154,10 @@ export const createBrief = async (req, res) => {
     await brief.save();
     await brief.populate('traveler', 'id name country');
     const plainBrief = toPlainBrief(brief, req.user.id);
-    notifyApprovedDriversOfBrief(plainBrief);
+    // Notification goes to drivers, not the traveller — build it from the
+    // no-owner (sanitized) view so the email doesn't leak contact details
+    // that the open-briefs board itself already hides.
+    notifyApprovedDriversOfBrief(toPlainBrief(brief, null));
 
     return res.status(201).json({ brief: plainBrief });
   } catch (error) {

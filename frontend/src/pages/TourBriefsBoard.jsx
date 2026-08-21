@@ -7,6 +7,7 @@ import {
   Car,
   ClipboardList,
   DollarSign,
+  EyeOff,
   Loader2,
   MapPin,
   MessageCircle,
@@ -393,6 +394,12 @@ const TourBriefsBoard = () => {
                         </div>
                         {brief.message ? (
                           <p className="mt-2.5 whitespace-pre-line text-[13px] leading-relaxed text-muted">{brief.message}</p>
+                        ) : null}
+                        {brief.contactHidden ? (
+                          <div className="mt-2 flex items-center gap-1.5 text-[11px] font-semibold text-muted-soft">
+                            <EyeOff className="h-3 w-3 flex-none" />
+                            <span>Contact details are hidden — message the traveller in chat instead.</span>
+                          </div>
                         ) : null}
                         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[12.5px] font-semibold text-muted">
                           <span className="inline-flex items-center gap-1.5">
