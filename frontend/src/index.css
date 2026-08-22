@@ -2,6 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Design tokens for the admin dashboard "Clean cards" theme (also reused
+     by a few other pages). Kept as CSS variables — rather than plain hex in
+     tailwind.config.js — solely so .admin-dark below can override them for
+     just the admin dashboard's subtree; every other page always resolves to
+     these :root values, so nothing else in the app changes. */
+  --brand: #10a35a;
+  --brand-dark: #0c8a4b;
+  --brand-bright: #2ecc71;
+  --brand-tint: #e9f8ef;
+  --ink: #0f1f2d;
+  --ink-soft: #3d4b58;
+  --muted: #5b6b7a;
+  --muted-soft: #8595a4;
+  --canvas: #f6f8f7;
+  --hairline: #f1f4f3;
+  --star: #f5b042;
+  --surface: #ffffff;
+  --line: #e2e8ea;
+}
+
+/* Admin dashboard dark mode — applied to AdminShell's root wrapper when
+   toggled, scoping the override to that subtree only. */
+.admin-dark {
+  --brand: #18b866;
+  --brand-dark: #22c67a;
+  --brand-bright: #3fe08c;
+  --brand-tint: rgba(24, 184, 102, 0.16);
+  --ink: #eef2f5;
+  --ink-soft: #c3ced8;
+  --muted: #aab6c0;
+  --muted-soft: #7c8894;
+  --canvas: #0b121a;
+  --hairline: #223040;
+  --star: #f5b042;
+  --surface: #141d27;
+  --line: #263341;
+}
+
 @layer utilities {
   .line-clamp-2,
   .line-clamp-3,

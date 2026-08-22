@@ -57,7 +57,8 @@ const isFullBleedDashboard = (pathname) =>
   pathname === '/portal/driver' ||
   pathname === '/portal/driver/messages' ||
   pathname === '/briefs' ||
-  pathname === '/dashboard';
+  pathname === '/dashboard' ||
+  pathname === '/admin';
 
 // Public marketplace pages that own their full-width layout but keep the marketing chrome.
 const isWidePublic = (pathname) =>
