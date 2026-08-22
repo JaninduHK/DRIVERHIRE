@@ -15,9 +15,9 @@ const columns = [
     title: 'Drivers',
     links: [
       { label: 'Apply as a driver', to: '/register/driver' },
+      { label: 'Driver guide', to: '/driver-guide' },
+      { label: 'Driver terms', to: '/driver-terms' },
       { label: 'Driver portal', to: '/portal/driver' },
-      { label: 'Message centre', to: '/portal/driver/messages' },
-      { label: 'Update availability', to: '/portal/driver' },
     ],
   },
   {

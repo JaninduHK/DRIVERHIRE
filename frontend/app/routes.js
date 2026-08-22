@@ -38,6 +38,8 @@ export default [
 
   // Public marketing (server-rendered)
   route('about', 'routes/about.jsx'),
+  route('driver-guide', 'routes/driver-guide.jsx'),
+  route('driver-terms', 'routes/driver-terms.jsx'),
   route('contact', 'routes/contact.jsx'),
   route('trip-cost-calculator', 'routes/trip-cost-calculator.jsx'),
   route('privacy-policy', 'routes/privacy-policy.jsx'),
