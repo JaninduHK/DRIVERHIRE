@@ -9,6 +9,7 @@ import TourBrief from '../models/TourBrief.js';
 import ChatConversation from '../models/ChatConversation.js';
 import ChatMessage from '../models/ChatMessage.js';
 import { getSetting, setSetting, SETTING_KEYS } from '../models/Setting.js';
+import { DEFAULT_BANK_DETAILS } from '../config/bankDetailsDefaults.js';
 import {
   sendDriverStatusEmail,
   sendDriverProfileCompletionEmail,
@@ -1070,32 +1071,54 @@ export const getUsersList = async (_req, res) => {
 
 // ---- Platform settings (admin-configurable) ----
 
+const BANK_DETAIL_FIELDS = ['accountName', 'accountNumber', 'bankName', 'branch', 'swiftCode', 'referenceNote'];
+
+// Merge stored bank details over the defaults so a partially-filled setting
+// (or none saved yet) never surfaces blank fields to drivers.
+const resolveBankDetails = async () => {
+  const stored = await getSetting(SETTING_KEYS.PLATFORM_BANK_DETAILS, {});
+  return { ...DEFAULT_BANK_DETAILS, ...(stored && typeof stored === 'object' ? stored : {}) };
+};
+
 // Read the current admin-configurable settings.
 export const getAdminSettings = async (_req, res) => {
   try {
     const driverAutoApproval = Boolean(
       await getSetting(SETTING_KEYS.DRIVER_AUTO_APPROVAL, false)
     );
-    return res.json({ settings: { driverAutoApproval } });
+    const bankDetails = await resolveBankDetails();
+    return res.json({ settings: { driverAutoApproval, bankDetails } });
   } catch (error) {
     console.error('Get admin settings error:', error);
     return res.status(500).json({ message: 'Unable to load settings.' });
   }
 };
 
-// Update admin-configurable settings. Currently: driver approval mode.
+// Update admin-configurable settings: driver approval mode and/or bank details
+// shown to drivers for commission payment.
 export const updateAdminSettings = async (req, res) => {
   try {
-    const { driverAutoApproval } = req.body || {};
+    const { driverAutoApproval, bankDetails } = req.body || {};
     if (typeof driverAutoApproval === 'boolean') {
       await setSetting(SETTING_KEYS.DRIVER_AUTO_APPROVAL, driverAutoApproval);
     }
+    if (bankDetails && typeof bankDetails === 'object' && !Array.isArray(bankDetails)) {
+      const existing = await getSetting(SETTING_KEYS.PLATFORM_BANK_DETAILS, {});
+      const merged = { ...(existing && typeof existing === 'object' ? existing : {}) };
+      for (const field of BANK_DETAIL_FIELDS) {
+        if (typeof bankDetails[field] === 'string') {
+          merged[field] = bankDetails[field].trim();
+        }
+      }
+      await setSetting(SETTING_KEYS.PLATFORM_BANK_DETAILS, merged);
+    }
     const current = Boolean(await getSetting(SETTING_KEYS.DRIVER_AUTO_APPROVAL, false));
+    const currentBankDetails = await resolveBankDetails();
     return res.json({
       message: current
         ? 'New drivers are now approved automatically.'
         : 'New drivers now require manual approval.',
-      settings: { driverAutoApproval: current },
+      settings: { driverAutoApproval: current, bankDetails: currentBankDetails },
     });
   } catch (error) {
     console.error('Update admin settings error:', error);

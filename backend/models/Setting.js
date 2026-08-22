@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 // Simple key/value store for admin-configurable platform settings.
 export const SETTING_KEYS = {
   DRIVER_AUTO_APPROVAL: 'driverAutoApproval',
+  PLATFORM_BANK_DETAILS: 'platformBankDetails',
 };
 
 const settingSchema = new mongoose.Schema(

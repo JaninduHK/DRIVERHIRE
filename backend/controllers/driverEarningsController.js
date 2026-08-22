@@ -3,18 +3,17 @@ import DriverCommission, {
   COMMISSION_STATUS,
 } from '../models/DriverCommission.js';
 import CommissionDiscount from '../models/CommissionDiscount.js';
+import { getSetting, SETTING_KEYS } from '../models/Setting.js';
+import { DEFAULT_BANK_DETAILS } from '../config/bankDetailsDefaults.js';
 import { buildAssetUrl } from '../utils/assetUtils.js';
 import * as cloudinaryService from '../services/cloudinaryService.js';
 
-const BANK_DETAILS = {
-  accountName: process.env.PLATFORM_BANK_ACCOUNT_NAME || 'Car With Driver Operations',
-  accountNumber: process.env.PLATFORM_BANK_ACCOUNT_NUMBER || '0001234567',
-  bankName: process.env.PLATFORM_BANK_NAME || 'National Bank of Sri Lanka',
-  branch: process.env.PLATFORM_BANK_BRANCH || 'Colombo HQ',
-  swiftCode: process.env.PLATFORM_BANK_SWIFT || '',
-  referenceNote:
-    process.env.PLATFORM_BANK_REFERENCE ||
-    'Use your Car With Driver ID and the commission month as the payment reference.',
+// Bank details are admin-editable (see adminController.updateAdminSettings);
+// merge over the defaults so an unset or partially-filled setting never
+// surfaces blank fields to drivers.
+const getPlatformBankDetails = async () => {
+  const stored = await getSetting(SETTING_KEYS.PLATFORM_BANK_DETAILS, {});
+  return { ...DEFAULT_BANK_DETAILS, ...(stored && typeof stored === 'object' ? stored : {}) };
 };
 
 const MONTH_NAMES = [
@@ -252,7 +251,7 @@ export const getDriverEarningsSummary = async (req, res) => {
       commission: shapeCommissionRecord(commissionRecord, req),
       bookings: bookingSummaries,
       discount: activeDiscount ? activeDiscount.toJSON() : null,
-      bankDetails: BANK_DETAILS,
+      bankDetails: await getPlatformBankDetails(),
     });
   } catch (error) {
     console.error('Driver earnings summary error:', error);
