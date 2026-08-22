@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CalendarDays, ChevronDown, Loader2, RotateCcw, XCircle } from 'lucide-react';
+import { CalendarDays, ChevronDown, Loader2, Mail, Phone, RotateCcw, XCircle } from 'lucide-react';
 import { formatCurrency, formatDate, formatDateInput, tagClass } from './adminFormatters.js';
 
 const BOOKING_STATUS_OPTIONS = [
@@ -154,6 +154,20 @@ const BookingsPanel = ({ state, onReload, onUpdate, onDelete }) => {
 
                 {isEditing ? (
                   <form onSubmit={handleSubmit} className="space-y-3 border-t border-hairline bg-canvas/60 px-5 py-4">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-xl border border-hairline bg-surface p-3.5">
+                        <p className="text-[11px] font-extrabold uppercase tracking-wide text-muted-soft">Traveller contact</p>
+                        <p className="mt-1.5 text-[13.5px] font-bold text-ink">{travelerName}</p>
+                        <p className="mt-1 flex items-center gap-1.5 truncate text-[12.5px] text-muted"><Mail className="h-3.5 w-3.5 flex-shrink-0" /> {booking.traveler?.email || 'Not on file'}</p>
+                        <p className="mt-0.5 flex items-center gap-1.5 text-[12.5px] text-muted"><Phone className="h-3.5 w-3.5 flex-shrink-0" /> {booking.traveler?.phoneNumber || 'Not on file'}</p>
+                      </div>
+                      <div className="rounded-xl border border-hairline bg-surface p-3.5">
+                        <p className="text-[11px] font-extrabold uppercase tracking-wide text-muted-soft">Driver contact</p>
+                        <p className="mt-1.5 text-[13.5px] font-bold text-ink">{driverName}</p>
+                        <p className="mt-1 flex items-center gap-1.5 truncate text-[12.5px] text-muted"><Mail className="h-3.5 w-3.5 flex-shrink-0" /> {booking.driver?.email || 'Not on file'}</p>
+                        <p className="mt-0.5 flex items-center gap-1.5 text-[12.5px] text-muted"><Phone className="h-3.5 w-3.5 flex-shrink-0" /> {booking.driver?.contactNumber || 'Not on file'}</p>
+                      </div>
+                    </div>
                     <div className="grid gap-3 sm:grid-cols-3">
                       <div>
                         <label className={labelCls}>Status</label>
