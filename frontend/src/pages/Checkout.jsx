@@ -584,7 +584,9 @@ const Checkout = () => {
   const summaryRows = (
     <dl className="m-0 grid gap-[9px] text-[13.5px]">
       {totalPrice ? <SummaryRow label="Estimated total" value={totalPrice} /> : null}
-      {discountAmount ? <SummaryRow label="Discount" value={`-${discountAmount}`} green /> : null}
+      {discountAmount ? (
+        <SummaryRow label={discountSource?.name ? `${discountSource.name} discount` : 'Discount'} value={`-${discountAmount}`} green />
+      ) : null}
       {pricePerDay ? <SummaryRow label="Rate per day" value={pricePerDay} /> : null}
       {offerExtras && typeof offerExtras.totalKms === 'number' ? (
         <SummaryRow label="Included distance" value={`${offerExtras.totalKms} km`} />
@@ -692,7 +694,9 @@ const Checkout = () => {
                   {tripDateRange ? <li>Trip dates: {tripDateRange}</li> : null}
                   {totalDaysLabel ? <li>Trip length: {totalDaysLabel}</li> : null}
                   {totalPrice ? <li>Estimated total: {totalPrice}</li> : null}
-                  {discountAmount ? <li>Discount: -{discountAmount}</li> : null}
+                  {discountAmount ? (
+                    <li>{bookingResult?.commissionDiscountLabel ? `${bookingResult.commissionDiscountLabel} discount` : 'Discount'}: -{discountAmount}</li>
+                  ) : null}
                   {payableTotal ? <li className="font-extrabold text-brand-dark">You pay the driver: {payableTotal}</li> : null}
                 </ul>
                 <div className="mt-5 flex flex-wrap gap-2.5">

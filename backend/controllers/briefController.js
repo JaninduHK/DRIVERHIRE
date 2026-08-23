@@ -9,6 +9,7 @@ import { createChatMessage } from '../services/chatService.js';
 import { sendBriefAlertEmail } from '../services/emailService.js';
 import { sendExpoPushNotifications } from '../services/expoPushService.js';
 import { sanitizeMessageContent } from '../utils/chatSanitizer.js';
+import { hasVehicleDateConflict, VEHICLE_UNAVAILABLE_MESSAGE } from '../utils/vehicleAvailability.js';
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
@@ -311,7 +312,7 @@ export const respondToBrief = async (req, res) => {
       _id: vehicleId,
       driver: req.user.id,
       status: VEHICLE_STATUS.APPROVED,
-    }).select('id model status');
+    }).select('id model status availability');
 
     if (!vehicle) {
       return res.status(404).json({ message: 'Vehicle not found in your fleet.' });
@@ -321,6 +322,10 @@ export const respondToBrief = async (req, res) => {
     const offerEnd = overrideEnd || brief.endDate;
     if (!offerStart || !offerEnd || offerEnd < offerStart) {
       return res.status(400).json({ message: 'Offer dates are invalid.' });
+    }
+
+    if (await hasVehicleDateConflict(vehicle, offerStart, offerEnd)) {
+      return res.status(409).json({ message: VEHICLE_UNAVAILABLE_MESSAGE });
     }
 
     const conversation = await findConversationForBrief({

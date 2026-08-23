@@ -4,11 +4,61 @@ import ChatMessage from '../models/ChatMessage.js';
 import User, { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
 import Vehicle, { VEHICLE_STATUS } from '../models/Vehicle.js';
 import Booking, { BOOKING_STATUS } from '../models/Booking.js';
+import CommissionDiscount from '../models/CommissionDiscount.js';
 import { sanitizeMessageContent } from '../utils/chatSanitizer.js';
+import { hasVehicleDateConflict, VEHICLE_UNAVAILABLE_MESSAGE } from '../utils/vehicleAvailability.js';
 import { createChatMessage } from '../services/chatService.js';
 import { notifyUser } from '../services/expoPushService.js';
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
+
+const findActiveCommissionDiscount = async (referenceDate) => {
+  const target = referenceDate instanceof Date ? referenceDate : new Date(referenceDate);
+  if (Number.isNaN(target.getTime())) {
+    return null;
+  }
+  return CommissionDiscount.findOne({
+    active: true,
+    startDate: { $lte: target },
+    endDate: { $gte: target },
+  })
+    .sort({ discountRate: -1, startDate: -1 })
+    .lean();
+};
+
+// Offers are driver-typed flat totals with no discount baked in (see
+// sendOffer) — this computes the same promo a traveller would see at
+// checkout for the offer's own trip dates, so the offer bubble can preview
+// what they'd actually pay if they accept.
+const buildOfferDiscount = async (offer) => {
+  if (!offer?.startDate || !Number.isFinite(offer.totalPrice)) {
+    return null;
+  }
+  const activeDiscount = await findActiveCommissionDiscount(offer.startDate);
+  const discountRate =
+    activeDiscount && typeof activeDiscount.discountRate === 'number'
+      ? Math.max(activeDiscount.discountRate, 0)
+      : 0;
+  if (!activeDiscount || discountRate <= 0) {
+    return null;
+  }
+  const discountPercent =
+    activeDiscount.discountPercent ?? Math.round(discountRate * 100 * 100) / 100;
+  const amount = Math.round(offer.totalPrice * discountRate * 100) / 100;
+  const payableTotal = Math.max(Math.round((offer.totalPrice - amount) * 100) / 100, 0);
+  return {
+    id: activeDiscount._id?.toString?.() || activeDiscount.id,
+    name: activeDiscount.name,
+    description: activeDiscount.description,
+    discountRate,
+    discountPercent,
+    amount,
+    payableTotal,
+    startDate: activeDiscount.startDate,
+    endDate: activeDiscount.endDate,
+    status: activeDiscount.status || 'active',
+  };
+};
 
 const normalizeDateInput = (value) => {
   if (!value) {
@@ -267,6 +317,14 @@ export const fetchMessages = async (req, res) => {
       .populate('offer.vehicle', 'id model pricePerDay')
       .lean();
 
+    await Promise.all(
+      messages
+        .filter((message) => message.type === 'offer' && message.offer)
+        .map(async (message) => {
+          message.offer.discount = await buildOfferDiscount(message.offer);
+        })
+    );
+
     await ChatMessage.updateMany(
       { conversation: conversationId, readBy: { $ne: req.user.id } },
       { $addToSet: { readBy: req.user.id } }
@@ -440,10 +498,14 @@ export const sendOffer = async (req, res) => {
       _id: vehicleId,
       driver: req.user.id,
       status: VEHICLE_STATUS.APPROVED,
-    }).select('id model pricePerDay');
+    }).select('id model pricePerDay availability');
 
     if (!vehicle) {
       return res.status(404).json({ message: 'Only an approved vehicle can be offered.' });
+    }
+
+    if (await hasVehicleDateConflict(vehicle, startDate, endDate)) {
+      return res.status(409).json({ message: VEHICLE_UNAVAILABLE_MESSAGE });
     }
 
     const { sanitized: sanitizedNote, violations, warning } = sanitizeMessageContent(note || '');

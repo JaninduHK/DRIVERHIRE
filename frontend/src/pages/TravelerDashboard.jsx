@@ -15,6 +15,7 @@ import {
   Search,
   Send,
   Settings as SettingsIcon,
+  Sparkles,
   Star,
   User2,
   Users,
@@ -1514,13 +1515,22 @@ const TravelerOfferBubble = ({ message, align, onBook }) => {
   const { offer } = message;
   const start = formatDateLabel(offer.startDate);
   const end = formatDateLabel(offer.endDate);
+  const discount = offer.discount;
   return (
     <div className={`flex ${align === 'end' ? 'justify-end' : 'justify-start'}`}>
       <div className="max-w-[88%] rounded-[16px] border-[1.5px] border-[#cdeede] bg-white p-3.5 shadow-[0_4px_14px_rgba(15,31,45,0.06)]">
         <div className="mb-2 flex items-center justify-between gap-3">
           <span className="rounded-[7px] bg-brand-tint px-2 py-[3px] text-[10.5px] font-extrabold uppercase text-brand-dark">Offer received</span>
-          <b className="text-[18px] text-ink">{formatCurrency(offer.totalPrice)}</b>
+          <div className="text-right">
+            {discount ? <div className="text-[11px] font-semibold text-[#e11d48] line-through">{formatCurrency(offer.totalPrice)}</div> : null}
+            <b className="text-[18px] text-ink">{formatCurrency(discount ? discount.payableTotal : offer.totalPrice)}</b>
+          </div>
         </div>
+        {discount ? (
+          <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-rose-500 to-amber-500 px-2.5 py-1 text-[10.5px] font-bold text-white">
+            <Sparkles className="h-3 w-3" /> {discount.name} — save {discount.discountPercent}%
+          </div>
+        ) : null}
         <div className="text-[13px] font-bold text-ink">
           {offer.vehicle?.model || 'Selected vehicle'} · {start}–{end}
         </div>

@@ -215,7 +215,9 @@ const shapeMessage = (message) => ({
     ? {
         startDate: message.offer.startDate,
         endDate: message.offer.endDate,
-        vehicle: message.offer.vehicle ? toId(message.offer.vehicle) : null,
+        vehicle: message.offer.vehicle
+          ? { id: toId(message.offer.vehicle), model: message.offer.vehicle.model || null }
+          : null,
         totalPrice: message.offer.totalPrice,
         totalKms: message.offer.totalKms,
         pricePerExtraKm: message.offer.pricePerExtraKm,
@@ -234,7 +236,51 @@ const shapeMessage = (message) => ({
   updatedAt: message.updatedAt,
 });
 
-const shapeConversation = (conversation, messages = []) => ({
+// Mirrors chatController.js's findConversationBooking, shaped as a read-only
+// notice for admin (no traveller PII beyond what's already visible elsewhere).
+const shapeConversationBooking = (booking) => {
+  if (!booking) {
+    return null;
+  }
+  return {
+    id: booking._id.toString(),
+    status: booking.status,
+    startDate: booking.startDate,
+    endDate: booking.endDate,
+    vehicleModel: booking.vehicle?.model || null,
+    totalPrice: booking.totalPrice,
+    totalDays: booking.totalDays,
+  };
+};
+
+// Batched equivalent for the conversation list: one query for every
+// driver/traveller pair instead of one query per conversation.
+const findConversationBookingsMap = async (conversations) => {
+  const driverIds = conversations.map((c) => toId(c.driver)).filter(Boolean);
+  const travelerIds = conversations.map((c) => toId(c.traveler)).filter(Boolean);
+  if (driverIds.length === 0 || travelerIds.length === 0) {
+    return new Map();
+  }
+  const bookings = await Booking.find({
+    driver: { $in: driverIds },
+    travelerUser: { $in: travelerIds },
+    status: { $nin: [BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED] },
+  })
+    .sort({ createdAt: -1 })
+    .populate('vehicle', 'model')
+    .lean();
+
+  const map = new Map();
+  for (const booking of bookings) {
+    const key = `${booking.driver}:${booking.travelerUser}`;
+    if (!map.has(key)) {
+      map.set(key, shapeConversationBooking(booking));
+    }
+  }
+  return map;
+};
+
+const shapeConversation = (conversation, messages = [], booking = null) => ({
   id: conversation._id.toString(),
   traveler: conversation.traveler
     ? {
@@ -265,6 +311,7 @@ const shapeConversation = (conversation, messages = []) => ({
     : null,
   createdAt: conversation.createdAt,
   updatedAt: conversation.updatedAt,
+  booking,
   messages: messages.map((message) => shapeMessage(message)),
 });
 
@@ -957,7 +1004,8 @@ export const listConversations = async (_req, res) => {
     const conversationIds = conversations.map((conversation) => conversation._id);
     const messages = await ChatMessage.find({ conversation: { $in: conversationIds } })
       .sort({ createdAt: 1 })
-      .populate('sender', 'name role');
+      .populate('sender', 'name role')
+      .populate('offer.vehicle', 'id model');
 
     const messagesByConversation = conversationIds.reduce((acc, id) => {
       acc[id.toString()] = [];
@@ -971,9 +1019,15 @@ export const listConversations = async (_req, res) => {
       }
     });
 
+    const bookingsByPair = await findConversationBookingsMap(conversations);
+
     return res.json({
       conversations: conversations.map((conversation) =>
-        shapeConversation(conversation, messagesByConversation[conversation._id.toString()] || [])
+        shapeConversation(
+          conversation,
+          messagesByConversation[conversation._id.toString()] || [],
+          bookingsByPair.get(`${toId(conversation.driver)}:${toId(conversation.traveler)}`) || null
+        )
       ),
     });
   } catch (error) {
@@ -1009,9 +1063,19 @@ export const updateConversationStatus = async (req, res) => {
     await conversation.save();
     const messages = await ChatMessage.find({ conversation: id })
       .sort({ createdAt: 1 })
-      .populate('sender', 'name role');
+      .populate('sender', 'name role')
+      .populate('offer.vehicle', 'id model');
 
-    return res.json({ conversation: shapeConversation(conversation, messages) });
+    const booking = await Booking.findOne({
+      driver: toId(conversation.driver),
+      travelerUser: toId(conversation.traveler),
+      status: { $nin: [BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED] },
+    })
+      .sort({ createdAt: -1 })
+      .populate('vehicle', 'model')
+      .lean();
+
+    return res.json({ conversation: shapeConversation(conversation, messages, shapeConversationBooking(booking)) });
   } catch (error) {
     console.error('Update conversation error:', error);
     return res.status(500).json({ message: 'Unable to update conversation.' });

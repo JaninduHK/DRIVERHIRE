@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, MessageCircle, RotateCcw, XCircle } from 'lucide-react';
+import { AlertTriangle, CalendarDays, MessageCircle, RotateCcw, XCircle } from 'lucide-react';
 import { Avatar } from '../../components/dashboard/primitives.jsx';
-import { formatDateTime, tagClass } from './adminFormatters.js';
+import { formatCurrency, formatDate, formatDateTime, tagClass } from './adminFormatters.js';
+
+const OFFER_STATUS_TAGS = { pending: 'amber', accepted: 'green', declined: 'red' };
 
 const CONVERSATION_STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },
@@ -143,6 +145,23 @@ const ConversationDetail = ({ conversation, isUpdating, isDeleting, onStatusChan
         </button>
       </div>
 
+      {conversation.booking ? (
+        <div className="flex items-center gap-3 border-b border-hairline bg-brand-tint/40 px-5 py-3">
+          <CalendarDays className="h-4 w-4 flex-shrink-0 text-brand-dark" />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <b className="text-[13px] text-ink">
+                {conversation.booking.status === 'confirmed' ? 'Booking confirmed' : 'Booking requested'}
+              </b>
+              <span className={tagClass(conversation.booking.status === 'confirmed' ? 'green' : 'amber')}>{conversation.booking.status}</span>
+            </div>
+            <p className="truncate text-[12px] text-muted-soft">
+              {conversation.booking.vehicleModel || 'Vehicle'} · {formatDate(conversation.booking.startDate)} – {formatDate(conversation.booking.endDate)} · {formatCurrency(conversation.booking.totalPrice || 0)}
+            </p>
+          </div>
+        </div>
+      ) : null}
+
       <div className="flex-1 space-y-3 overflow-y-auto bg-canvas/60 p-5">
         {messages.length === 0 ? (
           <p className="text-center text-[13px] text-muted-soft">
@@ -153,6 +172,32 @@ const ConversationDetail = ({ conversation, isUpdating, isDeleting, onStatusChan
             const isTraveller = message.senderRole === 'guest';
             const isAdmin = message.senderRole === 'admin';
             const align = isTraveller ? 'items-start' : 'items-end';
+
+            if (message.type === 'offer' && message.offer) {
+              const offer = message.offer;
+              return (
+                <div key={message.id} className={`flex flex-col gap-1 ${align}`}>
+                  <div className="max-w-[74%] rounded-2xl border-[1.5px] border-brand-tint bg-surface px-3.5 py-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={tagClass('green')}>Offer</span>
+                      <span className={tagClass(OFFER_STATUS_TAGS[offer.status] || 'grey')}>{offer.status}</span>
+                    </div>
+                    <p className="mt-1.5 text-[13.5px] font-bold text-ink">{offer.vehicle?.model || 'Vehicle'}</p>
+                    <p className="text-[12px] text-muted-soft">
+                      {formatDate(offer.startDate)} – {formatDate(offer.endDate)} · {offer.totalKms} km included · ${offer.pricePerExtraKm}/extra km
+                    </p>
+                    <p className="mt-1.5 text-[15px] font-extrabold text-brand-dark">{formatCurrency(offer.totalPrice || 0)}</p>
+                  </div>
+                  {message.warning ? (
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-600">
+                      <AlertTriangle className="h-3 w-3" /> {message.warning}
+                    </div>
+                  ) : null}
+                  <span className="text-[11px] font-bold text-muted-soft">{message.sender?.name || 'System'} · {formatDateTime(message.createdAt)}</span>
+                </div>
+              );
+            }
+
             const bubble = isAdmin
               ? 'bg-[#0f1f2d] text-white'
               : isTraveller
