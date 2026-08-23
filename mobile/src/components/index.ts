@@ -13,3 +13,4 @@ export { Toggle } from './Toggle';
 export { Divider } from './Divider';
 export { IconButton } from './IconButton';
 export { Loading, ErrorState, EmptyState } from './states';
+export { SessionErrorScreen } from './SessionErrorScreen';

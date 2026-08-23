@@ -1,11 +1,19 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { login as apiLogin, getMe } from '../api/auth';
+import { login as apiLogin, getMe, logoutSession } from '../api/auth';
+import { ApiError } from '../api/client';
 import { getCurrentPushToken, removePushRegistration } from '../lib/push';
-import { setAuthToken, setUnauthorizedHandler } from '../lib/session';
-import { saveToken, loadToken, deleteToken } from '../lib/tokenStore';
+import { getRefreshToken, setAuthToken, setRefreshToken, setUnauthorizedHandler } from '../lib/session';
+import {
+  saveToken,
+  loadToken,
+  deleteToken,
+  saveRefreshToken,
+  loadRefreshToken,
+  deleteRefreshToken,
+} from '../lib/tokenStore';
 import type { AuthResponse, User } from '../types';
 
-type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
+type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated' | 'error';
 
 interface AuthContextValue {
   status: AuthStatus;
@@ -16,11 +24,18 @@ interface AuthContextValue {
   logout: (pushToken?: string) => Promise<void>;
   refreshUser: () => Promise<void>;
   setUser: (user: User) => void;
+  retry: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const DRIVER_ONLY_MESSAGE = 'This app is for drivers only. Please use the website to sign in.';
+
+// Brief backoff to absorb a cold-start network blip (Wi-Fi/cellular not yet
+// reassociated right after the app relaunches) before giving up.
+const BOOTSTRAP_RETRY_DELAYS_MS = [1000, 2000];
+
+const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 const normalizeUser = (payload: { user: User } | User): User => {
   if (payload && typeof payload === 'object' && 'user' in payload) {
@@ -35,21 +50,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const clearSession = useCallback(async () => {
     setAuthToken(null);
-    await deleteToken();
+    setRefreshToken(null);
+    await Promise.all([deleteToken(), deleteRefreshToken()]);
     setUserState(null);
     setStatus('unauthenticated');
   }, []);
 
-  // Restore an existing session on boot.
-  useEffect(() => {
-    (async () => {
+  // Restore an existing session on boot (also callable as a manual retry from
+  // the "couldn't verify session" screen).
+  const bootstrap = useCallback(async () => {
+    setStatus('loading');
+
+    const stored = await loadToken();
+    if (!stored) {
+      setStatus('unauthenticated');
+      return;
+    }
+    setAuthToken(stored);
+    setRefreshToken(await loadRefreshToken());
+
+    for (let attempt = 0; attempt <= BOOTSTRAP_RETRY_DELAYS_MS.length; attempt += 1) {
       try {
-        const stored = await loadToken();
-        if (!stored) {
-          setStatus('unauthenticated');
-          return;
-        }
-        setAuthToken(stored);
         const me = normalizeUser(await getMe());
         if (me.role !== 'driver') {
           await clearSession();
@@ -57,13 +78,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         setUserState(me);
         setStatus('authenticated');
-      } catch {
-        await clearSession();
+        return;
+      } catch (error) {
+        // A confirmed 401 means the access token was rejected AND a silent
+        // refresh attempt inside the API client already failed — the session
+        // really is dead, so log out. Anything else (network blip, timeout,
+        // 5xx) is transient: don't delete a possibly-still-valid token, just
+        // retry, then fall back to an "error" state the driver can retry.
+        if (error instanceof ApiError && error.status === 401) {
+          await clearSession();
+          return;
+        }
+        if (attempt < BOOTSTRAP_RETRY_DELAYS_MS.length) {
+          await wait(BOOTSTRAP_RETRY_DELAYS_MS[attempt]);
+        }
       }
-    })();
+    }
+    setStatus('error');
   }, [clearSession]);
 
-  // Force logout when any request returns 401.
+  useEffect(() => {
+    bootstrap();
+  }, [bootstrap]);
+
+  // Force logout when a request's silent refresh attempt also fails.
   useEffect(() => {
     setUnauthorizedHandler(() => {
       clearSession();
@@ -77,7 +115,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(DRIVER_ONLY_MESSAGE);
     }
     setAuthToken(res.token);
-    await saveToken(res.token);
+    setRefreshToken(res.refreshToken);
+    await Promise.all([saveToken(res.token), saveRefreshToken(res.refreshToken)]);
     setUserState(authUser);
     setStatus('authenticated');
     return authUser;
@@ -92,6 +131,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (pushToken?: string) => {
       // Unregister this device so it stops receiving pushes for the account.
       await removePushRegistration(pushToken ?? getCurrentPushToken());
+      // Revoke the refresh token server-side too (best effort).
+      await logoutSession(getRefreshToken()).catch(() => {});
       await clearSession();
     },
     [clearSession]
@@ -108,6 +149,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const setUser = useCallback((next: User) => setUserState(next), []);
 
+  const retry = useCallback(() => {
+    bootstrap();
+  }, [bootstrap]);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       status,
@@ -118,8 +163,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout,
       refreshUser,
       setUser,
+      retry,
     }),
-    [status, user, login, acceptSession, logout, refreshUser, setUser]
+    [status, user, login, acceptSession, logout, refreshUser, setUser, retry]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

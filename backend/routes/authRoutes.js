@@ -3,6 +3,8 @@ import { body } from 'express-validator';
 import {
   registerUser,
   loginUser,
+  refreshAccessToken,
+  logoutUser,
   verifyEmail,
   resendVerificationEmail,
   getCurrentUser,
@@ -55,6 +57,14 @@ router.post(
   ],
   loginUser
 );
+
+router.post(
+  '/refresh',
+  [body('refreshToken').isString().notEmpty().withMessage('Refresh token is required')],
+  refreshAccessToken
+);
+
+router.post('/logout', [body('refreshToken').optional().isString()], logoutUser);
 
 router.get('/verify-email', verifyEmail);
 

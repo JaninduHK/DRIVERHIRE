@@ -7,6 +7,7 @@ export default function AppLayout() {
   usePush();
 
   if (status === 'loading') return null;
+  if (status === 'error') return <Redirect href="/" />;
   if (status === 'unauthenticated' || !user) return <Redirect href="/(auth)/welcome" />;
   if (user.driverStatus !== 'approved') return <Redirect href="/(auth)/pending" />;
 

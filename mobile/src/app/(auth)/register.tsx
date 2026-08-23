@@ -89,8 +89,8 @@ export default function Register() {
         experienceYears: Math.max(0, parseInt(years, 10) || 0),
       });
       // Admin auto-approval on → the API returns a session; open straight to the overview.
-      if (res.token && res.user) {
-        await applySession({ token: res.token, user: res.user });
+      if (res.token && res.refreshToken && res.user) {
+        await applySession({ token: res.token, refreshToken: res.refreshToken, user: res.user });
         router.replace('/(app)');
         return;
       }

@@ -2,7 +2,9 @@ import crypto from 'crypto';
 import { validationResult } from 'express-validator';
 import User, { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
 import { getSetting, SETTING_KEYS } from '../models/Setting.js';
+import RefreshToken from '../models/RefreshToken.js';
 import { generateAccessToken } from '../utils/jwt.js';
+import { issueRefreshToken, hashRefreshToken } from '../utils/refreshToken.js';
 import buildAppUrl from '../utils/url.js';
 import {
   sendVerificationEmail,
@@ -152,9 +154,11 @@ export const registerUser = async (req, res) => {
     if (autoApprovedDriver) {
       await user.save();
       const accessToken = generateAccessToken(user);
+      const refreshToken = await issueRefreshToken(user);
       return res.status(201).json({
         message: 'Registration successful.',
         token: accessToken,
+        refreshToken,
         user: user.toJSON(),
       });
     }
@@ -205,14 +209,83 @@ export const loginUser = async (req, res) => {
     }
 
     const token = generateAccessToken(user);
+    const refreshToken = await issueRefreshToken(user);
 
     return res.json({
       token,
+      refreshToken,
       user: user.toJSON(),
     });
   } catch (error) {
     console.error('Login error:', error);
     return res.status(500).json({ message: 'Unable to login' });
+  }
+};
+
+// Exchanges a refresh token for a new access token, rotating the refresh
+// token in the process. If a token that's already been rotated away is
+// presented again, treat it as a sign of theft/replay and revoke every
+// other live refresh token for that user.
+export const refreshAccessToken = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+
+  const { refreshToken } = req.body;
+
+  try {
+    const tokenHash = hashRefreshToken(refreshToken);
+    const stored = await RefreshToken.findOne({ tokenHash });
+
+    if (!stored || stored.expiresAt <= new Date()) {
+      return res.status(401).json({ message: 'Invalid refresh token' });
+    }
+
+    if (stored.revokedAt) {
+      await RefreshToken.updateMany(
+        { user: stored.user, revokedAt: null },
+        { $set: { revokedAt: new Date() } }
+      );
+      return res.status(401).json({ message: 'Invalid refresh token' });
+    }
+
+    const user = await User.findById(stored.user);
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid refresh token' });
+    }
+
+    const newRefreshToken = await issueRefreshToken(user);
+    stored.revokedAt = new Date();
+    stored.replacedByTokenHash = hashRefreshToken(newRefreshToken);
+    await stored.save();
+
+    const token = generateAccessToken(user);
+
+    return res.json({
+      token,
+      refreshToken: newRefreshToken,
+      user: user.toJSON(),
+    });
+  } catch (error) {
+    console.error('Refresh token error:', error);
+    return res.status(500).json({ message: 'Unable to refresh session' });
+  }
+};
+
+export const logoutUser = async (req, res) => {
+  const { refreshToken } = req.body || {};
+  try {
+    if (refreshToken && typeof refreshToken === 'string') {
+      await RefreshToken.updateOne(
+        { tokenHash: hashRefreshToken(refreshToken) },
+        { $set: { revokedAt: new Date() } }
+      );
+    }
+    return res.json({ success: true });
+  } catch (error) {
+    console.error('Logout error:', error);
+    return res.json({ success: true });
   }
 };
 

@@ -10,6 +10,20 @@ export const login = (email: string, password: string) =>
 
 export const getMe = () => apiRequest<{ user: User } | User>('/auth/me');
 
+export const refreshSession = (refreshToken: string) =>
+  apiRequest<AuthResponse>('/auth/refresh', {
+    method: 'POST',
+    auth: false,
+    body: { refreshToken },
+  });
+
+export const logoutSession = (refreshToken?: string | null) =>
+  apiRequest<{ success: boolean }>('/auth/logout', {
+    method: 'POST',
+    auth: false,
+    body: { refreshToken },
+  });
+
 export interface DriverRegistrationPayload {
   name: string;
   email: string;
@@ -23,7 +37,7 @@ export interface DriverRegistrationPayload {
 // When admin auto-approval is on, the API returns a session (token + user) so the app can
 // open straight to the overview; otherwise it returns just a message (pending review).
 export const registerDriver = (payload: DriverRegistrationPayload) =>
-  apiRequest<{ message: string; token?: string; user?: User }>('/auth/register', {
+  apiRequest<{ message: string; token?: string; refreshToken?: string; user?: User }>('/auth/register', {
     method: 'POST',
     auth: false,
     body: { ...payload, role: 'driver' },

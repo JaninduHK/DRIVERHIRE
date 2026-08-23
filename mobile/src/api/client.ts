@@ -1,4 +1,5 @@
-import { getAuthToken, triggerUnauthorized } from '../lib/session';
+import { getAuthToken, getRefreshToken, setAuthToken, setRefreshToken, triggerUnauthorized } from '../lib/session';
+import { saveToken, saveRefreshToken } from '../lib/tokenStore';
 
 const DEFAULT_API_URL = 'https://carwithdriver.lk/api';
 
@@ -36,7 +37,54 @@ interface RequestOptions extends Omit<RequestInit, 'body'> {
   auth?: boolean;
 }
 
-export async function apiRequest<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
+// A still-valid refresh token can silently mint a new access token on a 401,
+// instead of immediately logging the driver out (see AuthContext for the
+// startup-check side of this fix). Shared across concurrent 401s so only one
+// refresh call is ever in flight at a time.
+let refreshPromise: Promise<boolean> | null = null;
+
+const performRefresh = async (): Promise<boolean> => {
+  const storedRefreshToken = getRefreshToken();
+  if (!storedRefreshToken) {
+    return false;
+  }
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ refreshToken: storedRefreshToken }),
+    });
+    if (!response.ok) {
+      return false;
+    }
+    const data = await response.json();
+    if (!data?.token || !data?.refreshToken) {
+      return false;
+    }
+    setAuthToken(data.token);
+    setRefreshToken(data.refreshToken);
+    await saveToken(data.token);
+    await saveRefreshToken(data.refreshToken);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const refreshOnce = () => {
+  if (!refreshPromise) {
+    refreshPromise = performRefresh().finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+};
+
+export async function apiRequest<T = unknown>(
+  path: string,
+  options: RequestOptions = {},
+  isRetry = false
+): Promise<T> {
   const { body, auth = true, headers: customHeaders, ...rest } = options;
 
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
@@ -58,6 +106,12 @@ export async function apiRequest<T = unknown>(path: string, options: RequestOpti
   });
 
   if (!response.ok) {
+    if (response.status === 401 && auth && !isRetry) {
+      const refreshed = await refreshOnce();
+      if (refreshed) {
+        return apiRequest<T>(path, options, true);
+      }
+    }
     const message = await parseError(response);
     if (response.status === 401) {
       triggerUnauthorized();
