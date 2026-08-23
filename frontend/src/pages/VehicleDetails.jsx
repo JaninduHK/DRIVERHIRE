@@ -17,6 +17,7 @@ import {
   Plus,
   Share2,
   Shield,
+  Sparkles,
   Star,
   Users,
   Wallet,
@@ -318,7 +319,7 @@ const VehicleDetails = () => {
   const bookingProps = {
     priceLabel, originalPriceLabel, activeDiscount, dateForm, handleDateChange, todayDate,
     handleDateSubmit, availability, handleBookNow, guests, setGuests,
-    quoteTotalLabel, quotePayableLabel, quoteDiscountLabel,
+    quoteTotalLabel, quotePayableLabel, quoteDiscountLabel, quoteDiscount,
   };
   const reviewProps = {
     reviews, reviewMeta, reviewsLoading, reviewsError, averageRatingLabel, ratingCounts,
@@ -519,19 +520,28 @@ const VehicleDetails = () => {
 const BookingPanel = ({
   priceLabel, originalPriceLabel, activeDiscount, dateForm, handleDateChange, todayDate,
   handleDateSubmit, availability, handleBookNow, guests, setGuests,
-  quoteTotalLabel, quotePayableLabel, quoteDiscountLabel, title, desktop = false,
+  quoteTotalLabel, quotePayableLabel, quoteDiscountLabel, quoteDiscount, title, desktop = false,
 }) => {
   const inputCls = 'w-full rounded-[12px] border border-[#e2e8ea] bg-white px-3 py-2.5 text-[13.5px] font-semibold text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20';
   return (
     <div>
+      {activeDiscount?.name ? (
+        <div className="mb-3 flex items-center gap-2.5 rounded-[14px] bg-gradient-to-r from-rose-500 to-amber-500 px-3.5 py-2.5 text-white shadow-sm">
+          <Sparkles className="h-4 w-4 flex-shrink-0" />
+          <div className="min-w-0">
+            <b className="block truncate text-[13px] leading-tight">{activeDiscount.name}</b>
+            <span className="text-[11px] font-semibold text-white/85">Limited-time offer — save {activeDiscount.discountPercent}% on this vehicle</span>
+          </div>
+        </div>
+      ) : null}
       <div className="flex items-baseline gap-1.5">
         <b className={`text-ink ${desktop ? 'text-[26px]' : 'text-[22px]'}`}>{priceLabel || 'Request quote'}</b>
         {priceLabel ? <span className="text-[13.5px] font-semibold text-muted-soft">/ day</span> : null}
         {originalPriceLabel ? <span className="text-[13px] font-semibold text-[#e11d48] line-through">{originalPriceLabel}</span> : null}
       </div>
-      {activeDiscount?.discountPercent ? (
+      {!activeDiscount?.name && activeDiscount?.discountPercent ? (
         <span className="mt-2 inline-flex rounded-full bg-brand-tint px-2.5 py-1 text-[11px] font-extrabold text-brand-dark">Save {activeDiscount.discountPercent}% this trip</span>
-      ) : title ? (
+      ) : !activeDiscount?.name && title ? (
         <p className="mt-1 text-[12.5px] font-semibold text-muted-soft">{title}</p>
       ) : null}
 
@@ -568,7 +578,7 @@ const BookingPanel = ({
       {availability.ready && availability.quote ? (
         <div className="mt-3 space-y-1.5 rounded-[14px] bg-brand-tint p-3.5 text-[12.5px] text-brand-dark">
           <div className="flex justify-between"><span>{availability.quote.totalDays}-day trip</span><b>{quoteTotalLabel}</b></div>
-          {quoteDiscountLabel ? <div className="flex justify-between"><span>Discount</span><b>-{quoteDiscountLabel}</b></div> : null}
+          {quoteDiscountLabel ? <div className="flex justify-between"><span>{quoteDiscount?.name || 'Discount'}</span><b>-{quoteDiscountLabel}</b></div> : null}
           {quotePayableLabel ? <div className="flex justify-between border-t border-brand/20 pt-1.5 text-[14px] font-extrabold text-brand-dark"><span>Pay your driver</span><span>{quotePayableLabel}</span></div> : null}
           {availability.quote.paymentNote ? <p className="text-[11px] text-brand-dark/70">{availability.quote.paymentNote}</p> : null}
         </div>

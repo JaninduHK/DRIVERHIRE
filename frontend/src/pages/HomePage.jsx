@@ -605,8 +605,9 @@ const Chip = ({ children }) => (
 const VehicleCard = ({ vehicle, tag }) => {
   const image = getVehicleImage(vehicle);
   const discount = vehicle.activeDiscount;
-  const rate =
-    money(typeof discount?.discountedPricePerDay === 'number' ? discount.discountedPricePerDay : vehicle.pricePerDay) || 'Quote';
+  const hasDiscount = Boolean(discount?.name && typeof discount?.discountedPricePerDay === 'number');
+  const rate = money(hasDiscount ? discount.discountedPricePerDay : vehicle.pricePerDay) || 'Quote';
+  const originalRate = hasDiscount ? money(vehicle.pricePerDay) : null;
   const chips = [
     vehicle.seats ? `${vehicle.seats} seats` : null,
     vehicle.year ? `Year ${vehicle.year}` : null,
@@ -626,7 +627,13 @@ const VehicleCard = ({ vehicle, tag }) => {
       <div className="flex flex-1 flex-col p-[18px]">
         <div className="flex items-center justify-between gap-2.5">
           <h3 className="text-[17.5px] font-extrabold">{vehicle.model || 'Featured vehicle'}</h3>
-          {tag ? <span className="rounded-full bg-[#e9f8ef] px-2.5 py-[5px] text-xs font-bold text-brand-dark">{tag}</span> : null}
+          {hasDiscount ? (
+            <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-gradient-to-r from-rose-500 to-amber-500 px-2.5 py-[5px] text-xs font-bold text-white">
+              {discount.name}
+            </span>
+          ) : tag ? (
+            <span className="rounded-full bg-[#e9f8ef] px-2.5 py-[5px] text-xs font-bold text-brand-dark">{tag}</span>
+          ) : null}
         </div>
         <p className="mt-2.5 flex-1 text-[14px] leading-[1.55] text-muted line-clamp-3">
           {vehicle.description || 'Comfortable and ready for Sri Lanka road trips, with strong air-conditioning.'}
@@ -635,7 +642,11 @@ const VehicleCard = ({ vehicle, tag }) => {
         <div className="mt-4 flex items-center justify-between gap-2.5 border-t border-[#f0f3f2] pt-3.5">
           <div>
             <div className="text-[11px] font-bold tracking-[.04em] text-muted-soft">FROM</div>
-            <div className="text-[17px] font-extrabold">{rate}<span className="text-[12.5px] font-semibold text-muted-soft">/day</span></div>
+            <div className="flex items-baseline gap-1.5">
+              <span className={`text-[17px] font-extrabold ${hasDiscount ? 'text-brand-dark' : ''}`}>{rate}</span>
+              <span className="text-[12.5px] font-semibold text-muted-soft">/day</span>
+              {originalRate ? <span className="text-[12px] font-semibold text-[#e11d48] line-through">{originalRate}</span> : null}
+            </div>
           </div>
           <Link to={`/vehicles/${vehicle.id}`} className="inline-flex min-h-[44px] items-center rounded-[11px] bg-[#e9f8ef] px-4 text-[13.5px] font-bold text-brand-dark">
             Get a quote

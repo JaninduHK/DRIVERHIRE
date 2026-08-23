@@ -304,9 +304,9 @@ const ChevronChip = ({ children, onClick }) => (
 const VehicleCard = ({ vehicle }) => {
   const cover = Array.isArray(vehicle.images) ? vehicle.images[0] : null;
   const discount = vehicle.activeDiscount;
-  const price = formatPrice(
-    typeof discount?.discountedPricePerDay === 'number' ? discount.discountedPricePerDay : vehicle.pricePerDay
-  );
+  const hasDiscount = Boolean(discount?.name && typeof discount?.discountedPricePerDay === 'number');
+  const price = formatPrice(hasDiscount ? discount.discountedPricePerDay : vehicle.pricePerDay);
+  const originalPrice = hasDiscount ? formatPrice(vehicle.pricePerDay) : null;
   const reviews = vehicle.reviewSummary || {};
   const hasReviews = (reviews.totalReviews ?? 0) > 0 && typeof reviews.averageRating === 'number';
   const features = getVehicleFeatureLabels(vehicle).slice(0, 2);
@@ -315,13 +315,20 @@ const VehicleCard = ({ vehicle }) => {
 
   return (
     <Link to={`/vehicles/${vehicle.id}`} className="block overflow-hidden rounded-[18px] bg-white shadow-card transition hover:-translate-y-0.5 hover:shadow-lg">
-      {cover ? (
-        <img src={cover} alt={vehicle.model} loading="lazy" className="h-[170px] w-full object-cover" />
-      ) : (
-        <div className="grid h-[170px] w-full place-items-center bg-[#eef1f0] text-muted-soft">
-          <Car className="h-9 w-9" />
-        </div>
-      )}
+      <div className="relative">
+        {cover ? (
+          <img src={cover} alt={vehicle.model} loading="lazy" className="h-[170px] w-full object-cover" />
+        ) : (
+          <div className="grid h-[170px] w-full place-items-center bg-[#eef1f0] text-muted-soft">
+            <Car className="h-9 w-9" />
+          </div>
+        )}
+        {hasDiscount ? (
+          <span className="absolute left-3 top-3 inline-flex max-w-[85%] items-center gap-1 truncate rounded-full bg-gradient-to-r from-rose-500 to-amber-500 px-2.5 py-1 text-[11.5px] font-bold text-white shadow-sm">
+            {discount.name}
+          </span>
+        ) : null}
+      </div>
       <div className="p-[14px]">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -329,7 +336,8 @@ const VehicleCard = ({ vehicle }) => {
             <div className="mt-0.5 truncate text-[12.5px] text-muted-soft">{meta || 'Vehicle'}</div>
           </div>
           <div className="flex-shrink-0 text-right">
-            <b className="text-[16px] text-ink">{price || '—'}</b>
+            <b className={`text-[16px] ${hasDiscount ? 'text-brand-dark' : 'text-ink'}`}>{price || '—'}</b>
+            {originalPrice ? <div className="text-[11.5px] font-semibold text-[#e11d48] line-through">{originalPrice}</div> : null}
             <div className="text-[11.5px] text-muted-soft">per day</div>
           </div>
         </div>
