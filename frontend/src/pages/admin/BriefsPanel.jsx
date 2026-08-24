@@ -4,8 +4,11 @@ import { formatDate, formatDateInput, tagClass } from './adminFormatters.js';
 
 const BRIEF_STATUS_OPTIONS = [
   { value: 'open', label: 'Open' },
+  { value: 'booked', label: 'Booked' },
   { value: 'closed', label: 'Closed' },
 ];
+
+const BRIEF_STATUS_TAGS = { open: 'green', booked: 'blue', closed: 'grey' };
 
 const buildAdminBriefForm = (brief = {}) => ({
   status: brief.status || 'open',
@@ -115,7 +118,7 @@ const BriefsPanel = ({ state, onReload, onUpdate, onDelete }) => {
                 <div className="text-[12px] text-muted-soft">{formatDate(brief.startDate)} – {formatDate(brief.endDate)}</div>
                 <div className="text-[12.5px] font-bold text-ink">{brief.offersCount} offer{brief.offersCount === 1 ? '' : 's'}</div>
                 <div className="flex items-center justify-between gap-2">
-                  <span className={tagClass(brief.status === 'open' ? 'green' : 'grey')}>{brief.status}</span>
+                  <span className={tagClass(BRIEF_STATUS_TAGS[brief.status] || 'grey')}>{brief.status}</span>
                   <ChevronDown className={`h-4 w-4 flex-shrink-0 text-muted-soft transition ${isEditing ? 'rotate-180' : ''}`} />
                 </div>
               </button>

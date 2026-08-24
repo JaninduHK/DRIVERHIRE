@@ -39,6 +39,12 @@ const offerSchema = new mongoose.Schema(
       enum: ['pending', 'accepted', 'declined'],
       default: 'pending',
     },
+    // Only set for offers created from a tour-brief response (respondToBrief);
+    // direct in-chat offers (sendOffer) leave this unset.
+    brief: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'TourBrief',
+    },
   },
   { _id: false }
 );

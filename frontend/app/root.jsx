@@ -64,6 +64,7 @@ const isFullBleedDashboard = (pathname) =>
 const isWidePublic = (pathname) =>
   pathname === '/vehicles' ||
   pathname === '/drivers' ||
+  pathname === '/live-map' ||
   pathname.startsWith('/vehicles/') ||
   pathname.startsWith('/drivers/') ||
   pathname.startsWith('/checkout/');

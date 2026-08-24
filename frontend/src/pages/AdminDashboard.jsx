@@ -459,12 +459,15 @@ const AdminDashboard = () => {
     await sendDriverEmailRequest(driverId, payload);
   }, []);
 
-  const handleVehicleStatusChange = async (vehicleId, nextStatus) => {
+  const handleVehicleStatusChange = async (vehicleId, nextStatus, rejectedReason) => {
     setVehicleState((prev) => ({ ...prev, updatingId: vehicleId }));
     try {
-      const { vehicle } = await updateVehicleStatusRequest(vehicleId, { status: nextStatus });
+      const { vehicle } = await updateVehicleStatusRequest(vehicleId, {
+        status: nextStatus,
+        ...(nextStatus === VEHICLE_STATUS.REJECTED ? { rejectedReason } : {}),
+      });
       setVehicleState((prev) => ({ ...prev, items: prev.items.map((item) => (item.id === vehicle.id ? vehicle : item)), updatingId: null }));
-      toast.success(nextStatus === VEHICLE_STATUS.APPROVED ? 'Vehicle approved successfully.' : 'Vehicle status updated.');
+      toast.success(nextStatus === VEHICLE_STATUS.APPROVED ? 'Vehicle approved successfully.' : 'Vehicle rejected. The driver has been notified by email.');
     } catch (err) {
       toast.error(err.message || 'Unable to update vehicle status.');
       setVehicleState((prev) => ({ ...prev, updatingId: null }));

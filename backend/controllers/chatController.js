@@ -5,6 +5,7 @@ import User, { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
 import Vehicle, { VEHICLE_STATUS } from '../models/Vehicle.js';
 import Booking, { BOOKING_STATUS } from '../models/Booking.js';
 import CommissionDiscount from '../models/CommissionDiscount.js';
+import TourBrief from '../models/TourBrief.js';
 import { sanitizeMessageContent } from '../utils/chatSanitizer.js';
 import { hasVehicleDateConflict, VEHICLE_UNAVAILABLE_MESSAGE } from '../utils/vehicleAvailability.js';
 import { createChatMessage } from '../services/chatService.js';
@@ -514,6 +515,25 @@ export const sendOffer = async (req, res) => {
       0
     )} total`;
 
+    // If this conversation's most recent offer came from a tour-brief response and
+    // that brief is still open, carry the brief link forward onto revised/follow-up
+    // offers too — otherwise booking a later offer in the same negotiation wouldn't
+    // mark the brief as booked or decline competing drivers' pending offers on it.
+    let inheritedBriefId = null;
+    const priorBriefOffer = await ChatMessage.findOne({
+      conversation: conversation._id,
+      type: 'offer',
+      'offer.brief': { $exists: true, $ne: null },
+    })
+      .sort({ createdAt: -1 })
+      .select('offer.brief');
+    if (priorBriefOffer?.offer?.brief) {
+      const linkedBrief = await TourBrief.findById(priorBriefOffer.offer.brief).select('status');
+      if (linkedBrief?.status === 'open') {
+        inheritedBriefId = linkedBrief._id;
+      }
+    }
+
     const message = await createChatMessage({
       conversation,
       senderId: req.user.id,
@@ -528,6 +548,7 @@ export const sendOffer = async (req, res) => {
         totalKms: normalizedTotalKms,
         pricePerExtraKm: normalizedExtraKmPrice,
         currency: 'USD',
+        ...(inheritedBriefId ? { brief: inheritedBriefId } : {}),
       },
     });
 

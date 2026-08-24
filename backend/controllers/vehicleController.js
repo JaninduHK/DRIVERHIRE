@@ -6,6 +6,7 @@ import Review, { REVIEW_STATUS } from '../models/Review.js';
 import CommissionDiscount from '../models/CommissionDiscount.js';
 import '../models/ChatConversation.js';
 import ChatMessage from '../models/ChatMessage.js';
+import TourBrief from '../models/TourBrief.js';
 import {
   sendBookingRequestAlertEmail,
   sendBookingRequestConfirmationEmail,
@@ -829,6 +830,21 @@ export const createVehicleBooking = async (req, res) => {
     if (offerMessage) {
       offerMessage.offer.status = 'accepted';
       await offerMessage.save();
+
+      // If this offer came from a tour brief, mark the brief booked and
+      // decline any other still-pending offers on it so other drivers stop
+      // seeing it as live and can't send further quotes.
+      if (offerMessage.offer.brief) {
+        await TourBrief.findByIdAndUpdate(offerMessage.offer.brief, { $set: { status: 'booked' } });
+        await ChatMessage.updateMany(
+          {
+            'offer.brief': offerMessage.offer.brief,
+            'offer.status': 'pending',
+            _id: { $ne: offerMessage._id },
+          },
+          { $set: { 'offer.status': 'declined' } }
+        );
+      }
     }
 
     return res.status(201).json({

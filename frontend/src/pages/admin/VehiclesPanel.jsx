@@ -1,11 +1,18 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Car, CheckCircle2, ChevronDown, Pencil, RotateCcw, Upload, Users, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { VEHICLE_FEATURES, getVehicleFeatureLabels } from '../../constants/vehicleFeatures.js';
 import { tagClass } from './adminFormatters.js';
+import AdminModal from './AdminModal.jsx';
 
 const VEHICLE_STATUS = { PENDING: 'pending', APPROVED: 'approved', REJECTED: 'rejected' };
 const STATUS_TAGS = { pending: 'amber', approved: 'green', rejected: 'red' };
+const STATUS_FILTERS = [
+  { value: 'all', label: 'All' },
+  { value: VEHICLE_STATUS.PENDING, label: 'Pending' },
+  { value: VEHICLE_STATUS.APPROVED, label: 'Approved' },
+  { value: VEHICLE_STATUS.REJECTED, label: 'Rejected' },
+];
 
 const buildAdminVehicleForm = (vehicle = {}) => ({
   model: vehicle.model ?? '',
@@ -27,6 +34,7 @@ const labelCls = 'block text-[11px] font-extrabold uppercase tracking-wide text-
 
 const VehiclesPanel = ({ state, onRetry, onStatusChange, onUpdate, onAddImages, onRemoveImage }) => {
   const { items: filtered, loading, error, updatingId } = state;
+  const [statusFilter, setStatusFilter] = useState('all');
   const [expandedId, setExpandedId] = useState(null);
   const [editingVehicleId, setEditingVehicleId] = useState(null);
   const [formData, setFormData] = useState(() => buildAdminVehicleForm());
@@ -34,6 +42,21 @@ const VehiclesPanel = ({ state, onRetry, onStatusChange, onUpdate, onAddImages, 
   const [saving, setSaving] = useState(false);
   const [uploadingVehicleId, setUploadingVehicleId] = useState('');
   const [removingImageKey, setRemovingImageKey] = useState('');
+  const [rejectTarget, setRejectTarget] = useState(null);
+  const [rejectReason, setRejectReason] = useState('');
+
+  const statusCounts = useMemo(() => {
+    const counts = { all: filtered.length, pending: 0, approved: 0, rejected: 0 };
+    filtered.forEach((vehicle) => {
+      if (counts[vehicle.status] !== undefined) counts[vehicle.status] += 1;
+    });
+    return counts;
+  }, [filtered]);
+
+  const visibleVehicles = useMemo(
+    () => (statusFilter === 'all' ? filtered : filtered.filter((vehicle) => vehicle.status === statusFilter)),
+    [filtered, statusFilter]
+  );
 
   const toggleExpanded = (vehicleId) => {
     setExpandedId((prev) => (prev === vehicleId ? null : vehicleId));
@@ -136,6 +159,22 @@ const VehiclesPanel = ({ state, onRetry, onStatusChange, onUpdate, onAddImages, 
     }
   };
 
+  const openRejectModal = (vehicle) => {
+    setRejectTarget(vehicle);
+    setRejectReason('');
+  };
+
+  const closeRejectModal = () => {
+    setRejectTarget(null);
+    setRejectReason('');
+  };
+
+  const handleConfirmReject = () => {
+    if (!rejectTarget) return;
+    onStatusChange(rejectTarget.id, VEHICLE_STATUS.REJECTED, rejectReason.trim() || undefined);
+    closeRejectModal();
+  };
+
   const handleImageRemove = async (vehicleId, image) => {
     if (!onRemoveImage || !vehicleId || !image) return;
     const key = `${vehicleId}:${image}`;
@@ -170,13 +209,28 @@ const VehiclesPanel = ({ state, onRetry, onStatusChange, onUpdate, onAddImages, 
         <b className="text-[15px] text-ink">Vehicle approvals <span className="font-semibold text-muted-soft">({filtered.length})</span></b>
       </div>
 
+      <div className="flex flex-wrap gap-2 border-b border-hairline px-5 py-3.5">
+        {STATUS_FILTERS.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => setStatusFilter(option.value)}
+            className={tagClass(statusFilter === option.value ? (STATUS_TAGS[option.value] || 'green') : 'grey')}
+          >
+            {option.label} {statusCounts[option.value] ?? 0}
+          </button>
+        ))}
+      </div>
+
       {filtered.length === 0 ? (
         <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center text-sm text-muted">
           <Car className="h-9 w-9 text-muted-soft" />
           <p>No vehicle submissions found.</p>
         </div>
+      ) : visibleVehicles.length === 0 ? (
+        <p className="p-5 text-center text-[13px] text-muted-soft">No vehicles match this filter.</p>
       ) : (
-        filtered.map((vehicle) => {
+        visibleVehicles.map((vehicle) => {
           const isUpdating = updatingId === vehicle.id;
           const isEditing = editingVehicleId === vehicle.id;
           const isExpanded = expandedId === vehicle.id;
@@ -249,7 +303,7 @@ const VehiclesPanel = ({ state, onRetry, onStatusChange, onUpdate, onAddImages, 
                     <button
                       type="button"
                       disabled={disableReject}
-                      onClick={() => { if (!disableReject) onStatusChange(vehicle.id, VEHICLE_STATUS.REJECTED); }}
+                      onClick={() => { if (!disableReject) openRejectModal(vehicle); }}
                       className={`inline-flex items-center gap-2 rounded-lg border border-rose-200 dark:border-rose-400/30 bg-rose-50 dark:bg-rose-400/10 px-3 py-2 text-xs font-bold text-rose-600 dark:text-rose-300 transition ${disableReject ? 'cursor-not-allowed opacity-60' : 'hover:bg-rose-100 dark:hover:bg-rose-400/20'}`}
                     >
                       <XCircle className="h-4 w-4" /> {isUpdating ? 'Updating…' : 'Reject'}
@@ -347,6 +401,39 @@ const VehiclesPanel = ({ state, onRetry, onStatusChange, onUpdate, onAddImages, 
           );
         })
       )}
+
+      <AdminModal
+        open={Boolean(rejectTarget)}
+        onClose={closeRejectModal}
+        title="Reject vehicle"
+        subtitle={rejectTarget ? `${rejectTarget.model} — this reason is included in the email sent to the driver.` : ''}
+      >
+        <div className="space-y-3">
+          <div>
+            <label className={labelCls}>Reason (optional)</label>
+            <textarea
+              rows={4}
+              value={rejectReason}
+              onChange={(event) => setRejectReason(event.target.value)}
+              className={inputCls}
+              placeholder="e.g. Photos don't match the listed vehicle, or documents are unclear."
+              maxLength={500}
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={closeRejectModal} className="rounded-lg border border-line bg-surface px-4 py-2 text-sm font-bold text-ink transition hover:border-muted-soft">
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmReject}
+              className="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-rose-700"
+            >
+              <XCircle className="h-4 w-4" /> Reject vehicle
+            </button>
+          </div>
+        </div>
+      </AdminModal>
     </div>
   );
 };

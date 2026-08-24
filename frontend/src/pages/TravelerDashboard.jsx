@@ -1619,6 +1619,7 @@ const TravelerRequests = ({ onMenu, travelerName, briefsState, onReload, onCreat
     const start = formatDateLabel(brief.startDate);
     const end = formatDateLabel(brief.endDate);
     const hasOffers = brief.offersCount > 0;
+    const isBooked = brief.status === 'booked';
     const guests = `${brief.adults} guest${brief.adults === 1 ? '' : 's'}${brief.children > 0 ? ` +${brief.children}` : ''}`;
     return (
       <article key={brief.id} className="min-w-0 rounded-[18px] bg-white p-4 shadow-card" style={hasOffers ? { borderLeft: '4px solid #10a35a' } : undefined}>
@@ -1626,7 +1627,11 @@ const TravelerRequests = ({ onMenu, travelerName, briefsState, onReload, onCreat
           <b className="min-w-0 truncate text-[15.5px] text-ink">
             {brief.startLocation} → {brief.endLocation}
           </b>
-          {hasOffers ? (
+          {isBooked ? (
+            <span className="flex-shrink-0 rounded-lg bg-brand px-2 py-1 text-[11px] font-extrabold uppercase text-white">
+              Booked
+            </span>
+          ) : hasOffers ? (
             <span className="flex-shrink-0 rounded-lg bg-brand-tint px-2 py-1 text-[11px] font-extrabold uppercase text-brand-dark">
               {brief.offersCount} offer{brief.offersCount === 1 ? '' : 's'}
             </span>

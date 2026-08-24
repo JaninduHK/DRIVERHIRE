@@ -12,6 +12,7 @@ import {
   MapPin,
   Menu,
   MessageSquare,
+  Navigation,
   Settings,
   User2,
   Users,
@@ -37,6 +38,7 @@ const navLinks = [
   { to: '/', label: 'Home', icon: Home },
   { to: '/vehicles', label: 'Vehicles', icon: Car },
   { to: '/drivers', label: 'Drivers', icon: Users },
+  { to: '/live-map', label: 'Live map', icon: Navigation },
   { to: '/trip-cost-calculator', label: 'Trip Cost', icon: Calculator },
   { to: '/get-quotes', label: 'Get Quotes', icon: FileText, highlight: true },
 ];

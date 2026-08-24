@@ -293,7 +293,13 @@ export const respondToBrief = async (req, res) => {
 
   try {
     const brief = await TourBrief.findById(briefId);
-    if (!brief || brief.status !== 'open') {
+    if (!brief) {
+      return res.status(404).json({ message: 'Tour brief not found or already closed.' });
+    }
+    if (brief.status === 'booked') {
+      return res.status(409).json({ message: 'This trip has already been booked with another driver.' });
+    }
+    if (brief.status !== 'open') {
       return res.status(404).json({ message: 'Tour brief not found or already closed.' });
     }
 
@@ -358,6 +364,7 @@ Total: $${normalizedPrice.toFixed(0)} (includes ${normalizedKms} km)`;
         totalKms: normalizedKms,
         pricePerExtraKm: normalizedExtraKmPrice,
         currency: 'USD',
+        brief: brief.id,
       },
     });
 

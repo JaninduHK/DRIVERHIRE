@@ -7,6 +7,7 @@ const staticEntries = [
   { path: '/', changefreq: 'daily', priority: '1.0' },
   { path: '/drivers', changefreq: 'daily', priority: '0.9' },
   { path: '/vehicles', changefreq: 'daily', priority: '0.9' },
+  { path: '/live-map', changefreq: 'daily', priority: '0.8' },
   { path: '/trip-cost-calculator', changefreq: 'monthly', priority: '0.6' },
   { path: '/about', changefreq: 'monthly', priority: '0.5' },
   { path: '/contact', changefreq: 'monthly', priority: '0.5' },

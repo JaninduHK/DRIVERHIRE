@@ -35,6 +35,7 @@ export default [
   route('vehicles/:vehicleId', 'routes/vehicles.$vehicleId.jsx'),
   route('drivers', 'routes/drivers.jsx'),
   route('drivers/:id', 'routes/drivers.$id.jsx'),
+  route('live-map', 'routes/live-map.jsx'),
 
   // Public marketing (server-rendered)
   route('about', 'routes/about.jsx'),
