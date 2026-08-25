@@ -396,6 +396,65 @@ export const updateDriverStatus = async (req, res) => {
   }
 };
 
+export const updateDriverDetails = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+
+  const { id } = req.params;
+  const {
+    name,
+    email,
+    contactNumber,
+    description,
+    tripAdvisor,
+    address,
+    experienceYears,
+    memberSince,
+  } = req.body;
+
+  try {
+    const driver = await User.findOne({ _id: id, role: USER_ROLES.DRIVER });
+
+    if (!driver) {
+      return res.status(404).json({ message: 'Driver not found' });
+    }
+
+    driver.name = name.trim();
+    driver.email = email.trim().toLowerCase();
+    driver.contactNumber = contactNumber?.trim() || undefined;
+    driver.description = description?.trim() || undefined;
+    driver.tripAdvisor = tripAdvisor?.trim() || undefined;
+    driver.address = address?.trim() || undefined;
+    driver.experienceYears = experienceYears === '' || experienceYears === undefined ? undefined : experienceYears;
+
+    if (memberSince) {
+      const parsedMemberSince = new Date(memberSince);
+      if (Number.isNaN(parsedMemberSince.getTime())) {
+        return res.status(400).json({ message: 'Member since date is invalid.' });
+      }
+      if (parsedMemberSince.getTime() > Date.now()) {
+        return res.status(400).json({ message: 'Member since date cannot be in the future.' });
+      }
+      // Mongoose's timestamps plugin marks createdAt `immutable: true`, so a plain
+      // property assignment is silently ignored — overwriteImmutable is required
+      // to actually change it.
+      driver.set('createdAt', parsedMemberSince, undefined, { overwriteImmutable: true });
+    }
+
+    await driver.save();
+
+    return res.json({ driver: driver.toJSON() });
+  } catch (error) {
+    if (error?.code === 11000) {
+      return res.status(409).json({ message: 'Another account already uses that email address.' });
+    }
+    console.error('Update driver details error:', error);
+    return res.status(500).json({ message: 'Unable to update driver details' });
+  }
+};
+
 export const sendDriverDirectMessage = async (req, res) => {
   const validationError = handleValidation(req, res);
   if (validationError) {

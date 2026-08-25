@@ -18,6 +18,7 @@ import {
 import {
   fetchDriverApplications,
   updateDriverStatus as updateDriverStatusRequest,
+  updateDriverDetails as updateDriverDetailsRequest,
   fetchVehicleSubmissions,
   updateVehicleStatus as updateVehicleStatusRequest,
   updateVehicleDetails as updateVehicleDetailsRequest,
@@ -459,6 +460,12 @@ const AdminDashboard = () => {
     await sendDriverEmailRequest(driverId, payload);
   }, []);
 
+  const handleDriverDetailsUpdate = async (driverId, payload) => {
+    const { driver } = await updateDriverDetailsRequest(driverId, payload);
+    setDriverState((prev) => ({ ...prev, items: prev.items.map((application) => (application.id === driver.id ? driver : application)) }));
+    toast.success('Driver details updated.');
+  };
+
   const handleVehicleStatusChange = async (vehicleId, nextStatus, rejectedReason) => {
     setVehicleState((prev) => ({ ...prev, updatingId: vehicleId }));
     try {
@@ -712,7 +719,7 @@ const AdminDashboard = () => {
     content = (
       <div className="flex flex-col gap-4">
         <DriverApprovalSetting />
-        <DriversPanel state={{ ...driverState, items: filteredDrivers }} onRetry={loadDrivers} onStatusChange={handleDriverStatusChange} onSendMessage={handleDriverMessageSend} />
+        <DriversPanel state={{ ...driverState, items: filteredDrivers }} onRetry={loadDrivers} onStatusChange={handleDriverStatusChange} onSendMessage={handleDriverMessageSend} onUpdate={handleDriverDetailsUpdate} />
       </div>
     );
   } else if (activeSection === 'vehicles') {

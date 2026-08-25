@@ -1,11 +1,26 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle2, ChevronDown, CircleUserRound, Loader2, Mail, RotateCcw, Send, XCircle } from 'lucide-react';
+import { CheckCircle2, ChevronDown, CircleUserRound, Loader2, Mail, Pencil, RotateCcw, Send, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fetchSettings as fetchAdminSettings, updateSettings as updateAdminSettings } from '../../services/adminApi.js';
-import { formatDate, tagClass } from './adminFormatters.js';
+import { formatDate, formatDateInput, tagClass } from './adminFormatters.js';
 
 const DRIVER_STATUS = { PENDING: 'pending', APPROVED: 'approved', REJECTED: 'rejected' };
 const STATUS_TAGS = { pending: 'amber', approved: 'green', rejected: 'red' };
+
+const buildAdminDriverForm = (driver = {}) => ({
+  name: driver.name || '',
+  email: driver.email || '',
+  contactNumber: driver.contactNumber || '',
+  address: driver.address || '',
+  experienceYears: driver.experienceYears != null ? String(driver.experienceYears) : '',
+  tripAdvisor: driver.tripAdvisor || '',
+  description: driver.description || '',
+  memberSince: formatDateInput(driver.createdAt),
+});
+
+const inputCls =
+  'mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/10';
+const labelCls = 'block text-[11px] font-extrabold uppercase tracking-wide text-muted-soft';
 
 export const DriverApprovalSetting = () => {
   const [autoApproval, setAutoApproval] = useState(false);
@@ -71,12 +86,95 @@ export const DriverApprovalSetting = () => {
   );
 };
 
-const DriversPanel = ({ state, onRetry, onStatusChange, onSendMessage }) => {
+const DriversPanel = ({ state, onRetry, onStatusChange, onSendMessage, onUpdate }) => {
   const { items: filtered, loading, error, updatingId } = state;
   const [expandedId, setExpandedId] = useState(null);
   const [messageForm, setMessageForm] = useState({ driverId: null, subject: '', message: '', sending: false, error: '' });
+  const [editingId, setEditingId] = useState(null);
+  const [formData, setFormData] = useState(() => buildAdminDriverForm());
+  const [formError, setFormError] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  const toggleExpanded = (driverId) => setExpandedId((prev) => (prev === driverId ? null : driverId));
+  const toggleExpanded = (driverId) => {
+    setExpandedId((prev) => (prev === driverId ? null : driverId));
+    setEditingId(null);
+    setFormError('');
+  };
+
+  const startEditing = (driver) => {
+    if (editingId === driver.id) {
+      setEditingId(null);
+      setFormData(buildAdminDriverForm());
+      setFormError('');
+      return;
+    }
+    setEditingId(driver.id);
+    setFormData(buildAdminDriverForm(driver));
+    setFormError('');
+  };
+
+  const handleFieldChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleEditSubmit = async (event) => {
+    event.preventDefault();
+    if (!editingId) return;
+    setFormError('');
+
+    const trimmedName = formData.name.trim();
+    if (!trimmedName) {
+      setFormError('Name is required.');
+      return;
+    }
+    const trimmedEmail = formData.email.trim();
+    if (!trimmedEmail || !/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
+      setFormError('Enter a valid email address.');
+      return;
+    }
+    let normalizedExperience;
+    if (formData.experienceYears !== '') {
+      normalizedExperience = Number(formData.experienceYears);
+      if (Number.isNaN(normalizedExperience) || normalizedExperience < 0 || normalizedExperience > 60) {
+        setFormError('Experience must be between 0 and 60 years.');
+        return;
+      }
+    }
+    if (formData.memberSince) {
+      const parsed = new Date(formData.memberSince);
+      if (Number.isNaN(parsed.getTime())) {
+        setFormError('Member since date is invalid.');
+        return;
+      }
+      if (parsed.getTime() > Date.now()) {
+        setFormError('Member since date cannot be in the future.');
+        return;
+      }
+    }
+
+    const payload = {
+      name: trimmedName,
+      email: trimmedEmail,
+      contactNumber: formData.contactNumber.trim(),
+      address: formData.address.trim(),
+      tripAdvisor: formData.tripAdvisor.trim(),
+      description: formData.description.trim(),
+      experienceYears: normalizedExperience,
+      memberSince: formData.memberSince || undefined,
+    };
+
+    setSaving(true);
+    try {
+      await onUpdate?.(editingId, payload);
+      setEditingId(null);
+      setFormData(buildAdminDriverForm());
+    } catch (submitError) {
+      setFormError(submitError?.message || 'Unable to update driver details.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const toggleMessageForm = (driverId) => {
     setMessageForm((prev) => {
@@ -173,6 +271,7 @@ const DriversPanel = ({ state, onRetry, onStatusChange, onSendMessage }) => {
 
                   <div className="mt-3 flex flex-wrap items-center gap-3 text-[12.5px] text-muted">
                     <span>Contact: {application.contactNumber || 'Not shared'}</span>
+                    <span>Member since: {formatDate(application.createdAt)}</span>
                     {application.tripAdvisor ? (
                       <a href={application.tripAdvisor} target="_blank" rel="noreferrer" className="font-bold text-brand-dark hover:underline">View TripAdvisor profile</a>
                     ) : (
@@ -205,7 +304,57 @@ const DriversPanel = ({ state, onRetry, onStatusChange, onSendMessage }) => {
                     >
                       <Mail className="h-4 w-4" /> {isFormOpen ? (isSendingMessage ? 'Sending…' : 'Close email form') : 'Email driver'}
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => startEditing(application)}
+                      className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-xs font-bold text-ink transition hover:border-muted-soft"
+                    >
+                      <Pencil className="h-4 w-4" /> {editingId === application.id ? 'Close edit form' : 'Edit driver'}
+                    </button>
                   </div>
+
+                  {editingId === application.id ? (
+                    <form onSubmit={handleEditSubmit} className="mt-3 space-y-3 rounded-xl border border-hairline bg-surface p-4">
+                      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                        <div>
+                          <label className={labelCls}>Name</label>
+                          <input name="name" type="text" required value={formData.name} onChange={handleFieldChange} className={inputCls} />
+                        </div>
+                        <div>
+                          <label className={labelCls}>Email</label>
+                          <input name="email" type="email" required value={formData.email} onChange={handleFieldChange} className={inputCls} />
+                        </div>
+                        <div>
+                          <label className={labelCls}>Contact number</label>
+                          <input name="contactNumber" type="text" value={formData.contactNumber} onChange={handleFieldChange} className={inputCls} />
+                        </div>
+                        <div>
+                          <label className={labelCls}>Address</label>
+                          <input name="address" type="text" value={formData.address} onChange={handleFieldChange} className={inputCls} />
+                        </div>
+                        <div>
+                          <label className={labelCls}>Experience (years)</label>
+                          <input name="experienceYears" type="number" min={0} max={60} value={formData.experienceYears} onChange={handleFieldChange} className={inputCls} placeholder="Optional" />
+                        </div>
+                        <div>
+                          <label className={labelCls}>Member since</label>
+                          <input name="memberSince" type="date" value={formData.memberSince} onChange={handleFieldChange} className={inputCls} />
+                        </div>
+                      </div>
+                      <div>
+                        <label className={labelCls}>TripAdvisor link</label>
+                        <input name="tripAdvisor" type="text" value={formData.tripAdvisor} onChange={handleFieldChange} className={inputCls} placeholder="https://…" />
+                      </div>
+                      <div>
+                        <label className={labelCls}>Bio / description</label>
+                        <textarea name="description" rows={3} value={formData.description} onChange={handleFieldChange} className={inputCls} />
+                      </div>
+                      {formError ? <p className="text-xs font-semibold text-rose-600 dark:text-rose-300">{formError}</p> : null}
+                      <button type="submit" disabled={saving} className="w-full rounded-lg bg-[#0f1f2d] py-2 text-sm font-bold text-white transition hover:bg-[#0f1f2d]/90 disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto sm:px-6">
+                        {saving ? 'Saving…' : 'Save changes'}
+                      </button>
+                    </form>
+                  ) : null}
 
                   {isFormOpen ? (
                     <form onSubmit={handleMessageSubmit} className="mt-3 space-y-3 rounded-xl border border-hairline bg-surface p-4">

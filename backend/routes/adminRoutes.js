@@ -5,6 +5,7 @@ import { vehicleImageUpload, conditionalReviewImageUpload } from '../middleware/
 import {
   getDriverApplications,
   updateDriverStatus,
+  updateDriverDetails,
   getVehicleSubmissions,
   updateVehicleStatus,
   updateVehicleDetails,
@@ -60,6 +61,26 @@ router.patch(
       .withMessage(`Status must be one of: ${Object.values(DRIVER_STATUS).join(', ')}`),
   ],
   updateDriverStatus
+);
+
+router.patch(
+  '/drivers/:id',
+  [
+    param('id').isMongoId().withMessage('Invalid driver identifier'),
+    body('name').trim().notEmpty().withMessage('Name is required'),
+    body('email').trim().isEmail().withMessage('Provide a valid email address'),
+    body('contactNumber').optional({ nullable: true }).isString().trim(),
+    body('description').optional({ nullable: true }).isString().trim(),
+    body('tripAdvisor').optional({ nullable: true }).isString().trim(),
+    body('address').optional({ nullable: true }).isString().trim(),
+    body('experienceYears')
+      .optional({ nullable: true })
+      .isInt({ min: 0, max: 60 })
+      .withMessage('Experience must be between 0 and 60 years')
+      .toInt(),
+    body('memberSince').optional({ nullable: true }).isISO8601().withMessage('Member since must be a valid date'),
+  ],
+  updateDriverDetails
 );
 
 router.post(
