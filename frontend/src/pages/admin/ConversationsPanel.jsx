@@ -187,6 +187,9 @@ const ConversationDetail = ({ conversation, isUpdating, isDeleting, onStatusChan
                       {formatDate(offer.startDate)} – {formatDate(offer.endDate)} · {offer.totalKms} km included · ${offer.pricePerExtraKm}/extra km
                     </p>
                     <p className="mt-1.5 text-[15px] font-extrabold text-brand-dark">{formatCurrency(offer.totalPrice || 0)}</p>
+                    {message.body ? (
+                      <p className="mt-2 whitespace-pre-line border-t border-hairline pt-2 text-[12px] leading-relaxed text-muted-soft">{message.body}</p>
+                    ) : null}
                   </div>
                   {message.warning ? (
                     <div className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-600">

@@ -187,6 +187,12 @@ const shapeOffer = (message) => ({
   conversationId: toId(message.conversation),
   body: message.body,
   warning: message.warning,
+  brief: message.offer?.brief
+    ? {
+        id: toId(message.offer.brief),
+        status: message.offer.brief.status,
+      }
+    : null,
   driver: message.sender
     ? {
         id: toId(message.sender),
@@ -926,6 +932,7 @@ export const listOffers = async (_req, res) => {
       .sort({ createdAt: -1 })
       .populate('sender', 'name role email')
       .populate('offer.vehicle', 'model')
+      .populate('offer.brief', 'status')
       .populate({
         path: 'conversation',
         populate: [
@@ -952,6 +959,7 @@ export const updateOfferStatus = async (req, res) => {
     const message = await ChatMessage.findById(id)
       .populate('sender', 'name role email')
       .populate('offer.vehicle', 'model')
+      .populate('offer.brief', 'status')
       .populate({
         path: 'conversation',
         populate: [

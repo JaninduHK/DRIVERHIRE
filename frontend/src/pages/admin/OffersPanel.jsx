@@ -10,10 +10,31 @@ const OFFER_STATUS_OPTIONS = [
 
 const STATUS_TAGS = { pending: 'amber', accepted: 'green', declined: 'red' };
 
+const BRIEF_STATUS_TAGS = { open: 'green', booked: 'blue', closed: 'grey' };
+
+const BRIEF_FILTER_OPTIONS = [
+  { value: 'all', label: 'All' },
+  { value: 'open', label: 'Active brief' },
+  { value: 'booked', label: 'Booked' },
+  { value: 'closed', label: 'Closed' },
+];
+
 const OffersPanel = ({ state, onReload, onStatusChange, onDelete }) => {
-  const { items: filtered, loading, error, updatingId, deletingId } = state;
+  const { items, loading, error, updatingId, deletingId } = state;
   const [expandedId, setExpandedId] = useState(null);
+  const [briefFilter, setBriefFilter] = useState('all');
   const toggleExpanded = (offerId) => setExpandedId((prev) => (prev === offerId ? null : offerId));
+
+  const briefCounts = items.reduce(
+    (acc, offer) => {
+      const status = offer.brief?.status;
+      if (status) acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    },
+    { open: 0, booked: 0, closed: 0 }
+  );
+
+  const filtered = briefFilter === 'all' ? items : items.filter((offer) => offer.brief?.status === briefFilter);
 
   if (loading) {
     return <div className="flex min-h-[200px] items-center justify-center text-sm text-muted">Loading offers…</div>;
@@ -32,15 +53,27 @@ const OffersPanel = ({ state, onReload, onStatusChange, onDelete }) => {
 
   return (
     <div className="rounded-[18px] bg-surface shadow-card">
-      <div className="flex items-center justify-between gap-2 border-b border-hairline px-5 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline px-5 py-4">
         <b className="text-[15px] text-ink">Driver offers <span className="font-semibold text-muted-soft">({filtered.length})</span></b>
         <button type="button" onClick={onReload} className="rounded-lg border border-line px-3 py-1.5 text-xs font-extrabold uppercase tracking-wide text-muted transition hover:border-brand hover:text-brand-dark">Refresh</button>
+      </div>
+      <div className="flex flex-wrap gap-2 border-b border-hairline px-5 py-3">
+        {BRIEF_FILTER_OPTIONS.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => setBriefFilter(option.value)}
+            className={tagClass(briefFilter === option.value ? BRIEF_STATUS_TAGS[option.value] || 'green' : 'grey')}
+          >
+            {option.label} {option.value === 'all' ? items.length : briefCounts[option.value]}
+          </button>
+        ))}
       </div>
 
       {filtered.length === 0 ? (
         <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center text-sm text-muted">
           <Send className="h-9 w-9 text-muted-soft" />
-          <p>No offers have been sent yet.</p>
+          <p>{items.length === 0 ? 'No offers have been sent yet.' : 'No offers match this filter.'}</p>
         </div>
       ) : (
         filtered.map((offer) => {
@@ -59,6 +92,11 @@ const OffersPanel = ({ state, onReload, onStatusChange, onDelete }) => {
                   <div className="flex flex-wrap items-center gap-2">
                     <b className="truncate text-[13.5px] text-ink">{offer.driver?.name || 'Driver'}</b>
                     <span className={tagClass(STATUS_TAGS[offer.status] || 'grey')}>{offer.status}</span>
+                    {offer.brief ? (
+                      <span className={tagClass(BRIEF_STATUS_TAGS[offer.brief.status] || 'grey')}>
+                        Brief: {offer.brief.status === 'open' ? 'active' : offer.brief.status}
+                      </span>
+                    ) : null}
                   </div>
                   <div className="truncate text-[12px] font-semibold text-muted-soft">Vehicle: {offer.vehicle?.model || 'Pending'}</div>
                 </div>
