@@ -1,11 +1,13 @@
 import express from 'express';
-import { body, param } from 'express-validator';
+import { body, param, query } from 'express-validator';
 import { authenticate, authorizeRoles } from '../middleware/authMiddleware.js';
 import { vehicleImageUpload, conditionalReviewImageUpload } from '../middleware/cloudinaryUpload.js';
 import {
   getDriverApplications,
   updateDriverStatus,
   updateDriverDetails,
+  listDriverCommissions,
+  updateDriverCommissionStatus,
   getVehicleSubmissions,
   updateVehicleStatus,
   updateVehicleDetails,
@@ -38,6 +40,7 @@ import { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
 import { VEHICLE_STATUS } from '../models/Vehicle.js';
 import { REVIEW_STATUS } from '../models/Review.js';
 import { BOOKING_STATUS } from '../models/Booking.js';
+import { COMMISSION_STATUS } from '../models/DriverCommission.js';
 import {
   listCommissionDiscounts,
   createCommissionDiscount,
@@ -81,6 +84,29 @@ router.patch(
     body('memberSince').optional({ nullable: true }).isISO8601().withMessage('Member since must be a valid date'),
   ],
   updateDriverDetails
+);
+
+router.get(
+  '/commissions',
+  [
+    query('year').optional().isInt({ min: 2000 }).withMessage('Invalid year'),
+    query('month').optional().isInt({ min: 1, max: 12 }).withMessage('Invalid month'),
+  ],
+  listDriverCommissions
+);
+
+router.patch(
+  '/commissions/:driverId/:year/:month/status',
+  [
+    param('driverId').isMongoId().withMessage('Invalid driver identifier'),
+    param('year').isInt({ min: 2000 }).withMessage('Invalid year'),
+    param('month').isInt({ min: 1, max: 12 }).withMessage('Invalid month'),
+    body('status')
+      .isIn(Object.values(COMMISSION_STATUS))
+      .withMessage(`Status must be one of: ${Object.values(COMMISSION_STATUS).join(', ')}`),
+    body('adminNote').optional({ nullable: true }).isString().trim().isLength({ max: 500 }),
+  ],
+  updateDriverCommissionStatus
 );
 
 router.post(

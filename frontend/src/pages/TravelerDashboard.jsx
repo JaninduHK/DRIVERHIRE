@@ -1537,7 +1537,7 @@ const TravelerOfferBubble = ({ message, align, onBook }) => {
         <div className="mt-0.5 text-[12px] text-muted-soft">
           {offer.totalKms} km included · {formatRate(offer.pricePerExtraKm)} / extra km
         </div>
-        {message.body ? <div className="mt-1.5 text-[12px] leading-relaxed text-muted">{message.body}</div> : null}
+        {message.body ? <div className="mt-1.5 whitespace-pre-wrap text-[12px] leading-relaxed text-muted">{message.body}</div> : null}
         <div className="mt-3 flex gap-2">
           <button type="button" onClick={onBook} className="flex-1 rounded-[11px] bg-brand py-[11px] text-[13.5px] font-bold text-white transition hover:bg-brand-dark">
             Accept offer

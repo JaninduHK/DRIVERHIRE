@@ -889,7 +889,7 @@ const OfferBubble = ({ message, align }) => {
           {offer.totalKms} km included · {formatRate(offer.pricePerExtraKm)} / extra km
         </div>
         {message.body ? (
-          <div className="mt-1.5 text-[12px] leading-relaxed text-muted">{message.body}</div>
+          <div className="mt-1.5 whitespace-pre-wrap text-[12px] leading-relaxed text-muted">{message.body}</div>
         ) : null}
       </div>
     </div>

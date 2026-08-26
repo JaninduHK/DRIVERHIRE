@@ -8,6 +8,7 @@ import Review from '../models/Review.js';
 import TourBrief from '../models/TourBrief.js';
 import ChatConversation from '../models/ChatConversation.js';
 import ChatMessage from '../models/ChatMessage.js';
+import DriverCommission, { COMMISSION_STATUS } from '../models/DriverCommission.js';
 import { getSetting, setSetting, SETTING_KEYS } from '../models/Setting.js';
 import { DEFAULT_BANK_DETAILS } from '../config/bankDetailsDefaults.js';
 import {
@@ -17,7 +18,7 @@ import {
   sendBookingStatusUpdateEmail,
   sendDriverAdminMessageEmail,
 } from '../services/emailService.js';
-import { mapAssetUrls } from '../utils/assetUtils.js';
+import { mapAssetUrls, buildAssetUrl } from '../utils/assetUtils.js';
 import * as cloudinaryService from '../services/cloudinaryService.js';
 
 const handleValidation = (req, res) => {
@@ -486,6 +487,265 @@ export const sendDriverDirectMessage = async (req, res) => {
   } catch (error) {
     console.error('Admin driver message error:', error);
     return res.status(500).json({ message: 'Unable to send email to driver' });
+  }
+};
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
+const clampCommissionRate = (value) => {
+  if (!Number.isFinite(value)) return DEFAULT_COMMISSION_RATE;
+  if (value < 0) return 0;
+  if (value > 1) return 1;
+  return value;
+};
+
+const roundMoney = (value) => Math.round((Number.isFinite(value) ? value : 0) * 100) / 100;
+const roundCommissionRate = (value) => Math.round((Number.isFinite(value) ? value : 0) * 10000) / 10000;
+
+// Same fallback formula the driver-facing earnings summary uses, so the two
+// views can never disagree on what a booking owes in commission.
+const summariseBookingForCommission = (booking) => {
+  const rate = clampCommissionRate(booking.commissionRate);
+  const gross = Number.isFinite(booking.payableTotal) && booking.payableTotal > 0
+    ? booking.payableTotal
+    : Number.isFinite(booking.totalPrice)
+      ? booking.totalPrice
+      : 0;
+  const commissionAmount = Number.isFinite(booking.commissionAmount) && booking.commissionAmount >= 0
+    ? booking.commissionAmount
+    : roundMoney(gross * rate);
+  const driverEarnings = Number.isFinite(booking.driverEarnings) && booking.driverEarnings >= 0
+    ? booking.driverEarnings
+    : roundMoney(gross - commissionAmount);
+  return { gross, commissionAmount, driverEarnings };
+};
+
+// A booking only becomes a payment obligation once the tour has actually
+// happened — so `completedEnd` caps the query window at "now" for the current
+// (or a future) month, meaning a booking scheduled for later this month won't
+// show up until its end date has actually passed.
+const getPeriodRange = (year, month) => {
+  const periodStart = new Date(Date.UTC(year, month - 1, 1));
+  const periodEnd = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+  const now = new Date();
+  const completedEnd = periodEnd < now ? periodEnd : now;
+  return { periodStart, periodEnd, completedEnd };
+};
+
+const parseYearMonth = (yearInput, monthInput) => {
+  const now = new Date();
+  const year = Number.isFinite(Number(yearInput)) && yearInput !== undefined ? Number(yearInput) : now.getUTCFullYear();
+  const month = Number.isFinite(Number(monthInput)) && monthInput !== undefined ? Number(monthInput) : now.getUTCMonth() + 1;
+  if (!Number.isInteger(year) || year < 2000 || !Number.isInteger(month) || month < 1 || month > 12) {
+    return null;
+  }
+  return { year, month };
+};
+
+// Recompute a single driver's totals for one period straight from their
+// completed (ended) confirmed bookings — used when admin acts on a driver's
+// payment before that driver has ever opened their own earnings page.
+const computeDriverPeriodTotals = async (driverId, year, month) => {
+  const { periodStart, completedEnd } = getPeriodRange(year, month);
+  const bookings = await Booking.find({
+    driver: driverId,
+    status: BOOKING_STATUS.CONFIRMED,
+    endDate: { $gte: periodStart, $lte: completedEnd },
+  });
+
+  let totalGross = 0;
+  let totalCommission = 0;
+  let totalDriverEarnings = 0;
+  for (const booking of bookings) {
+    const { gross, commissionAmount, driverEarnings } = summariseBookingForCommission(booking);
+    totalGross += gross;
+    totalCommission += commissionAmount;
+    totalDriverEarnings += driverEarnings;
+  }
+
+  return {
+    bookingCount: bookings.length,
+    totalGross: roundMoney(totalGross),
+    commissionDue: roundMoney(totalCommission),
+    driverEarnings: roundMoney(totalDriverEarnings),
+    commissionRate: totalGross > 0 ? roundCommissionRate(totalCommission / totalGross) : DEFAULT_COMMISSION_RATE,
+  };
+};
+
+const shapeCommission = (record, req) => ({
+  id: record._id.toString(),
+  driverId: toId(record.driver),
+  driver: record.driver
+    ? {
+        id: toId(record.driver),
+        name: record.driver.name,
+        email: record.driver.email,
+        contactNumber: record.driver.contactNumber,
+      }
+    : null,
+  year: record.year,
+  month: record.month,
+  periodLabel: `${MONTH_NAMES[record.month - 1]} ${record.year}`,
+  bookingCount: record.bookingCount,
+  totalGross: record.totalGross,
+  commissionRate: record.commissionRate,
+  commissionDue: record.commissionDue,
+  driverEarnings: record.driverEarnings,
+  status: record.status,
+  paymentSlipUrl: buildAssetUrl(record.paymentSlipUrl, req),
+  paymentSlipFilename: record.paymentSlipFilename,
+  paymentSlipUploadedAt: record.paymentSlipUploadedAt,
+  adminNote: record.adminNote,
+  lastRecalculatedAt: record.lastRecalculatedAt,
+  createdAt: record.createdAt,
+  updatedAt: record.updatedAt,
+});
+
+// A driver whose payment was never viewed/submitted by them yet — no
+// DriverCommission row exists — still needs to show up the moment their tour
+// ends, so this shapes a "virtual" entry straight from live booking totals.
+const shapeVirtualCommission = (driver, year, month, totals) => ({
+  id: null,
+  driverId: toId(driver),
+  driver: { id: toId(driver), name: driver.name, email: driver.email, contactNumber: driver.contactNumber },
+  year,
+  month,
+  periodLabel: `${MONTH_NAMES[month - 1]} ${year}`,
+  bookingCount: totals.bookingCount,
+  totalGross: totals.totalGross,
+  commissionRate: totals.commissionRate,
+  commissionDue: totals.commissionDue,
+  driverEarnings: totals.driverEarnings,
+  status: COMMISSION_STATUS.PENDING,
+  paymentSlipUrl: null,
+  paymentSlipFilename: null,
+  paymentSlipUploadedAt: null,
+  adminNote: null,
+  lastRecalculatedAt: null,
+  createdAt: null,
+  updatedAt: null,
+});
+
+export const listDriverCommissions = async (req, res) => {
+  const period = parseYearMonth(req.query.year, req.query.month);
+  if (!period) {
+    return res.status(400).json({ message: 'Provide a valid year and month.' });
+  }
+  const { year, month } = period;
+
+  try {
+    const { periodStart, completedEnd } = getPeriodRange(year, month);
+
+    const bookings = await Booking.find({
+      status: BOOKING_STATUS.CONFIRMED,
+      endDate: { $gte: periodStart, $lte: completedEnd },
+    }).populate('driver', 'name email contactNumber');
+
+    const byDriver = new Map();
+    for (const booking of bookings) {
+      if (!booking.driver) continue;
+      const driverId = booking.driver._id.toString();
+      const { gross, commissionAmount, driverEarnings } = summariseBookingForCommission(booking);
+      if (!byDriver.has(driverId)) {
+        byDriver.set(driverId, { driver: booking.driver, bookingCount: 0, totalGross: 0, totalCommission: 0, totalDriverEarnings: 0 });
+      }
+      const entry = byDriver.get(driverId);
+      entry.bookingCount += 1;
+      entry.totalGross += gross;
+      entry.totalCommission += commissionAmount;
+      entry.totalDriverEarnings += driverEarnings;
+    }
+
+    const driverIds = Array.from(byDriver.keys());
+    const existingRecords = await DriverCommission.find({ year, month, driver: { $in: driverIds } });
+    const recordsByDriver = new Map(existingRecords.map((record) => [record.driver.toString(), record]));
+
+    const results = [];
+    for (const [driverId, entry] of byDriver.entries()) {
+      const record = recordsByDriver.get(driverId);
+      const totals = {
+        bookingCount: entry.bookingCount,
+        totalGross: roundMoney(entry.totalGross),
+        commissionDue: roundMoney(entry.totalCommission),
+        driverEarnings: roundMoney(entry.totalDriverEarnings),
+        commissionRate: entry.totalGross > 0 ? roundCommissionRate(entry.totalCommission / entry.totalGross) : DEFAULT_COMMISSION_RATE,
+      };
+      if (record) {
+        // Keep the persisted record's admin-facing fields (status/slip/note),
+        // but always surface freshly computed totals in case bookings changed.
+        record.bookingCount = totals.bookingCount;
+        record.totalGross = totals.totalGross;
+        record.commissionDue = totals.commissionDue;
+        record.driverEarnings = totals.driverEarnings;
+        record.commissionRate = totals.commissionRate;
+        record.driver = entry.driver;
+        results.push(shapeCommission(record, req));
+      } else {
+        results.push(shapeVirtualCommission(entry.driver, year, month, totals));
+      }
+    }
+
+    // Surface previously-submitted/approved records for this period even if
+    // their driver has no matching bookings right now (e.g. a booking was
+    // edited or cancelled after the driver already uploaded proof), so admin
+    // history doesn't silently disappear.
+    const orphanRecords = await DriverCommission.find({ year, month, driver: { $nin: driverIds } }).populate('driver', 'name email contactNumber');
+    for (const record of orphanRecords) {
+      if (!record.driver) continue;
+      results.push(shapeCommission(record, req));
+    }
+
+    results.sort((a, b) => (a.driver?.name || '').localeCompare(b.driver?.name || ''));
+
+    return res.json({ commissions: results, period: { year, month, label: `${MONTH_NAMES[month - 1]} ${year}` } });
+  } catch (error) {
+    console.error('List driver commissions error:', error);
+    return res.status(500).json({ message: 'Unable to load driver commissions.' });
+  }
+};
+
+export const updateDriverCommissionStatus = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+
+  const { driverId, year: yearParam, month: monthParam } = req.params;
+  const { status, adminNote } = req.body;
+  const year = Number(yearParam);
+  const month = Number(monthParam);
+
+  try {
+    const driver = await User.findOne({ _id: driverId, role: USER_ROLES.DRIVER });
+    if (!driver) {
+      return res.status(404).json({ message: 'Driver not found.' });
+    }
+
+    let commission = await DriverCommission.findOne({ driver: driverId, year, month });
+
+    if (!commission) {
+      const totals = await computeDriverPeriodTotals(driverId, year, month);
+      commission = new DriverCommission({ driver: driverId, year, month });
+      commission.bookingCount = totals.bookingCount;
+      commission.totalGross = totals.totalGross;
+      commission.commissionDue = totals.commissionDue;
+      commission.driverEarnings = totals.driverEarnings;
+      commission.commissionRate = totals.commissionRate;
+      commission.lastRecalculatedAt = new Date();
+    }
+
+    commission.status = status;
+    commission.adminNote = adminNote?.trim() || undefined;
+    await commission.save();
+    commission.driver = driver;
+
+    return res.json({ commission: shapeCommission(commission, req) });
+  } catch (error) {
+    console.error('Update driver commission status error:', error);
+    return res.status(500).json({ message: 'Unable to update commission status.' });
   }
 };
 

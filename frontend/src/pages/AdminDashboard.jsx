@@ -14,6 +14,7 @@ import {
   Send,
   Star,
   Users,
+  Wallet,
 } from 'lucide-react';
 import {
   fetchDriverApplications,
@@ -44,6 +45,8 @@ import {
   createCommissionDiscount as createAdminDiscount,
   updateCommissionDiscount as updateAdminDiscount,
   deleteCommissionDiscount as deleteAdminDiscount,
+  fetchDriverCommissions as fetchAdminCommissions,
+  updateDriverCommissionStatus as updateAdminCommissionStatus,
   sendDriverEmail as sendDriverEmailRequest,
   fetchUsers,
 } from '../services/adminApi.js';
@@ -64,6 +67,7 @@ import ConversationsPanel from './admin/ConversationsPanel.jsx';
 import UsersPanel from './admin/UsersPanel.jsx';
 import DriversPanel, { DriverApprovalSetting } from './admin/DriversPanel.jsx';
 import VehiclesPanel from './admin/VehiclesPanel.jsx';
+import PaymentsPanel from './admin/PaymentsPanel.jsx';
 import ReviewsPanel from './admin/ReviewsPanel.jsx';
 import ReportsPanel from './admin/ReportsPanel.jsx';
 import PerformancePanel from './admin/PerformancePanel.jsx';
@@ -86,15 +90,21 @@ const SECTION_META = {
   reviews: { crumb: 'SUPPLY & PEOPLE', title: 'Reviews' },
   reports: { crumb: 'INSIGHTS', title: 'Reports' },
   performance: { crumb: 'INSIGHTS', title: 'Performance' },
+  payments: { crumb: 'INSIGHTS', title: 'Driver payments' },
   profile: { crumb: 'ACCOUNT', title: 'Admin profile' },
 };
 
 // Sections with a header search box + CSV export wired to their current (filtered) rows.
-const SEARCHABLE_SECTIONS = new Set(['bookings', 'discounts', 'briefs', 'offers', 'conversations', 'users', 'drivers', 'vehicles', 'reviews']);
+const SEARCHABLE_SECTIONS = new Set(['bookings', 'discounts', 'briefs', 'offers', 'conversations', 'users', 'drivers', 'vehicles', 'payments', 'reviews']);
 
 const matches = (term, fields) => {
   if (!term) return true;
   return fields.filter(Boolean).some((field) => String(field).toLowerCase().includes(term));
+};
+
+const getCurrentMonthValue = () => {
+  const now = new Date();
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
 };
 
 const AdminDashboard = () => {
@@ -110,6 +120,8 @@ const AdminDashboard = () => {
   const [usersState, setUsersState] = useState({ items: [], loading: true, error: '' });
   const [driverState, setDriverState] = useState({ items: [], loading: true, error: '', updatingId: null });
   const [vehicleState, setVehicleState] = useState({ items: [], loading: true, error: '', updatingId: null });
+  const [commissionState, setCommissionState] = useState({ items: [], loading: true, error: '', updatingId: null });
+  const [commissionMonth, setCommissionMonth] = useState(getCurrentMonthValue());
   const [reviewFilter, setReviewFilter] = useState('all');
   const [pendingReviewCount, setPendingReviewCount] = useState(0);
   const [reviewState, setReviewState] = useState({ items: [], meta: { total: 0, status: 'pending' }, loading: true, error: '', updatingId: null, creating: false });
@@ -158,6 +170,21 @@ const AdminDashboard = () => {
     } catch (error) {
       setOfferState((prev) => ({ ...prev, items: [], loading: false, error: error.message || 'Unable to load offers.' }));
     }
+  }, []);
+
+  const loadCommissions = useCallback(async () => {
+    const [year, month] = commissionMonth.split('-').map(Number);
+    setCommissionState((prev) => ({ ...prev, loading: true, error: '' }));
+    try {
+      const response = await fetchAdminCommissions({ year, month });
+      setCommissionState((prev) => ({ ...prev, items: response.commissions || [], loading: false, error: '' }));
+    } catch (error) {
+      setCommissionState((prev) => ({ ...prev, items: [], loading: false, error: error.message || 'Unable to load driver payments.' }));
+    }
+  }, [commissionMonth]);
+
+  const handleCommissionMonthChange = useCallback((monthValue) => {
+    setCommissionMonth(monthValue);
   }, []);
 
   const loadAdminConversations = useCallback(async () => {
@@ -247,6 +274,10 @@ const AdminDashboard = () => {
   }, [activeSection, loadOffers]);
 
   useEffect(() => {
+    if (activeSection === 'payments') loadCommissions();
+  }, [activeSection, loadCommissions]);
+
+  useEffect(() => {
     if (activeSection === 'conversations') loadAdminConversations();
   }, [activeSection, loadAdminConversations]);
 
@@ -319,6 +350,25 @@ const AdminDashboard = () => {
     } catch (error) {
       setOfferState((prev) => ({ ...prev, updatingId: null }));
       toast.error(error?.message || 'Unable to update offer.');
+      throw error;
+    }
+  }, []);
+
+  const handleCommissionStatusChange = useCallback(async (driverId, year, month, payload) => {
+    setCommissionState((prev) => ({ ...prev, updatingId: driverId }));
+    try {
+      const { commission } = await updateAdminCommissionStatus(driverId, year, month, payload);
+      setCommissionState((prev) => ({ ...prev, items: prev.items.map((item) => (item.driverId === commission.driverId ? commission : item)), updatingId: null }));
+      toast.success(
+        commission.status === 'approved'
+          ? 'Payment confirmed.'
+          : commission.status === 'pending'
+            ? 'Sent back to the driver for re-upload.'
+            : 'Payment reopened for review.'
+      );
+    } catch (error) {
+      setCommissionState((prev) => ({ ...prev, updatingId: null }));
+      toast.error(error?.message || 'Unable to update payment status.');
       throw error;
     }
   }, []);
@@ -439,6 +489,7 @@ const AdminDashboard = () => {
   const pendingBookingCount = useMemo(() => bookingState.items.filter((b) => b.status === 'pending').length, [bookingState.items]);
   const openBriefsCount = useMemo(() => briefState.items.filter((b) => b.status === 'open').length, [briefState.items]);
   const pendingOfferCount = useMemo(() => offerState.items.filter((o) => o.status === 'pending').length, [offerState.items]);
+  const pendingCommissionCount = useMemo(() => commissionState.items.filter((c) => c.status === 'submitted').length, [commissionState.items]);
   const flaggedConversationCount = useMemo(
     () => conversationState.items.filter((c) => Array.isArray(c.messages) && c.messages.some((m) => m.warning)).length,
     [conversationState.items]
@@ -624,6 +675,10 @@ const AdminDashboard = () => {
     () => reviewState.items.filter((r) => matches(term, [r.travelerName, r.vehicle?.model, r.vehicle?.driver?.name, r.comment])),
     [reviewState.items, term]
   );
+  const filteredCommissions = useMemo(
+    () => commissionState.items.filter((c) => matches(term, [c.driver?.name, c.driver?.email, c.periodLabel, c.status])),
+    [commissionState.items, term]
+  );
 
   const handleExport = useCallback(() => {
     switch (activeSection) {
@@ -659,13 +714,19 @@ const AdminDashboard = () => {
       case 'vehicles':
         downloadCsv('vehicles', filteredVehicles.map((v) => ({ model: v.model, year: v.year, pricePerDay: v.pricePerDay, seats: v.seats || '', status: v.status, driver: v.driver?.name || '' })));
         break;
+      case 'payments':
+        downloadCsv('driver-payments', filteredCommissions.map((c) => ({
+          driver: c.driver?.name || '', period: c.periodLabel, bookings: c.bookingCount, gross: c.totalGross || 0,
+          commissionDue: c.commissionDue || 0, driverEarnings: c.driverEarnings || 0, status: c.status,
+        })));
+        break;
       case 'reviews':
         downloadCsv('reviews', filteredReviews.map((r) => ({ travelerName: r.travelerName || '', vehicle: r.vehicle?.model || '', driver: r.vehicle?.driver?.name || '', rating: r.rating, status: r.status, comment: r.comment })));
         break;
       default:
         break;
     }
-  }, [activeSection, filteredBookings, filteredDiscounts, filteredBriefs, filteredOffers, filteredConversations, filteredUsers, filteredDrivers, filteredVehicles, filteredReviews]);
+  }, [activeSection, filteredBookings, filteredDiscounts, filteredBriefs, filteredOffers, filteredConversations, filteredUsers, filteredDrivers, filteredVehicles, filteredCommissions, filteredReviews]);
 
   const navGroups = [
     { items: [{ id: 'overview', label: 'Overview', icon: LayoutDashboard }] },
@@ -693,6 +754,7 @@ const AdminDashboard = () => {
       items: [
         { id: 'reports', label: 'Reports', icon: ClipboardList },
         { id: 'performance', label: 'Performance', icon: Gauge },
+        { id: 'payments', label: 'Payments', icon: Wallet, badge: pendingCommissionCount },
       ],
     },
   ];
@@ -731,6 +793,16 @@ const AdminDashboard = () => {
         onUpdate={handleVehicleDetailsUpdate}
         onAddImages={handleVehicleImagesAdd}
         onRemoveImage={handleVehicleImageRemove}
+      />
+    );
+  } else if (activeSection === 'payments') {
+    content = (
+      <PaymentsPanel
+        state={{ ...commissionState, items: filteredCommissions }}
+        month={commissionMonth}
+        onMonthChange={handleCommissionMonthChange}
+        onReload={loadCommissions}
+        onStatusChange={handleCommissionStatusChange}
       />
     );
   } else if (activeSection === 'reviews') {

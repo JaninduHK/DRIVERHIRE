@@ -233,6 +233,17 @@ export const deleteCommissionDiscount = (discountId) =>
     method: 'DELETE',
   });
 
+export const fetchDriverCommissions = ({ year, month } = {}) =>
+  request(`/commissions${buildQueryString({ year, month })}`, {
+    method: 'GET',
+  });
+
+export const updateDriverCommissionStatus = (driverId, year, month, payload) =>
+  request(`/commissions/${driverId}/${year}/${month}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+
 export const fetchUsers = () =>
   request('/users', {
     method: 'GET',
