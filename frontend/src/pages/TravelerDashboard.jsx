@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
@@ -80,6 +80,14 @@ const AVATAR_TONES = ['amber', 'purple', 'blue'];
 const inputCls =
   'h-11 w-full min-w-0 rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 text-sm font-medium text-ink placeholder:font-normal placeholder:text-[#adb8c0] focus:border-brand focus:outline-none';
 const labelCls = 'text-[12.5px] font-bold text-ink-soft';
+
+// Grows a composer textarea to fit its content (up to maxHeight), so multi-line
+// messages stay visible while typing instead of scrolling inside a fixed box.
+const autoGrowTextarea = (element, maxHeight) => {
+  if (!element) return;
+  element.style.height = 'auto';
+  element.style.height = `${Math.min(element.scrollHeight, maxHeight)}px`;
+};
 
 const formatDateForInput = (value) => {
   if (!value) return '';
@@ -1285,6 +1293,15 @@ const TravelerMessages = ({
   const { loading: convLoading, error: convError, items: conversations } = conversationsState;
   const { loading: msgLoading, error: msgError, items: messages, booking: conversationBooking } = messagesState;
   const [bookingDetailOpen, setBookingDetailOpen] = useState(false);
+  const mobileComposerRef = useRef(null);
+  const desktopComposerRef = useRef(null);
+
+  useEffect(() => {
+    if (!composerValue) {
+      if (mobileComposerRef.current) mobileComposerRef.current.style.height = '';
+      if (desktopComposerRef.current) desktopComposerRef.current.style.height = '';
+    }
+  }, [composerValue]);
 
   const driverNameOf = (conversation) =>
     conversation?.participants?.driver?.name || conversation?.participants?.driver?.email || 'Driver';
@@ -1437,8 +1454,18 @@ const TravelerMessages = ({
                 {chatMessages}
               </div>
               <div className="sticky bottom-0 z-10 border-t border-hairline bg-white px-4 py-3">
-                <form onSubmit={submitMessage} className="flex items-center gap-2.5">
-                  <input value={composerValue} onChange={(e) => onComposerChange(e.target.value)} placeholder="Message…" className="h-[38px] min-w-0 flex-1 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white px-3 text-[13px] text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none" />
+                <form onSubmit={submitMessage} className="flex items-end gap-2.5">
+                  <textarea
+                    ref={mobileComposerRef}
+                    rows={1}
+                    value={composerValue}
+                    onChange={(e) => {
+                      onComposerChange(e.target.value);
+                      autoGrowTextarea(e.target, 100);
+                    }}
+                    placeholder="Message…"
+                    className="max-h-[100px] min-h-[38px] min-w-0 flex-1 resize-none rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white px-3 py-2 text-[13px] leading-snug text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none"
+                  />
                   <button type="submit" disabled={!composerValue.trim() || sending} aria-label="Send" className="grid h-[38px] w-[38px] flex-shrink-0 place-items-center rounded-[11px] bg-brand transition hover:bg-brand-dark disabled:opacity-50">
                     {sending ? <Loader2 className="h-4 w-4 animate-spin text-white" /> : <Send className="h-[17px] w-[17px] text-white" />}
                   </button>
@@ -1488,8 +1515,18 @@ const TravelerMessages = ({
                 {chatMessages}
               </div>
               <div className="flex-shrink-0 border-t border-hairline bg-white px-6 py-4">
-                <form onSubmit={submitMessage} className="flex items-center gap-2.5">
-                  <input value={composerValue} onChange={(e) => onComposerChange(e.target.value)} placeholder="Message…" className="h-[42px] min-w-0 flex-1 rounded-[12px] border-[1.5px] border-[#e2e8ea] bg-white px-3.5 text-[13.5px] text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none" />
+                <form onSubmit={submitMessage} className="flex items-end gap-2.5">
+                  <textarea
+                    ref={desktopComposerRef}
+                    rows={1}
+                    value={composerValue}
+                    onChange={(e) => {
+                      onComposerChange(e.target.value);
+                      autoGrowTextarea(e.target, 120);
+                    }}
+                    placeholder="Message…"
+                    className="max-h-[120px] min-h-[42px] min-w-0 flex-1 resize-none rounded-[12px] border-[1.5px] border-[#e2e8ea] bg-white px-3.5 py-2.5 text-[13.5px] leading-snug text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none"
+                  />
                   <button type="submit" disabled={!composerValue.trim() || sending} className="h-[42px] flex-shrink-0 rounded-[12px] bg-brand px-5 text-[13.5px] font-bold text-white transition hover:bg-brand-dark disabled:opacity-50">
                     {sending ? 'Sending…' : 'Send'}
                   </button>

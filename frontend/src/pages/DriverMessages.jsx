@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
@@ -34,6 +34,14 @@ import { clearStoredToken, getStoredUser } from '../services/authToken.js';
 const HEADER_GRADIENT = 'linear-gradient(160deg,#0f7a45,#10a35a 55%,#18b866)';
 const AVATAR_TONES = ['amber', 'purple', 'blue'];
 
+// Grows a composer textarea to fit its content (up to maxHeight), so multi-line
+// messages stay visible while typing instead of scrolling inside a fixed box.
+const autoGrowTextarea = (element, maxHeight) => {
+  if (!element) return;
+  element.style.height = 'auto';
+  element.style.height = `${Math.min(element.scrollHeight, maxHeight)}px`;
+};
+
 const DriverMessages = () => {
   const [conversationsState, setConversationsState] = useState({
     loading: true,
@@ -50,6 +58,15 @@ const DriverMessages = () => {
   const [bookingDetailOpen, setBookingDetailOpen] = useState(false);
   const [composerValue, setComposerValue] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
+  const mobileComposerRef = useRef(null);
+  const desktopComposerRef = useRef(null);
+
+  useEffect(() => {
+    if (!composerValue) {
+      if (mobileComposerRef.current) mobileComposerRef.current.style.height = '';
+      if (desktopComposerRef.current) desktopComposerRef.current.style.height = '';
+    }
+  }, [composerValue]);
   const [offerForm, setOfferForm] = useState({
     startDate: '',
     endDate: '',
@@ -595,7 +612,7 @@ const DriverMessages = () => {
                     event.preventDefault();
                     if (composerValue.trim()) handleSendMessage();
                   }}
-                  className="flex items-center gap-2.5"
+                  className="flex items-end gap-2.5"
                 >
                   <button
                     type="button"
@@ -605,11 +622,16 @@ const DriverMessages = () => {
                   >
                     <CalendarRange className="h-[17px] w-[17px] text-brand" />
                   </button>
-                  <input
+                  <textarea
+                    ref={mobileComposerRef}
+                    rows={1}
                     value={composerValue}
-                    onChange={(event) => setComposerValue(event.target.value)}
+                    onChange={(event) => {
+                      setComposerValue(event.target.value);
+                      autoGrowTextarea(event.target, 100);
+                    }}
                     placeholder="Message…"
-                    className="h-[38px] flex-1 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white px-3 text-[13px] text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none"
+                    className="max-h-[100px] min-h-[38px] flex-1 resize-none rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white px-3 py-2 text-[13px] leading-snug text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none"
                   />
                   <button
                     type="submit"
@@ -751,7 +773,7 @@ const DriverMessages = () => {
                   {chatBody}
                 </div>
                 <div className="flex-shrink-0 border-t border-hairline bg-white px-6 py-4">
-                  <form onSubmit={submitMessage} className="flex items-center gap-2.5">
+                  <form onSubmit={submitMessage} className="flex items-end gap-2.5">
                     <button
                       type="button"
                       onClick={() => setOfferOpen(true)}
@@ -760,11 +782,16 @@ const DriverMessages = () => {
                     >
                       <CalendarRange className="h-[18px] w-[18px] text-brand" />
                     </button>
-                    <input
+                    <textarea
+                      ref={desktopComposerRef}
+                      rows={1}
                       value={composerValue}
-                      onChange={(event) => setComposerValue(event.target.value)}
+                      onChange={(event) => {
+                        setComposerValue(event.target.value);
+                        autoGrowTextarea(event.target, 120);
+                      }}
                       placeholder="Message…"
-                      className="h-[42px] min-w-0 flex-1 rounded-[12px] border-[1.5px] border-[#e2e8ea] bg-white px-3.5 text-[13.5px] text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none"
+                      className="max-h-[120px] min-h-[42px] min-w-0 flex-1 resize-none rounded-[12px] border-[1.5px] border-[#e2e8ea] bg-white px-3.5 py-2.5 text-[13.5px] leading-snug text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none"
                     />
                     <button
                       type="submit"
