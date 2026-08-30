@@ -479,31 +479,34 @@ const Checkout = () => {
   const effectiveStartDate = offerState.offer?.startDate || bookingDates.start;
   const effectiveEndDate = offerState.offer?.endDate || bookingDates.end;
 
+  // An offer is a flat price the driver set, so its discount must come from the
+  // offer itself. quote.* is priced off the vehicle's daily rate card, and for an
+  // offer those totals are unrelated — using quote.discount.amount here would
+  // discount the rate-card total (e.g. 39 days x $43) instead of the $100 offer.
+  // vehicle?.activeDiscount is deliberately not a fallback: it is only a "some
+  // promo is live" marketing flag with no amounts tied to this booking.
+  const offerDiscount = offerState.offer?.discount || null;
+  const discountSource = offerState.offer ? offerDiscount : quote?.discount || null;
+
   const pricePerDay = offerState.offer
     ? null
-    : formatPrice(
-        quote?.discount?.discountedPricePerDay ??
-          quote?.pricePerDay ??
-          vehicle?.activeDiscount?.discountedPricePerDay ??
-          vehicle?.pricePerDay
-      );
+    : formatPrice(quote?.discount?.discountedPricePerDay ?? quote?.pricePerDay ?? vehicle?.pricePerDay);
   const totalPriceValue = offerState.offer
     ? offerState.offer.totalPrice
     : quote?.totalPrice ?? bookingResult?.totalPrice ?? null;
-  const discountSource = quote?.discount || vehicle?.activeDiscount || null;
   const discountPercent =
     discountSource?.discountPercent ??
     (typeof discountSource?.discountRate === 'number'
       ? Math.round(discountSource.discountRate * 100 * 100) / 100
       : null);
   const discountAmountValue =
-    quote?.discount?.amount ??
+    discountSource?.amount ??
     bookingResult?.discountAmount ??
     (typeof totalPriceValue === 'number' && typeof discountPercent === 'number'
       ? Math.round(totalPriceValue * (discountPercent / 100) * 100) / 100
       : null);
   const payableTotalValue =
-    quote?.discount?.payableTotal ??
+    discountSource?.payableTotal ??
     bookingResult?.payableTotal ??
     (typeof totalPriceValue === 'number' && typeof discountAmountValue === 'number'
       ? Math.max(totalPriceValue - discountAmountValue, 0)

@@ -2209,6 +2209,8 @@ const BookingCard = ({ booking, tone = 'amber', responding, onRespond, onMessage
   const guests = booking.guests ?? booking.numberOfGuests ?? null;
   const payoutLabel =
     typeof booking.driverEarnings === 'number' ? formatMoney(booking.driverEarnings) : null;
+  const bookingCommissionRateLabel =
+    typeof booking.commissionRate === 'number' ? formatRatePercent(booking.commissionRate, 1) : null;
   const isPending = booking.status === 'pending';
   const chip = isPending
     ? { text: 'PENDING', cls: 'bg-[#fdf0d8] text-[#a86a15]', border: '#f0b429' }
@@ -2254,7 +2256,9 @@ const BookingCard = ({ booking, tone = 'amber', responding, onRespond, onMessage
           {start} – {end}
         </div>
         {payoutLabel ? (
-          <div className="mt-1.5 text-[12px] font-semibold text-brand-dark">Your payout: {payoutLabel}</div>
+          <div className="mt-1.5 text-[12px] font-semibold text-brand-dark">
+            Earning after commission{bookingCommissionRateLabel ? ` (${bookingCommissionRateLabel})` : ''}: {payoutLabel}
+          </div>
         ) : null}
       </button>
       {isPending ? (
@@ -2612,7 +2616,13 @@ const DriverEarningsPanel = ({ onMenu, driverName, driverImage, state, onMonthCh
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-[14px] font-bold text-ink">{formatCurrency(booking.totalPrice)}</div>
+                  <div className="text-[14px] font-bold text-ink">
+                    {formatCurrency(
+                      typeof booking.payableTotal === 'number' && booking.payableTotal > 0
+                        ? booking.payableTotal
+                        : booking.totalPrice
+                    )}
+                  </div>
                   <div className="text-[11px] font-semibold text-brand-dark">
                     +{formatCurrency(booking.driverEarnings)}
                   </div>

@@ -265,17 +265,22 @@ bookingSchema.methods.applyCommissionRules = async function applyCommissionRules
   let discountLabel;
   let discountRef;
 
-  if (this.startDate) {
-    const discount = await findActiveDiscountForDate(this.startDate);
-    if (discount) {
-      const normalizedDiscount = clampRate(discount.discountRate, {
-        fallback: 0,
-        max: Math.min(MAX_DISCOUNT_RATE, baseRate),
-      });
-      discountRate = normalizedDiscount;
-      discountLabel = discount.name;
-      discountRef = discount._id;
-    }
+  // A promo's date range is a BOOKING window, not a travel window: whoever books
+  // while it runs keeps the discount no matter when they travel. So this is keyed
+  // to when the booking was created, never to its trip dates.
+  //
+  // createdAt (not `new Date()`) is deliberate — this runs on every save, so using
+  // "now" would silently strip the discount off an existing booking the next time
+  // it is touched after the promo ends. Mongoose populates createdAt before this
+  // hook even on the first save; the fallback only covers a doc saved outside it.
+  const discount = await findActiveDiscountForDate(this.createdAt || new Date());
+  if (discount) {
+    discountRate = clampRate(discount.discountRate, {
+      fallback: 0,
+      max: Math.min(MAX_DISCOUNT_RATE, baseRate),
+    });
+    discountLabel = discount.name;
+    discountRef = discount._id;
   }
 
   const effectiveDiscountRate = discountRate > baseRate ? baseRate : discountRate;

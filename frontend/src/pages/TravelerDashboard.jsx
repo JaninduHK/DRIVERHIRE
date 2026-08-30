@@ -530,7 +530,10 @@ const TravelerOverview = ({
   const completed = bookings.filter((b) => b.endDate && new Date(b.endDate).getTime() < now && !isCancelled(b));
   const totalSpent = bookings
     .filter((b) => !isCancelled(b))
-    .reduce((sum, b) => sum + (typeof b.totalPrice === 'number' ? b.totalPrice : 0), 0);
+    .reduce((sum, b) => {
+      const amount = typeof b.payableTotal === 'number' && b.payableTotal > 0 ? b.payableTotal : b.totalPrice;
+      return sum + (typeof amount === 'number' ? amount : 0);
+    }, 0);
   const nextTrip =
     [...upcoming].filter((b) => b.startDate).sort((a, b) => new Date(a.startDate) - new Date(b.startDate))[0] ||
     upcoming[0] ||
@@ -1174,7 +1177,12 @@ const TravelerBookingCard = ({ booking, tone, expanded, onToggle, onMessage, onE
   const driverName = booking.driver?.name || 'Driver to be assigned';
   const vehicleName = booking.vehicle?.model || 'Vehicle to be confirmed';
   const seats = booking.vehicle?.seats;
-  const price = typeof booking.totalPrice === 'number' && booking.totalPrice > 0 ? formatCurrency(booking.totalPrice) : null;
+  const price =
+    typeof booking.payableTotal === 'number' && booking.payableTotal > 0
+      ? formatCurrency(booking.payableTotal)
+      : typeof booking.totalPrice === 'number' && booking.totalPrice > 0
+        ? formatCurrency(booking.totalPrice)
+        : null;
   const start = formatDateLabel(booking.startDate);
   const end = formatDateLabel(booking.endDate);
   const route = booking.startPoint && booking.endPoint ? `${booking.startPoint} → ${booking.endPoint}` : vehicleName;
@@ -2114,7 +2122,12 @@ const DeskTripRow = ({ booking, tone }) => {
   const start = formatDateLabel(booking.startDate);
   const end = formatDateLabel(booking.endDate);
   const dates = start && end ? `${start} – ${end}` : 'Dates TBD';
-  const price = typeof booking.totalPrice === 'number' && booking.totalPrice > 0 ? formatCurrency(booking.totalPrice) : null;
+  const price =
+    typeof booking.payableTotal === 'number' && booking.payableTotal > 0
+      ? formatCurrency(booking.payableTotal)
+      : typeof booking.totalPrice === 'number' && booking.totalPrice > 0
+        ? formatCurrency(booking.totalPrice)
+        : null;
   return (
     <div className="flex items-center gap-[13px] rounded-[14px] border border-hairline p-[13px]">
       <Avatar name={driverName} tone={tone} className="h-[42px] w-[42px] flex-shrink-0 text-sm" />

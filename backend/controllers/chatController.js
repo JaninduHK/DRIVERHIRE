@@ -29,13 +29,17 @@ const findActiveCommissionDiscount = async (referenceDate) => {
 
 // Offers are driver-typed flat totals with no discount baked in (see
 // sendOffer) — this computes the same promo a traveller would see at
-// checkout for the offer's own trip dates, so the offer bubble can preview
-// what they'd actually pay if they accept.
+// checkout, so the offer bubble can preview what they'd actually pay.
+//
+// Keyed to "now" (the moment the traveller is looking at / accepting the offer)
+// rather than the trip dates, because a promo window is a booking window — and
+// because that is the date Booking.applyCommissionRules will use when this offer
+// is accepted, so the preview and the real charge always agree.
 const buildOfferDiscount = async (offer) => {
-  if (!offer?.startDate || !Number.isFinite(offer.totalPrice)) {
+  if (!Number.isFinite(offer?.totalPrice)) {
     return null;
   }
-  const activeDiscount = await findActiveCommissionDiscount(offer.startDate);
+  const activeDiscount = await findActiveCommissionDiscount(new Date());
   const discountRate =
     activeDiscount && typeof activeDiscount.discountRate === 'number'
       ? Math.max(activeDiscount.discountRate, 0)
@@ -620,6 +624,10 @@ export const fetchOffer = async (req, res) => {
         pricePerExtraKm: message.offer.pricePerExtraKm,
         currency: message.offer.currency,
         vehicle: message.offer.vehicle,
+        // Checkout prices an offer off this, not off the vehicle's daily-rate
+        // quote — the offer total is a flat price the driver set, so a discount
+        // computed against the rate-card total would be the wrong amount.
+        discount: await buildOfferDiscount(message.offer),
         note: message.body,
         warning: message.warning,
         createdAt: message.createdAt,

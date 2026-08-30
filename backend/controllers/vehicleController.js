@@ -556,7 +556,10 @@ export const checkVehicleAvailability = async (req, res) => {
     const pricePerDay = Number.isFinite(vehicle.pricePerDay) ? vehicle.pricePerDay : null;
     const totalPrice =
       pricePerDay !== null ? Math.max(pricePerDay * totalDays, pricePerDay) : null;
-    const activeDiscount = await findActiveCommissionDiscount(startDate);
+    // Promo windows are booking windows, so this quote uses today (the default) —
+    // not the trip's startDate. Keeps the quote in step with the vehicle-page
+    // banner and with what Booking.applyCommissionRules will actually charge.
+    const activeDiscount = await findActiveCommissionDiscount();
     const discountRate =
       activeDiscount && typeof activeDiscount.discountRate === 'number'
         ? Math.max(activeDiscount.discountRate, 0)
