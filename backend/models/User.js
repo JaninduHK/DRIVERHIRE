@@ -132,6 +132,14 @@ const userSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    // Set when the account has been erased on request. The row is kept (never
+    // hard-deleted) because Booking/Review/Vehicle/Commission all hold required
+    // refs to it — dropping it would orphan financial records. Identity fields
+    // are scrubbed instead; see services/accountDeletionService.js.
+    deletedAt: {
+      type: Date,
+      index: true,
+    },
   },
   {
     timestamps: true,

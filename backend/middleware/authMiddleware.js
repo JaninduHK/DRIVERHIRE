@@ -12,7 +12,9 @@ export const authenticate = async (req, res, next) => {
     const decoded = verifyAccessToken(token);
     const user = await User.findById(decoded.sub);
 
-    if (!user) {
+    // A deleted account keeps its row (records reference it), so an access token
+    // issued before erasure would otherwise stay valid until it expires.
+    if (!user || user.deletedAt) {
       return res.status(401).json({ message: 'User not found or inactive' });
     }
 

@@ -25,3 +25,35 @@ export const fetchLatestReviews = async (limit = 9, minRating) => {
   }
   return safeJson(response);
 };
+
+const parseInviteError = async (response) => {
+  const data = await safeJson(response);
+  const error = new Error(
+    typeof data?.message === 'string' ? data.message : 'Unable to reach the server'
+  );
+  error.reason = data?.reason;
+  return error;
+};
+
+// Token-authenticated review flow opened straight from the post-trip email, so
+// the traveller does not have to sign in. The token is single-use and expiring.
+export const fetchReviewInvite = async (token) => {
+  const response = await fetch(`${REVIEWS_BASE_URL}/invite/${encodeURIComponent(token)}`);
+  if (!response.ok) {
+    throw await parseInviteError(response);
+  }
+  const data = await safeJson(response);
+  return data.invite;
+};
+
+export const submitReviewFromToken = async (token, payload) => {
+  const response = await fetch(`${REVIEWS_BASE_URL}/invite/${encodeURIComponent(token)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw await parseInviteError(response);
+  }
+  return safeJson(response);
+};

@@ -774,3 +774,36 @@ export const sendVehicleStatusEmail = async ({ driver, vehicle, status, note }) 
     text,
   });
 };
+
+export const sendReviewRequestEmail = async ({ to, travelerName, driverName, vehicleModel, tripDates, reviewUrl }) => {
+  const safeName = escapeHtml(travelerName || 'there');
+  const safeDriver = escapeHtml(driverName || 'your driver');
+  const safeVehicle = escapeHtml(vehicleModel || 'your vehicle');
+  const safeDates = escapeHtml(tripDates || '');
+  const brandName = getBrandName();
+
+  const html = buildEmailTemplate({
+    title: `How was your trip with ${safeDriver}?`,
+    preheader: `Tell other travellers about your trip with ${safeDriver}`,
+    bodyLines: [
+      `Hi ${safeName},`,
+      `We hope you enjoyed your trip with ${safeDriver}${safeDates ? ` (${safeDates})` : ''} in the ${safeVehicle}.`,
+      'Would you take a minute to rate your driver? Your review helps other travellers choose with confidence, and it means a great deal to your driver.',
+      'You do not need to sign in — the button below opens your review form directly.',
+    ],
+    action: {
+      label: 'Leave a review',
+      url: reviewUrl,
+    },
+  });
+
+  const text = `Hi ${travelerName || 'there'},\n\nWe hope you enjoyed your trip with ${driverName || 'your driver'}${tripDates ? ` (${tripDates})` : ''}.\n\nLeave a review here: ${reviewUrl}\n\nThank you for choosing ${brandName}.`;
+
+  await sendEmail({
+    to,
+    subject: `How was your trip with ${driverName || 'your driver'}?`,
+    html,
+    text,
+  });
+};
+

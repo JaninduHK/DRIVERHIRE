@@ -163,6 +163,18 @@ const bookingSchema = new mongoose.Schema(
       default: BOOKING_STATUS.PENDING,
       index: true,
     },
+    // Post-trip review request (see services/reviewRequestService.js). The token is
+    // stored hashed so a leaked DB row cannot be used to post as the traveller.
+    reviewRequestSentAt: {
+      type: Date,
+      index: true,
+    },
+    reviewTokenHash: {
+      type: String,
+      index: true,
+    },
+    reviewTokenExpires: Date,
+    reviewSubmittedAt: Date,
     paymentNote: {
       type: String,
       trim: true,

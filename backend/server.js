@@ -13,6 +13,7 @@ import briefRoutes from './routes/briefRoutes.js';
 import publicDriverRoutes from './routes/publicDriverRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import supportRoutes from './routes/supportRoutes.js';
+import { startReviewRequestScheduler } from './services/reviewRequestService.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -127,6 +128,10 @@ const startServer = async () => {
     app.listen(PORT, () => {
       console.log(`Server started on PORT: ${PORT}`);
     });
+
+    // Hourly post-trip review request emails. Started after the DB is up so the
+    // first sweep can read its cutoff setting.
+    startReviewRequestScheduler();
   } catch (error) {
     console.error('Server startup failed:', error.message);
     process.exit(1);

@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 export const SETTING_KEYS = {
   DRIVER_AUTO_APPROVAL: 'driverAutoApproval',
   PLATFORM_BANK_DETAILS: 'platformBankDetails',
+  REVIEW_REQUESTS_START_AT: 'reviewRequestsStartAt',
 };
 
 const settingSchema = new mongoose.Schema(

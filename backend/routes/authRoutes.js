@@ -12,6 +12,7 @@ import {
   updatePassword,
   requestPasswordReset,
   resetPassword,
+  deleteOwnAccount,
 } from '../controllers/authController.js';
 import { authenticate } from '../middleware/authMiddleware.js';
 import { conditionalProfileUpload } from '../middleware/cloudinaryUpload.js';
@@ -122,6 +123,13 @@ router.put(
     passwordRules,
   ],
   updatePassword
+);
+
+router.delete(
+  '/account',
+  authenticate,
+  [body('password').optional().isString()],
+  deleteOwnAccount
 );
 
 export default router;

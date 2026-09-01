@@ -19,6 +19,7 @@ import {
   sendDriverAdminMessageEmail,
 } from '../services/emailService.js';
 import { mapAssetUrls, buildAssetUrl } from '../utils/assetUtils.js';
+import { anonymizeUser, findBlockingBookings } from '../services/accountDeletionService.js';
 import * as cloudinaryService from '../services/cloudinaryService.js';
 
 const handleValidation = (req, res) => {
@@ -1516,3 +1517,56 @@ export const updateAdminSettings = async (req, res) => {
     return res.status(500).json({ message: 'Unable to update settings.' });
   }
 };
+
+// Admin-triggered erasure, for deletion requests that arrive by email rather than
+// through the app. Shares one code path with the self-serve route so the scrub can
+// never drift between the two.
+export const deleteUserAccount = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+
+  const { id } = req.params;
+
+  if (id === req.user.id) {
+    return res.status(400).json({ message: 'Use your own account settings to delete your account.' });
+  }
+
+  try {
+    const summary = await anonymizeUser(id, { actorId: req.user.id });
+    return res.json({ message: 'Account deleted and personal data removed.', summary });
+  } catch (error) {
+    if (error.code === 'NOT_FOUND') {
+      return res.status(404).json({ message: error.message });
+    }
+    if (error.code === 'ACTIVE_BOOKINGS') {
+      return res.status(409).json({ message: error.message, bookings: error.bookings });
+    }
+    if (error.code === 'ALREADY_DELETED') {
+      return res.status(409).json({ message: error.message });
+    }
+    console.error('Admin delete user error:', error);
+    return res.status(500).json({ message: 'Unable to delete this account right now.' });
+  }
+};
+
+// Lets an admin see why an erasure would be refused before attempting it.
+export const previewUserDeletion = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('name email role deletedAt');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+    const blocking = await findBlockingBookings(user._id);
+    return res.json({
+      user: { id: user._id.toString(), name: user.name, email: user.email, role: user.role, deletedAt: user.deletedAt || null },
+      canDelete: !user.deletedAt && blocking.length === 0,
+      blockingBookings: blocking,
+    });
+  } catch (error) {
+    console.error('Preview user deletion error:', error);
+    return res.status(500).json({ message: 'Unable to check this account right now.' });
+  }
+};
+

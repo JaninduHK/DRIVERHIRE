@@ -13,6 +13,7 @@ import {
 } from '../services/emailService.js';
 import { buildAssetUrl } from '../utils/assetUtils.js';
 import * as cloudinaryService from '../services/cloudinaryService.js';
+import { anonymizeUser } from '../services/accountDeletionService.js';
 
 const buildVerificationUrl = (token) => {
   const url = new URL(buildAppUrl('/verify-email'));
@@ -195,7 +196,7 @@ export const loginUser = async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ email: email.toLowerCase() });
 
-    if (!user) {
+    if (!user || user.deletedAt) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
@@ -251,7 +252,7 @@ export const refreshAccessToken = async (req, res) => {
     }
 
     const user = await User.findById(stored.user);
-    if (!user) {
+    if (!user || user.deletedAt) {
       return res.status(401).json({ message: 'Invalid refresh token' });
     }
 
@@ -654,3 +655,48 @@ export const resetPassword = async (req, res) => {
     return res.status(500).json({ message: 'Unable to reset password right now.' });
   }
 };
+
+// Self-serve erasure. Local accounts must re-enter their password; SSO accounts
+// (travellers sign in through Asgardeo) have no password to check, so possession
+// of a valid session is the confirmation.
+export const deleteOwnAccount = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+
+  const { password } = req.body || {};
+
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user || user.deletedAt) {
+      return res.status(404).json({ message: 'Account not found.' });
+    }
+
+    if (user.passwordHash) {
+      if (!password) {
+        return res.status(400).json({ message: 'Enter your password to confirm deletion.' });
+      }
+      const passwordMatches = await user.comparePassword(password);
+      if (!passwordMatches) {
+        return res.status(401).json({ message: 'Password is incorrect.' });
+      }
+    }
+
+    const summary = await anonymizeUser(user._id, { actorId: user._id });
+    return res.json({
+      message: 'Your account and personal details have been deleted.',
+      deletedAt: summary.deletedAt,
+    });
+  } catch (error) {
+    if (error.code === 'ACTIVE_BOOKINGS') {
+      return res.status(409).json({ message: error.message, bookings: error.bookings });
+    }
+    if (error.code === 'ALREADY_DELETED') {
+      return res.status(409).json({ message: error.message });
+    }
+    console.error('Delete own account error:', error);
+    return res.status(500).json({ message: 'Unable to delete your account right now.' });
+  }
+};
+

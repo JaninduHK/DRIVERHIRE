@@ -5,6 +5,7 @@ import Vehicle, { VEHICLE_STATUS } from '../models/Vehicle.js';
 import User, { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
 import { mapAssetUrls } from '../utils/assetUtils.js';
 import { uploadImage, generateUniqueFilename } from '../services/cloudinaryService.js';
+import { hashReviewToken } from '../services/reviewRequestService.js';
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
@@ -797,3 +798,123 @@ export const createAdminReviewsBulk = async (req, res) => {
     errors: results.errors.slice(0, 100),
   });
 };
+
+// ---------------------------------------------------------------------------
+// Tokenised review flow (from the post-trip email).
+//
+// These two routes are deliberately UNAUTHENTICATED. Travellers sign in through
+// Asgardeo SSO, and forcing an SSO round-trip before the form would cost most of
+// the responses. The token is the proof of identity: it is random, single-use,
+// expiring, scoped to exactly one booking, and grants nothing but the ability to
+// review that trip. Reviews still land as `pending` for admin approval.
+// ---------------------------------------------------------------------------
+
+const loadBookingByReviewToken = async (token) => {
+  if (typeof token !== 'string' || token.length < 32) return { error: 'INVALID' };
+
+  const booking = await Booking.findOne({ reviewTokenHash: hashReviewToken(token) })
+    .populate('driver', 'name')
+    .populate('vehicle', 'model images');
+
+  if (!booking) return { error: 'INVALID' };
+  if (booking.reviewSubmittedAt) return { error: 'USED', booking };
+  if (booking.reviewTokenExpires && booking.reviewTokenExpires < new Date()) {
+    return { error: 'EXPIRED', booking };
+  }
+  return { booking };
+};
+
+const TOKEN_ERRORS = {
+  INVALID: { status: 404, message: 'This review link is not valid. It may have been mistyped.' },
+  USED: { status: 409, message: 'A review has already been submitted for this trip. Thank you!' },
+  EXPIRED: { status: 410, message: 'This review link has expired.' },
+};
+
+// Opens the review form: returns just enough trip context to show what is being
+// reviewed. No traveller contact details are exposed.
+export const getReviewInvite = async (req, res) => {
+  try {
+    const { booking, error } = await loadBookingByReviewToken(req.params.token);
+    if (error) {
+      const mapped = TOKEN_ERRORS[error];
+      return res.status(mapped.status).json({ message: mapped.message, reason: error });
+    }
+
+    return res.json({
+      invite: {
+        bookingId: booking._id.toString(),
+        driverName: booking.driver?.name || 'your driver',
+        vehicleModel: booking.vehicle?.model || null,
+        startDate: booking.startDate,
+        endDate: booking.endDate,
+        travelerName: booking.traveler?.fullName || '',
+      },
+    });
+  } catch (error) {
+    console.error('Get review invite error:', error);
+    return res.status(500).json({ message: 'Unable to open this review link right now.' });
+  }
+};
+
+export const createReviewFromToken = async (req, res) => {
+  const { rating, title, comment } = req.body || {};
+
+  const normalizedRating = coerceRating(rating);
+  if (normalizedRating === null) {
+    return res.status(400).json({ message: 'Rating must be a number between 1 and 5.' });
+  }
+
+  const trimmedComment = typeof comment === 'string' ? comment.trim() : '';
+  if (trimmedComment.length < 10) {
+    return res
+      .status(400)
+      .json({ message: 'Please share more details (minimum 10 characters) in your review.' });
+  }
+
+  const trimmedTitle = typeof title === 'string' ? title.trim() : '';
+  if (trimmedTitle.length > 120) {
+    return res.status(400).json({ message: 'Review title must be under 120 characters.' });
+  }
+
+  try {
+    const { booking, error } = await loadBookingByReviewToken(req.params.token);
+    if (error) {
+      const mapped = TOKEN_ERRORS[error];
+      return res.status(mapped.status).json({ message: mapped.message, reason: error });
+    }
+
+    if (await Review.exists({ booking: booking._id })) {
+      return res.status(409).json({ message: 'A review has already been submitted for this trip.' });
+    }
+
+    const review = await Review.create({
+      booking: booking._id,
+      vehicle: booking.vehicle?._id || booking.vehicle,
+      driver: booking.driver?._id || booking.driver,
+      travelerUser: booking.travelerUser,
+      travelerName: booking.traveler?.fullName || 'Traveler',
+      rating: normalizedRating,
+      title: trimmedTitle || undefined,
+      comment: trimmedComment,
+      visitedStartDate: booking.startDate,
+      visitedEndDate: booking.endDate,
+      status: REVIEW_STATUS.PENDING,
+    });
+
+    // Burn the token. The hash is deliberately KEPT: reuse is blocked by
+    // reviewSubmittedAt, and keeping it lets a traveller who clicks the emailed
+    // link twice see "already submitted, thank you" instead of a bare "invalid
+    // link", which reads like their review failed.
+    booking.reviewSubmittedAt = new Date();
+    await booking.save();
+
+    return res.status(201).json({
+      message: 'Thank you! Your review has been submitted and will appear once approved.',
+      review: { id: review._id.toString(), rating: review.rating, status: review.status },
+    });
+  } catch (error) {
+    console.error('Create review from token error:', error);
+    return res.status(500).json({ message: 'Unable to submit your review right now.' });
+  }
+};
+

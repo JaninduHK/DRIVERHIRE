@@ -27,6 +27,8 @@ import {
   deleteConversation,
   sendDriverDirectMessage,
   getUsersList,
+  deleteUserAccount,
+  previewUserDeletion,
   getAdminSettings,
   updateAdminSettings,
 } from '../controllers/adminController.js';
@@ -397,6 +399,20 @@ router.delete(
 );
 
 router.get('/users', getUsersList);
+
+router.get(
+  '/users/:id/deletion-preview',
+  [param('id').isMongoId().withMessage('Invalid user identifier')],
+  previewUserDeletion
+);
+
+// Erases personal data but keeps the row: bookings, reviews and commission
+// records all hold required refs to it. See services/accountDeletionService.js.
+router.delete(
+  '/users/:id',
+  [param('id').isMongoId().withMessage('Invalid user identifier')],
+  deleteUserAccount
+);
 
 router.get('/settings', getAdminSettings);
 router.patch(
