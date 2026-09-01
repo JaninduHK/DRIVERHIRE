@@ -1430,7 +1430,7 @@ export const getUsersList = async (_req, res) => {
   try {
     // Fetch all guest/tourist users
     const users = await User.find({ role: USER_ROLES.GUEST })
-      .select('name email contactNumber isVerified createdAt authProvider')
+      .select('name email contactNumber isVerified createdAt authProvider deletedAt')
       .sort({ createdAt: -1 })
       .lean();
 
@@ -1448,6 +1448,7 @@ export const getUsersList = async (_req, res) => {
           isVerified: user.isVerified || false,
           authProvider: user.authProvider || 'local',
           registeredAt: user.createdAt,
+          deletedAt: user.deletedAt || null,
           bookingsCount: bookingCount,
           briefsCount: briefCount,
         };

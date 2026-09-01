@@ -46,6 +46,7 @@ import { clearStoredToken, getStoredToken, redirectToSsoLogin } from '../service
 import { DashboardSidebar, DriverDrawer, MobileHeader, Sheet } from '../components/dashboard/mobile.jsx';
 import { Avatar } from '../components/dashboard/primitives.jsx';
 import BookingDetailsModal from '../components/BookingDetailsModal.jsx';
+import DeleteAccountCard from '../components/DeleteAccountCard.jsx';
 
 const NAV_ITEMS = [
   { id: 'overview', label: 'Overview', icon: User2 },
@@ -2043,6 +2044,7 @@ const TravelerSettings = ({ onMenu, travelerName, state, onSave, onPasswordChang
             {savingPassword ? 'Updating…' : 'Update password'}
           </button>
         </form>
+        <DeleteAccountCard requiresPassword={data.authProvider === 'local'} />
       </Sheet>
       </div>
 
@@ -2100,6 +2102,7 @@ const TravelerSettings = ({ onMenu, travelerName, state, onSave, onPasswordChang
                 </button>
               </div>
             </form>
+            <DeleteAccountCard requiresPassword={data.authProvider === 'local'} />
           </div>
         </div>
       </div>

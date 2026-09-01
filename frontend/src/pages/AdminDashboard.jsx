@@ -49,6 +49,8 @@ import {
   updateDriverCommissionStatus as updateAdminCommissionStatus,
   sendDriverEmail as sendDriverEmailRequest,
   fetchUsers,
+  fetchUserDeletionPreview,
+  deleteUserAccount as deleteUserAccountRequest,
 } from '../services/adminApi.js';
 import {
   fetchCurrentUser as fetchProfileCurrentUser,
@@ -117,7 +119,7 @@ const AdminDashboard = () => {
   const [offerState, setOfferState] = useState({ items: [], loading: true, error: '', updatingId: null, deletingId: null });
   const [conversationState, setConversationState] = useState({ items: [], loading: true, error: '', updatingId: null, deletingId: null });
   const [discountState, setDiscountState] = useState({ items: [], loading: true, error: '', saving: false, updatingId: null, deletingId: null });
-  const [usersState, setUsersState] = useState({ items: [], loading: true, error: '' });
+  const [usersState, setUsersState] = useState({ items: [], loading: true, error: '', deletingId: null });
   const [driverState, setDriverState] = useState({ items: [], loading: true, error: '', updatingId: null });
   const [vehicleState, setVehicleState] = useState({ items: [], loading: true, error: '', updatingId: null });
   const [commissionState, setCommissionState] = useState({ items: [], loading: true, error: '', updatingId: null });
@@ -511,6 +513,24 @@ const AdminDashboard = () => {
     await sendDriverEmailRequest(driverId, payload);
   }, []);
 
+  const handleUserDeletionPreview = useCallback((userId) => fetchUserDeletionPreview(userId), []);
+
+  const handleUserDelete = useCallback(async (userId) => {
+    setUsersState((prev) => ({ ...prev, deletingId: userId }));
+    try {
+      await deleteUserAccountRequest(userId);
+      // The row is kept (bookings reference it) and comes back anonymised, so
+      // reload rather than removing it from the table.
+      const response = await fetchUsers();
+      setUsersState((prev) => ({ ...prev, items: response.users || [], deletingId: null }));
+      toast.success('Account deleted and personal data removed.');
+    } catch (error) {
+      setUsersState((prev) => ({ ...prev, deletingId: null }));
+      toast.error(error?.message || 'Unable to delete this account.');
+      throw error;
+    }
+  }, []);
+
   const handleDriverDetailsUpdate = async (driverId, payload) => {
     const { driver } = await updateDriverDetailsRequest(driverId, payload);
     setDriverState((prev) => ({ ...prev, items: prev.items.map((application) => (application.id === driver.id ? driver : application)) }));
@@ -776,7 +796,14 @@ const AdminDashboard = () => {
   } else if (activeSection === 'conversations') {
     content = <ConversationsPanel state={{ ...conversationState, items: filteredConversations }} onReload={loadAdminConversations} onStatusChange={handleConversationStatusChange} onDelete={handleConversationDelete} />;
   } else if (activeSection === 'users') {
-    content = <UsersPanel state={{ ...usersState, items: filteredUsers }} onReload={loadUsers} />;
+    content = (
+      <UsersPanel
+        state={{ ...usersState, items: filteredUsers }}
+        onReload={loadUsers}
+        onPreviewDeletion={handleUserDeletionPreview}
+        onDelete={handleUserDelete}
+      />
+    );
   } else if (activeSection === 'drivers') {
     content = (
       <div className="flex flex-col gap-4">

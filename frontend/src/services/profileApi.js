@@ -104,8 +104,17 @@ export const updatePassword = (payload) =>
     body: JSON.stringify(payload),
   });
 
+// Erases personal data and ends the session. The account row is kept so bookings
+// and reviews stay intact — see backend/services/accountDeletionService.js.
+export const deleteOwnAccount = (password) =>
+  request('/account', {
+    method: 'DELETE',
+    body: JSON.stringify(password ? { password } : {}),
+  });
+
 export default {
   fetchCurrentUser,
   updateProfile,
   updatePassword,
+  deleteOwnAccount,
 };

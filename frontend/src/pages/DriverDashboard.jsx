@@ -61,6 +61,7 @@ import { fetchOpenBriefs } from '../services/briefApi.js';
 import { fetchConversations } from '../services/chatApi.js';
 import { VEHICLE_FEATURES, getVehicleFeatureLabels } from '../constants/vehicleFeatures.js';
 import { clearStoredToken, getStoredToken, saveReturnPath } from '../services/authToken.js';
+import DeleteAccountCard from '../components/DeleteAccountCard.jsx';
 import imageCompression from 'browser-image-compression';
 
 const NAV_ITEMS = [
@@ -1566,6 +1567,8 @@ const OverviewPanel = ({ profile }) => (
         {profile?.description || 'Add a short bio so travellers know what makes your tours special.'}
       </p>
     </div>
+
+    <DeleteAccountCard requiresPassword={profile?.authProvider === 'local'} />
   </div>
 );
 

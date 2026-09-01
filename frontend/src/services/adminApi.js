@@ -249,6 +249,17 @@ export const fetchUsers = () =>
     method: 'GET',
   });
 
+// Shows whether erasure would be refused (e.g. upcoming bookings) before trying.
+export const fetchUserDeletionPreview = (userId) =>
+  request(`/users/${userId}/deletion-preview`, {
+    method: 'GET',
+  });
+
+export const deleteUserAccount = (userId) =>
+  request(`/users/${userId}`, {
+    method: 'DELETE',
+  });
+
 export const fetchSettings = () =>
   request('/settings', {
     method: 'GET',
