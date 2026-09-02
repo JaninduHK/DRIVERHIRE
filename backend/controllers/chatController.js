@@ -10,6 +10,7 @@ import { sanitizeMessageContent } from '../utils/chatSanitizer.js';
 import { hasVehicleDateConflict, VEHICLE_UNAVAILABLE_MESSAGE } from '../utils/vehicleAvailability.js';
 import { createChatMessage } from '../services/chatService.js';
 import { notifyUser } from '../services/expoPushService.js';
+import { mapAssetUrls } from '../utils/assetUtils.js';
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
@@ -63,6 +64,16 @@ const buildOfferDiscount = async (offer) => {
     endDate: activeDiscount.endDate,
     status: activeDiscount.status || 'active',
   };
+};
+
+// Vehicle photos are stored as raw values (Cloudinary URLs, or legacy relative
+// upload paths). mapAssetUrls turns the legacy ones into absolute URLs and leaves
+// Cloudinary ones alone, so the chat bubble can render them directly.
+const withVehicleImageUrls = (offer, req) => {
+  if (offer?.vehicle && Array.isArray(offer.vehicle.images)) {
+    offer.vehicle.images = mapAssetUrls(offer.vehicle.images, req);
+  }
+  return offer;
 };
 
 const normalizeDateInput = (value) => {
@@ -319,7 +330,7 @@ export const fetchMessages = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(limit)
       .populate('sender', 'id name role')
-      .populate('offer.vehicle', 'id model pricePerDay')
+      .populate('offer.vehicle', 'id model pricePerDay images')
       .lean();
 
     await Promise.all(
@@ -327,6 +338,7 @@ export const fetchMessages = async (req, res) => {
         .filter((message) => message.type === 'offer' && message.offer)
         .map(async (message) => {
           message.offer.discount = await buildOfferDiscount(message.offer);
+          withVehicleImageUrls(message.offer, req);
         })
     );
 
@@ -571,8 +583,9 @@ export const sendOffer = async (req, res) => {
 
     const response = await ChatMessage.findById(message.id)
       .populate('sender', 'id name role')
-      .populate('offer.vehicle', 'id model pricePerDay')
+      .populate('offer.vehicle', 'id model pricePerDay images')
       .lean();
+    withVehicleImageUrls(response.offer, req);
 
     return res.status(201).json({
       message: {
@@ -597,7 +610,7 @@ export const fetchOffer = async (req, res) => {
   try {
     const message = await ChatMessage.findById(offerId)
       .populate('conversation')
-      .populate('offer.vehicle', 'id model pricePerDay driver')
+      .populate('offer.vehicle', 'id model pricePerDay driver images')
       .lean();
 
     if (!message || message.type !== 'offer') {
@@ -623,7 +636,7 @@ export const fetchOffer = async (req, res) => {
         totalKms: message.offer.totalKms,
         pricePerExtraKm: message.offer.pricePerExtraKm,
         currency: message.offer.currency,
-        vehicle: message.offer.vehicle,
+        vehicle: withVehicleImageUrls(message.offer, req).vehicle,
         // Checkout prices an offer off this, not off the vehicle's daily-rate
         // quote — the offer total is a flat price the driver set, so a discount
         // computed against the rate-card total would be the wrong amount.

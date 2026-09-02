@@ -47,6 +47,7 @@ import { DashboardSidebar, DriverDrawer, MobileHeader, Sheet } from '../componen
 import { Avatar } from '../components/dashboard/primitives.jsx';
 import BookingDetailsModal from '../components/BookingDetailsModal.jsx';
 import DeleteAccountCard from '../components/DeleteAccountCard.jsx';
+import OfferVehicleImages from '../components/OfferVehicleImages.jsx';
 
 const NAV_ITEMS = [
   { id: 'overview', label: 'Overview', icon: User2 },
@@ -1577,6 +1578,11 @@ const TravelerOfferBubble = ({ message, align, onBook }) => {
             <Sparkles className="h-3 w-3" /> {discount.name} — save {discount.discountPercent}%
           </div>
         ) : null}
+        <OfferVehicleImages
+          images={offer.vehicle?.images}
+          alt={offer.vehicle?.model || 'Vehicle'}
+          className="mb-2"
+        />
         <div className="text-[13px] font-bold text-ink">
           {offer.vehicle?.model || 'Selected vehicle'} · {start}–{end}
         </div>

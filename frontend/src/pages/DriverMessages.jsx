@@ -30,6 +30,7 @@ import { DashboardSidebar, DriverDrawer, MobileHeader, Sheet } from '../componen
 import { Avatar } from '../components/dashboard/primitives.jsx';
 import BookingDetailsModal from '../components/BookingDetailsModal.jsx';
 import { clearStoredToken, getStoredUser } from '../services/authToken.js';
+import OfferVehicleImages from '../components/OfferVehicleImages.jsx';
 
 const HEADER_GRADIENT = 'linear-gradient(160deg,#0f7a45,#10a35a 55%,#18b866)';
 const AVATAR_TONES = ['amber', 'purple', 'blue'];
@@ -909,6 +910,11 @@ const OfferBubble = ({ message, align }) => {
           </span>
           <b className="text-[18px] text-ink">{formatCurrency(offer.totalPrice)}</b>
         </div>
+        <OfferVehicleImages
+          images={offer.vehicle?.images}
+          alt={offer.vehicle?.model || 'Vehicle'}
+          className="mb-2"
+        />
         <div className="text-[13px] font-bold text-ink">
           {offer.vehicle?.model || 'Selected vehicle'} · {start}–{end}
         </div>

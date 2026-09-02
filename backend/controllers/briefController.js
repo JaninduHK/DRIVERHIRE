@@ -10,6 +10,7 @@ import { sendBriefAlertEmail } from '../services/emailService.js';
 import { sendExpoPushNotifications } from '../services/expoPushService.js';
 import { sanitizeMessageContent } from '../utils/chatSanitizer.js';
 import { hasVehicleDateConflict, VEHICLE_UNAVAILABLE_MESSAGE } from '../utils/vehicleAvailability.js';
+import { mapAssetUrls } from '../utils/assetUtils.js';
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
@@ -400,8 +401,11 @@ Total: $${normalizedPrice.toFixed(0)} (includes ${normalizedKms} km)`;
 
     const populatedMessage = await ChatMessage.findById(message.id)
       .populate('sender', 'id name role')
-      .populate('offer.vehicle', 'id model pricePerDay')
+      .populate('offer.vehicle', 'id model pricePerDay images')
       .lean();
+    if (populatedMessage?.offer?.vehicle?.images) {
+      populatedMessage.offer.vehicle.images = mapAssetUrls(populatedMessage.offer.vehicle.images, req);
+    }
 
     return res.status(201).json({
       brief: toPlainBrief(brief, req.user.id),
