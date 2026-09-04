@@ -244,11 +244,33 @@ export const refreshAccessToken = async (req, res) => {
     }
 
     if (stored.revokedAt) {
-      await RefreshToken.updateMany(
-        { user: stored.user, revokedAt: null },
-        { $set: { revokedAt: new Date() } }
-      );
-      return res.status(401).json({ message: 'Invalid refresh token' });
+      // A revoked token is not automatically an attack. Rotation hands the client
+      // a replacement, and on mobile that replacement is regularly lost: the
+      // response never arrives, the app is killed, or the SecureStore write
+      // fails. The driver then reopens the app holding the only token it managed
+      // to persist - the old one - and nuking every session for that is what was
+      // logging drivers out at random.
+      //
+      // Whether the replacement was ever exchanged separates the two cases. Never
+      // used means nobody holds it, so this is the lost replacement and we
+      // reissue. Already used means two parties hold tokens from one chain, which
+      // is genuine reuse, and every session dies.
+      const replacement = stored.replacedByTokenHash
+        ? await RefreshToken.findOne({ tokenHash: stored.replacedByTokenHash })
+        : null;
+
+      if (!replacement || replacement.usedAt) {
+        await RefreshToken.updateMany(
+          { user: stored.user, revokedAt: null },
+          { $set: { revokedAt: new Date() } }
+        );
+        return res.status(401).json({ message: 'Invalid refresh token' });
+      }
+
+      // Benign: retire the replacement nobody ever collected, then fall through
+      // and mint a fresh pair from this token.
+      replacement.revokedAt = new Date();
+      await replacement.save();
     }
 
     const user = await User.findById(stored.user);
@@ -258,6 +280,7 @@ export const refreshAccessToken = async (req, res) => {
 
     const newRefreshToken = await issueRefreshToken(user);
     stored.revokedAt = new Date();
+    stored.usedAt = stored.usedAt ?? new Date();
     stored.replacedByTokenHash = hashRefreshToken(newRefreshToken);
     await stored.save();
 

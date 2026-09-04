@@ -28,6 +28,12 @@ const refreshTokenSchema = new mongoose.Schema(
     replacedByTokenHash: {
       type: String,
     },
+    // Set the first time this token is exchanged. It is how we tell a client that
+    // never received its replacement (benign: reissue) from genuine token reuse
+    // (an attacker replaying an old token after the real one has been used).
+    usedAt: {
+      type: Date,
+    },
   },
   { timestamps: true }
 );

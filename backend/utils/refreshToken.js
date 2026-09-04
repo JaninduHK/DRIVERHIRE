@@ -1,7 +1,12 @@
 import crypto from 'crypto';
 import RefreshToken from '../models/RefreshToken.js';
 
-const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+// Sliding window: every rotation issues a fresh token with a full TTL, so an
+// active driver stays signed in indefinitely. Only an app left unopened for the
+// whole window falls back to the login screen. Rotation plus reuse detection is
+// what keeps a long window safe - a stolen token stops working as soon as the
+// real device refreshes.
+const REFRESH_TOKEN_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
 
 export const generateRefreshTokenValue = () => crypto.randomBytes(64).toString('hex');
 
