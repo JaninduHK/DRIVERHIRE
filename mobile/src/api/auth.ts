@@ -68,3 +68,12 @@ export const updatePassword = (currentPassword: string, password: string) =>
     method: 'PUT',
     body: { currentPassword, password },
   });
+
+// Erases the driver's personal data and ends the session. The account row itself is
+// kept in anonymised form because bookings, reviews and commission records all
+// reference it — see backend/services/accountDeletionService.js.
+export const deleteOwnAccount = (password?: string) =>
+  apiRequest<{ message: string; deletedAt: string }>('/auth/account', {
+    method: 'DELETE',
+    body: password ? { password } : {},
+  });

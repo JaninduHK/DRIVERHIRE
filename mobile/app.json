@@ -13,7 +13,7 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       },
-      "buildNumber": "5"
+      "buildNumber": "6"
     },
     "android": {
       "package": "lk.carwithdriver.driver",
@@ -64,7 +64,7 @@
           "locationWhenInUsePermission": "Car With Driver uses your location while the app is open so travellers who booked you can see where you are, and to match you with nearby trip requests.",
           "locationAlwaysAndWhenInUsePermission": false,
           "locationAlwaysPermission": false,
-          "motionUsagePermission": false
+          "motionUsagePermission": "Car With Driver uses motion data to improve the accuracy of your location while the app is open."
         }
       ]
     ],

@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Menu, BadgeCheck, Star, Camera, Pencil, KeyRound, Bell, LifeBuoy, ChevronRight } from 'lucide-react-native';
+import { Menu, BadgeCheck, Star, Camera, Pencil, KeyRound, Bell, LifeBuoy, ChevronRight, Trash2 } from 'lucide-react-native';
 import { Screen } from '../../../components/Screen';
 import { Card } from '../../../components/Card';
 import { Divider } from '../../../components/Divider';
@@ -134,6 +134,10 @@ export default function Profile() {
               <SettingRow icon={Bell} label="Notifications" onPress={() => router.push('/(app)/notifications')} />
               <Divider />
               <SettingRow icon={LifeBuoy} label="Help and support" onPress={() => Linking.openURL('mailto:support@carwithdriver.lk')} />
+              <Divider />
+              {/* Required by App Store Review Guideline 5.1.1(v): an app offering
+                  account creation must offer account deletion in-app. */}
+              <SettingRow icon={Trash2} label="Delete account" onPress={() => router.push('/(app)/delete-account')} />
             </Card>
           </View>
         </ScrollView>
