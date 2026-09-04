@@ -12,7 +12,7 @@ export default function Welcome() {
   return (
     <LinearGradient
       colors={welcomeGradient as unknown as [string, string, string]}
-      locations={[0, 0.5, 1.3]}
+      locations={[0, 0.55, 1]}
       start={{ x: 0.1, y: 0 }}
       end={{ x: 0.9, y: 1 }}
       style={{ flex: 1 }}
@@ -48,7 +48,7 @@ export default function Welcome() {
           </View>
 
           <Text className="mt-4 text-center font-med text-[12px] leading-[18px] text-white/65">
-            Free to join. No commission on the price you quote.
+            Free to join. Set your own prices and choose the trips you take.
           </Text>
         </View>
       </SafeAreaView>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, Pressable, Platform } from 'react-native';
+import { View, Text, Pressable, Platform, Modal } from 'react-native';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Calendar } from 'lucide-react-native';
 import { colors } from '../theme/colors';
@@ -19,7 +19,11 @@ const parseISO = (value: string): Date | undefined => {
 
 /**
  * Tap-to-pick date field. `value`/`onChange` use `YYYY-MM-DD` strings.
- * Android shows the native dialog; iOS shows an inline calendar with a Done button.
+ *
+ * Android shows the native dialog. iOS presents the inline calendar inside a modal
+ * rather than beneath the field: `display="inline"` needs roughly 320pt of width, and
+ * these fields are often laid out two-to-a-row (see the Send an offer form), where the
+ * calendar collapsed into an unreadable, overlapping grid.
  */
 export function DatePickerField({
   label,
@@ -66,20 +70,30 @@ export function DatePickerField({
         />
       ) : null}
 
-      {open && Platform.OS === 'ios' ? (
-        <View className="mt-2 rounded-xl border border-line bg-white">
-          <DateTimePicker
-            value={dateValue ?? new Date()}
-            mode="date"
-            display="inline"
-            themeVariant="light"
-            minimumDate={minimumDate}
-            onChange={(_event, selected) => selected && onChange(toISODate(selected))}
-          />
-          <Pressable onPress={() => setOpen(false)} className="items-center border-t border-line py-2.5">
-            <Text className="font-heavy text-[13px] text-brand-dark">Done</Text>
+      {Platform.OS === 'ios' ? (
+        <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+          <Pressable className="flex-1 justify-center bg-ink/45 px-5" onPress={() => setOpen(false)}>
+            {/* Stop taps inside the card from dismissing the modal. */}
+            <Pressable onPress={() => {}} className="overflow-hidden rounded-2xl bg-white">
+              <View className="border-b border-line px-4 py-3">
+                <Text className="font-heavy text-[14px] text-ink">{label}</Text>
+              </View>
+              <View className="items-center px-1 py-1">
+                <DateTimePicker
+                  value={dateValue ?? minimumDate ?? new Date()}
+                  mode="date"
+                  display="inline"
+                  themeVariant="light"
+                  minimumDate={minimumDate}
+                  onChange={(_event, selected) => selected && onChange(toISODate(selected))}
+                />
+              </View>
+              <Pressable onPress={() => setOpen(false)} className="items-center border-t border-line py-3">
+                <Text className="font-heavy text-[14px] text-brand-dark">Done</Text>
+              </Pressable>
+            </Pressable>
           </Pressable>
-        </View>
+        </Modal>
       ) : null}
     </View>
   );

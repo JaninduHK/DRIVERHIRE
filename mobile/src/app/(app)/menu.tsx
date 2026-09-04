@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
-import { View, Text, Pressable, Animated, Easing } from 'react-native';
+import { View, Text, Pressable, Animated, Easing, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { useRouter, type Href } from 'expo-router';
 import {
@@ -44,7 +44,11 @@ export default function Menu() {
   const { data: conversations } = useConversations();
   const unread = (conversations ?? []).reduce((n, c) => n + (c.unreadCount ?? 0), 0);
 
-  const slide = useRef(new Animated.Value(-300)).current;
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  // Cap the panel so it never swallows the screen on small phones or look lost on large ones.
+  const panelWidth = Math.min(320, Math.max(268, width * 0.82));
+  const slide = useRef(new Animated.Value(-panelWidth)).current;
   useEffect(() => {
     Animated.timing(slide, {
       toValue: 0,
@@ -68,10 +72,13 @@ export default function Menu() {
       <Pressable className="absolute inset-0 bg-ink/45" onPress={() => router.back()} />
 
       {/* Left slide-in panel */}
-      <Animated.View style={{ transform: [{ translateX: slide }] }} className="h-full w-[290px]">
+      <Animated.View style={{ transform: [{ translateX: slide }], width: panelWidth }} className="h-full">
         <View className="h-full rounded-r-[28px] bg-white" style={{ shadowColor: '#0f1f2d', shadowOpacity: 0.2, shadowRadius: 40, shadowOffset: { width: 12, height: 0 }, elevation: 16 }}>
-          <SafeAreaView edges={['top', 'bottom']} className="flex-1 px-5">
-            <View className="mb-3 mt-2 flex-row items-center justify-between">
+          <View
+            className="flex-1 px-5"
+            style={{ paddingTop: Math.max(insets.top, 24), paddingBottom: Math.max(insets.bottom, 16) }}
+          >
+            <View className="mb-3 flex-row items-center justify-between">
               <Pressable onPress={() => go('/(app)/(tabs)')} accessibilityLabel="Go to home">
                 <Image source={logo} style={{ height: 40, width: 132 }} contentFit="contain" />
               </Pressable>
@@ -122,7 +129,7 @@ export default function Menu() {
               <LogOut size={17} color={colors.danger} strokeWidth={2} />
               <Text className="font-heavy text-[14px] text-danger">Logout</Text>
             </Pressable>
-          </SafeAreaView>
+          </View>
         </View>
       </Animated.View>
     </View>
