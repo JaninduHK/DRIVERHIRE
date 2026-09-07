@@ -90,6 +90,7 @@ export interface Booking {
   departureTime?: string | null;
   traveler?: { id?: string; name?: string; fullName?: string; email?: string; phoneNumber?: string } | null;
   travelerName?: string;
+  conversationId?: string | null;
   vehicle?: Vehicle | null;
   vehicleModel?: string;
   vehicleLabel?: string;
@@ -107,14 +108,27 @@ export interface Conversation {
   subtitle?: string;
 }
 
+export interface BriefRequestSnapshot {
+  brief?: string;
+  startLocation?: string;
+  endLocation?: string;
+  startDate?: string;
+  endDate?: string;
+  adults?: number;
+  children?: number;
+  country?: string;
+  message?: string;
+}
+
 export interface ChatMessage {
   id: string;
   body?: string;
   senderId?: string;
   senderRole?: Role;
   isMine?: boolean;
-  type?: 'text' | 'offer' | string;
+  type?: 'text' | 'offer' | 'brief' | string;
   offer?: Offer | null;
+  briefRequest?: BriefRequestSnapshot | null;
   createdAt?: string;
 }
 

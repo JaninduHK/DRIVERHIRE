@@ -13,6 +13,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { ChevronLeft, Send, FileText, X, CalendarCheck, ChevronRight } from 'lucide-react-native';
@@ -185,6 +186,9 @@ export default function Chat() {
 }
 
 function Bubble({ message, mine }: { message: ChatMessage; mine: boolean }) {
+  if (message.type === 'brief' && message.briefRequest) {
+    return <BriefBubble message={message} />;
+  }
   if (message.type === 'offer' && message.offer) {
     const o = message.offer;
     const kmIncluded = o.totalKms ?? o.includedKm;
@@ -198,15 +202,15 @@ function Bubble({ message, mine }: { message: ChatMessage; mine: boolean }) {
           </View>
           <Text className="font-heavy text-[18px] text-ink">{formatMoney(o.totalPrice)}</Text>
         </View>
-        {o.vehicleLabel || o.vehicle?.model ? (
-          <Text className="font-heavy text-[13px] text-ink">{o.vehicleLabel || o.vehicle?.model}</Text>
-        ) : null}
-        {dateRange ? (
-          <Text className="mt-1 font-heavy text-[12px] text-brand-dark">{dateRange}</Text>
+        <OfferVehicleImages images={o.vehicle?.images} />
+        {o.vehicleLabel || o.vehicle?.model || dateRange ? (
+          <Text className="font-heavy text-[13px] text-ink">
+            {[o.vehicleLabel || o.vehicle?.model, dateRange].filter(Boolean).join(' · ')}
+          </Text>
         ) : null}
         {kmIncluded ? (
           <Text className="mt-0.5 font-med text-[12px] text-muted-soft">
-            {kmIncluded} km included{extraKmRate != null ? `, ${formatRate(extraKmRate)} per extra km` : ''}
+            {kmIncluded} km included{extraKmRate != null ? ` · ${formatRate(extraKmRate)} / extra km` : ''}
           </Text>
         ) : null}
         {o.note ? <Text className="mt-1.5 font-med text-[12px] leading-4 text-muted-soft">{o.note}</Text> : null}
@@ -223,6 +227,79 @@ function Bubble({ message, mine }: { message: ChatMessage; mine: boolean }) {
     >
       <Text className={`font-med text-[13.5px] ${mine ? 'text-white' : 'text-ink'}`}>{message.body}</Text>
     </View>
+  );
+}
+
+// The tour brief shown as the traveller's message above the driver's offer, so
+// both sides see the original request. Itinerary text is clamped to a few lines
+// with a Read more / Read less toggle. Contact details are redacted server-side.
+function BriefBubble({ message }: { message: ChatMessage }) {
+  const [expanded, setExpanded] = useState(false);
+  const b = message.briefRequest ?? {};
+  const route = [b.startLocation, b.endLocation].filter(Boolean).join(' → ');
+  const dates = formatDateRange(b.startDate, b.endDate);
+  const adults = b.adults ?? 0;
+  const children = b.children ?? 0;
+  const guests =
+    adults || children
+      ? `${adults} adult${adults === 1 ? '' : 's'}${children > 0 ? `, ${children} child${children === 1 ? '' : 'ren'}` : ''}`
+      : '';
+  const meta = [dates, guests, b.country].filter(Boolean).join(' · ');
+  const text = (b.message ?? '').trim();
+  const isLong = text.length > 160 || text.split('\n').length > 3;
+
+  return (
+    <View className="max-w-[88%] self-start rounded-2xl border-[1.5px] border-[#e3e8ec] bg-[#f7f9fa] p-3.5">
+      <View className="self-start rounded-md bg-[#eef2f5] px-2 py-0.5">
+        <Text className="font-xheavy text-[10.5px] uppercase text-muted-soft">Quote request</Text>
+      </View>
+      {route ? <Text className="mt-2 font-heavy text-[13px] text-ink">{route}</Text> : null}
+      {meta ? <Text className="mt-0.5 font-med text-[12px] text-muted-soft">{meta}</Text> : null}
+      {text ? (
+        <>
+          <Text
+            className="mt-2 font-med text-[12.5px] leading-5 text-muted-soft"
+            numberOfLines={!expanded && isLong ? 3 : undefined}
+          >
+            {text}
+          </Text>
+          {isLong ? (
+            <Pressable onPress={() => setExpanded((value) => !value)} hitSlop={6}>
+              <Text className="mt-1 font-heavy text-[12px] text-brand-dark">
+                {expanded ? 'Read less' : 'Read more'}
+              </Text>
+            </Pressable>
+          ) : null}
+        </>
+      ) : null}
+    </View>
+  );
+}
+
+// Vehicle photos inside an offer bubble — a horizontal row of small squares,
+// matching the web offer card. Renders nothing when the vehicle has no photos,
+// so older offers keep their original layout.
+function OfferVehicleImages({ images }: { images?: (string | { url?: string })[] }) {
+  const photos = (images ?? [])
+    .map((img) => (typeof img === 'string' ? img : img?.url))
+    .filter((uri): uri is string => Boolean(uri));
+  if (photos.length === 0) return null;
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      className="mb-2"
+      contentContainerStyle={{ gap: 6 }}
+    >
+      {photos.map((uri, i) => (
+        <Image
+          key={`${uri}-${i}`}
+          source={{ uri }}
+          contentFit="cover"
+          style={{ width: 56, height: 56, borderRadius: 10, borderWidth: 1, borderColor: '#e8edf0' }}
+        />
+      ))}
+    </ScrollView>
   );
 }
 
@@ -277,6 +354,7 @@ function OfferModal({
     Number(totalPrice) > 0 &&
     Number(totalKms) > 0 &&
     Number(extraKm) >= 0 &&
+    Number(extraKm) <= 1 &&
     !submit.isPending;
 
   return (
@@ -336,6 +414,9 @@ function OfferModal({
               <TextField className="flex-1" label="Included kms" value={totalKms} onChangeText={setTotalKms} placeholder="300" keyboardType="number-pad" />
             </View>
             <TextField className="mt-3" label="Price per extra km (USD)" value={extraKm} onChangeText={setExtraKm} placeholder="0.30" keyboardType="decimal-pad" />
+            <Text className={`mt-1 font-med text-[11px] ${Number(extraKm) > 1 ? 'text-danger' : 'text-muted-soft'}`}>
+              In USD, between $0.00 and $1.00 per km.
+            </Text>
 
             <TextField
               className="mt-3"

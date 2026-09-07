@@ -214,6 +214,10 @@ const TourBriefsBoard = () => {
       toast.error('Enter valid pricing details.');
       return;
     }
+    if (extraKmNumber > 1) {
+      toast.error('Extra km rate must be between $0.00 and $1.00 (USD).');
+      return;
+    }
     setSendingOffer(true);
     try {
       await respondToBrief(offerModal.brief.id, {
@@ -500,7 +504,8 @@ const TourBriefsBoard = () => {
                   </div>
                   <div>
                     <label className={labelCls}>Extra km rate (USD)</label>
-                    <input type="number" min="0" step="0.001" inputMode="decimal" name="pricePerExtraKm" value={offerForm.pricePerExtraKm} onChange={handleOfferFieldChange} className={`mt-1 ${inputCls}`} required />
+                    <input type="number" min="0" max="1" step="0.001" inputMode="decimal" name="pricePerExtraKm" value={offerForm.pricePerExtraKm} onChange={handleOfferFieldChange} className={`mt-1 ${inputCls}`} required />
+                    <p className="mt-1 text-[11px] text-muted-soft">In USD, between $0.00 and $1.00 per km.</p>
                   </div>
                   <div>
                     <label className={labelCls}>Personal note</label>

@@ -66,6 +66,15 @@
           "locationAlwaysPermission": false,
           "motionUsagePermission": "Car With Driver uses motion data to improve the accuracy of your location while the app is open."
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
       ]
     ],
     "experiments": {

@@ -193,7 +193,12 @@ export const listOpenBriefs = async (req, res) => {
   }
 
   try {
-    const briefs = await TourBrief.find({ status: 'open' })
+    // Once this driver has sent an offer, the brief drops off their board —
+    // they continue the conversation in chat instead. Other drivers still see it.
+    const briefs = await TourBrief.find({
+      status: 'open',
+      'responses.driver': { $ne: req.user.id },
+    })
       .populate('traveler', 'id name country')
       .sort({ createdAt: -1 })
       .limit(100);
@@ -245,6 +250,58 @@ const findConversationForBrief = async ({ travelerId, driverId, vehicleId }) => 
   return conversation;
 };
 
+// Injects the tour brief into the conversation as a "guest" message (from the
+// traveller) so both parties see the original request above the driver's offer.
+// Written directly rather than through createChatMessage so it does NOT bump
+// unread counts, touch conversation.lastMessage, or fire a notification — the
+// offer that follows is the real event. Idempotent: skips if this brief's card
+// already sits in the thread. The message text is pre-sanitized, so the same
+// contact-detail redaction the driver sees on the briefs board applies here too.
+const ensureBriefMessage = async ({ conversation, brief }) => {
+  const existing = await ChatMessage.findOne({
+    conversation: conversation._id,
+    type: 'brief',
+    'briefRequest.brief': brief._id,
+  }).select('_id');
+  if (existing) {
+    return;
+  }
+
+  const { sanitized } = sanitizeMessageContent(brief.message || '');
+  const guestsLabel = `${brief.adults} adult${brief.adults === 1 ? '' : 's'}${
+    brief.children > 0 ? `, ${brief.children} child${brief.children === 1 ? '' : 'ren'}` : ''
+  }`;
+
+  // Stamp it a second in the past so it always sorts just above the offer
+  // that follows, while still landing after any earlier messages in an
+  // existing conversation ("where they left the chat").
+  const stamp = new Date(Date.now() - 1000);
+
+  const message = new ChatMessage({
+    conversation: conversation._id,
+    sender: brief.traveler,
+    senderRole: USER_ROLES.GUEST,
+    type: 'brief',
+    body: `Trip request: ${brief.startLocation} → ${brief.endLocation} · ${guestsLabel}`,
+    briefRequest: {
+      brief: brief._id,
+      startLocation: brief.startLocation,
+      endLocation: brief.endLocation,
+      startDate: brief.startDate,
+      endDate: brief.endDate,
+      adults: brief.adults,
+      children: brief.children,
+      country: brief.country,
+      message: sanitized || '',
+    },
+    readBy: [brief.traveler],
+    createdAt: stamp,
+    updatedAt: stamp,
+  });
+  // timestamps:false keeps our explicit createdAt instead of overwriting it.
+  await message.save({ timestamps: false });
+};
+
 export const respondToBrief = async (req, res) => {
   if (req.user.role !== USER_ROLES.DRIVER || req.user.driverStatus !== DRIVER_STATUS.APPROVED) {
     return res.status(403).json({ message: 'Only approved drivers can send offers.' });
@@ -282,6 +339,14 @@ export const respondToBrief = async (req, res) => {
     normalizedExtraKmPrice < 0
   ) {
     return res.status(400).json({ message: 'Offer pricing details are invalid.' });
+  }
+
+  // Guard against LKR amounts entered in the USD field: the extra-km rate is
+  // capped at $1.00. Mirrors the web + mobile client validation.
+  if (normalizedExtraKmPrice > 1) {
+    return res
+      .status(400)
+      .json({ message: 'Extra km rate must be between $0.00 and $1.00 (USD).' });
   }
 
   const overrideStart = parseDate(startInput);
@@ -340,6 +405,10 @@ export const respondToBrief = async (req, res) => {
       driverId: req.user.id,
       vehicleId: vehicle.id,
     });
+
+    // Drop the brief into the thread as the traveller's message, so the offer
+    // that follows reads as a reply to a visible request (both parties see it).
+    await ensureBriefMessage({ conversation, brief });
 
     const guestsLabel = `${brief.adults} adult${brief.adults === 1 ? '' : 's'}${
       brief.children > 0 ? `, ${brief.children} child${brief.children === 1 ? '' : 'ren'}` : ''

@@ -500,6 +500,14 @@ export const sendOffer = async (req, res) => {
     return res.status(400).json({ message: 'Offer pricing details are invalid.' });
   }
 
+  // Guard against LKR amounts entered in the USD field: the extra-km rate is
+  // capped at $1.00. Mirrors the web + mobile client validation.
+  if (normalizedExtraKmPrice > 1) {
+    return res
+      .status(400)
+      .json({ message: 'Extra km rate must be between $0.00 and $1.00 (USD).' });
+  }
+
   try {
     const conversation = await ChatConversation.findById(conversationId);
 

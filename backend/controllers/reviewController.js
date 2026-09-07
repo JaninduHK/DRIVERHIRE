@@ -522,6 +522,7 @@ export const createAdminReview = async (req, res) => {
       _id: driver,
       role: USER_ROLES.DRIVER,
       driverStatus: DRIVER_STATUS.APPROVED,
+      deletedAt: null,
     });
 
     if (!driverDoc) {

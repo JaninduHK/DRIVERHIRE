@@ -369,7 +369,7 @@ export const listVehicles = async (req, res) => {
       .sort(sortOption)
       .populate({
         path: 'driver',
-        match: { driverStatus: DRIVER_STATUS.APPROVED },
+        match: { driverStatus: DRIVER_STATUS.APPROVED, deletedAt: null },
         select:
           'name description contactNumber tripAdvisor address driverStatus createdAt profilePhoto driverLocation',
         options: { lean: true },
@@ -474,7 +474,7 @@ export const getVehicleDetails = async (req, res) => {
         path: 'driver',
         select:
           'name description contactNumber tripAdvisor address driverStatus createdAt profilePhoto driverLocation',
-        match: { driverStatus: DRIVER_STATUS.APPROVED },
+        match: { driverStatus: DRIVER_STATUS.APPROVED, deletedAt: null },
         options: { lean: true },
       })
       .lean();
@@ -525,7 +525,7 @@ export const checkVehicleAvailability = async (req, res) => {
       .select('availability pricePerDay driver')
       .populate({
         path: 'driver',
-        match: { driverStatus: DRIVER_STATUS.APPROVED },
+        match: { driverStatus: DRIVER_STATUS.APPROVED, deletedAt: null },
         select: '_id driverStatus',
         options: { lean: true },
       })
@@ -658,7 +658,7 @@ export const createVehicleBooking = async (req, res) => {
       .select('availability pricePerDay model driver')
       .populate({
         path: 'driver',
-        match: { driverStatus: DRIVER_STATUS.APPROVED },
+        match: { driverStatus: DRIVER_STATUS.APPROVED, deletedAt: null },
         select: '_id name email driverStatus contactNumber profilePhoto driverLocation',
       });
 

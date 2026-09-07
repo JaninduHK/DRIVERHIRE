@@ -102,7 +102,13 @@ export default function Bookings() {
                     { text: 'Decline', style: 'destructive', onPress: () => respond.mutate({ id: b.id, action: 'reject' }) },
                   ])
                 }
-                onMessage={() => router.push('/(app)/(tabs)/messages')}
+                onMessage={() =>
+                  router.push(
+                    b.conversationId
+                      ? `/(app)/chat/${b.conversationId}`
+                      : '/(app)/(tabs)/messages'
+                  )
+                }
                 onView={() => setSelectedBooking(b)}
               />
             ))}

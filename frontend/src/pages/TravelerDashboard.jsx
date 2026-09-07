@@ -48,6 +48,7 @@ import { Avatar } from '../components/dashboard/primitives.jsx';
 import BookingDetailsModal from '../components/BookingDetailsModal.jsx';
 import DeleteAccountCard from '../components/DeleteAccountCard.jsx';
 import OfferVehicleImages from '../components/OfferVehicleImages.jsx';
+import BriefRequestBubble from '../components/BriefRequestBubble.jsx';
 
 const NAV_ITEMS = [
   { id: 'overview', label: 'Overview', icon: User2 },
@@ -1336,6 +1337,9 @@ const TravelerMessages = ({
     ) : (
       messages.map((message) => {
         const isTraveller = message.sender?.role === 'guest' || message.senderRole === 'guest';
+        if (message.type === 'brief' && message.briefRequest) {
+          return <BriefRequestBubble key={message.id} message={message} align={isTraveller ? 'end' : 'start'} />;
+        }
         if (message.type === 'offer' && message.offer) {
           return <TravelerOfferBubble key={message.id} message={message} align={isTraveller ? 'end' : 'start'} onBook={() => onBookOffer(message)} />;
         }

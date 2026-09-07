@@ -211,6 +211,7 @@ export const listPublicDrivers = async (req, res) => {
     const drivers = await User.find({
       role: USER_ROLES.DRIVER,
       driverStatus: DRIVER_STATUS.APPROVED,
+      deletedAt: null,
     })
       .select(
         'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation experienceYears'
@@ -273,6 +274,7 @@ export const getPublicDriverDetails = async (req, res) => {
       _id: id,
       role: USER_ROLES.DRIVER,
       driverStatus: DRIVER_STATUS.APPROVED,
+      deletedAt: null,
     })
       .select(
         'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation experienceYears'

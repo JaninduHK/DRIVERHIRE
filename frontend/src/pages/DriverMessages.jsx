@@ -31,6 +31,7 @@ import { Avatar } from '../components/dashboard/primitives.jsx';
 import BookingDetailsModal from '../components/BookingDetailsModal.jsx';
 import { clearStoredToken, getStoredUser } from '../services/authToken.js';
 import OfferVehicleImages from '../components/OfferVehicleImages.jsx';
+import BriefRequestBubble from '../components/BriefRequestBubble.jsx';
 
 const HEADER_GRADIENT = 'linear-gradient(160deg,#0f7a45,#10a35a 55%,#18b866)';
 const AVATAR_TONES = ['amber', 'purple', 'blue'];
@@ -318,6 +319,12 @@ const DriverMessages = () => {
       return;
     }
 
+    const extraKmNumber = Number(pricePerExtraKm || 0);
+    if (Number.isNaN(extraKmNumber) || extraKmNumber < 0 || extraKmNumber > 1) {
+      toast.error('Extra km rate must be between $0.00 and $1.00 (USD).');
+      return;
+    }
+
     setSendingOffer(true);
     try {
       const payload = await sendOffer(selectedConversationId, {
@@ -394,6 +401,9 @@ const DriverMessages = () => {
 
   const renderMessage = (message) => {
     const isDriver = message.sender?.role === 'driver' || message.senderRole === 'driver';
+    if (message.type === 'brief' && message.briefRequest) {
+      return <BriefRequestBubble key={message.id} message={message} align={isDriver ? 'end' : 'start'} />;
+    }
     if (message.type === 'offer' && message.offer) {
       return <OfferBubble key={message.id} message={message} align={isDriver ? 'end' : 'start'} />;
     }
@@ -579,6 +589,11 @@ const DriverMessages = () => {
                   messages.map((message) => {
                     const isDriver =
                       message.sender?.role === 'driver' || message.senderRole === 'driver';
+                    if (message.type === 'brief' && message.briefRequest) {
+                      return (
+                        <BriefRequestBubble key={message.id} message={message} align={isDriver ? 'end' : 'start'} />
+                      );
+                    }
                     if (message.type === 'offer' && message.offer) {
                       return (
                         <OfferBubble key={message.id} message={message} align={isDriver ? 'end' : 'start'} />
@@ -863,7 +878,8 @@ const DriverMessages = () => {
               </div>
               <div>
                 <label className={labelCls}>Price per extra km (USD)</label>
-                <input type="number" min="0" step="0.001" inputMode="decimal" value={offerForm.pricePerExtraKm} onChange={(e) => handleOfferChange('pricePerExtraKm', e.target.value)} className={`mt-1 ${inputCls}`} />
+                <input type="number" min="0" max="1" step="0.001" inputMode="decimal" value={offerForm.pricePerExtraKm} onChange={(e) => handleOfferChange('pricePerExtraKm', e.target.value)} className={`mt-1 ${inputCls}`} />
+                <p className="mt-1 text-[11px] text-muted-soft">In USD, between $0.00 and $1.00 per km.</p>
               </div>
               <div>
                 <label className={labelCls}>Notes to traveller (optional)</label>

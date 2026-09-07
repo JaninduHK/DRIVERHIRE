@@ -49,6 +49,31 @@ const offerSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// Snapshot of the tour brief that a driver responded to, injected into the
+// conversation as a "guest" message so both parties see the original request
+// above the offer. Snapshotted (not populated) so it survives brief edits or
+// deletion, and stored pre-sanitized (contact details already redacted).
+const briefRequestSchema = new mongoose.Schema(
+  {
+    brief: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'TourBrief',
+    },
+    startLocation: String,
+    endLocation: String,
+    startDate: Date,
+    endDate: Date,
+    adults: Number,
+    children: Number,
+    country: String,
+    message: {
+      type: String,
+      trim: true,
+    },
+  },
+  { _id: false }
+);
+
 const messageSchema = new mongoose.Schema(
   {
     conversation: {
@@ -70,7 +95,7 @@ const messageSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['text', 'offer'],
+      enum: ['text', 'offer', 'brief'],
       default: 'text',
       index: true,
     },
@@ -89,6 +114,10 @@ const messageSchema = new mongoose.Schema(
     },
     offer: {
       type: offerSchema,
+      default: null,
+    },
+    briefRequest: {
+      type: briefRequestSchema,
       default: null,
     },
     readBy: {

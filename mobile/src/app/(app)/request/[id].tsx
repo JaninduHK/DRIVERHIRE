@@ -58,6 +58,7 @@ export default function RequestDetail() {
     Boolean(vehicleId) &&
     Number(includedKm) > 0 &&
     Number(extraKm) >= 0 &&
+    Number(extraKm) <= 1 &&
     !respond.isPending;
   const route = [brief?.startLocation, brief?.endLocation].filter(Boolean).join(' → ') || brief?.route || 'Quote request';
   const adults = brief?.adults ?? 0;
@@ -113,6 +114,9 @@ export default function RequestDetail() {
                 <TextField className="flex-1" label="Included kms" value={includedKm} onChangeText={setIncludedKm} placeholder="300" keyboardType="number-pad" />
               </View>
               <TextField className="mt-3" label="Price per extra km (USD)" value={extraKm} onChangeText={setExtraKm} placeholder="0.30" keyboardType="decimal-pad" />
+              <Text className={`mt-1 font-med text-[11px] ${Number(extraKm) > 1 ? 'text-danger' : 'text-muted-soft'}`}>
+                In USD, between $0.00 and $1.00 per km.
+              </Text>
 
               {activeVehicles.length > 0 ? (
                 <>

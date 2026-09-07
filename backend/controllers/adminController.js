@@ -376,7 +376,11 @@ export const updateDriverStatus = async (req, res) => {
       driver.driverApprovedAt = now;
       driver.driverProfileTourCompletedAt = undefined;
     }
-    await driver.save();
+    // A deleted (anonymized) driver has its passwordHash cleared while authProvider
+    // stays 'local', which would trip full-document validation on save. We only
+    // change status fields here and the status itself is already route-validated,
+    // so skip document validation to keep status changes working for any account.
+    await driver.save({ validateBeforeSave: false });
 
     if (driver.email) {
       sendDriverStatusEmail({
