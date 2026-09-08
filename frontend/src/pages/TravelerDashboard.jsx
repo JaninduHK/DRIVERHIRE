@@ -7,6 +7,7 @@ import {
   CalendarDays,
   Car,
   ChevronLeft,
+  ChevronRight,
   Loader2,
   Mail,
   MapPin,
@@ -46,6 +47,7 @@ import { clearStoredToken, getStoredToken, redirectToSsoLogin } from '../service
 import { DashboardSidebar, DriverDrawer, MobileHeader, Sheet } from '../components/dashboard/mobile.jsx';
 import { Avatar } from '../components/dashboard/primitives.jsx';
 import BookingDetailsModal from '../components/BookingDetailsModal.jsx';
+import DriverProfileSheet from '../components/DriverProfileSheet.jsx';
 import DeleteAccountCard from '../components/DeleteAccountCard.jsx';
 import OfferVehicleImages from '../components/OfferVehicleImages.jsx';
 import BriefRequestBubble from '../components/BriefRequestBubble.jsx';
@@ -1304,6 +1306,7 @@ const TravelerMessages = ({
   const { loading: convLoading, error: convError, items: conversations } = conversationsState;
   const { loading: msgLoading, error: msgError, items: messages, booking: conversationBooking } = messagesState;
   const [bookingDetailOpen, setBookingDetailOpen] = useState(false);
+  const [driverProfileOpen, setDriverProfileOpen] = useState(false);
   const mobileComposerRef = useRef(null);
   const desktopComposerRef = useRef(null);
 
@@ -1322,6 +1325,8 @@ const TravelerMessages = ({
   const activeSubtitle = selectedConversation?.vehicle?.model
     ? `Discussing ${selectedConversation.vehicle.model}`
     : 'General conversation';
+  const activeDriverId = selectedConversation?.participants?.driver?.id;
+  const openDriverProfile = () => { if (activeDriverId) setDriverProfileOpen(true); };
 
   const chatMessages =
     msgLoading && messages.length === 0 ? (
@@ -1455,11 +1460,20 @@ const TravelerMessages = ({
                 <button type="button" onClick={() => onSelectConversation('')} aria-label="Back" className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-white/[0.18] transition hover:bg-white/25">
                   <ChevronLeft className="h-[18px] w-[18px]" strokeWidth={2} />
                 </button>
-                <Avatar name={activeName} tone="light" className="h-10 w-10 flex-shrink-0 text-[15px]" />
-                <div className="min-w-0">
-                  <div className="truncate text-[16px] font-extrabold">{activeName}</div>
-                  <div className="truncate text-[12px] text-white/80">{activeSubtitle}</div>
-                </div>
+                <button
+                  type="button"
+                  onClick={openDriverProfile}
+                  disabled={!activeDriverId}
+                  aria-label={`View ${activeName}'s driver profile`}
+                  className="flex min-w-0 flex-1 items-center gap-3 rounded-xl py-1 pr-2 text-left transition active:bg-white/10 disabled:cursor-default"
+                >
+                  <Avatar name={activeName} tone="light" className="h-10 w-10 flex-shrink-0 text-[15px]" />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[16px] font-extrabold">{activeName}</div>
+                    <div className="truncate text-[12px] text-white/80">{activeSubtitle}</div>
+                  </div>
+                  {activeDriverId ? <ChevronRight className="h-4 w-4 flex-shrink-0 text-white/70" /> : null}
+                </button>
               </div>
             </div>
             <div className="flex flex-1 flex-col">
@@ -1517,12 +1531,21 @@ const TravelerMessages = ({
         <div className="flex flex-1 flex-col bg-canvas">
           {selectedConversation ? (
             <>
-              <div className="flex h-[72px] flex-shrink-0 items-center gap-3 border-b border-hairline bg-white px-6">
-                <Avatar name={activeName} tone="brand" className="h-10 w-10 flex-shrink-0 rounded-[11px] text-[15px]" />
-                <div className="min-w-0">
-                  <b className="block truncate text-[15px] text-ink">{activeName}</b>
-                  <div className="truncate text-[12px] text-muted-soft">{activeSubtitle}</div>
-                </div>
+              <div className="flex h-[72px] flex-shrink-0 items-center border-b border-hairline bg-white px-6">
+                <button
+                  type="button"
+                  onClick={openDriverProfile}
+                  disabled={!activeDriverId}
+                  aria-label={`View ${activeName}'s driver profile`}
+                  className="group flex min-w-0 flex-1 items-center gap-3 rounded-xl py-1.5 pr-3 text-left transition hover:bg-canvas disabled:cursor-default disabled:hover:bg-transparent"
+                >
+                  <Avatar name={activeName} tone="brand" className="h-10 w-10 flex-shrink-0 rounded-[11px] text-[15px]" />
+                  <div className="min-w-0 flex-1">
+                    <b className="block truncate text-[15px] text-ink">{activeName}</b>
+                    <div className="truncate text-[12px] text-muted-soft">{activeSubtitle}</div>
+                  </div>
+                  {activeDriverId ? <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted-soft transition group-hover:text-brand-dark" /> : null}
+                </button>
               </div>
               <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto px-6 py-6">
                 {bookingNotice}
@@ -1556,6 +1579,18 @@ const TravelerMessages = ({
         <BookingDetailsModal
           booking={conversationBooking}
           onClose={() => setBookingDetailOpen(false)}
+        />
+      ) : null}
+      {driverProfileOpen && activeDriverId ? (
+        <DriverProfileSheet
+          driverId={activeDriverId}
+          activeVehicleId={selectedConversation?.vehicle?.id}
+          hasBooking={Boolean(conversationBooking)}
+          onClose={() => setDriverProfileOpen(false)}
+          onViewTripDetails={() => {
+            setDriverProfileOpen(false);
+            setBookingDetailOpen(true);
+          }}
         />
       ) : null}
     </>

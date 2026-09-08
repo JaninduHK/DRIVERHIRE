@@ -16,68 +16,17 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fetchDriverProfile } from '../services/driverDirectoryApi.js';
-import { fetchVehicleReviews } from '../services/vehicleCatalogApi.js';
 import { startConversation as startChatConversation } from '../services/chatApi.js';
 import { getStoredToken, redirectToSsoLogin } from '../services/authToken.js';
 import { Avatar } from '../components/dashboard/primitives.jsx';
 import ReviewPhotos from '../components/ReviewPhotos.jsx';
+import { useAggregatedDriverReviews } from '../hooks/useAggregatedDriverReviews.js';
 
 const formatCurrency = (value) => (!Number.isFinite(value) ? '$0' : `$${value.toLocaleString('en-US')}`);
 const formatDate = (value) => {
   if (!value) return null;
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-};
-
-const useAggregatedReviews = (vehicles, seed) => {
-  const hasVehicles = Array.isArray(vehicles) && vehicles.length > 0;
-  const [refreshIndex, setRefreshIndex] = useState(0);
-  const [state, setState] = useState(
-    seed
-      ? { loading: false, error: '', reviews: seed.reviews || [], meta: seed.meta || { total: 0, averageRating: null, counts: [0, 0, 0, 0, 0] } }
-      : { loading: hasVehicles, error: '', reviews: [], meta: { total: 0, averageRating: null, counts: [0, 0, 0, 0, 0] } },
-  );
-
-  useEffect(() => {
-    let active = true;
-    if (!hasVehicles) {
-      setState({ loading: false, error: '', reviews: [], meta: { total: 0, averageRating: null, counts: [0, 0, 0, 0, 0] } });
-      return () => { active = false; };
-    }
-    (async () => {
-      setState((prev) => ({ ...prev, loading: prev.reviews.length === 0, error: '' }));
-      try {
-        const aggregated = [];
-        const counts = [0, 0, 0, 0, 0];
-        let sum = 0;
-        for (const vehicle of vehicles) {
-          if (!vehicle?.id) continue;
-          const response = await fetchVehicleReviews(vehicle.id);
-          (Array.isArray(response?.reviews) ? response.reviews : []).forEach((review) => {
-            const r = Number(review.rating) || 0;
-            aggregated.push({ ...review, vehicle: { id: vehicle.id, model: vehicle.model } });
-            sum += r;
-            const idx = Math.min(Math.max(Math.round(r), 1), 5) - 1;
-            if (idx >= 0) counts[idx] += 1;
-          });
-        }
-        if (!active) return;
-        const total = aggregated.length;
-        aggregated.sort((a, b) => {
-          const ai = Array.isArray(a.images) && a.images.length ? 1 : 0;
-          const bi = Array.isArray(b.images) && b.images.length ? 1 : 0;
-          if (ai !== bi) return bi - ai;
-          return new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0);
-        });
-        setState({ loading: false, error: '', reviews: aggregated, meta: { total, averageRating: total ? Number((sum / total).toFixed(1)) : null, counts } });
-      } catch (error) {
-        if (active) setState((prev) => ({ loading: false, error: prev.reviews.length ? '' : (error?.message || 'Unable to load reviews.'), reviews: prev.reviews, meta: prev.meta }));
-      }
-    })();
-    return () => { active = false; };
-  }, [hasVehicles, vehicles, refreshIndex]);
-
-  return { ...state, reload: () => setRefreshIndex((p) => p + 1) };
 };
 
 const DriverDetails = () => {
@@ -114,7 +63,7 @@ const DriverDetails = () => {
 
   const driver = state.data?.driver;
   const vehicles = useMemo(() => state.data?.vehicles || [], [state.data]);
-  const reviews = useAggregatedReviews(
+  const reviews = useAggregatedDriverReviews(
     vehicles,
     loaderData?.reviews ? { reviews: loaderData.reviews, meta: loaderData.reviewMeta } : undefined,
   );

@@ -293,6 +293,7 @@ const VehicleDetails = () => {
   const driverAddress = vehicle.driver?.address;
   const locationLabel = typeof driverAddress === 'string' && driverAddress.trim() ? driverAddress.trim() : 'Pickup shared after confirmation';
   const driverName = vehicle.driver?.name ?? 'Approved driver';
+  const driverPhoto = vehicle.driver?.profilePhoto || '';
   const firstName = driverName.split(' ')[0] || driverName;
   const memberSinceLabel = vehicle.driver?.createdAt ? `Member since ${formatDate(vehicle.driver.createdAt)}` : 'Verified driver';
   const quoteTotalValue = availability.quote?.totalPrice ?? null;
@@ -325,7 +326,7 @@ const VehicleDetails = () => {
     reviews, reviewMeta, reviewsLoading, reviewsError, averageRatingLabel, ratingCounts,
     ratingOptions, reviewFilters, handleReviewRatingFilter, handleReviewSortChange, handleReviewReload, firstName,
   };
-  const driverProps = { driverName, memberSinceLabel, driverAddress, averageRatingLabel, handleSendMessage, creatingConversation, goDriverProfile };
+  const driverProps = { driverName, driverPhoto, memberSinceLabel, driverAddress, averageRatingLabel, handleSendMessage, creatingConversation, goDriverProfile };
 
   return (
     <div className="bg-[#eef1f4] font-sans text-ink">
@@ -619,10 +620,10 @@ const IncludedRow = ({ children }) => (
   </div>
 );
 
-const DriverCard = ({ driverName, memberSinceLabel, driverAddress, averageRatingLabel, handleSendMessage, creatingConversation, goDriverProfile, desktop = false }) => (
+const DriverCard = ({ driverName, driverPhoto, memberSinceLabel, driverAddress, averageRatingLabel, handleSendMessage, creatingConversation, goDriverProfile, desktop = false }) => (
   <div>
     <div className="flex items-center gap-3.5">
-      <Avatar name={driverName} tone="ink" className={`flex-shrink-0 rounded-full ${desktop ? 'h-14 w-14 text-lg' : 'h-12 w-12 text-base'}`} />
+      <Avatar name={driverName} tone="ink" image={driverPhoto} className={`flex-shrink-0 rounded-full ${desktop ? 'h-14 w-14 text-lg' : 'h-12 w-12 text-base'}`} />
       <div className="min-w-0 flex-1">
         <b className="block truncate text-[15.5px] text-ink">{driverName}</b>
         <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[12px] text-muted-soft">

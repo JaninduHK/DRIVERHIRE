@@ -682,9 +682,15 @@ const DriverCard = ({ driver }) => {
         </div>
       </div>
       <div className="mt-3.5 flex flex-wrap items-center gap-1.5 text-[13.5px] font-bold">
-        <StarIcon />
-        {rating}
-        <span className="font-semibold text-muted-soft">· {reviews} reviews · {yearsLabel(driver.experienceYears)}</span>
+        {reviews > 0 ? (
+          <>
+            <StarIcon />
+            {rating}
+            <span className="font-semibold text-muted-soft">· {reviews} reviews · {yearsLabel(driver.experienceYears)}</span>
+          </>
+        ) : (
+          <span className="font-semibold text-muted-soft">No reviews yet · {yearsLabel(driver.experienceYears)}</span>
+        )}
       </div>
       <p className="mt-[11px] flex-1 text-[14px] leading-[1.6] text-muted line-clamp-3">
         {driver.description || 'Trusted chauffeur for bespoke Sri Lanka tours across the island.'}

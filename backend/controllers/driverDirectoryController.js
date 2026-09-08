@@ -101,13 +101,6 @@ const normalizeExperienceYears = (driver) => {
   return 1;
 };
 
-const deriveReviewScore = (experienceYears, vehicleCount) => {
-  const experienceContribution = Math.min(0.6, (experienceYears / 10) * 0.6);
-  const fleetContribution = Math.min(0.8, vehicleCount * 0.15);
-  const base = 4;
-  return Math.min(5, Math.max(4, base + experienceContribution + fleetContribution));
-};
-
 const buildDriverSummary = (driver, vehicles = [], reviewStats = null, req, activeDiscount = null) => {
   const cardVehicles = vehicles.map((vehicle) => shapeVehicleCard(vehicle, req, activeDiscount));
   const featuredVehicle = cardVehicles.find((vehicle) => Boolean(vehicle.image)) || cardVehicles[0] || null;
@@ -120,14 +113,12 @@ const buildDriverSummary = (driver, vehicles = [], reviewStats = null, req, acti
   }, {});
 
   const badges = FEATURE_FLAGS.filter(({ key }) => featureCounts[key]).map(({ label }) => label);
-  const hasReviewStats = reviewStats && Number.isFinite(reviewStats.reviewCount);
-  const fallbackReviewScore = deriveReviewScore(experienceYears, vehicles.length);
-  const fallbackReviewCount = Math.max(12, vehicles.length * 6 + 10);
+  const hasReviewStats = reviewStats && Number.isFinite(reviewStats.reviewCount) && reviewStats.reviewCount > 0;
 
   const reviewScore = hasReviewStats && Number.isFinite(reviewStats.averageRating)
     ? reviewStats.averageRating
-    : fallbackReviewScore;
-  const reviewCount = hasReviewStats ? reviewStats.reviewCount : fallbackReviewCount;
+    : null;
+  const reviewCount = hasReviewStats ? reviewStats.reviewCount : 0;
 
   const locationPayload = driver.driverLocation
     ? {
@@ -152,7 +143,7 @@ const buildDriverSummary = (driver, vehicles = [], reviewStats = null, req, acti
     experienceYears,
     joinedAt: driver.createdAt,
     hasEnglishDriver: featureCounts.englishSpeakingDriver,
-    reviewScore: Math.round(reviewScore * 10) / 10,
+    reviewScore: reviewScore !== null ? Math.round(reviewScore * 10) / 10 : null,
     reviewCount,
     profilePhoto: buildAssetUrl(driver.profilePhoto, req),
     location: locationPayload,
