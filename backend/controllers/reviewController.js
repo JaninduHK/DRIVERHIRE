@@ -11,6 +11,12 @@ const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
 const MAX_REVIEW_IMAGES = 4;
 
+const ADMIN_REVIEW_POPULATE = [
+  { path: 'vehicle', populate: { path: 'driver', select: 'name email contactNumber' } },
+  { path: 'driver', select: 'name email contactNumber' },
+  { path: 'booking', select: 'startDate endDate status totalDays totalPrice' },
+];
+
 // Upload attached review photos (multer memory buffers) to Cloudinary → array of URLs.
 const uploadReviewImages = async (files, ownerId) => {
   if (!Array.isArray(files) || files.length === 0) {
@@ -86,6 +92,8 @@ const shapeAdminReview = (review, req) => ({
   status: review.status,
   adminNote: review.adminNote || '',
   createdByAdmin: Boolean(review.createdByAdmin),
+  featured: Boolean(review.featured),
+  featuredOrder: typeof review.featuredOrder === 'number' ? review.featuredOrder : null,
   travelerUser: review.travelerUser ? review.travelerUser.toString() : undefined,
   driver: review.driver && typeof review.driver === 'object'
     ? {
@@ -352,20 +360,33 @@ export const listLatestReviews = async (req, res) => {
     if (minRating !== null) {
       filters.rating = { $gte: minRating };
     }
-    const reviews = await Review.find(filters)
-      .sort({ publishedAt: -1, createdAt: -1 })
-      .limit(60)
-      .populate({
-        path: 'vehicle',
-        select: 'model driver',
-        populate: { path: 'driver', select: 'name' },
-      })
-      .populate({ path: 'driver', select: 'name' })
+
+    const populateOpts = [
+      { path: 'vehicle', select: 'model driver', populate: { path: 'driver', select: 'name' } },
+      { path: 'driver', select: 'name' },
+    ];
+
+    // Admin-handpicked reviews always lead, in the order the admin set for them.
+    const featuredReviews = await Review.find({ ...filters, featured: true })
+      .sort({ featuredOrder: 1 })
+      .limit(limit)
+      .populate(populateOpts)
       .lean();
 
-    // Surface reviews that have photos first, so the homepage cards get cover images.
-    const hasImages = (review) => (Array.isArray(review.images) && review.images.length > 0 ? 1 : 0);
-    reviews.sort((a, b) => hasImages(b) - hasImages(a));
+    let reviews = featuredReviews;
+    if (reviews.length < limit) {
+      const remaining = await Review.find({ ...filters, _id: { $nin: featuredReviews.map((r) => r._id) } })
+        .sort({ publishedAt: -1, createdAt: -1 })
+        .limit(60)
+        .populate(populateOpts)
+        .lean();
+
+      // Surface reviews that have photos first, so the homepage cards get cover images.
+      const hasImages = (review) => (Array.isArray(review.images) && review.images.length > 0 ? 1 : 0);
+      remaining.sort((a, b) => hasImages(b) - hasImages(a));
+
+      reviews = [...reviews, ...remaining];
+    }
 
     const shaped = reviews.slice(0, limit).map((review) => {
       const driverRef = review.vehicle?.driver || review.driver;
@@ -391,7 +412,7 @@ export const listLatestReviews = async (req, res) => {
 };
 
 export const listAdminReviews = async (req, res) => {
-  const { status, driver, sort = 'recent' } = req.query || {};
+  const { status, driver, featured, sort = 'recent' } = req.query || {};
 
   const allowedStatuses = new Set(Object.values(REVIEW_STATUS));
   const filters = {};
@@ -408,6 +429,9 @@ export const listAdminReviews = async (req, res) => {
     }
     filters.driver = driver;
   }
+  if (featured !== undefined) {
+    filters.featured = String(featured).trim().toLowerCase() === 'true';
+  }
 
   let sortOption = { createdAt: -1 };
   if (sort === 'oldest') {
@@ -416,6 +440,8 @@ export const listAdminReviews = async (req, res) => {
     sortOption = { rating: -1, createdAt: -1 };
   } else if (sort === 'ratingAsc') {
     sortOption = { rating: 1, createdAt: -1 };
+  } else if (sort === 'featuredOrder') {
+    sortOption = { featuredOrder: 1, createdAt: -1 };
   }
 
   try {
@@ -589,20 +615,7 @@ export const createAdminReview = async (req, res) => {
       createdByAdmin: true,
     });
 
-    await review.populate([
-      {
-        path: 'vehicle',
-        populate: { path: 'driver', select: 'name email contactNumber' },
-      },
-      {
-        path: 'driver',
-        select: 'name email contactNumber',
-      },
-      {
-        path: 'booking',
-        select: 'startDate endDate status totalDays totalPrice',
-      },
-    ]);
+    await review.populate(ADMIN_REVIEW_POPULATE);
 
     return res.status(201).json({
       message:
@@ -614,6 +627,258 @@ export const createAdminReview = async (req, res) => {
   } catch (error) {
     console.error('Create admin review error:', error);
     return res.status(500).json({ message: 'Unable to create review.' });
+  }
+};
+
+// Partial edit of an existing review. Every field is optional; only what's sent is
+// changed. New photos (multipart) are appended — use removeAdminReviewImage to drop one.
+export const updateAdminReview = async (req, res) => {
+  const { id } = req.params;
+  const body = req.body || {};
+
+  if (!isValidObjectId(id)) {
+    return res.status(400).json({ message: 'Invalid review identifier.' });
+  }
+
+  try {
+    const review = await Review.findById(id);
+    if (!review) {
+      return res.status(404).json({ message: 'Review not found.' });
+    }
+
+    if (body.driver !== undefined) {
+      if (!isValidObjectId(body.driver)) {
+        return res.status(400).json({ message: 'Invalid driver identifier.' });
+      }
+      const driverDoc = await User.findOne({
+        _id: body.driver,
+        role: USER_ROLES.DRIVER,
+        driverStatus: DRIVER_STATUS.APPROVED,
+        deletedAt: null,
+      });
+      if (!driverDoc) {
+        return res.status(404).json({ message: 'Driver not found or not approved.' });
+      }
+      review.driver = driverDoc._id;
+    }
+
+    if (body.vehicle !== undefined) {
+      if (body.vehicle) {
+        if (!isValidObjectId(body.vehicle)) {
+          return res.status(400).json({ message: 'Invalid vehicle identifier.' });
+        }
+        const vehicleDoc = await Vehicle.findById(body.vehicle);
+        if (!vehicleDoc) {
+          return res.status(404).json({ message: 'Vehicle not found.' });
+        }
+        if (vehicleDoc.driver && review.driver && vehicleDoc.driver.toString() !== review.driver.toString()) {
+          return res.status(400).json({ message: 'Selected vehicle does not belong to this driver.' });
+        }
+        review.vehicle = vehicleDoc._id;
+      } else {
+        review.vehicle = undefined;
+      }
+    }
+
+    if (body.rating !== undefined) {
+      const rating = coerceRating(body.rating);
+      if (rating === null) {
+        return res.status(400).json({ message: 'Rating must be a whole number between 1 and 5.' });
+      }
+      review.rating = rating;
+    }
+
+    if (body.comment !== undefined) {
+      const trimmedComment = typeof body.comment === 'string' ? body.comment.trim() : '';
+      if (trimmedComment.length < 10) {
+        return res.status(400).json({ message: 'Please include at least 10 characters in the review.' });
+      }
+      review.comment = trimmedComment;
+    }
+
+    if (body.title !== undefined) {
+      const trimmedTitle = typeof body.title === 'string' ? body.title.trim() : '';
+      if (trimmedTitle.length > 120) {
+        return res.status(400).json({ message: 'Title must be under 120 characters.' });
+      }
+      review.title = trimmedTitle || undefined;
+    }
+
+    if (body.travelerName !== undefined) {
+      const trimmedName = typeof body.travelerName === 'string' ? body.travelerName.trim() : '';
+      review.travelerName = trimmedName || 'Guest';
+    }
+
+    if (body.reviewDate !== undefined) {
+      review.reviewDate = coerceDate(body.reviewDate) || undefined;
+    }
+    if (body.visitedStartDate !== undefined) {
+      review.visitedStartDate = coerceDate(body.visitedStartDate) || undefined;
+    }
+    if (body.visitedEndDate !== undefined) {
+      review.visitedEndDate = coerceDate(body.visitedEndDate) || undefined;
+    }
+    if (review.visitedStartDate && review.visitedEndDate && review.visitedEndDate < review.visitedStartDate) {
+      return res.status(400).json({ message: 'End date cannot be before start date.' });
+    }
+
+    if (body.status !== undefined) {
+      const normalizedStatus = typeof body.status === 'string' ? body.status.trim().toLowerCase() : '';
+      if (!Object.values(REVIEW_STATUS).includes(normalizedStatus)) {
+        return res.status(400).json({ message: `Status must be one of: ${Object.values(REVIEW_STATUS).join(', ')}` });
+      }
+      review.status = normalizedStatus;
+      review.publishedAt =
+        normalizedStatus === REVIEW_STATUS.APPROVED ? review.publishedAt || new Date() : undefined;
+      // A review that's no longer published can't stay a homepage pick.
+      if (normalizedStatus !== REVIEW_STATUS.APPROVED && review.featured) {
+        review.featured = false;
+        review.featuredOrder = null;
+      }
+    }
+
+    let uploadedImages = [];
+    try {
+      uploadedImages = await uploadReviewImages(req.files, req.user.id);
+    } catch (uploadError) {
+      console.error('Admin review image upload failed:', uploadError);
+      return res.status(502).json({ message: 'We could not upload the review photos. Please try again.' });
+    }
+    if (uploadedImages.length || body.imageUrls) {
+      const existingImages = Array.isArray(review.images) ? review.images : [];
+      review.images = [...existingImages, ...uploadedImages, ...parseImageUrls(body.imageUrls)].slice(
+        0,
+        MAX_REVIEW_IMAGES
+      );
+    }
+
+    await review.save();
+    await review.populate(ADMIN_REVIEW_POPULATE);
+
+    return res.json({
+      message: 'Review updated.',
+      review: shapeAdminReview(review.toJSON(), req),
+    });
+  } catch (error) {
+    console.error('Update admin review error:', error);
+    return res.status(500).json({ message: 'Unable to update review.' });
+  }
+};
+
+// Remove one photo from a review (admin only). Mirrors removeVehicleImage.
+export const removeAdminReviewImage = async (req, res) => {
+  const { id } = req.params;
+  const { image } = req.body || {};
+  const trimmedImage = typeof image === 'string' ? image.trim() : '';
+
+  if (!isValidObjectId(id)) {
+    return res.status(400).json({ message: 'Invalid review identifier.' });
+  }
+  if (!trimmedImage) {
+    return res.status(400).json({ message: 'Image path is required.' });
+  }
+
+  try {
+    const review = await Review.findById(id);
+    if (!review) {
+      return res.status(404).json({ message: 'Review not found.' });
+    }
+
+    const existing = Array.isArray(review.images) ? review.images : [];
+    if (!existing.includes(trimmedImage)) {
+      return res.status(404).json({ message: 'Image not found on this review.' });
+    }
+
+    review.images = existing.filter((entry) => entry !== trimmedImage);
+    await review.save();
+    await review.populate(ADMIN_REVIEW_POPULATE);
+
+    try {
+      await deleteMultipleAssets([trimmedImage], 'image');
+    } catch (cleanupError) {
+      console.warn('Failed to delete review image from Cloudinary:', cleanupError.message);
+    }
+
+    return res.json({
+      message: 'Image removed.',
+      review: shapeAdminReview(review.toJSON(), req),
+    });
+  } catch (error) {
+    console.error('Remove admin review image error:', error);
+    return res.status(500).json({ message: 'Unable to remove image.' });
+  }
+};
+
+// Toggle whether a review is handpicked for the homepage carousel. Marking a review
+// featured puts it at the back of the featured queue (highest featuredOrder + 1);
+// unmarking clears its order.
+export const setReviewFeatured = async (req, res) => {
+  const { id } = req.params;
+  const { featured } = req.body || {};
+
+  if (!isValidObjectId(id)) {
+    return res.status(400).json({ message: 'Invalid review identifier.' });
+  }
+  if (typeof featured !== 'boolean') {
+    return res.status(400).json({ message: 'featured must be true or false.' });
+  }
+
+  try {
+    const review = await Review.findById(id);
+    if (!review) {
+      return res.status(404).json({ message: 'Review not found.' });
+    }
+
+    if (featured && review.status !== REVIEW_STATUS.APPROVED) {
+      return res.status(400).json({ message: 'Only published reviews can be featured on the homepage.' });
+    }
+
+    if (featured) {
+      const highest = await Review.findOne({ featured: true }).sort({ featuredOrder: -1 }).select('featuredOrder');
+      review.featured = true;
+      review.featuredOrder = (highest?.featuredOrder ?? -1) + 1;
+    } else {
+      review.featured = false;
+      review.featuredOrder = null;
+    }
+
+    await review.save();
+    await review.populate(ADMIN_REVIEW_POPULATE);
+
+    return res.json({
+      message: featured ? 'Review added to homepage picks.' : 'Review removed from homepage picks.',
+      review: shapeAdminReview(review.toJSON(), req),
+    });
+  } catch (error) {
+    console.error('Set review featured error:', error);
+    return res.status(500).json({ message: 'Unable to update homepage picks.' });
+  }
+};
+
+// Persists the admin's drag/reorder of the featured-reviews list. Body: { orderedIds: [...] }
+// — every id must already be featured; their featuredOrder is rewritten 0..n-1 in that order.
+export const reorderFeaturedReviews = async (req, res) => {
+  const orderedIds = Array.isArray(req.body?.orderedIds) ? req.body.orderedIds : [];
+  if (!orderedIds.length || !orderedIds.every(isValidObjectId)) {
+    return res.status(400).json({ message: 'Provide a non-empty list of valid review ids.' });
+  }
+
+  try {
+    const count = await Review.countDocuments({ _id: { $in: orderedIds }, featured: true });
+    if (count !== orderedIds.length) {
+      return res.status(400).json({ message: 'All reviews being reordered must already be featured.' });
+    }
+
+    await Review.bulkWrite(
+      orderedIds.map((reviewId, index) => ({
+        updateOne: { filter: { _id: reviewId }, update: { $set: { featuredOrder: index } } },
+      }))
+    );
+
+    return res.json({ message: 'Homepage picks reordered.' });
+  } catch (error) {
+    console.error('Reorder featured reviews error:', error);
+    return res.status(500).json({ message: 'Unable to reorder homepage picks.' });
   }
 };
 
@@ -649,22 +914,14 @@ export const updateReviewStatus = async (req, res) => {
     review.adminNote = adminNote ? adminNote.trim() : undefined;
     review.publishedAt =
       normalizedStatus === REVIEW_STATUS.APPROVED ? new Date() : undefined;
+    // A review that's no longer published can't stay a homepage pick.
+    if (normalizedStatus !== REVIEW_STATUS.APPROVED && review.featured) {
+      review.featured = false;
+      review.featuredOrder = null;
+    }
 
     await review.save();
-    await review.populate([
-      {
-        path: 'vehicle',
-        populate: { path: 'driver', select: 'name email contactNumber' },
-      },
-      {
-        path: 'driver',
-        select: 'name email contactNumber',
-      },
-      {
-        path: 'booking',
-        select: 'startDate endDate status totalDays totalPrice',
-      },
-    ]);
+    await review.populate(ADMIN_REVIEW_POPULATE);
 
     return res.json({
       message:

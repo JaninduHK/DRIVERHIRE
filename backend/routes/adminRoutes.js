@@ -36,9 +36,13 @@ import {
   listAdminReviews,
   updateReviewStatus as updateReviewStatusController,
   createAdminReview,
+  updateAdminReview,
   createAdminReviewsBulk,
   deleteAdminReview,
   deleteAdminReviewsBulk,
+  removeAdminReviewImage,
+  setReviewFeatured,
+  reorderFeaturedReviews,
 } from '../controllers/reviewController.js';
 import { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
 import { VEHICLE_STATUS } from '../models/Vehicle.js';
@@ -250,10 +254,48 @@ router.delete(
   deleteAdminReviewsBulk
 );
 
+// Registered before /reviews/:id so "featured-order" isn't captured as an :id.
+router.patch(
+  '/reviews/featured-order',
+  [body('orderedIds').isArray({ min: 1 }).withMessage('Provide a non-empty list of review ids')],
+  reorderFeaturedReviews
+);
+
 router.delete(
   '/reviews/:id',
   [param('id').isMongoId().withMessage('Invalid review identifier')],
   deleteAdminReview
+);
+
+router.patch(
+  '/reviews/:id',
+  conditionalReviewImageUpload,
+  [
+    param('id').isMongoId().withMessage('Invalid review identifier'),
+    body('driver').optional().isMongoId().withMessage('Invalid driver identifier'),
+    body('vehicle').optional({ checkFalsy: true }).isMongoId().withMessage('Vehicle must be valid'),
+    body('rating').optional().isInt({ min: 1, max: 5 }).withMessage('Rating must be between 1 and 5'),
+    body('title').optional().isString().trim().isLength({ max: 120 }),
+    body('comment').optional().isString().trim().isLength({ min: 10, max: 1200 }).withMessage('Review comment must be between 10 and 1200 characters'),
+    body('travelerName').optional().isString().trim().isLength({ min: 1, max: 120 }),
+    body('reviewDate').optional({ checkFalsy: true }).isISO8601(),
+    body('visitedStartDate').optional({ checkFalsy: true }).isISO8601(),
+    body('visitedEndDate').optional({ checkFalsy: true }).isISO8601(),
+    body('status')
+      .optional()
+      .isIn(Object.values(REVIEW_STATUS))
+      .withMessage(`Status must be one of: ${Object.values(REVIEW_STATUS).join(', ')}`),
+  ],
+  updateAdminReview
+);
+
+router.delete(
+  '/reviews/:id/images',
+  [
+    param('id').isMongoId().withMessage('Invalid review identifier'),
+    body('image').isString().trim().notEmpty().withMessage('Image path is required'),
+  ],
+  removeAdminReviewImage
 );
 
 router.patch(
@@ -266,6 +308,15 @@ router.patch(
     body('adminNote').optional().isString().trim().isLength({ max: 500 }),
   ],
   updateReviewStatusController
+);
+
+router.patch(
+  '/reviews/:id/featured',
+  [
+    param('id').isMongoId().withMessage('Invalid review identifier'),
+    body('featured').isBoolean().withMessage('featured must be true or false'),
+  ],
+  setReviewFeatured
 );
 
 router.get('/bookings', listBookings);

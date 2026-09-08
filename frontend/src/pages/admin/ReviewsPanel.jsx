@@ -1,5 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, ChevronDown, Loader2, Plus, RotateCcw, Star, Trash2, Upload, XCircle } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  CheckCircle2,
+  ChevronDown,
+  Home,
+  Loader2,
+  Pencil,
+  Plus,
+  RotateCcw,
+  Star,
+  Trash2,
+  Upload,
+  XCircle,
+} from 'lucide-react';
 import { csvToObjects } from '../../lib/csv.js';
 import ReviewPhotos from '../../components/ReviewPhotos.jsx';
 import AdminModal from './AdminModal.jsx';
@@ -125,22 +139,242 @@ const inputCls =
   'mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20';
 const labelCls = 'block text-[11px] font-extrabold uppercase tracking-wide text-muted-soft';
 
+const EMPTY_REVIEW_FORM = { driverId: '', vehicleId: '', travelerName: '', rating: '5', title: '', comment: '', reviewDate: '', status: 'approved' };
+
+// Shared by "Add review" (create) and "Edit review" (edit) — same fields either way.
+// In edit mode, existing photos are shown (with instant delete via ReviewPhotos'
+// onRemove) separately from newly staged files, which upload on submit.
+const ReviewForm = ({
+  mode = 'create',
+  initialValues,
+  existingImages = [],
+  onRemoveExistingImage,
+  removingImage = '',
+  drivers = [],
+  vehicles = [],
+  onSubmit,
+  submitting = false,
+  submitLabel,
+}) => {
+  // Lazy-initialized only: AdminModal unmounts this form on close, so a fresh
+  // mount already resets state for the next open. Re-deriving from `initialValues`
+  // on every render would wipe in-progress edits whenever a prop like
+  // `existingImages` changes (e.g. removing a photo while editing).
+  const [formState, setFormState] = useState(() => ({ ...EMPTY_REVIEW_FORM, ...initialValues }));
+  const [imageFiles, setImageFiles] = useState([]);
+  const [formError, setFormError] = useState('');
+
+  const handleImagesChange = (event) => {
+    const picked = Array.from(event.target.files || []);
+    event.target.value = '';
+    if (!picked.length) return;
+    const remainingSlots = Math.max(0, 4 - existingImages.length - imageFiles.length);
+    setImageFiles((prev) => [...prev, ...picked].slice(0, prev.length + remainingSlots));
+  };
+
+  const removeImageAt = (index) => setImageFiles((prev) => prev.filter((_, i) => i !== index));
+
+  const imagePreviews = useMemo(() => imageFiles.map((file) => URL.createObjectURL(file)), [imageFiles]);
+  useEffect(() => () => imagePreviews.forEach((url) => URL.revokeObjectURL(url)), [imagePreviews]);
+
+  const approvedDrivers = useMemo(() => drivers.filter((driver) => driver.driverStatus === 'approved'), [drivers]);
+
+  const vehicleOptions = useMemo(() => {
+    if (!formState.driverId) return [];
+    return vehicles.filter((vehicle) => {
+      const driverId = vehicle.driver?.id || vehicle.driver?._id || vehicle.driver;
+      const matchesDriver = driverId && String(driverId) === String(formState.driverId);
+      const approvedStatus = !vehicle.status || vehicle.status === 'approved';
+      return matchesDriver && approvedStatus;
+    });
+  }, [formState.driverId, vehicles]);
+
+  const handleFormFieldChange = (field, value) => setFormState((prev) => ({ ...prev, [field]: value }));
+
+  const totalImages = existingImages.length + imageFiles.length;
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setFormError('');
+    if (!onSubmit) return;
+    if (!formState.driverId) {
+      setFormError('Select a driver to attach this review to.');
+      return;
+    }
+    const ratingValue = Number(formState.rating);
+    if (!Number.isFinite(ratingValue) || ratingValue < 1 || ratingValue > 5) {
+      setFormError('Choose a rating between 1 and 5.');
+      return;
+    }
+    const trimmedComment = formState.comment.trim();
+    if (trimmedComment.length < 10) {
+      setFormError('Add at least 10 characters to the review text.');
+      return;
+    }
+
+    const fields = {
+      driver: formState.driverId,
+      vehicle: formState.vehicleId || '',
+      rating: String(Math.round(ratingValue)),
+      comment: trimmedComment,
+      title: formState.title.trim(),
+      travelerName: formState.travelerName.trim(),
+      reviewDate: formState.reviewDate || '',
+      status: formState.status || 'approved',
+    };
+
+    let payload;
+    if (imageFiles.length) {
+      const form = new FormData();
+      Object.entries(fields).forEach(([key, value]) => form.append(key, value));
+      imageFiles.forEach((file) => form.append('images', file));
+      payload = form;
+    } else {
+      payload = { ...fields, rating: Math.round(ratingValue) };
+    }
+
+    try {
+      await onSubmit(payload);
+    } catch (submitError) {
+      setFormError(submitError?.message || 'Unable to save review.');
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <div className="grid gap-3 md:grid-cols-2">
+        <div>
+          <label className={labelCls}>Driver</label>
+          <select
+            value={formState.driverId}
+            onChange={(event) => { handleFormFieldChange('driverId', event.target.value); handleFormFieldChange('vehicleId', ''); }}
+            className={inputCls}
+            required
+          >
+            <option value="">Select driver</option>
+            {approvedDrivers.map((driver) => (
+              <option key={driver.id} value={driver.id}>{driver.name} {driver.contactNumber ? `(${driver.contactNumber})` : ''}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className={labelCls}>Vehicle (optional)</label>
+          <select
+            value={formState.vehicleId}
+            onChange={(event) => handleFormFieldChange('vehicleId', event.target.value)}
+            className={inputCls}
+            disabled={!formState.driverId || vehicleOptions.length === 0}
+          >
+            <option value="">{formState.driverId ? (vehicleOptions.length > 0 ? 'Select vehicle' : 'No approved vehicles') : 'Select a driver first'}</option>
+            {vehicleOptions.map((vehicle) => (
+              <option key={vehicle.id} value={vehicle.id}>{vehicle.model} {vehicle.year ? `(${vehicle.year})` : ''}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2">
+        <div>
+          <label className={labelCls}>Guest name</label>
+          <input type="text" value={formState.travelerName} onChange={(event) => handleFormFieldChange('travelerName', event.target.value)} className={inputCls} placeholder="e.g. Alex D." />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className={labelCls}>Rating</label>
+            <select value={formState.rating} onChange={(event) => handleFormFieldChange('rating', event.target.value)} className={inputCls}>
+              {[5, 4, 3, 2, 1].map((rating) => (<option key={rating} value={rating}>{rating} star{rating === 1 ? '' : 's'}</option>))}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Status</label>
+            <select value={formState.status} onChange={(event) => handleFormFieldChange('status', event.target.value)} className={inputCls}>
+              <option value="approved">Publish now</option>
+              <option value="pending">Save as pending</option>
+              <option value="rejected">Mark as declined</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2">
+        <div>
+          <label className={labelCls}>Title (optional)</label>
+          <input type="text" value={formState.title} onChange={(event) => handleFormFieldChange('title', event.target.value)} className={inputCls} placeholder="e.g. Safe and flexible driver" />
+        </div>
+        <div>
+          <label className={labelCls}>Review date (optional)</label>
+          <input type="date" value={formState.reviewDate} onChange={(event) => handleFormFieldChange('reviewDate', event.target.value)} className={inputCls} />
+        </div>
+      </div>
+      <div>
+        <label className={labelCls}>Review text</label>
+        <textarea rows={3} value={formState.comment} onChange={(event) => handleFormFieldChange('comment', event.target.value)} className={inputCls} placeholder="Summarize the traveller's experience in 2-3 sentences." required />
+      </div>
+      <div>
+        <label className={labelCls}>Photos (optional, up to 4)</label>
+        {mode === 'edit' && existingImages.length ? (
+          <ReviewPhotos images={existingImages} onRemove={onRemoveExistingImage} removingImage={removingImage} className="!mt-1.5" />
+        ) : null}
+        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+          {imageFiles.map((file, index) => (
+            <div key={`${file.name}-${file.lastModified}-${index}`} className="relative h-16 w-16 overflow-hidden rounded-lg border border-line">
+              <img src={imagePreviews[index]} alt="" className="h-full w-full object-cover" />
+              <button type="button" onClick={() => removeImageAt(index)} className="absolute right-0.5 top-0.5 rounded-full bg-[#0f1f2d]/70 text-white" aria-label="Remove photo">
+                <XCircle className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+          {totalImages < 4 ? (
+            <label className="flex h-16 w-16 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-line text-muted-soft transition hover:border-brand hover:text-brand-dark">
+              <Upload className="h-4 w-4" />
+              <span className="text-[10px] font-bold">Add</span>
+              <input type="file" accept="image/*" multiple onChange={handleImagesChange} className="hidden" />
+            </label>
+          ) : null}
+        </div>
+      </div>
+      {formError ? <p className="text-xs font-semibold text-rose-600 dark:text-rose-300">{formError}</p> : null}
+      <div className="flex justify-end">
+        <button type="submit" disabled={submitting} className="inline-flex items-center gap-2 rounded-lg bg-[#0f1f2d] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#0f1f2d]/90 disabled:cursor-not-allowed disabled:opacity-70">
+          {submitting ? (<><Loader2 className="h-4 w-4 animate-spin" /> Saving…</>) : (submitLabel || 'Publish review')}
+        </button>
+      </div>
+    </form>
+  );
+};
+
 const ReviewsPanel = ({
   state,
   filter,
   onFilterChange,
   driverFilter = '',
   onDriverFilterChange,
+  featuredFilter = false,
+  onFeaturedFilterChange,
   onRetry,
   onStatusChange,
   onCreate,
+  onUpdate,
+  onRemoveImage,
+  onToggleFeatured,
+  onReorderFeatured,
   onBulkImport,
   onDelete,
   onBulkDelete,
   drivers = [],
   vehicles = [],
 }) => {
-  const { items: filtered, meta, loading, error, updatingId, deletingId, bulkDeleting = false, creating = false } = state;
+  const {
+    items: filtered,
+    meta,
+    loading,
+    error,
+    updatingId,
+    deletingId,
+    bulkDeleting = false,
+    creating = false,
+    savingId,
+    featuredId,
+    reordering = false,
+  } = state;
   const items = filtered;
 
   const filters = [
@@ -152,25 +386,10 @@ const ReviewsPanel = ({
 
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [editingReview, setEditingReview] = useState(null);
+  const [removingImageKey, setRemovingImageKey] = useState('');
   const [expandedId, setExpandedId] = useState(null);
   const toggleExpanded = (reviewId) => setExpandedId((prev) => (prev === reviewId ? null : reviewId));
-  const [formState, setFormState] = useState({ driverId: '', vehicleId: '', travelerName: '', rating: '5', title: '', comment: '', reviewDate: '', status: 'approved' });
-  const [imageFiles, setImageFiles] = useState([]);
-  const [formError, setFormError] = useState('');
-
-  const handleImagesChange = (event) => {
-    const picked = Array.from(event.target.files || []);
-    event.target.value = '';
-    if (!picked.length) return;
-    setImageFiles((prev) => [...prev, ...picked].slice(0, 4));
-  };
-
-  const removeImageAt = (index) => setImageFiles((prev) => prev.filter((_, i) => i !== index));
-
-  const imagePreviews = useMemo(() => imageFiles.map((file) => URL.createObjectURL(file)), [imageFiles]);
-  useEffect(() => () => imagePreviews.forEach((url) => URL.revokeObjectURL(url)), [imagePreviews]);
-
-  const approvedDrivers = useMemo(() => drivers.filter((driver) => driver.driverStatus === 'approved'), [drivers]);
 
   const driverFilterOptions = useMemo(
     () => [...drivers].sort((a, b) => (a.name || '').localeCompare(b.name || '')),
@@ -208,16 +427,6 @@ const ReviewsPanel = ({
     onDelete(reviewId);
   };
 
-  const vehicleOptions = useMemo(() => {
-    if (!formState.driverId) return [];
-    return vehicles.filter((vehicle) => {
-      const driverId = vehicle.driver?.id || vehicle.driver?._id || vehicle.driver;
-      const matchesDriver = driverId && String(driverId) === String(formState.driverId);
-      const approvedStatus = !vehicle.status || vehicle.status === 'approved';
-      return matchesDriver && approvedStatus;
-    });
-  }, [formState.driverId, vehicles]);
-
   const statusCounts = useMemo(() => {
     if (meta?.counts) {
       return { approved: meta.counts.approved ?? 0, pending: meta.counts.pending ?? 0, rejected: meta.counts.rejected ?? 0 };
@@ -246,54 +455,47 @@ const ReviewsPanel = ({
   }, [items, meta]);
 
   const handleFilterClick = (value) => { if (value !== filter) onFilterChange?.(value); };
-  const handleFormFieldChange = (field, value) => setFormState((prev) => ({ ...prev, [field]: value }));
 
-  const handleCreateSubmit = async (event) => {
-    event.preventDefault();
-    setFormError('');
-    if (!onCreate) return;
-    if (!formState.driverId) {
-      setFormError('Select a driver to attach this review to.');
-      return;
-    }
-    const ratingValue = Number(formState.rating);
-    if (!Number.isFinite(ratingValue) || ratingValue < 1 || ratingValue > 5) {
-      setFormError('Choose a rating between 1 and 5.');
-      return;
-    }
-    const trimmedComment = formState.comment.trim();
-    if (trimmedComment.length < 10) {
-      setFormError('Add at least 10 characters to the review text.');
-      return;
-    }
-    const fields = { driver: formState.driverId, rating: String(Math.round(ratingValue)), comment: trimmedComment, status: formState.status || 'approved' };
-    if (formState.vehicleId) fields.vehicle = formState.vehicleId;
-    if (formState.travelerName.trim()) fields.travelerName = formState.travelerName.trim();
-    if (formState.title.trim()) fields.title = formState.title.trim();
-    if (formState.reviewDate) fields.reviewDate = formState.reviewDate;
+  const handleCreateSubmit = async (payload) => {
+    await onCreate?.(payload);
+    setCreateOpen(false);
+  };
 
-    let payload;
-    if (imageFiles.length) {
-      const form = new FormData();
-      Object.entries(fields).forEach(([key, value]) => form.append(key, value));
-      imageFiles.forEach((file) => form.append('images', file));
-      payload = form;
-    } else {
-      payload = { ...fields, rating: Math.round(ratingValue) };
-    }
+  const handleEditSubmit = async (payload) => {
+    if (!editingReview) return;
+    await onUpdate?.(editingReview.id, payload);
+    setEditingReview(null);
+  };
 
+  const handleRemoveImage = async (reviewId, image) => {
+    if (!onRemoveImage) return;
+    const key = `${reviewId}:${image}`;
+    setRemovingImageKey(key);
     try {
-      await onCreate(payload);
-      setFormState({ driverId: '', vehicleId: '', travelerName: '', rating: '5', title: '', comment: '', reviewDate: '', status: 'approved' });
-      setImageFiles([]);
-      setCreateOpen(false);
-    } catch (createError) {
-      setFormError(createError?.message || 'Unable to publish review.');
+      await onRemoveImage(reviewId, image);
+      setEditingReview((prev) => (prev && prev.id === reviewId ? { ...prev, images: prev.images.filter((img) => img !== image) } : prev));
+    } catch {
+      // toast handled by the parent
+    } finally {
+      setRemovingImageKey('');
     }
   };
 
-  const emptyCopy =
-    filter === 'pending' ? 'No reviews are awaiting moderation right now.'
+  const handleToggleFeatured = (review) => {
+    onToggleFeatured?.(review.id, !review.featured);
+  };
+
+  const handleMoveFeatured = (index, direction) => {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= filtered.length) return;
+    const ids = filtered.map((review) => review.id);
+    [ids[index], ids[targetIndex]] = [ids[targetIndex], ids[index]];
+    onReorderFeatured?.(ids);
+  };
+
+  const emptyCopy = featuredFilter
+    ? 'No reviews have been picked for the homepage yet.'
+    : filter === 'pending' ? 'No reviews are awaiting moderation right now.'
       : filter === 'approved' ? 'No reviews have been published yet.'
       : filter === 'rejected' ? 'No reviews have been declined.'
       : 'No reviews found.';
@@ -314,100 +516,41 @@ const ReviewsPanel = ({
       </AdminModal>
 
       <AdminModal open={createOpen} onClose={() => setCreateOpen(false)} title="Add a review to any driver" subtitle="Select the driver, capture the guest name, and publish immediately.">
-        <form onSubmit={handleCreateSubmit} className="space-y-3">
-          <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <label className={labelCls}>Driver</label>
-              <select
-                value={formState.driverId}
-                onChange={(event) => { handleFormFieldChange('driverId', event.target.value); handleFormFieldChange('vehicleId', ''); }}
-                className={inputCls}
-                required
-              >
-                <option value="">Select driver</option>
-                {approvedDrivers.map((driver) => (
-                  <option key={driver.id} value={driver.id}>{driver.name} {driver.contactNumber ? `(${driver.contactNumber})` : ''}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className={labelCls}>Vehicle (optional)</label>
-              <select
-                value={formState.vehicleId}
-                onChange={(event) => handleFormFieldChange('vehicleId', event.target.value)}
-                className={inputCls}
-                disabled={!formState.driverId || vehicleOptions.length === 0}
-              >
-                <option value="">{formState.driverId ? (vehicleOptions.length > 0 ? 'Select vehicle' : 'No approved vehicles') : 'Select a driver first'}</option>
-                {vehicleOptions.map((vehicle) => (
-                  <option key={vehicle.id} value={vehicle.id}>{vehicle.model} {vehicle.year ? `(${vehicle.year})` : ''}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <label className={labelCls}>Guest name</label>
-              <input type="text" value={formState.travelerName} onChange={(event) => handleFormFieldChange('travelerName', event.target.value)} className={inputCls} placeholder="e.g. Alex D." />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelCls}>Rating</label>
-                <select value={formState.rating} onChange={(event) => handleFormFieldChange('rating', event.target.value)} className={inputCls}>
-                  {[5, 4, 3, 2, 1].map((rating) => (<option key={rating} value={rating}>{rating} star{rating === 1 ? '' : 's'}</option>))}
-                </select>
-              </div>
-              <div>
-                <label className={labelCls}>Status</label>
-                <select value={formState.status} onChange={(event) => handleFormFieldChange('status', event.target.value)} className={inputCls}>
-                  <option value="approved">Publish now</option>
-                  <option value="pending">Save as pending</option>
-                  <option value="rejected">Mark as declined</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            <div>
-              <label className={labelCls}>Title (optional)</label>
-              <input type="text" value={formState.title} onChange={(event) => handleFormFieldChange('title', event.target.value)} className={inputCls} placeholder="e.g. Safe and flexible driver" />
-            </div>
-            <div>
-              <label className={labelCls}>Review date (optional)</label>
-              <input type="date" value={formState.reviewDate} onChange={(event) => handleFormFieldChange('reviewDate', event.target.value)} className={inputCls} />
-            </div>
-          </div>
-          <div>
-            <label className={labelCls}>Review text</label>
-            <textarea rows={3} value={formState.comment} onChange={(event) => handleFormFieldChange('comment', event.target.value)} className={inputCls} placeholder="Summarize the traveller's experience in 2-3 sentences." required />
-          </div>
-          <div>
-            <label className={labelCls}>Photos (optional, up to 4)</label>
-            <div className="mt-1.5 flex flex-wrap items-center gap-2">
-              {imageFiles.map((file, index) => (
-                <div key={`${file.name}-${file.lastModified}-${index}`} className="relative h-16 w-16 overflow-hidden rounded-lg border border-line">
-                  <img src={imagePreviews[index]} alt="" className="h-full w-full object-cover" />
-                  <button type="button" onClick={() => removeImageAt(index)} className="absolute right-0.5 top-0.5 rounded-full bg-[#0f1f2d]/70 text-white" aria-label="Remove photo">
-                    <XCircle className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-              {imageFiles.length < 4 ? (
-                <label className="flex h-16 w-16 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-line text-muted-soft transition hover:border-brand hover:text-brand-dark">
-                  <Upload className="h-4 w-4" />
-                  <span className="text-[10px] font-bold">Add</span>
-                  <input type="file" accept="image/*" multiple onChange={handleImagesChange} className="hidden" />
-                </label>
-              ) : null}
-            </div>
-          </div>
-          {formError ? <p className="text-xs font-semibold text-rose-600 dark:text-rose-300">{formError}</p> : null}
-          <div className="flex justify-end">
-            <button type="submit" disabled={creating} className="inline-flex items-center gap-2 rounded-lg bg-[#0f1f2d] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#0f1f2d]/90 disabled:cursor-not-allowed disabled:opacity-70">
-              {creating ? (<><Loader2 className="h-4 w-4 animate-spin" /> Publishing…</>) : 'Publish review'}
-            </button>
-          </div>
-        </form>
+        <ReviewForm
+          mode="create"
+          initialValues={EMPTY_REVIEW_FORM}
+          drivers={drivers}
+          vehicles={vehicles}
+          onSubmit={handleCreateSubmit}
+          submitting={creating}
+          submitLabel="Publish review"
+        />
+      </AdminModal>
+
+      <AdminModal open={Boolean(editingReview)} onClose={() => setEditingReview(null)} title="Edit review" subtitle="Update the details, swap photos, or reassign the driver/vehicle.">
+        {editingReview ? (
+          <ReviewForm
+            mode="edit"
+            initialValues={{
+              driverId: editingReview.driver?.id || editingReview.driver || '',
+              vehicleId: editingReview.vehicle?.id || '',
+              travelerName: editingReview.travelerName || '',
+              rating: String(editingReview.rating || 5),
+              title: editingReview.title || '',
+              comment: editingReview.comment || '',
+              reviewDate: (editingReview.reviewDate || '').slice(0, 10),
+              status: editingReview.status || 'approved',
+            }}
+            existingImages={editingReview.images || []}
+            onRemoveExistingImage={(image) => handleRemoveImage(editingReview.id, image)}
+            removingImage={removingImageKey.startsWith(`${editingReview.id}:`) ? removingImageKey.slice(editingReview.id.length + 1) : ''}
+            drivers={drivers}
+            vehicles={vehicles}
+            onSubmit={handleEditSubmit}
+            submitting={savingId === editingReview.id}
+            submitLabel="Save changes"
+          />
+        ) : null}
       </AdminModal>
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -446,6 +589,13 @@ const ReviewsPanel = ({
               <option key={driver.id} value={driver.id}>{driver.name}</option>
             ))}
           </select>
+          <button
+            type="button"
+            onClick={() => onFeaturedFilterChange?.(!featuredFilter)}
+            className={`gap-1.5 ${tagClass(featuredFilter ? 'green' : 'grey')}`}
+          >
+            <Home className="h-3 w-3" /> Homepage picks
+          </button>
         </div>
         <span className="text-[13px] text-muted-soft">{meta?.total ?? 0} result{(meta?.total ?? 0) === 1 ? '' : 's'}</span>
       </div>
@@ -503,7 +653,7 @@ const ReviewsPanel = ({
             />
             <span className="text-[11px] font-extrabold uppercase tracking-wide text-muted-soft">Select all</span>
           </div>
-          {filtered.map((review) => {
+          {filtered.map((review, index) => {
             const vehicleModel = review.vehicle?.model || 'Vehicle unavailable';
             const driverName = review.vehicle?.driver?.name;
             const bookingStart = review.booking?.startDate ? formatDate(review.booking.startDate) : null;
@@ -512,6 +662,7 @@ const ReviewsPanel = ({
             const statusLabel = getReviewStatusLabel(review.status);
             const isUpdating = updatingId === review.id;
             const isDeleting = deletingId === review.id;
+            const isTogglingFeatured = featuredId === review.id;
             const isAdminAuthored = Boolean(review.createdByAdmin);
             const isExpanded = expandedId === review.id;
             const isSelected = selectedIds.includes(review.id);
@@ -527,7 +678,7 @@ const ReviewsPanel = ({
 
             return (
               <div key={review.id} className="flex items-stretch border-b border-hairline last:border-b-0">
-                <div className="flex items-center pl-5">
+                <div className="flex items-center gap-2 pl-5">
                   <input
                     type="checkbox"
                     checked={isSelected}
@@ -536,6 +687,28 @@ const ReviewsPanel = ({
                     className="h-4 w-4 rounded border-line accent-brand"
                     aria-label={`Select review from ${review.travelerName || 'Anonymous'}`}
                   />
+                  {featuredFilter ? (
+                    <div className="flex flex-col">
+                      <button
+                        type="button"
+                        onClick={() => handleMoveFeatured(index, -1)}
+                        disabled={index === 0 || reordering}
+                        aria-label="Move up"
+                        className="grid h-4 w-4 place-items-center text-muted-soft transition hover:text-ink disabled:opacity-30"
+                      >
+                        <ArrowUp className="h-3 w-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleMoveFeatured(index, 1)}
+                        disabled={index === filtered.length - 1 || reordering}
+                        aria-label="Move down"
+                        className="grid h-4 w-4 place-items-center text-muted-soft transition hover:text-ink disabled:opacity-30"
+                      >
+                        <ArrowDown className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
                 <div className="min-w-0 flex-1">
                   <button
@@ -546,6 +719,11 @@ const ReviewsPanel = ({
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className="inline-flex items-center gap-1 text-[13px] font-extrabold text-star"><Star className="h-3.5 w-3.5" fill="currentColor" /> {review.rating}/5</span>
                       <span className={tagClass(STATUS_TAGS[review.status] || 'grey')}>{statusLabel}</span>
+                      {review.featured ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-brand-tint px-2 py-0.5 text-[10.5px] font-extrabold text-brand-dark">
+                          <Home className="h-3 w-3" /> HOMEPAGE
+                        </span>
+                      ) : null}
                     </div>
                     <div className="min-w-0">
                       <div className="truncate text-[13.5px] font-bold text-ink">{review.travelerName || 'Anonymous'}</div>
@@ -563,7 +741,11 @@ const ReviewsPanel = ({
                       {bookingStart && bookingEnd ? <p className="text-[12px] text-muted-soft">Trip: {bookingStart} – {bookingEnd}</p> : null}
                       {review.title ? <h3 className="mt-2 text-[15px] font-bold text-ink">{review.title}</h3> : null}
                       <p className="mt-2 whitespace-pre-line text-[13.5px] leading-relaxed text-muted">{review.comment}</p>
-                      <ReviewPhotos images={review.images} />
+                      <ReviewPhotos
+                        images={review.images}
+                        onRemove={(image) => handleRemoveImage(review.id, image)}
+                        removingImage={removingImageKey.startsWith(`${review.id}:`) ? removingImageKey.slice(review.id.length + 1) : ''}
+                      />
                       {review.adminNote ? (
                         <div className="mt-3 rounded-lg border border-amber-200 dark:border-amber-400/30 bg-amber-50 dark:bg-amber-400/10 p-3 text-[12px] text-amber-700 dark:text-amber-300">
                           <p className="font-bold">Admin note</p>
@@ -585,6 +767,23 @@ const ReviewsPanel = ({
                             {isUpdating ? (<><Loader2 className="h-4 w-4 animate-spin" /> Updating…</>) : (<><RotateCcw className="h-4 w-4" /> Reopen</>)}
                           </button>
                         )}
+                        <button type="button" onClick={() => setEditingReview(review)} className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-bold text-ink transition hover:border-brand">
+                          <Pencil className="h-4 w-4" /> Edit
+                        </button>
+                        {review.featured || review.status === 'approved' ? (
+                          <button
+                            type="button"
+                            onClick={() => handleToggleFeatured(review)}
+                            disabled={isTogglingFeatured}
+                            className={`inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                              review.featured
+                                ? 'border-brand/30 bg-brand-tint text-brand-dark hover:bg-brand-tint/70'
+                                : 'border-line bg-surface text-ink hover:border-brand'
+                            }`}
+                          >
+                            {isTogglingFeatured ? (<><Loader2 className="h-4 w-4 animate-spin" /> Updating…</>) : (<><Home className="h-4 w-4" /> {review.featured ? 'Remove from homepage' : 'Feature on homepage'}</>)}
+                          </button>
+                        ) : null}
                         <button type="button" onClick={() => handleDeleteClick(review.id)} disabled={isDeleting} className="ml-auto inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-bold text-muted-soft transition hover:border-rose-300 hover:text-rose-600 dark:hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-60">
                           {isDeleting ? (<><Loader2 className="h-4 w-4 animate-spin" /> Deleting…</>) : (<><Trash2 className="h-4 w-4" /> Delete</>)}
                         </button>

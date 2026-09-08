@@ -79,6 +79,17 @@ const reviewSchema = new mongoose.Schema(
       default: false,
     },
     publishedAt: Date,
+    // Admin-handpicked for the homepage reviews carousel, independent of recency.
+    featured: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    // Lower sorts first. Only meaningful while featured is true.
+    featuredOrder: {
+      type: Number,
+      default: null,
+    },
   },
   {
     timestamps: true,

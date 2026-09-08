@@ -27,8 +27,12 @@ import {
   removeVehicleImage as removeVehicleImageRequest,
   fetchReviews,
   createReview as createAdminReview,
+  updateReview as updateReviewRequest,
   bulkImportReviews,
   updateReviewStatus as updateReviewStatusRequest,
+  removeReviewImage as removeReviewImageRequest,
+  setReviewFeatured as setReviewFeaturedRequest,
+  reorderFeaturedReviews as reorderFeaturedReviewsRequest,
   deleteReview as deleteReviewRequest,
   bulkDeleteReviews as bulkDeleteReviewsRequest,
   fetchBookings as fetchAdminBookings,
@@ -128,8 +132,21 @@ const AdminDashboard = () => {
   const [commissionMonth, setCommissionMonth] = useState(getCurrentMonthValue());
   const [reviewFilter, setReviewFilter] = useState('all');
   const [reviewDriverFilter, setReviewDriverFilter] = useState('');
+  const [reviewFeaturedFilter, setReviewFeaturedFilter] = useState(false);
   const [pendingReviewCount, setPendingReviewCount] = useState(0);
-  const [reviewState, setReviewState] = useState({ items: [], meta: { total: 0, status: 'pending' }, loading: true, error: '', updatingId: null, deletingId: null, bulkDeleting: false, creating: false });
+  const [reviewState, setReviewState] = useState({
+    items: [],
+    meta: { total: 0, status: 'pending' },
+    loading: true,
+    error: '',
+    updatingId: null,
+    deletingId: null,
+    bulkDeleting: false,
+    creating: false,
+    savingId: null,
+    featuredId: null,
+    reordering: false,
+  });
   const [currentUser, setCurrentUser] = useState(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState('');
@@ -242,10 +259,14 @@ const AdminDashboard = () => {
     }
   }, []);
 
-  const loadReviews = useCallback(async (status = 'pending', driver = '') => {
+  const loadReviews = useCallback(async (status = 'pending', driver = '', featuredOnly = false) => {
     try {
       setReviewState((prev) => ({ ...prev, loading: true, error: '' }));
-      const response = await fetchReviews({ ...(status !== 'all' ? { status } : {}), ...(driver ? { driver } : {}) });
+      const response = await fetchReviews({
+        ...(status !== 'all' ? { status } : {}),
+        ...(driver ? { driver } : {}),
+        ...(featuredOnly ? { featured: true, sort: 'featuredOrder' } : {}),
+      });
       setReviewState((prev) => ({ ...prev, items: response.reviews || [], meta: response.meta || { total: 0, status }, loading: false, error: '', updatingId: null }));
       const pendingCount = response.meta?.counts?.pending;
       if (typeof pendingCount === 'number') {
@@ -486,8 +507,8 @@ const AdminDashboard = () => {
   }, [loadCurrentUserProfile]);
 
   useEffect(() => {
-    loadReviews(reviewFilter, reviewDriverFilter);
-  }, [loadReviews, reviewFilter, reviewDriverFilter]);
+    loadReviews(reviewFilter, reviewDriverFilter, reviewFeaturedFilter);
+  }, [loadReviews, reviewFilter, reviewDriverFilter, reviewFeaturedFilter]);
 
   const pendingDriverCount = useMemo(() => driverState.items.filter((app) => app.driverStatus === DRIVER_STATUS.PENDING).length, [driverState.items]);
   const pendingVehicleCount = useMemo(() => vehicleState.items.filter((vehicle) => vehicle.status === VEHICLE_STATUS.PENDING).length, [vehicleState.items]);
@@ -557,13 +578,14 @@ const AdminDashboard = () => {
 
   const handleReviewFilterChange = (status) => setReviewFilter(status);
   const handleReviewDriverFilterChange = (driverId) => setReviewDriverFilter(driverId);
+  const handleReviewFeaturedFilterChange = (featuredOnly) => setReviewFeaturedFilter(featuredOnly);
 
   const handleReviewStatusChange = async (reviewId, nextStatus, adminNote) => {
     setReviewState((prev) => ({ ...prev, updatingId: reviewId }));
     try {
       await updateReviewStatusRequest(reviewId, { status: nextStatus, adminNote });
       toast.success(nextStatus === 'approved' ? 'Review approved and published.' : 'Review declined.');
-      await loadReviews(reviewFilter, reviewDriverFilter);
+      await loadReviews(reviewFilter, reviewDriverFilter, reviewFeaturedFilter);
       if (reviewFilter !== 'pending') {
         try {
           const pendingSnapshot = await fetchReviews({ status: 'pending' });
@@ -583,38 +605,88 @@ const AdminDashboard = () => {
     try {
       await createAdminReview(payload);
       toast.success(payload.status === 'pending' ? 'Review saved as pending.' : payload.status === 'rejected' ? 'Review saved.' : 'Review published.');
-      await loadReviews(reviewFilter, reviewDriverFilter);
+      await loadReviews(reviewFilter, reviewDriverFilter, reviewFeaturedFilter);
     } catch (err) {
       toast.error(err.message || 'Unable to add review.');
       throw err;
     } finally {
       setReviewState((prev) => ({ ...prev, creating: false }));
     }
-  }, [loadReviews, reviewFilter, reviewDriverFilter]);
+  }, [loadReviews, reviewFilter, reviewDriverFilter, reviewFeaturedFilter]);
+
+  const handleReviewUpdate = useCallback(async (reviewId, payload) => {
+    setReviewState((prev) => ({ ...prev, savingId: reviewId }));
+    try {
+      await updateReviewRequest(reviewId, payload);
+      toast.success('Review updated.');
+      await loadReviews(reviewFilter, reviewDriverFilter, reviewFeaturedFilter);
+    } catch (err) {
+      toast.error(err.message || 'Unable to update review.');
+      throw err;
+    } finally {
+      setReviewState((prev) => ({ ...prev, savingId: null }));
+    }
+  }, [loadReviews, reviewFilter, reviewDriverFilter, reviewFeaturedFilter]);
+
+  const handleReviewImageRemove = useCallback(async (reviewId, image) => {
+    try {
+      await removeReviewImageRequest(reviewId, image);
+      toast.success('Image removed.');
+      await loadReviews(reviewFilter, reviewDriverFilter, reviewFeaturedFilter);
+    } catch (err) {
+      toast.error(err.message || 'Unable to remove image.');
+      throw err;
+    }
+  }, [loadReviews, reviewFilter, reviewDriverFilter, reviewFeaturedFilter]);
+
+  const handleReviewFeaturedToggle = useCallback(async (reviewId, featured) => {
+    setReviewState((prev) => ({ ...prev, featuredId: reviewId }));
+    try {
+      await setReviewFeaturedRequest(reviewId, featured);
+      toast.success(featured ? 'Added to homepage picks.' : 'Removed from homepage picks.');
+      await loadReviews(reviewFilter, reviewDriverFilter, reviewFeaturedFilter);
+    } catch (err) {
+      toast.error(err.message || 'Unable to update homepage picks.');
+    } finally {
+      setReviewState((prev) => ({ ...prev, featuredId: null }));
+    }
+  }, [loadReviews, reviewFilter, reviewDriverFilter, reviewFeaturedFilter]);
+
+  const handleReviewReorderFeatured = useCallback(async (orderedIds) => {
+    setReviewState((prev) => ({ ...prev, reordering: true }));
+    try {
+      await reorderFeaturedReviewsRequest(orderedIds);
+      await loadReviews(reviewFilter, reviewDriverFilter, reviewFeaturedFilter);
+    } catch (err) {
+      toast.error(err.message || 'Unable to reorder homepage picks.');
+    } finally {
+      setReviewState((prev) => ({ ...prev, reordering: false }));
+    }
+  }, [loadReviews, reviewFilter, reviewDriverFilter, reviewFeaturedFilter]);
 
   const handleReviewBulkImport = useCallback(async (rows) => {
     const response = await bulkImportReviews(rows);
     if (response?.created > 0) {
       toast.success(response.message || `${response.created} reviews imported.`);
-      await loadReviews(reviewFilter, reviewDriverFilter);
+      await loadReviews(reviewFilter, reviewDriverFilter, reviewFeaturedFilter);
     } else {
       toast.error(response?.message || 'No reviews were imported.');
     }
     return response;
-  }, [loadReviews, reviewFilter, reviewDriverFilter]);
+  }, [loadReviews, reviewFilter, reviewDriverFilter, reviewFeaturedFilter]);
 
   const handleReviewDelete = useCallback(async (reviewId) => {
     setReviewState((prev) => ({ ...prev, deletingId: reviewId }));
     try {
       await deleteReviewRequest(reviewId);
       toast.success('Review deleted.');
-      await loadReviews(reviewFilter, reviewDriverFilter);
+      await loadReviews(reviewFilter, reviewDriverFilter, reviewFeaturedFilter);
     } catch (err) {
       toast.error(err.message || 'Unable to delete review.');
     } finally {
       setReviewState((prev) => ({ ...prev, deletingId: null }));
     }
-  }, [loadReviews, reviewFilter, reviewDriverFilter]);
+  }, [loadReviews, reviewFilter, reviewDriverFilter, reviewFeaturedFilter]);
 
   const handleReviewBulkDelete = useCallback(async (reviewIds) => {
     if (!reviewIds?.length) return;
@@ -622,13 +694,13 @@ const AdminDashboard = () => {
     try {
       const response = await bulkDeleteReviewsRequest(reviewIds);
       toast.success(response?.message || `${reviewIds.length} reviews deleted.`);
-      await loadReviews(reviewFilter, reviewDriverFilter);
+      await loadReviews(reviewFilter, reviewDriverFilter, reviewFeaturedFilter);
     } catch (err) {
       toast.error(err.message || 'Unable to delete reviews.');
     } finally {
       setReviewState((prev) => ({ ...prev, bulkDeleting: false }));
     }
-  }, [loadReviews, reviewFilter, reviewDriverFilter]);
+  }, [loadReviews, reviewFilter, reviewDriverFilter, reviewFeaturedFilter]);
 
   const handleAdminProfileSave = useCallback(async (payload) => {
     setProfileSaving(true);
@@ -871,9 +943,15 @@ const AdminDashboard = () => {
         onFilterChange={handleReviewFilterChange}
         driverFilter={reviewDriverFilter}
         onDriverFilterChange={handleReviewDriverFilterChange}
-        onRetry={() => loadReviews(reviewFilter, reviewDriverFilter)}
+        featuredFilter={reviewFeaturedFilter}
+        onFeaturedFilterChange={handleReviewFeaturedFilterChange}
+        onRetry={() => loadReviews(reviewFilter, reviewDriverFilter, reviewFeaturedFilter)}
         onStatusChange={handleReviewStatusChange}
         onCreate={handleReviewCreate}
+        onUpdate={handleReviewUpdate}
+        onRemoveImage={handleReviewImageRemove}
+        onToggleFeatured={handleReviewFeaturedToggle}
+        onReorderFeatured={handleReviewReorderFeatured}
         onBulkImport={handleReviewBulkImport}
         onDelete={handleReviewDelete}
         onBulkDelete={handleReviewBulkDelete}

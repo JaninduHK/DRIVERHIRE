@@ -147,6 +147,31 @@ export const updateReviewStatus = (reviewId, payload) =>
     body: JSON.stringify(payload),
   });
 
+export const updateReview = (reviewId, payload) =>
+  request(`/reviews/${reviewId}`, {
+    method: 'PATCH',
+    // FormData when new photos are attached (multipart); plain JSON otherwise.
+    body: payload instanceof FormData ? payload : JSON.stringify(payload),
+  });
+
+export const removeReviewImage = (reviewId, image) =>
+  request(`/reviews/${reviewId}/images`, {
+    method: 'DELETE',
+    body: JSON.stringify({ image }),
+  });
+
+export const setReviewFeatured = (reviewId, featured) =>
+  request(`/reviews/${reviewId}/featured`, {
+    method: 'PATCH',
+    body: JSON.stringify({ featured }),
+  });
+
+export const reorderFeaturedReviews = (orderedIds) =>
+  request('/reviews/featured-order', {
+    method: 'PATCH',
+    body: JSON.stringify({ orderedIds }),
+  });
+
 export const deleteReview = (reviewId) =>
   request(`/reviews/${reviewId}`, {
     method: 'DELETE',
