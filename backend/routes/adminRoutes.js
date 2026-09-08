@@ -37,6 +37,8 @@ import {
   updateReviewStatus as updateReviewStatusController,
   createAdminReview,
   createAdminReviewsBulk,
+  deleteAdminReview,
+  deleteAdminReviewsBulk,
 } from '../controllers/reviewController.js';
 import { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
 import { VEHICLE_STATUS } from '../models/Vehicle.js';
@@ -208,7 +210,11 @@ router.delete(
   removeVehicleImage
 );
 
-router.get('/reviews', listAdminReviews);
+router.get(
+  '/reviews',
+  [query('driver').optional().isMongoId().withMessage('Invalid driver identifier')],
+  listAdminReviews
+);
 
 router.post(
   '/reviews',
@@ -237,6 +243,18 @@ router.post(
 );
 
 router.post('/reviews/bulk', createAdminReviewsBulk);
+
+router.delete(
+  '/reviews/bulk',
+  [body('ids').isArray({ min: 1 }).withMessage('Provide a non-empty list of review ids')],
+  deleteAdminReviewsBulk
+);
+
+router.delete(
+  '/reviews/:id',
+  [param('id').isMongoId().withMessage('Invalid review identifier')],
+  deleteAdminReview
+);
 
 router.patch(
   '/reviews/:id/status',

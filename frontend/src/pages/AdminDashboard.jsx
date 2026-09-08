@@ -29,6 +29,8 @@ import {
   createReview as createAdminReview,
   bulkImportReviews,
   updateReviewStatus as updateReviewStatusRequest,
+  deleteReview as deleteReviewRequest,
+  bulkDeleteReviews as bulkDeleteReviewsRequest,
   fetchBookings as fetchAdminBookings,
   updateBooking as updateAdminBooking,
   deleteBooking as deleteAdminBooking,
@@ -125,8 +127,9 @@ const AdminDashboard = () => {
   const [commissionState, setCommissionState] = useState({ items: [], loading: true, error: '', updatingId: null });
   const [commissionMonth, setCommissionMonth] = useState(getCurrentMonthValue());
   const [reviewFilter, setReviewFilter] = useState('all');
+  const [reviewDriverFilter, setReviewDriverFilter] = useState('');
   const [pendingReviewCount, setPendingReviewCount] = useState(0);
-  const [reviewState, setReviewState] = useState({ items: [], meta: { total: 0, status: 'pending' }, loading: true, error: '', updatingId: null, creating: false });
+  const [reviewState, setReviewState] = useState({ items: [], meta: { total: 0, status: 'pending' }, loading: true, error: '', updatingId: null, deletingId: null, bulkDeleting: false, creating: false });
   const [currentUser, setCurrentUser] = useState(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [profileError, setProfileError] = useState('');
@@ -239,10 +242,10 @@ const AdminDashboard = () => {
     }
   }, []);
 
-  const loadReviews = useCallback(async (status = 'pending') => {
+  const loadReviews = useCallback(async (status = 'pending', driver = '') => {
     try {
       setReviewState((prev) => ({ ...prev, loading: true, error: '' }));
-      const response = await fetchReviews(status !== 'all' ? { status } : {});
+      const response = await fetchReviews({ ...(status !== 'all' ? { status } : {}), ...(driver ? { driver } : {}) });
       setReviewState((prev) => ({ ...prev, items: response.reviews || [], meta: response.meta || { total: 0, status }, loading: false, error: '', updatingId: null }));
       const pendingCount = response.meta?.counts?.pending;
       if (typeof pendingCount === 'number') {
@@ -483,8 +486,8 @@ const AdminDashboard = () => {
   }, [loadCurrentUserProfile]);
 
   useEffect(() => {
-    loadReviews(reviewFilter);
-  }, [loadReviews, reviewFilter]);
+    loadReviews(reviewFilter, reviewDriverFilter);
+  }, [loadReviews, reviewFilter, reviewDriverFilter]);
 
   const pendingDriverCount = useMemo(() => driverState.items.filter((app) => app.driverStatus === DRIVER_STATUS.PENDING).length, [driverState.items]);
   const pendingVehicleCount = useMemo(() => vehicleState.items.filter((vehicle) => vehicle.status === VEHICLE_STATUS.PENDING).length, [vehicleState.items]);
@@ -553,13 +556,14 @@ const AdminDashboard = () => {
   };
 
   const handleReviewFilterChange = (status) => setReviewFilter(status);
+  const handleReviewDriverFilterChange = (driverId) => setReviewDriverFilter(driverId);
 
   const handleReviewStatusChange = async (reviewId, nextStatus, adminNote) => {
     setReviewState((prev) => ({ ...prev, updatingId: reviewId }));
     try {
       await updateReviewStatusRequest(reviewId, { status: nextStatus, adminNote });
       toast.success(nextStatus === 'approved' ? 'Review approved and published.' : 'Review declined.');
-      await loadReviews(reviewFilter);
+      await loadReviews(reviewFilter, reviewDriverFilter);
       if (reviewFilter !== 'pending') {
         try {
           const pendingSnapshot = await fetchReviews({ status: 'pending' });
@@ -579,25 +583,52 @@ const AdminDashboard = () => {
     try {
       await createAdminReview(payload);
       toast.success(payload.status === 'pending' ? 'Review saved as pending.' : payload.status === 'rejected' ? 'Review saved.' : 'Review published.');
-      await loadReviews(reviewFilter);
+      await loadReviews(reviewFilter, reviewDriverFilter);
     } catch (err) {
       toast.error(err.message || 'Unable to add review.');
       throw err;
     } finally {
       setReviewState((prev) => ({ ...prev, creating: false }));
     }
-  }, [loadReviews, reviewFilter]);
+  }, [loadReviews, reviewFilter, reviewDriverFilter]);
 
   const handleReviewBulkImport = useCallback(async (rows) => {
     const response = await bulkImportReviews(rows);
     if (response?.created > 0) {
       toast.success(response.message || `${response.created} reviews imported.`);
-      await loadReviews(reviewFilter);
+      await loadReviews(reviewFilter, reviewDriverFilter);
     } else {
       toast.error(response?.message || 'No reviews were imported.');
     }
     return response;
-  }, [loadReviews, reviewFilter]);
+  }, [loadReviews, reviewFilter, reviewDriverFilter]);
+
+  const handleReviewDelete = useCallback(async (reviewId) => {
+    setReviewState((prev) => ({ ...prev, deletingId: reviewId }));
+    try {
+      await deleteReviewRequest(reviewId);
+      toast.success('Review deleted.');
+      await loadReviews(reviewFilter, reviewDriverFilter);
+    } catch (err) {
+      toast.error(err.message || 'Unable to delete review.');
+    } finally {
+      setReviewState((prev) => ({ ...prev, deletingId: null }));
+    }
+  }, [loadReviews, reviewFilter, reviewDriverFilter]);
+
+  const handleReviewBulkDelete = useCallback(async (reviewIds) => {
+    if (!reviewIds?.length) return;
+    setReviewState((prev) => ({ ...prev, bulkDeleting: true }));
+    try {
+      const response = await bulkDeleteReviewsRequest(reviewIds);
+      toast.success(response?.message || `${reviewIds.length} reviews deleted.`);
+      await loadReviews(reviewFilter, reviewDriverFilter);
+    } catch (err) {
+      toast.error(err.message || 'Unable to delete reviews.');
+    } finally {
+      setReviewState((prev) => ({ ...prev, bulkDeleting: false }));
+    }
+  }, [loadReviews, reviewFilter, reviewDriverFilter]);
 
   const handleAdminProfileSave = useCallback(async (payload) => {
     setProfileSaving(true);
@@ -838,10 +869,14 @@ const AdminDashboard = () => {
         state={{ ...reviewState, items: filteredReviews }}
         filter={reviewFilter}
         onFilterChange={handleReviewFilterChange}
-        onRetry={() => loadReviews(reviewFilter)}
+        driverFilter={reviewDriverFilter}
+        onDriverFilterChange={handleReviewDriverFilterChange}
+        onRetry={() => loadReviews(reviewFilter, reviewDriverFilter)}
         onStatusChange={handleReviewStatusChange}
         onCreate={handleReviewCreate}
         onBulkImport={handleReviewBulkImport}
+        onDelete={handleReviewDelete}
+        onBulkDelete={handleReviewBulkDelete}
         drivers={driverState.items}
         vehicles={vehicleState.items}
       />

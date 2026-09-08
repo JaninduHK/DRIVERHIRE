@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, ChevronDown, Loader2, Plus, RotateCcw, Star, Upload, XCircle } from 'lucide-react';
+import { CheckCircle2, ChevronDown, Loader2, Plus, RotateCcw, Star, Trash2, Upload, XCircle } from 'lucide-react';
 import { csvToObjects } from '../../lib/csv.js';
 import ReviewPhotos from '../../components/ReviewPhotos.jsx';
 import AdminModal from './AdminModal.jsx';
@@ -125,8 +125,22 @@ const inputCls =
   'mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20';
 const labelCls = 'block text-[11px] font-extrabold uppercase tracking-wide text-muted-soft';
 
-const ReviewsPanel = ({ state, filter, onFilterChange, onRetry, onStatusChange, onCreate, onBulkImport, drivers = [], vehicles = [] }) => {
-  const { items: filtered, meta, loading, error, updatingId, creating = false } = state;
+const ReviewsPanel = ({
+  state,
+  filter,
+  onFilterChange,
+  driverFilter = '',
+  onDriverFilterChange,
+  onRetry,
+  onStatusChange,
+  onCreate,
+  onBulkImport,
+  onDelete,
+  onBulkDelete,
+  drivers = [],
+  vehicles = [],
+}) => {
+  const { items: filtered, meta, loading, error, updatingId, deletingId, bulkDeleting = false, creating = false } = state;
   const items = filtered;
 
   const filters = [
@@ -157,6 +171,42 @@ const ReviewsPanel = ({ state, filter, onFilterChange, onRetry, onStatusChange, 
   useEffect(() => () => imagePreviews.forEach((url) => URL.revokeObjectURL(url)), [imagePreviews]);
 
   const approvedDrivers = useMemo(() => drivers.filter((driver) => driver.driverStatus === 'approved'), [drivers]);
+
+  const driverFilterOptions = useMemo(
+    () => [...drivers].sort((a, b) => (a.name || '').localeCompare(b.name || '')),
+    [drivers]
+  );
+
+  const [selectedIds, setSelectedIds] = useState([]);
+  useEffect(() => {
+    const availableIds = new Set(items.map((review) => review.id));
+    setSelectedIds((prev) => prev.filter((id) => availableIds.has(id)));
+  }, [items]);
+
+  const toggleSelected = (reviewId) =>
+    setSelectedIds((prev) => (prev.includes(reviewId) ? prev.filter((id) => id !== reviewId) : [...prev, reviewId]));
+
+  const allSelected = items.length > 0 && selectedIds.length === items.length;
+  const toggleSelectAll = () => setSelectedIds(allSelected ? [] : items.map((review) => review.id));
+
+  const handleBulkDeleteClick = () => {
+    if (!selectedIds.length || !onBulkDelete) return;
+    if (typeof window !== 'undefined') {
+      const confirmed = window.confirm(`Delete ${selectedIds.length} review${selectedIds.length === 1 ? '' : 's'}? This cannot be undone.`);
+      if (!confirmed) return;
+    }
+    onBulkDelete(selectedIds);
+    setSelectedIds([]);
+  };
+
+  const handleDeleteClick = (reviewId) => {
+    if (!onDelete) return;
+    if (typeof window !== 'undefined') {
+      const confirmed = window.confirm('Delete this review? This cannot be undone.');
+      if (!confirmed) return;
+    }
+    onDelete(reviewId);
+  };
 
   const vehicleOptions = useMemo(() => {
     if (!formState.driverId) return [];
@@ -380,15 +430,44 @@ const ReviewsPanel = ({ state, filter, onFilterChange, onRetry, onStatusChange, 
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {filters.map((option) => (
             <button key={option.value} type="button" onClick={() => handleFilterClick(option.value)} className={tagClass(filter === option.value ? 'green' : 'grey')}>
               {option.label}
             </button>
           ))}
+          <select
+            value={driverFilter}
+            onChange={(event) => onDriverFilterChange?.(event.target.value)}
+            className="rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-bold text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+          >
+            <option value="">All drivers</option>
+            {driverFilterOptions.map((driver) => (
+              <option key={driver.id} value={driver.id}>{driver.name}</option>
+            ))}
+          </select>
         </div>
         <span className="text-[13px] text-muted-soft">{meta?.total ?? 0} result{(meta?.total ?? 0) === 1 ? '' : 's'}</span>
       </div>
+
+      {selectedIds.length > 0 ? (
+        <div className="flex items-center justify-between gap-3 rounded-[14px] bg-canvas px-4 py-2.5">
+          <span className="text-[13px] font-bold text-ink">{selectedIds.length} selected</span>
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => setSelectedIds([])} className="text-xs font-bold text-muted-soft hover:text-ink">
+              Clear
+            </button>
+            <button
+              type="button"
+              onClick={handleBulkDeleteClick}
+              disabled={bulkDeleting}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 dark:border-rose-400/30 bg-rose-50 dark:bg-rose-400/10 px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-300 transition hover:bg-rose-100 dark:hover:bg-rose-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {bulkDeleting ? (<><Loader2 className="h-3.5 w-3.5 animate-spin" /> Deleting…</>) : (<><Trash2 className="h-3.5 w-3.5" /> Delete selected</>)}
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {loading ? (
         <div className="grid gap-3 sm:grid-cols-2">
@@ -414,6 +493,16 @@ const ReviewsPanel = ({ state, filter, onFilterChange, onRetry, onStatusChange, 
         </div>
       ) : (
         <div className="rounded-[18px] bg-surface shadow-card">
+          <div className="flex items-center gap-2 border-b border-hairline px-5 py-2.5">
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={toggleSelectAll}
+              className="h-4 w-4 rounded border-line accent-brand"
+              aria-label="Select all reviews"
+            />
+            <span className="text-[11px] font-extrabold uppercase tracking-wide text-muted-soft">Select all</span>
+          </div>
           {filtered.map((review) => {
             const vehicleModel = review.vehicle?.model || 'Vehicle unavailable';
             const driverName = review.vehicle?.driver?.name;
@@ -422,8 +511,10 @@ const ReviewsPanel = ({ state, filter, onFilterChange, onRetry, onStatusChange, 
             const submittedOn = review.createdAt ? formatDate(review.createdAt) : null;
             const statusLabel = getReviewStatusLabel(review.status);
             const isUpdating = updatingId === review.id;
+            const isDeleting = deletingId === review.id;
             const isAdminAuthored = Boolean(review.createdByAdmin);
             const isExpanded = expandedId === review.id;
+            const isSelected = selectedIds.includes(review.id);
 
             const handleDecline = () => {
               let note = review.adminNote || '';
@@ -435,57 +526,72 @@ const ReviewsPanel = ({ state, filter, onFilterChange, onRetry, onStatusChange, 
             };
 
             return (
-              <div key={review.id} className="border-b border-hairline last:border-b-0">
-                <button
-                  type="button"
-                  onClick={() => toggleExpanded(review.id)}
-                  className="grid w-full grid-cols-[.8fr_1.2fr_1.3fr_.9fr_auto] items-center gap-3 px-5 py-3.5 text-left transition hover:bg-canvas"
-                >
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="inline-flex items-center gap-1 text-[13px] font-extrabold text-star"><Star className="h-3.5 w-3.5" fill="currentColor" /> {review.rating}/5</span>
-                    <span className={tagClass(STATUS_TAGS[review.status] || 'grey')}>{statusLabel}</span>
-                  </div>
-                  <div className="min-w-0">
-                    <div className="truncate text-[13.5px] font-bold text-ink">{review.travelerName || 'Anonymous'}</div>
-                    {isAdminAuthored ? <div className="text-[11px] font-semibold text-muted-soft">Admin added</div> : null}
-                  </div>
-                  <div className="min-w-0 truncate text-[12.5px] text-muted-soft">
-                    {vehicleModel}{driverName ? ` · ${driverName}` : ''}
-                  </div>
-                  <div className="text-[12px] text-muted-soft">{submittedOn || '—'}</div>
-                  <ChevronDown className={`h-4 w-4 flex-shrink-0 text-muted-soft transition ${isExpanded ? 'rotate-180' : ''}`} />
-                </button>
-
-                {isExpanded ? (
-                  <div className="border-t border-hairline bg-canvas/60 px-5 py-4">
-                    {bookingStart && bookingEnd ? <p className="text-[12px] text-muted-soft">Trip: {bookingStart} – {bookingEnd}</p> : null}
-                    {review.title ? <h3 className="mt-2 text-[15px] font-bold text-ink">{review.title}</h3> : null}
-                    <p className="mt-2 whitespace-pre-line text-[13.5px] leading-relaxed text-muted">{review.comment}</p>
-                    <ReviewPhotos images={review.images} />
-                    {review.adminNote ? (
-                      <div className="mt-3 rounded-lg border border-amber-200 dark:border-amber-400/30 bg-amber-50 dark:bg-amber-400/10 p-3 text-[12px] text-amber-700 dark:text-amber-300">
-                        <p className="font-bold">Admin note</p>
-                        <p>{review.adminNote}</p>
-                      </div>
-                    ) : null}
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {review.status === 'pending' ? (
-                        <>
-                          <button type="button" onClick={() => onStatusChange?.(review.id, 'approved')} disabled={isUpdating} className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 dark:border-emerald-400/30 bg-emerald-50 dark:bg-emerald-400/10 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 transition hover:bg-emerald-100 dark:hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-60">
-                            {isUpdating ? (<><Loader2 className="h-4 w-4 animate-spin" /> Updating…</>) : (<><CheckCircle2 className="h-4 w-4" /> Approve</>)}
-                          </button>
-                          <button type="button" onClick={handleDecline} disabled={isUpdating} className="inline-flex items-center gap-2 rounded-lg border border-rose-200 dark:border-rose-400/30 bg-rose-50 dark:bg-rose-400/10 px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-300 transition hover:bg-rose-100 dark:hover:bg-rose-400/20 disabled:cursor-not-allowed disabled:opacity-60">
-                            <XCircle className="h-4 w-4" /> {isUpdating ? 'Updating…' : 'Decline'}
-                          </button>
-                        </>
-                      ) : (
-                        <button type="button" onClick={() => onStatusChange?.(review.id, 'pending')} disabled={isUpdating} className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-bold text-ink transition hover:border-muted-soft disabled:cursor-not-allowed disabled:opacity-60">
-                          {isUpdating ? (<><Loader2 className="h-4 w-4 animate-spin" /> Updating…</>) : (<><RotateCcw className="h-4 w-4" /> Reopen</>)}
-                        </button>
-                      )}
+              <div key={review.id} className="flex items-stretch border-b border-hairline last:border-b-0">
+                <div className="flex items-center pl-5">
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => toggleSelected(review.id)}
+                    onClick={(event) => event.stopPropagation()}
+                    className="h-4 w-4 rounded border-line accent-brand"
+                    aria-label={`Select review from ${review.travelerName || 'Anonymous'}`}
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <button
+                    type="button"
+                    onClick={() => toggleExpanded(review.id)}
+                    className="grid w-full grid-cols-[.8fr_1.2fr_1.3fr_.9fr_auto] items-center gap-3 px-5 py-3.5 text-left transition hover:bg-canvas"
+                  >
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="inline-flex items-center gap-1 text-[13px] font-extrabold text-star"><Star className="h-3.5 w-3.5" fill="currentColor" /> {review.rating}/5</span>
+                      <span className={tagClass(STATUS_TAGS[review.status] || 'grey')}>{statusLabel}</span>
                     </div>
-                  </div>
-                ) : null}
+                    <div className="min-w-0">
+                      <div className="truncate text-[13.5px] font-bold text-ink">{review.travelerName || 'Anonymous'}</div>
+                      {isAdminAuthored ? <div className="text-[11px] font-semibold text-muted-soft">Admin added</div> : null}
+                    </div>
+                    <div className="min-w-0 truncate text-[12.5px] text-muted-soft">
+                      {vehicleModel}{driverName ? ` · ${driverName}` : ''}
+                    </div>
+                    <div className="text-[12px] text-muted-soft">{submittedOn || '—'}</div>
+                    <ChevronDown className={`h-4 w-4 flex-shrink-0 text-muted-soft transition ${isExpanded ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {isExpanded ? (
+                    <div className="border-t border-hairline bg-canvas/60 px-5 py-4">
+                      {bookingStart && bookingEnd ? <p className="text-[12px] text-muted-soft">Trip: {bookingStart} – {bookingEnd}</p> : null}
+                      {review.title ? <h3 className="mt-2 text-[15px] font-bold text-ink">{review.title}</h3> : null}
+                      <p className="mt-2 whitespace-pre-line text-[13.5px] leading-relaxed text-muted">{review.comment}</p>
+                      <ReviewPhotos images={review.images} />
+                      {review.adminNote ? (
+                        <div className="mt-3 rounded-lg border border-amber-200 dark:border-amber-400/30 bg-amber-50 dark:bg-amber-400/10 p-3 text-[12px] text-amber-700 dark:text-amber-300">
+                          <p className="font-bold">Admin note</p>
+                          <p>{review.adminNote}</p>
+                        </div>
+                      ) : null}
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {review.status === 'pending' ? (
+                          <>
+                            <button type="button" onClick={() => onStatusChange?.(review.id, 'approved')} disabled={isUpdating} className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 dark:border-emerald-400/30 bg-emerald-50 dark:bg-emerald-400/10 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 transition hover:bg-emerald-100 dark:hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-60">
+                              {isUpdating ? (<><Loader2 className="h-4 w-4 animate-spin" /> Updating…</>) : (<><CheckCircle2 className="h-4 w-4" /> Approve</>)}
+                            </button>
+                            <button type="button" onClick={handleDecline} disabled={isUpdating} className="inline-flex items-center gap-2 rounded-lg border border-rose-200 dark:border-rose-400/30 bg-rose-50 dark:bg-rose-400/10 px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-300 transition hover:bg-rose-100 dark:hover:bg-rose-400/20 disabled:cursor-not-allowed disabled:opacity-60">
+                              <XCircle className="h-4 w-4" /> {isUpdating ? 'Updating…' : 'Decline'}
+                            </button>
+                          </>
+                        ) : (
+                          <button type="button" onClick={() => onStatusChange?.(review.id, 'pending')} disabled={isUpdating} className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-bold text-ink transition hover:border-muted-soft disabled:cursor-not-allowed disabled:opacity-60">
+                            {isUpdating ? (<><Loader2 className="h-4 w-4 animate-spin" /> Updating…</>) : (<><RotateCcw className="h-4 w-4" /> Reopen</>)}
+                          </button>
+                        )}
+                        <button type="button" onClick={() => handleDeleteClick(review.id)} disabled={isDeleting} className="ml-auto inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-bold text-muted-soft transition hover:border-rose-300 hover:text-rose-600 dark:hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-60">
+                          {isDeleting ? (<><Loader2 className="h-4 w-4 animate-spin" /> Deleting…</>) : (<><Trash2 className="h-4 w-4" /> Delete</>)}
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
               </div>
             );
           })}

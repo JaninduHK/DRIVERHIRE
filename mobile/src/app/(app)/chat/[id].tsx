@@ -285,10 +285,14 @@ function OfferVehicleImages({ images }: { images?: (string | { url?: string })[]
     .filter((uri): uri is string => Boolean(uri));
   if (photos.length === 0) return null;
   return (
+    // An explicit height is required: a horizontal ScrollView nested in the
+    // vertical message list otherwise expands to fill all available height on
+    // iOS, blowing up the bubble and swallowing vertical scroll gestures.
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
       className="mb-2"
+      style={{ height: 56, flexGrow: 0, flexShrink: 0 }}
       contentContainerStyle={{ gap: 6 }}
     >
       {photos.map((uri, i) => (

@@ -4,7 +4,7 @@ import Booking, { BOOKING_STATUS } from '../models/Booking.js';
 import Vehicle, { VEHICLE_STATUS } from '../models/Vehicle.js';
 import User, { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
 import { mapAssetUrls } from '../utils/assetUtils.js';
-import { uploadImage, generateUniqueFilename } from '../services/cloudinaryService.js';
+import { uploadImage, generateUniqueFilename, deleteMultipleAssets } from '../services/cloudinaryService.js';
 import { hashReviewToken } from '../services/reviewRequestService.js';
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
@@ -391,7 +391,7 @@ export const listLatestReviews = async (req, res) => {
 };
 
 export const listAdminReviews = async (req, res) => {
-  const { status, sort = 'recent' } = req.query || {};
+  const { status, driver, sort = 'recent' } = req.query || {};
 
   const allowedStatuses = new Set(Object.values(REVIEW_STATUS));
   const filters = {};
@@ -401,6 +401,12 @@ export const listAdminReviews = async (req, res) => {
       return res.status(400).json({ message: `Status must be one of: ${Array.from(allowedStatuses).join(', ')}` });
     }
     filters.status = normalizedStatus;
+  }
+  if (driver) {
+    if (!isValidObjectId(driver)) {
+      return res.status(400).json({ message: 'Invalid driver identifier.' });
+    }
+    filters.driver = driver;
   }
 
   let sortOption = { createdAt: -1 };
@@ -798,6 +804,72 @@ export const createAdminReviewsBulk = async (req, res) => {
     failed: results.failed,
     errors: results.errors.slice(0, 100),
   });
+};
+
+export const deleteAdminReview = async (req, res) => {
+  const { id } = req.params;
+
+  if (!isValidObjectId(id)) {
+    return res.status(400).json({ message: 'Invalid review identifier.' });
+  }
+
+  try {
+    const review = await Review.findByIdAndDelete(id);
+    if (!review) {
+      return res.status(404).json({ message: 'Review not found.' });
+    }
+
+    if (Array.isArray(review.images) && review.images.length > 0) {
+      try {
+        await deleteMultipleAssets(review.images, 'image');
+      } catch (cleanupError) {
+        console.error('Review image cleanup failed:', cleanupError);
+      }
+    }
+
+    return res.json({ message: 'Review deleted.', id });
+  } catch (error) {
+    console.error('Delete admin review error:', error);
+    return res.status(500).json({ message: 'Unable to delete review.' });
+  }
+};
+
+// Bulk-delete reviews. Body: { ids: [...] }.
+export const deleteAdminReviewsBulk = async (req, res) => {
+  const ids = Array.isArray(req.body?.ids) ? req.body.ids : [];
+  const uniqueIds = [...new Set(ids.map((value) => String(value).trim()))].filter(Boolean);
+
+  if (uniqueIds.length === 0) {
+    return res.status(400).json({ message: 'Provide a non-empty list of review ids to delete.' });
+  }
+
+  const validIds = uniqueIds.filter(isValidObjectId);
+  if (validIds.length === 0) {
+    return res.status(400).json({ message: 'No valid review identifiers were provided.' });
+  }
+
+  try {
+    const reviews = await Review.find({ _id: { $in: validIds } }, 'images');
+    const allImages = reviews.flatMap((review) => (Array.isArray(review.images) ? review.images : []));
+
+    const result = await Review.deleteMany({ _id: { $in: validIds } });
+
+    if (allImages.length > 0) {
+      try {
+        await deleteMultipleAssets(allImages, 'image');
+      } catch (cleanupError) {
+        console.error('Bulk review image cleanup failed:', cleanupError);
+      }
+    }
+
+    return res.json({
+      message: `${result.deletedCount} review${result.deletedCount === 1 ? '' : 's'} deleted.`,
+      deleted: result.deletedCount,
+    });
+  } catch (error) {
+    console.error('Bulk delete admin reviews error:', error);
+    return res.status(500).json({ message: 'Unable to delete reviews.' });
+  }
 };
 
 // ---------------------------------------------------------------------------

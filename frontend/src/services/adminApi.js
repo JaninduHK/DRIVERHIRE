@@ -147,6 +147,17 @@ export const updateReviewStatus = (reviewId, payload) =>
     body: JSON.stringify(payload),
   });
 
+export const deleteReview = (reviewId) =>
+  request(`/reviews/${reviewId}`, {
+    method: 'DELETE',
+  });
+
+export const bulkDeleteReviews = (ids) =>
+  request('/reviews/bulk', {
+    method: 'DELETE',
+    body: JSON.stringify({ ids }),
+  });
+
 export const fetchBookings = () =>
   request('/bookings', {
     method: 'GET',
