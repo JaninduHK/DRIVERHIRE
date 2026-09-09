@@ -82,6 +82,15 @@ export const sendDriverEmail = (driverId, payload) =>
     body: JSON.stringify(payload),
   });
 
+export const fetchLicenseSubmissions = (filters = {}) =>
+  request(`/licenses${buildQueryString(filters)}`, { method: 'GET' });
+
+export const updateLicenseStatus = (driverId, payload) =>
+  request(`/licenses/${driverId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+
 export const updateDriverDetails = (driverId, payload) =>
   request(`/drivers/${driverId}`, {
     method: 'PATCH',

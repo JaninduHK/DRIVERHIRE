@@ -4,6 +4,7 @@ import { useLoaderData } from 'react-router';
 import { Car, Check, ChevronDown, Loader2, Search, SlidersHorizontal, Star, X } from 'lucide-react';
 import { fetchDriverDirectory } from '../services/driverDirectoryApi.js';
 import { Avatar } from '../components/dashboard/primitives.jsx';
+import { LicenseIconBadge, LicenseTypeChip } from '../components/LicenseBadge.jsx';
 
 const formatCurrency = (value) => (!Number.isFinite(value) ? '$0' : `$${value.toLocaleString('en-US')}`);
 const yearsLabel = (years) => {
@@ -282,9 +283,13 @@ const DriverCard = ({ driver, tone }) => {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-[7px]">
             <h3 className="text-[16.5px] font-extrabold">{driver.name}</h3>
-            <span className="rounded-full bg-[#e9f8ef] px-2 py-1 text-[10.5px] font-extrabold text-brand-dark">Verified</span>
+            <LicenseIconBadge licenseType={driver.licenseType} />
           </div>
-          <div className="mt-[3px] text-[12.5px] font-semibold text-muted-soft">{cityLabel}</div>
+          {driver.licenseType ? (
+            <LicenseTypeChip licenseType={driver.licenseType} />
+          ) : (
+            <div className="mt-[3px] text-[12.5px] font-semibold text-muted-soft">{cityLabel}</div>
+          )}
         </div>
       </div>
       <div className="mt-3.5 flex flex-wrap items-center gap-1.5 text-[13.5px] font-bold">

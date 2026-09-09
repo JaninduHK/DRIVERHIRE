@@ -12,6 +12,7 @@ import {
   MessageCircle,
   Percent,
   Send,
+  ShieldCheck,
   Star,
   Users,
   Wallet,
@@ -20,6 +21,8 @@ import {
   fetchDriverApplications,
   updateDriverStatus as updateDriverStatusRequest,
   updateDriverDetails as updateDriverDetailsRequest,
+  fetchLicenseSubmissions,
+  updateLicenseStatus as updateLicenseStatusRequest,
   fetchVehicleSubmissions,
   updateVehicleStatus as updateVehicleStatusRequest,
   updateVehicleDetails as updateVehicleDetailsRequest,
@@ -77,6 +80,7 @@ import DriversPanel, { DriverApprovalSetting } from './admin/DriversPanel.jsx';
 import VehiclesPanel from './admin/VehiclesPanel.jsx';
 import PaymentsPanel from './admin/PaymentsPanel.jsx';
 import ReviewsPanel from './admin/ReviewsPanel.jsx';
+import VerificationPanel from './admin/VerificationPanel.jsx';
 import ReportsPanel from './admin/ReportsPanel.jsx';
 import PerformancePanel from './admin/PerformancePanel.jsx';
 import AdminProfilePanel from './admin/AdminProfilePanel.jsx';
@@ -96,6 +100,7 @@ const SECTION_META = {
   drivers: { crumb: 'SUPPLY & PEOPLE', title: 'Drivers' },
   vehicles: { crumb: 'SUPPLY & PEOPLE', title: 'Vehicle approvals' },
   reviews: { crumb: 'SUPPLY & PEOPLE', title: 'Reviews' },
+  verification: { crumb: 'SUPPLY & PEOPLE', title: 'License verification' },
   reports: { crumb: 'INSIGHTS', title: 'Reports' },
   performance: { crumb: 'INSIGHTS', title: 'Performance' },
   payments: { crumb: 'INSIGHTS', title: 'Driver payments' },
@@ -103,7 +108,7 @@ const SECTION_META = {
 };
 
 // Sections with a header search box + CSV export wired to their current (filtered) rows.
-const SEARCHABLE_SECTIONS = new Set(['bookings', 'discounts', 'briefs', 'offers', 'conversations', 'users', 'drivers', 'vehicles', 'payments', 'reviews']);
+const SEARCHABLE_SECTIONS = new Set(['bookings', 'discounts', 'briefs', 'offers', 'conversations', 'users', 'drivers', 'vehicles', 'payments', 'reviews', 'verification']);
 
 const matches = (term, fields) => {
   if (!term) return true;
@@ -146,6 +151,15 @@ const AdminDashboard = () => {
     savingId: null,
     featuredId: null,
     reordering: false,
+  });
+  const [licenseFilter, setLicenseFilter] = useState('pending');
+  const [pendingLicenseCount, setPendingLicenseCount] = useState(0);
+  const [licenseState, setLicenseState] = useState({
+    items: [],
+    meta: { total: 0, status: 'pending' },
+    loading: true,
+    error: '',
+    updatingId: null,
   });
   const [currentUser, setCurrentUser] = useState(null);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -277,6 +291,24 @@ const AdminDashboard = () => {
       return response;
     } catch (err) {
       setReviewState((prev) => ({ ...prev, items: [], meta: { total: 0, status }, loading: false, error: err.message || 'Unable to load reviews', updatingId: null }));
+      throw err;
+    }
+  }, []);
+
+  const loadLicenses = useCallback(async (status = 'pending') => {
+    try {
+      setLicenseState((prev) => ({ ...prev, loading: true, error: '' }));
+      const response = await fetchLicenseSubmissions(status !== 'all' ? { status } : {});
+      setLicenseState((prev) => ({ ...prev, items: response.licenses || [], meta: response.meta || { total: 0, status }, loading: false, error: '', updatingId: null }));
+      const pendingCount = response.meta?.counts?.pending;
+      if (typeof pendingCount === 'number') {
+        setPendingLicenseCount(pendingCount);
+      } else if (status === 'pending') {
+        setPendingLicenseCount(response.meta?.total ?? (response.licenses?.length ?? 0));
+      }
+      return response;
+    } catch (err) {
+      setLicenseState((prev) => ({ ...prev, items: [], meta: { total: 0, status }, loading: false, error: err.message || 'Unable to load license submissions', updatingId: null }));
       throw err;
     }
   }, []);
@@ -510,6 +542,10 @@ const AdminDashboard = () => {
     loadReviews(reviewFilter, reviewDriverFilter, reviewFeaturedFilter);
   }, [loadReviews, reviewFilter, reviewDriverFilter, reviewFeaturedFilter]);
 
+  useEffect(() => {
+    loadLicenses(licenseFilter);
+  }, [loadLicenses, licenseFilter]);
+
   const pendingDriverCount = useMemo(() => driverState.items.filter((app) => app.driverStatus === DRIVER_STATUS.PENDING).length, [driverState.items]);
   const pendingVehicleCount = useMemo(() => vehicleState.items.filter((vehicle) => vehicle.status === VEHICLE_STATUS.PENDING).length, [vehicleState.items]);
   const pendingBookingCount = useMemo(() => bookingState.items.filter((b) => b.status === 'pending').length, [bookingState.items]);
@@ -597,6 +633,26 @@ const AdminDashboard = () => {
     } catch (err) {
       toast.error(err.message || 'Unable to update review.');
       setReviewState((prev) => ({ ...prev, updatingId: null }));
+    }
+  };
+
+  const handleLicenseStatusChange = async (driverId, nextStatus, adminNote) => {
+    setLicenseState((prev) => ({ ...prev, updatingId: driverId }));
+    try {
+      await updateLicenseStatusRequest(driverId, { status: nextStatus, adminNote });
+      toast.success(nextStatus === 'approved' ? 'License approved.' : nextStatus === 'rejected' ? 'License rejected.' : 'License reopened.');
+      await loadLicenses(licenseFilter);
+      if (licenseFilter !== 'pending') {
+        try {
+          const pendingSnapshot = await fetchLicenseSubmissions({ status: 'pending' });
+          setPendingLicenseCount(pendingSnapshot.meta?.counts?.pending ?? pendingSnapshot.meta?.total ?? (pendingSnapshot.licenses?.length ?? 0));
+        } catch (refreshError) {
+          console.error('Unable to refresh pending license count:', refreshError);
+        }
+      }
+    } catch (err) {
+      toast.error(err.message || 'Unable to update license.');
+      setLicenseState((prev) => ({ ...prev, updatingId: null }));
     }
   };
 
@@ -798,6 +854,10 @@ const AdminDashboard = () => {
     () => reviewState.items.filter((r) => matches(term, [r.travelerName, r.vehicle?.model, r.vehicle?.driver?.name, r.comment])),
     [reviewState.items, term]
   );
+  const filteredLicenses = useMemo(
+    () => licenseState.items.filter((l) => matches(term, [l.driverName, l.driverEmail, l.licenseType])),
+    [licenseState.items, term]
+  );
   const filteredCommissions = useMemo(
     () => commissionState.items.filter((c) => matches(term, [c.driver?.name, c.driver?.email, c.periodLabel, c.status])),
     [commissionState.items, term]
@@ -846,10 +906,13 @@ const AdminDashboard = () => {
       case 'reviews':
         downloadCsv('reviews', filteredReviews.map((r) => ({ travelerName: r.travelerName || '', vehicle: r.vehicle?.model || '', driver: r.vehicle?.driver?.name || '', rating: r.rating, status: r.status, comment: r.comment })));
         break;
+      case 'verification':
+        downloadCsv('license-verifications', filteredLicenses.map((l) => ({ driver: l.driverName || '', email: l.driverEmail || '', licenseType: l.licenseType || '', status: l.status, submitted: formatDate(l.submittedAt) })));
+        break;
       default:
         break;
     }
-  }, [activeSection, filteredBookings, filteredDiscounts, filteredBriefs, filteredOffers, filteredConversations, filteredUsers, filteredDrivers, filteredVehicles, filteredCommissions, filteredReviews]);
+  }, [activeSection, filteredBookings, filteredDiscounts, filteredBriefs, filteredOffers, filteredConversations, filteredUsers, filteredDrivers, filteredVehicles, filteredCommissions, filteredReviews, filteredLicenses]);
 
   const navGroups = [
     { items: [{ id: 'overview', label: 'Overview', icon: LayoutDashboard }] },
@@ -870,6 +933,7 @@ const AdminDashboard = () => {
         { id: 'drivers', label: 'Drivers', icon: CircleUserRound, badge: pendingDriverCount },
         { id: 'vehicles', label: 'Vehicles', icon: Car, badge: pendingVehicleCount },
         { id: 'reviews', label: 'Reviews', icon: Star, badge: pendingReviewCount },
+        { id: 'verification', label: 'Verification', icon: ShieldCheck, badge: pendingLicenseCount },
       ],
     },
     {
@@ -957,6 +1021,16 @@ const AdminDashboard = () => {
         onBulkDelete={handleReviewBulkDelete}
         drivers={driverState.items}
         vehicles={vehicleState.items}
+      />
+    );
+  } else if (activeSection === 'verification') {
+    content = (
+      <VerificationPanel
+        state={{ ...licenseState, items: filteredLicenses }}
+        filter={licenseFilter}
+        onFilterChange={setLicenseFilter}
+        onRetry={() => loadLicenses(licenseFilter)}
+        onStatusChange={handleLicenseStatusChange}
       />
     );
   } else if (activeSection === 'reports') {

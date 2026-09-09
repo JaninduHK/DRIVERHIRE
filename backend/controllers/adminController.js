@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { validationResult } from 'express-validator';
-import User, { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
+import User, { DRIVER_STATUS, USER_ROLES, LICENSE_STATUS } from '../models/User.js';
 import Vehicle, { VEHICLE_STATUS } from '../models/Vehicle.js';
 import Booking, { BOOKING_STATUS, DEFAULT_COMMISSION_RATE } from '../models/Booking.js';
 import Review from '../models/Review.js';
@@ -399,6 +399,89 @@ export const updateDriverStatus = async (req, res) => {
   } catch (error) {
     console.error('Update driver status error:', error);
     return res.status(500).json({ message: 'Unable to update driver status' });
+  }
+};
+
+export const listLicenseSubmissions = async (req, res) => {
+  const { status } = req.query;
+  const filters = { role: USER_ROLES.DRIVER, licenseStatus: { $exists: true } };
+  if (status && Object.values(LICENSE_STATUS).includes(status)) {
+    filters.licenseStatus = status;
+  }
+
+  try {
+    const drivers = await User.find(filters)
+      .select(
+        'name email contactNumber profilePhoto licenseType licenseImage licenseStatus licenseSubmittedAt licenseReviewedAt licenseReviewedBy licenseAdminNote'
+      )
+      .populate({ path: 'licenseReviewedBy', select: 'name' })
+      .sort({ licenseSubmittedAt: -1 });
+
+    const licenses = drivers.map((driver) => {
+      const json = driver.toJSON();
+      return {
+        driverId: json.id,
+        driverName: json.name,
+        driverEmail: json.email,
+        driverContactNumber: json.contactNumber || '',
+        driverPhoto: json.profilePhoto ? buildAssetUrl(json.profilePhoto, req) : '',
+        licenseType: json.licenseType,
+        licenseImage: json.licenseImage ? buildAssetUrl(json.licenseImage, req) : '',
+        status: json.licenseStatus,
+        submittedAt: json.licenseSubmittedAt,
+        reviewedAt: json.licenseReviewedAt,
+        reviewedBy: json.licenseReviewedBy?.name || null,
+        adminNote: json.licenseAdminNote || '',
+      };
+    });
+
+    const countsAgg = await User.aggregate([
+      { $match: { role: USER_ROLES.DRIVER, licenseStatus: { $exists: true } } },
+      { $group: { _id: '$licenseStatus', count: { $sum: 1 } } },
+    ]);
+    const counts = { pending: 0, approved: 0, rejected: 0, total: 0 };
+    countsAgg.forEach((row) => {
+      if (counts[row._id] !== undefined) counts[row._id] = row.count;
+      counts.total += row.count;
+    });
+
+    return res.json({ licenses, meta: { total: licenses.length, status: status || 'all', counts } });
+  } catch (error) {
+    console.error('List license submissions error:', error);
+    return res.status(500).json({ message: 'Unable to load license submissions.' });
+  }
+};
+
+export const updateLicenseStatus = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+
+  const { id } = req.params;
+  const { status, adminNote } = req.body;
+
+  try {
+    const driver = await User.findOne({ _id: id, role: USER_ROLES.DRIVER });
+    if (!driver || !driver.licenseStatus) {
+      return res.status(404).json({ message: 'License submission not found' });
+    }
+
+    driver.licenseStatus = status;
+    driver.licenseReviewedAt = new Date();
+    driver.licenseReviewedBy = req.user.id;
+    driver.licenseAdminNote = status === LICENSE_STATUS.REJECTED && adminNote ? adminNote.trim() : undefined;
+
+    await driver.save({ validateBeforeSave: false });
+    await driver.populate({ path: 'licenseReviewedBy', select: 'name' });
+
+    return res.json({
+      message: status === LICENSE_STATUS.APPROVED ? 'License approved.' : 'License rejected.',
+      driver: driver.toJSON(),
+    });
+  } catch (error) {
+    console.error('Update license status error:', error);
+    return res.status(500).json({ message: 'Unable to update license status.' });
   }
 };
 

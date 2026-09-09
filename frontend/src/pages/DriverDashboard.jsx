@@ -50,6 +50,7 @@ import {
   fetchDriverEarningsHistory,
   uploadCommissionSlip,
   completeDriverProfileTour,
+  updateDriverLicense as updateDriverLicenseRequest,
 } from '../services/driverApi.js';
 import {
   updateProfile as updateProfileRequest,
@@ -77,6 +78,25 @@ const NAV_ITEMS = [
 
 const HASHABLE_TABS = ['overview', 'vehicles', 'bookings', 'earnings', 'availability', 'profile'];
 const HASH_TARGETS = [...HASHABLE_TABS, 'messages'];
+
+const LICENSE_TYPES = ['Tourist Driver', 'Chauffeur Guide Lecturer', 'National Guide Lecturer'];
+const LICENSE_STATUS_TAGS = {
+  pending: 'bg-amber-50 text-amber-700',
+  approved: 'bg-emerald-50 text-emerald-700',
+  rejected: 'bg-rose-50 text-rose-700',
+};
+const licenseStatusLabel = (status) => {
+  switch (status) {
+    case 'approved':
+      return 'Approved';
+    case 'rejected':
+      return 'Rejected';
+    case 'pending':
+      return 'Pending review';
+    default:
+      return 'Not submitted';
+  }
+};
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const MAX_VEHICLE_UPLOAD_BYTES = MAX_IMAGE_SIZE_BYTES * 5;
@@ -341,6 +361,7 @@ const DriverDashboard = () => {
   }));
   const [profileSaving, setProfileSaving] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
+  const [licenseSaving, setLicenseSaving] = useState(false);
   const [profileTourCompletedAt, setProfileTourCompletedAt] = useState(null);
   const [profileTourSubmitting, setProfileTourSubmitting] = useState(false);
   const [locationPromptOpen, setLocationPromptOpen] = useState(false);
@@ -566,6 +587,23 @@ const DriverDashboard = () => {
       setPasswordSaving(false);
     }
   }, []);
+
+  const handleDriverLicenseSave = useCallback(
+    async (payload) => {
+      setLicenseSaving(true);
+      try {
+        await updateDriverLicenseRequest(payload);
+        toast.success('License submitted for review.');
+        await loadOverview({ silent: true });
+      } catch (error) {
+        toast.error(error?.message || 'Unable to submit license.');
+        throw error;
+      } finally {
+        setLicenseSaving(false);
+      }
+    },
+    [loadOverview]
+  );
 
   useEffect(() => {
     loadOverview({ silent: false });
@@ -1050,8 +1088,10 @@ const DriverDashboard = () => {
     onEarningsSlipUpload: handleCommissionSlipUpload,
     onProfileSave: handleDriverProfileSave,
     onPasswordChange: handleDriverPasswordChange,
+    onLicenseSave: handleDriverLicenseSave,
     profileSaving,
     passwordSaving,
+    licenseSaving,
   };
 
   return (
@@ -2673,8 +2713,10 @@ const DriverProfilePanel = ({
   profile,
   onSave,
   onPasswordChange,
+  onLicenseSave,
   savingProfile,
   savingPassword,
+  licenseSaving,
 }) => {
   const [mode, setMode] = useState('view');
   const [formState, setFormState] = useState(() => buildDriverProfileForm(profile));
@@ -2689,7 +2731,11 @@ const DriverProfilePanel = ({
   const [clearLocation, setClearLocation] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locationStatus, setLocationStatus] = useState('');
+  const [licenseType, setLicenseType] = useState(profile?.licenseType || '');
+  const [licenseFile, setLicenseFile] = useState(null);
+  const [licensePreview, setLicensePreview] = useState(profile?.licenseImage || '');
   const photoInputRef = useRef(null);
+  const licenseInputRef = useRef(null);
 
   useEffect(() => {
     setFormState(buildDriverProfileForm(profile));
@@ -2699,6 +2745,9 @@ const DriverProfilePanel = ({
     setClearLocation(false);
     setLocating(false);
     setLocationStatus('');
+    setLicenseType(profile?.licenseType || '');
+    setLicensePreview(profile?.licenseImage || '');
+    setLicenseFile(null);
   }, [profile]);
 
   useEffect(() => {
@@ -2708,6 +2757,14 @@ const DriverProfilePanel = ({
       }
     };
   }, [photoPreview]);
+
+  useEffect(() => {
+    return () => {
+      if (licensePreview && licensePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(licensePreview);
+      }
+    };
+  }, [licensePreview]);
 
   const handleFieldChange = (event) => {
     const { name, value } = event.target;
@@ -2758,6 +2815,62 @@ const DriverProfilePanel = ({
       URL.revokeObjectURL(photoPreview);
     }
     setPhotoPreview('');
+  };
+
+  const handleLicenseFileChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
+    let processedFile = file;
+    if (file.size && file.size > 2 * 1024 * 1024) {
+      try {
+        toast.loading('Optimizing image...', { id: 'compress-license' });
+        processedFile = await compressImageIfNeeded(file);
+        toast.success('Image optimized successfully', { id: 'compress-license' });
+      } catch (error) {
+        toast.error(error?.message || 'Unable to optimize image. Please try a different photo.', { id: 'compress-license' });
+        event.target.value = '';
+        return;
+      }
+    }
+    if (processedFile.size > MAX_IMAGE_SIZE_BYTES) {
+      toast.error('Image is too large (max 10MB). Please choose a smaller image.');
+      event.target.value = '';
+      return;
+    }
+    setLicenseFile(processedFile);
+    setLicensePreview((current) => {
+      if (current && current.startsWith('blob:')) {
+        URL.revokeObjectURL(current);
+      }
+      return URL.createObjectURL(processedFile);
+    });
+  };
+
+  const handleLicenseSubmit = async (event) => {
+    event.preventDefault();
+    if (!onLicenseSave) {
+      return;
+    }
+    if (!licenseType) {
+      toast.error('Select your license type.');
+      return;
+    }
+    if (!licenseFile && !profile?.licenseImage) {
+      toast.error('Upload an image of your license.');
+      return;
+    }
+    try {
+      const payload = new FormData();
+      payload.append('licenseType', licenseType);
+      if (licenseFile) {
+        payload.append('licenseImage', licenseFile);
+      }
+      await onLicenseSave(payload);
+    } catch (error) {
+      console.warn('License submit failed', error);
+    }
   };
 
   const handleClearLocation = () => {
@@ -3064,6 +3177,74 @@ const DriverProfilePanel = ({
               )}
             </button>
           </form>
+
+          <form onSubmit={handleLicenseSubmit} className="mt-3 flex flex-col gap-3">
+            <div className="rounded-[18px] bg-white p-4 shadow-card">
+              <div className="flex items-center justify-between">
+                <b className="text-[14px] text-ink">Driving license</b>
+                <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${LICENSE_STATUS_TAGS[profile?.licenseStatus] || 'bg-canvas text-muted-soft'}`}>
+                  {licenseStatusLabel(profile?.licenseStatus)}
+                </span>
+              </div>
+              <p className="mt-0.5 text-[12px] text-muted-soft">Select your license type and upload a photo for admin verification.</p>
+
+              {profile?.licenseStatus === 'rejected' && profile?.licenseAdminNote ? (
+                <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-[12px] text-amber-700">
+                  <p className="font-bold">Admin note</p>
+                  <p>{profile.licenseAdminNote}</p>
+                </div>
+              ) : null}
+
+              <div className="mt-3">
+                <label className={labelCls} htmlFor="driver-license-type">License type</label>
+                <select
+                  id="driver-license-type"
+                  value={licenseType}
+                  onChange={(event) => setLicenseType(event.target.value)}
+                  className={inputCls}
+                  required
+                >
+                  <option value="">Select license type</option>
+                  {LICENSE_TYPES.map((type) => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="mt-3 flex items-center gap-3.5">
+                <div className="grid h-16 w-16 flex-shrink-0 place-items-center overflow-hidden rounded-2xl bg-canvas">
+                  {licensePreview ? (
+                    <img src={licensePreview} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <ShieldCheck className="h-6 w-6 text-muted-soft" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13.5px] font-bold text-ink">License photo</p>
+                  <div className="mt-1.5">
+                    <input ref={licenseInputRef} type="file" accept="image/*" className="hidden" onChange={handleLicenseFileChange} />
+                    <button type="button" onClick={() => licenseInputRef.current?.click()} className="rounded-lg border-[1.5px] border-[#e2e8ea] px-3 py-1.5 text-[12px] font-bold text-ink">
+                      Upload
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={licenseSaving}
+              className="flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand py-[15px] text-[15px] font-extrabold text-white transition hover:bg-brand-dark disabled:opacity-70"
+            >
+              {licenseSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" /> Submitting…
+                </>
+              ) : (
+                'Submit license'
+              )}
+            </button>
+          </form>
         </Sheet>
       </>
     );
@@ -3137,6 +3318,13 @@ const DriverProfilePanel = ({
                 TripAdvisor profile
               </a>
             ) : null}
+            <div className="flex items-center gap-2.5">
+              <ShieldCheck className="h-4 w-4 flex-shrink-0 text-muted-soft" />
+              <span className="text-ink-soft">{profile?.licenseType || 'License not submitted'}</span>
+              <span className={`ml-auto rounded-full px-2 py-0.5 text-[10.5px] font-bold ${LICENSE_STATUS_TAGS[profile?.licenseStatus] || 'bg-canvas text-muted-soft'}`}>
+                {licenseStatusLabel(profile?.licenseStatus)}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -3516,8 +3704,10 @@ const renderTabContent = (tabId, context) => {
     onEarningsSlipUpload,
     onProfileSave,
     onPasswordChange,
+    onLicenseSave,
     profileSaving,
     passwordSaving,
+    licenseSaving,
   } = context;
   const header = { onMenu, onNavigate, driverName, driverImage: profile?.profilePhoto };
   switch (tabId) {
@@ -3576,8 +3766,10 @@ const renderTabContent = (tabId, context) => {
           onLogout={onLogout}
           onSave={onProfileSave}
           onPasswordChange={onPasswordChange}
+          onLicenseSave={onLicenseSave}
           savingProfile={profileSaving}
           savingPassword={passwordSaving}
+          licenseSaving={licenseSaving}
         />
       );
     default:

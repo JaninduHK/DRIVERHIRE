@@ -1,6 +1,6 @@
 import { validationResult } from 'express-validator';
 import mongoose from 'mongoose';
-import User, { DRIVER_STATUS } from '../models/User.js';
+import User, { DRIVER_STATUS, LICENSE_STATUS } from '../models/User.js';
 import Vehicle, { VEHICLE_STATUS, VEHICLE_AVAILABILITY_STATUS } from '../models/Vehicle.js';
 import { mapAssetUrls, buildAssetUrl } from '../utils/assetUtils.js';
 import * as cloudinaryService from '../services/cloudinaryService.js';
@@ -66,7 +66,7 @@ const serializeDriverVehicle = (vehicle, req) => {
 export const getDriverOverview = async (req, res) => {
   try {
     const driver = await User.findById(req.user.id).select(
-      'name email contactNumber address description tripAdvisor driverStatus createdAt profilePhoto driverLocation driverApprovedAt driverProfileTourCompletedAt driverReviewedAt experienceYears'
+      'name email contactNumber address description tripAdvisor driverStatus createdAt profilePhoto driverLocation driverApprovedAt driverProfileTourCompletedAt driverReviewedAt experienceYears licenseType licenseImage licenseStatus licenseSubmittedAt licenseReviewedAt licenseAdminNote'
     );
 
     if (!driver) {
@@ -80,6 +80,9 @@ export const getDriverOverview = async (req, res) => {
     const profile = driver.toJSON();
     if (profile.profilePhoto) {
       profile.profilePhoto = buildAssetUrl(profile.profilePhoto, req);
+    }
+    if (profile.licenseImage) {
+      profile.licenseImage = buildAssetUrl(profile.licenseImage, req);
     }
 
     const onboarding = {
@@ -99,6 +102,68 @@ export const getDriverOverview = async (req, res) => {
   } catch (error) {
     console.error('Driver overview error:', error);
     return res.status(500).json({ message: 'Unable to load driver dashboard' });
+  }
+};
+
+// Submit or resubmit a license for review. Every successful call — first
+// submission or resubmission after rejection — resets status to pending and
+// clears any prior admin note/review timestamps; there's no history table,
+// matching how driverStatus itself has no audit trail.
+export const updateDriverLicense = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+
+  const { licenseType } = req.body || {};
+
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'Driver not found' });
+    }
+
+    if (req.file) {
+      if (user.licenseImage && cloudinaryService.isCloudinaryUrl(user.licenseImage)) {
+        try {
+          await cloudinaryService.deleteAsset(user.licenseImage, 'image');
+        } catch (deleteError) {
+          console.warn('Failed to delete old license image from Cloudinary:', deleteError.message);
+        }
+      }
+      const filename = cloudinaryService.generateUniqueFilename(`license-${user._id}`);
+      user.licenseImage = await cloudinaryService.uploadImage(req.file.buffer, 'licenses', filename);
+    }
+
+    // A first-time submission must include an image; a resubmission may omit
+    // it to keep the existing photo and just change the license type.
+    if (!user.licenseImage) {
+      return res.status(400).json({ message: 'Please upload an image of your license.' });
+    }
+
+    user.licenseType = licenseType;
+    user.licenseStatus = LICENSE_STATUS.PENDING;
+    user.licenseSubmittedAt = new Date();
+    user.licenseReviewedAt = undefined;
+    user.licenseReviewedBy = undefined;
+    user.licenseAdminNote = undefined;
+
+    await user.save({ validateBeforeSave: false });
+
+    return res.json({
+      message: 'License submitted for review.',
+      license: {
+        type: user.licenseType,
+        image: buildAssetUrl(user.licenseImage, req),
+        status: user.licenseStatus,
+        submittedAt: user.licenseSubmittedAt,
+        reviewedAt: null,
+        adminNote: null,
+      },
+    });
+  } catch (error) {
+    console.error('Update driver license error:', error);
+    return res.status(500).json({ message: 'Unable to update license.' });
   }
 };
 

@@ -110,6 +110,38 @@ export const conditionalProfileUpload = (req, res, next) => {
 };
 
 /**
+ * Driver License Image Upload Middleware
+ * - Accepts single image file (field name "licenseImage")
+ * - Maximum file size: 10MB
+ * - Only image files allowed
+ */
+export const licenseImageUpload = multer({
+  storage: memoryStorage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB max
+  },
+  fileFilter: (_req, file, cb) => {
+    if (isImageUpload(file)) {
+      return cb(null, true);
+    }
+    return cb(new Error('Only image uploads are allowed'));
+  },
+});
+
+/**
+ * Conditional Driver License Upload Middleware
+ * - Applies multer only for multipart/form-data (new photo attached);
+ *   a JSON PUT (type-only change, keeping the existing image) skips multer.
+ */
+export const conditionalLicenseUpload = (req, res, next) => {
+  const contentType = req.headers['content-type'] || '';
+  if (contentType.includes('multipart/form-data')) {
+    return licenseImageUpload.single('licenseImage')(req, res, next);
+  }
+  return next();
+};
+
+/**
  * Review Image Upload Middleware
  * - Accepts up to 4 image files (field name "images")
  * - Maximum file size: 10MB per file
@@ -147,6 +179,8 @@ export default {
   profilePhotoUpload,
   commissionSlipUpload,
   conditionalProfileUpload,
+  licenseImageUpload,
+  conditionalLicenseUpload,
   reviewImageUpload,
   conditionalReviewImageUpload,
 };

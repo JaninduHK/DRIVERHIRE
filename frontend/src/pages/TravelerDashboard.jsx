@@ -48,6 +48,7 @@ import { DashboardSidebar, DriverDrawer, MobileHeader, Sheet } from '../componen
 import { Avatar } from '../components/dashboard/primitives.jsx';
 import BookingDetailsModal from '../components/BookingDetailsModal.jsx';
 import DriverProfileSheet from '../components/DriverProfileSheet.jsx';
+import { LicenseIconBadge, LicenseTypeChip } from '../components/LicenseBadge.jsx';
 import DeleteAccountCard from '../components/DeleteAccountCard.jsx';
 import OfferVehicleImages from '../components/OfferVehicleImages.jsx';
 import BriefRequestBubble from '../components/BriefRequestBubble.jsx';
@@ -1326,6 +1327,7 @@ const TravelerMessages = ({
     ? `Discussing ${selectedConversation.vehicle.model}`
     : 'General conversation';
   const activeDriverId = selectedConversation?.participants?.driver?.id;
+  const activeDriverLicenseType = selectedConversation?.participants?.driver?.licenseType || null;
   const openDriverProfile = () => { if (activeDriverId) setDriverProfileOpen(true); };
 
   const chatMessages =
@@ -1469,8 +1471,15 @@ const TravelerMessages = ({
                 >
                   <Avatar name={activeName} tone="light" className="h-10 w-10 flex-shrink-0 text-[15px]" />
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-[16px] font-extrabold">{activeName}</div>
-                    <div className="truncate text-[12px] text-white/80">{activeSubtitle}</div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="truncate text-[16px] font-extrabold">{activeName}</div>
+                      <LicenseIconBadge licenseType={activeDriverLicenseType} />
+                    </div>
+                    {activeDriverLicenseType ? (
+                      <LicenseTypeChip licenseType={activeDriverLicenseType} className="!mt-0" />
+                    ) : (
+                      <div className="truncate text-[12px] text-white/80">{activeSubtitle}</div>
+                    )}
                   </div>
                   {activeDriverId ? <ChevronRight className="h-4 w-4 flex-shrink-0 text-white/70" /> : null}
                 </button>
@@ -1541,8 +1550,15 @@ const TravelerMessages = ({
                 >
                   <Avatar name={activeName} tone="brand" className="h-10 w-10 flex-shrink-0 rounded-[11px] text-[15px]" />
                   <div className="min-w-0 flex-1">
-                    <b className="block truncate text-[15px] text-ink">{activeName}</b>
-                    <div className="truncate text-[12px] text-muted-soft">{activeSubtitle}</div>
+                    <div className="flex items-center gap-1.5">
+                      <b className="block truncate text-[15px] text-ink">{activeName}</b>
+                      <LicenseIconBadge licenseType={activeDriverLicenseType} />
+                    </div>
+                    {activeDriverLicenseType ? (
+                      <LicenseTypeChip licenseType={activeDriverLicenseType} className="!mt-0" />
+                    ) : (
+                      <div className="truncate text-[12px] text-muted-soft">{activeSubtitle}</div>
+                    )}
                   </div>
                   {activeDriverId ? <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted-soft transition group-hover:text-brand-dark" /> : null}
                 </button>

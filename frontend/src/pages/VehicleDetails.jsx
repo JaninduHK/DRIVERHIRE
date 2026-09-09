@@ -32,6 +32,7 @@ import { getVehicleFeatureLabels } from '../constants/vehicleFeatures.js';
 import { startConversation as startChatConversation } from '../services/chatApi.js';
 import { Avatar } from '../components/dashboard/primitives.jsx';
 import ReviewPhotos from '../components/ReviewPhotos.jsx';
+import { LicenseIconBadge, LicenseTypeChip } from '../components/LicenseBadge.jsx';
 
 const DEFAULT_REVIEW_META = {
   total: 0,
@@ -294,6 +295,7 @@ const VehicleDetails = () => {
   const locationLabel = typeof driverAddress === 'string' && driverAddress.trim() ? driverAddress.trim() : 'Pickup shared after confirmation';
   const driverName = vehicle.driver?.name ?? 'Approved driver';
   const driverPhoto = vehicle.driver?.profilePhoto || '';
+  const driverLicenseType = vehicle.driver?.licenseType || null;
   const firstName = driverName.split(' ')[0] || driverName;
   const memberSinceLabel = vehicle.driver?.createdAt ? `Member since ${formatDate(vehicle.driver.createdAt)}` : 'Verified driver';
   const quoteTotalValue = availability.quote?.totalPrice ?? null;
@@ -320,13 +322,13 @@ const VehicleDetails = () => {
   const bookingProps = {
     priceLabel, originalPriceLabel, activeDiscount, dateForm, handleDateChange, todayDate,
     handleDateSubmit, availability, handleBookNow, guests, setGuests,
-    quoteTotalLabel, quotePayableLabel, quoteDiscountLabel, quoteDiscount,
+    quoteTotalLabel, quotePayableLabel, quoteDiscountLabel, quoteDiscount, licenseType: driverLicenseType,
   };
   const reviewProps = {
     reviews, reviewMeta, reviewsLoading, reviewsError, averageRatingLabel, ratingCounts,
     ratingOptions, reviewFilters, handleReviewRatingFilter, handleReviewSortChange, handleReviewReload, firstName,
   };
-  const driverProps = { driverName, driverPhoto, memberSinceLabel, driverAddress, averageRatingLabel, handleSendMessage, creatingConversation, goDriverProfile };
+  const driverProps = { driverName, driverPhoto, memberSinceLabel, driverAddress, averageRatingLabel, handleSendMessage, creatingConversation, goDriverProfile, licenseType: driverLicenseType };
 
   return (
     <div className="bg-[#eef1f4] font-sans text-ink">
@@ -410,7 +412,7 @@ const VehicleDetails = () => {
           {vehicle.description ? (
             <div className="mt-5">
               <h3 className="text-[16px] font-extrabold text-ink">About this vehicle</h3>
-              <p className="mt-2 whitespace-pre-line text-[14px] leading-relaxed text-ink-soft">{vehicle.description}</p>
+              <p className="mt-2 whitespace-pre-wrap text-[14px] leading-relaxed text-ink-soft">{vehicle.description}</p>
             </div>
           ) : null}
 
@@ -480,7 +482,7 @@ const VehicleDetails = () => {
               {vehicle.description ? (
                 <div className="mt-8">
                   <h2 className="text-[18px] font-extrabold text-ink">About this vehicle</h2>
-                  <p className="mt-2.5 max-w-[640px] whitespace-pre-line text-[15px] leading-relaxed text-ink-soft">{vehicle.description}</p>
+                  <p className="mt-2.5 max-w-[640px] whitespace-pre-wrap text-[15px] leading-relaxed text-ink-soft">{vehicle.description}</p>
                 </div>
               ) : null}
 
@@ -521,7 +523,7 @@ const VehicleDetails = () => {
 const BookingPanel = ({
   priceLabel, originalPriceLabel, activeDiscount, dateForm, handleDateChange, todayDate,
   handleDateSubmit, availability, handleBookNow, guests, setGuests,
-  quoteTotalLabel, quotePayableLabel, quoteDiscountLabel, quoteDiscount, title, desktop = false,
+  quoteTotalLabel, quotePayableLabel, quoteDiscountLabel, quoteDiscount, title, desktop = false, licenseType,
 }) => {
   const inputCls = 'w-full rounded-[12px] border border-[#e2e8ea] bg-white px-3 py-2.5 text-[13.5px] font-semibold text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20';
   return (
@@ -592,7 +594,7 @@ const BookingPanel = ({
       ) : null}
 
       <div className="mt-4 flex flex-col gap-2.5 border-t border-hairline pt-3.5 text-[12px] font-semibold text-muted">
-        <span className="flex items-center gap-2.5"><Shield className="h-[15px] w-[15px] text-brand" /> Identity &amp; licence verified</span>
+        <span className="flex items-center gap-2.5"><Shield className="h-[15px] w-[15px] text-brand" /> {licenseType ? `${licenseType} verified` : 'Identity & licence verified'}</span>
         <span className="flex items-center gap-2.5"><Wallet className="h-[15px] w-[15px] text-brand" /> Pay the driver on arrival</span>
         <span className="flex items-center gap-2.5"><Check className="h-[15px] w-[15px] text-brand" strokeWidth={2.5} /> Free cancellation until 2 days before your trip</span>
       </div>
@@ -620,18 +622,25 @@ const IncludedRow = ({ children }) => (
   </div>
 );
 
-const DriverCard = ({ driverName, driverPhoto, memberSinceLabel, driverAddress, averageRatingLabel, handleSendMessage, creatingConversation, goDriverProfile, desktop = false }) => (
+const DriverCard = ({ driverName, driverPhoto, memberSinceLabel, driverAddress, averageRatingLabel, handleSendMessage, creatingConversation, goDriverProfile, desktop = false, licenseType }) => (
   <div>
     <div className="flex items-center gap-3.5">
       <Avatar name={driverName} tone="ink" image={driverPhoto} className={`flex-shrink-0 rounded-full ${desktop ? 'h-14 w-14 text-lg' : 'h-12 w-12 text-base'}`} />
       <div className="min-w-0 flex-1">
-        <b className="block truncate text-[15.5px] text-ink">{driverName}</b>
+        <div className="flex items-center gap-1.5">
+          <b className="block truncate text-[15.5px] text-ink">{driverName}</b>
+          <LicenseIconBadge licenseType={licenseType} />
+        </div>
         <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[12px] text-muted-soft">
           <span className="flex items-center gap-1"><Star className="h-3.5 w-3.5" fill="#f5b400" stroke="none" /> {averageRatingLabel} rating</span>
           <span className="h-1 w-1 rounded-full bg-[#cfd8dd]" />
           <span className="truncate">{memberSinceLabel}</span>
         </div>
-        {driverAddress ? <div className="mt-1 flex items-center gap-1 text-[12px] text-muted-soft"><MapPin className="h-3.5 w-3.5" /> {driverAddress}</div> : null}
+        {licenseType ? (
+          <LicenseTypeChip licenseType={licenseType} />
+        ) : driverAddress ? (
+          <div className="mt-1 flex items-center gap-1 text-[12px] text-muted-soft"><MapPin className="h-3.5 w-3.5" /> {driverAddress}</div>
+        ) : null}
       </div>
     </div>
     <div className="mt-4 flex gap-2.5">

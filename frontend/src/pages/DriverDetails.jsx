@@ -21,6 +21,7 @@ import { getStoredToken, redirectToSsoLogin } from '../services/authToken.js';
 import { Avatar } from '../components/dashboard/primitives.jsx';
 import ReviewPhotos from '../components/ReviewPhotos.jsx';
 import { useAggregatedDriverReviews } from '../hooks/useAggregatedDriverReviews.js';
+import { LicenseIconBadge, LicenseTypeChip } from '../components/LicenseBadge.jsx';
 
 const formatCurrency = (value) => (!Number.isFinite(value) ? '$0' : `$${value.toLocaleString('en-US')}`);
 const formatDate = (value) => {
@@ -187,11 +188,11 @@ const MobileProfile = ({ driver, vehicles, reviews, cover, cityLabel, perks, rat
           </div>
           <div className="min-w-0 flex-1 self-start">
             <h1 className="min-w-0 text-[25px] font-extrabold leading-[1.05] tracking-tight text-ink">{driver.name}</h1>
-            <div className="mt-2">
-              <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-brand-tint px-2.5 py-[5px] text-[11px] font-extrabold text-brand-dark">
-                <Check className="h-3 w-3" strokeWidth={3} /> Verified driver
-              </span>
-            </div>
+            {driver.licenseType ? (
+              <div className="mt-2">
+                <LicenseIconBadge licenseType={driver.licenseType} className="h-6 w-6 p-1.5" />
+              </div>
+            ) : null}
           </div>
         </div>
         <div className="mt-3 flex items-center gap-2.5 text-[13.5px] font-semibold text-muted">
@@ -203,13 +204,13 @@ const MobileProfile = ({ driver, vehicles, reviews, cover, cityLabel, perks, rat
                 <span>({driver.reviewCount ?? 0})</span>
               </span>
               <span className="h-1 w-1 rounded-full bg-[#cfd8dd]" />
-              <span>{cityLabel}</span>
+              {driver.licenseType ? <LicenseTypeChip licenseType={driver.licenseType} className="!mt-0" /> : <span>{cityLabel}</span>}
             </>
           ) : (
             <>
               <span className="text-muted-soft">No reviews yet</span>
               <span className="h-1 w-1 rounded-full bg-[#cfd8dd]" />
-              <span>{cityLabel}</span>
+              {driver.licenseType ? <LicenseTypeChip licenseType={driver.licenseType} className="!mt-0" /> : <span>{cityLabel}</span>}
             </>
           )}
         </div>
@@ -232,7 +233,7 @@ const MobileProfile = ({ driver, vehicles, reviews, cover, cityLabel, perks, rat
       <div className="px-[18px] pb-5 pt-4">
         {/* About */}
         <div id="m-about">
-          <p className="text-[14px] leading-relaxed text-ink-soft">{driver.description || 'This driver has not added a bio yet.'}</p>
+          <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-ink-soft">{driver.description || 'This driver has not added a bio yet.'}</p>
           {perks.length > 0 ? (
             <>
               <SectionLabel className="mt-5">Every trip includes</SectionLabel>
@@ -324,9 +325,7 @@ const DesktopProfile = ({ driver, vehicles, reviews, cover, cityLabel, perks, ra
             <div className="pb-2">
               <div className="flex items-center gap-2.5">
                 <h1 className="text-[30px] font-extrabold tracking-tight text-ink">{driver.name}</h1>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-tint px-3 py-1.5 text-[12px] font-extrabold text-brand-dark">
-                  <Check className="h-3 w-3" strokeWidth={3} /> Verified driver
-                </span>
+                <LicenseIconBadge licenseType={driver.licenseType} className="h-7 w-7 p-[7px]" />
               </div>
               <div className="mt-2 flex items-center gap-3 text-[14px] font-semibold text-muted">
                 {ratingLabel ? (
@@ -335,7 +334,7 @@ const DesktopProfile = ({ driver, vehicles, reviews, cover, cityLabel, perks, ra
                   <span className="text-muted-soft">No reviews yet</span>
                 )}
                 <span className="h-1 w-1 rounded-full bg-[#cfd8dd]" />
-                <span>{cityLabel}</span>
+                {driver.licenseType ? <LicenseTypeChip licenseType={driver.licenseType} className="!mt-0" /> : <span>{cityLabel}</span>}
               </div>
             </div>
           </div>
@@ -346,7 +345,7 @@ const DesktopProfile = ({ driver, vehicles, reviews, cover, cityLabel, perks, ra
             <a href="#d-reviews" className="pb-3 text-[14.5px] font-semibold text-muted-soft">Reviews</a>
           </div>
 
-          <p className="mt-[22px] max-w-[640px] text-[15px] leading-relaxed text-ink-soft">{driver.description || 'This driver has not added a bio yet.'}</p>
+          <p className="mt-[22px] max-w-[640px] whitespace-pre-wrap text-[15px] leading-relaxed text-ink-soft">{driver.description || 'This driver has not added a bio yet.'}</p>
 
           <div className="mt-6 grid grid-cols-3 gap-3">
             <DeskStatCard value={expYears ? `${expYears} yrs` : 'New'} label="Guiding experience" />
@@ -413,7 +412,7 @@ const DesktopProfile = ({ driver, vehicles, reviews, cover, cityLabel, perks, ra
               )}
             </button>
             <div className="mt-4 flex flex-col gap-2.5 border-t border-hairline pt-3.5 text-[12.5px] font-semibold text-muted">
-              <span className="flex items-center gap-2.5"><Shield className="h-[15px] w-[15px] text-brand" /> Identity &amp; licence verified</span>
+              <span className="flex items-center gap-2.5"><Shield className="h-[15px] w-[15px] text-brand" /> {driver.licenseType ? `${driver.licenseType} verified` : 'Identity & licence verified'}</span>
               <span className="flex items-center gap-2.5"><Clock className="h-[15px] w-[15px] text-brand" /> Usually replies within a day</span>
               <span className="flex items-center gap-2.5"><Check className="h-[15px] w-[15px] text-brand" strokeWidth={2.5} /> Free cancellation until 2 days before your trip</span>
             </div>

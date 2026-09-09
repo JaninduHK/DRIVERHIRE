@@ -41,6 +41,8 @@ export default [
 
   // Public marketing (server-rendered)
   route('about', 'routes/about.jsx'),
+  route('blog', 'routes/blog.jsx'),
+  route('blog/:slug', 'routes/blog.$slug.jsx'),
   route('driver-guide', 'routes/driver-guide.jsx'),
   route('driver-terms', 'routes/driver-terms.jsx'),
   route('contact', 'routes/contact.jsx'),

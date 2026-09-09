@@ -189,3 +189,8 @@ export const completeDriverProfileTour = () =>
   request('/onboarding/profile-tour/complete', {
     method: 'POST',
   });
+
+export const updateDriverLicense = (payload) => {
+  const body = payload instanceof FormData ? payload : JSON.stringify(payload);
+  return request('/license', { method: 'PUT', body });
+};

@@ -1,9 +1,10 @@
 import express from 'express';
 import { body, param } from 'express-validator';
 import { authenticate, ensureApprovedDriver } from '../middleware/authMiddleware.js';
-import { vehicleImageUpload, commissionSlipUpload } from '../middleware/cloudinaryUpload.js';
+import { vehicleImageUpload, commissionSlipUpload, conditionalLicenseUpload } from '../middleware/cloudinaryUpload.js';
 import {
   getDriverOverview,
+  updateDriverLicense,
   getDriverVehicles,
   createDriverVehicle,
   updateDriverVehicle,
@@ -21,6 +22,7 @@ import {
   uploadCommissionPaymentSlip,
 } from '../controllers/driverEarningsController.js';
 import { VEHICLE_AVAILABILITY_STATUS } from '../models/Vehicle.js';
+import { LICENSE_TYPES } from '../models/User.js';
 
 const router = express.Router();
 
@@ -28,6 +30,16 @@ router.use(authenticate);
 router.use(ensureApprovedDriver);
 
 router.get('/overview', getDriverOverview);
+router.put(
+  '/license',
+  conditionalLicenseUpload,
+  [
+    body('licenseType')
+      .isIn(Object.values(LICENSE_TYPES))
+      .withMessage(`License type must be one of: ${Object.values(LICENSE_TYPES).join(', ')}`),
+  ],
+  updateDriverLicense
+);
 router.post('/onboarding/profile-tour/complete', completeDriverProfileTour);
 router.post(
   '/push-token',

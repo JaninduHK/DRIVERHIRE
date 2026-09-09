@@ -146,6 +146,9 @@ const buildDriverSummary = (driver, vehicles = [], reviewStats = null, req, acti
     reviewScore: reviewScore !== null ? Math.round(reviewScore * 10) / 10 : null,
     reviewCount,
     profilePhoto: buildAssetUrl(driver.profilePhoto, req),
+    // Only surface the license type once an admin has approved it — a pending
+    // or rejected submission stays private, same as the rating fix earlier.
+    licenseType: driver.licenseStatus === 'approved' ? driver.licenseType || null : null,
     location: locationPayload,
     activeDiscount:
       activeDiscount && typeof activeDiscount.discountRate === 'number'
@@ -205,7 +208,7 @@ export const listPublicDrivers = async (req, res) => {
       deletedAt: null,
     })
       .select(
-        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation experienceYears'
+        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation experienceYears licenseType licenseStatus'
       )
       .sort({ createdAt: -1 })
       .lean();
@@ -268,7 +271,7 @@ export const getPublicDriverDetails = async (req, res) => {
       deletedAt: null,
     })
       .select(
-        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation experienceYears'
+        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation experienceYears licenseType licenseStatus'
       )
       .lean();
 

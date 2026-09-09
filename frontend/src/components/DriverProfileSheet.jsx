@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { fetchDriverProfile } from '../services/driverDirectoryApi.js';
 import { useAggregatedDriverReviews } from '../hooks/useAggregatedDriverReviews.js';
 import { Avatar } from './dashboard/primitives.jsx';
+import { LicenseIconBadge, LicenseTypeChip } from './LicenseBadge.jsx';
 
 const formatDate = (value) => {
   if (!value) return null;
@@ -93,7 +94,10 @@ const DriverProfileSheet = ({ driverId, activeVehicleId, hasBooking, onClose, on
             <div className="mt-4 flex items-center gap-3.5">
               <Avatar name={driver.name} tone="light" image={driver.profilePhoto} className="h-[68px] w-[68px] flex-shrink-0 rounded-[20px] text-[21px]" />
               <div className="min-w-0">
-                <h1 className="m-0 truncate text-[clamp(19px,6vw,23px)] font-extrabold leading-tight tracking-tight">{driver.name}</h1>
+                <div className="flex items-center gap-1.5">
+                  <h1 className="m-0 truncate text-[clamp(19px,6vw,23px)] font-extrabold leading-tight tracking-tight">{driver.name}</h1>
+                  <LicenseIconBadge licenseType={driver.licenseType} />
+                </div>
                 <div className="mt-1.5 flex flex-wrap items-center gap-2">
                   {ratingLabel ? (
                     <span className="inline-flex items-center gap-1 rounded-lg bg-white/[0.18] px-2 py-1 text-[12px] font-extrabold">
@@ -106,10 +110,9 @@ const DriverProfileSheet = ({ driverId, activeVehicleId, hasBooking, onClose, on
                     {driver.reviewCount || 0} review{driver.reviewCount === 1 ? '' : 's'} · {driver.location?.label || driver.address || 'Sri Lanka'}
                   </span>
                 </div>
-                <div className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-extrabold tracking-wide text-[#0f7a3c]">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#0f7a3c" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 12.5l5 5 11-11" /></svg>
-                  VERIFIED DRIVER
-                </div>
+                {driver.licenseType ? (
+                  <LicenseTypeChip licenseType={driver.licenseType} className="!mt-1.5" />
+                ) : null}
               </div>
             </div>
           ) : null}

@@ -13,6 +13,18 @@ export const DRIVER_STATUS = {
   REJECTED: 'rejected',
 };
 
+export const LICENSE_TYPES = {
+  TOURIST_DRIVER: 'Tourist Driver',
+  CHAUFFEUR_GUIDE_LECTURER: 'Chauffeur Guide Lecturer',
+  NATIONAL_GUIDE_LECTURER: 'National Guide Lecturer',
+};
+
+export const LICENSE_STATUS = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+};
+
 export const AUTH_PROVIDERS = {
   LOCAL: 'local',
   GOOGLE: 'google',
@@ -22,6 +34,8 @@ export const AUTH_PROVIDERS = {
 
 const roleValues = Object.values(USER_ROLES);
 const driverStatusValues = Object.values(DRIVER_STATUS);
+const licenseTypeValues = Object.values(LICENSE_TYPES);
+const licenseStatusValues = Object.values(LICENSE_STATUS);
 const authProviderValues = Object.values(AUTH_PROVIDERS);
 
 const driverLocationSchema = new mongoose.Schema(
@@ -117,6 +131,32 @@ const userSchema = new mongoose.Schema(
     },
     driverApprovedAt: Date,
     driverProfileTourCompletedAt: Date,
+    licenseType: {
+      type: String,
+      enum: licenseTypeValues,
+      trim: true,
+    },
+    licenseImage: {
+      type: String,
+      trim: true,
+    },
+    licenseStatus: {
+      type: String,
+      enum: licenseStatusValues,
+      // No default — stays undefined until the driver submits a license for
+      // the first time, distinguishing "not submitted" from "pending review".
+    },
+    licenseSubmittedAt: Date,
+    licenseReviewedAt: Date,
+    licenseReviewedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    licenseAdminNote: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+    },
     profilePhoto: {
       type: String,
       trim: true,

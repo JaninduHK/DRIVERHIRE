@@ -82,6 +82,7 @@ const Footer = () => {
           <p className="text-[12.5px] text-white/50">© {year} Car With Driver LK. All rights reserved.</p>
           <div className="flex gap-[18px]">
             <Link to="/about" className="text-[12.5px] text-white/60 transition hover:text-white">About</Link>
+            <Link to="/blog" className="text-[12.5px] text-white/60 transition hover:text-white">Blog</Link>
             <Link to="/contact" className="text-[12.5px] text-white/60 transition hover:text-white">Contact</Link>
           </div>
         </div>

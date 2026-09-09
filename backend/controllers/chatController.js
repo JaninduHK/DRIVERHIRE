@@ -87,6 +87,20 @@ const normalizeDateInput = (value) => {
   return date;
 };
 
+// Shapes a populated driver doc for the "other participant" view — only
+// surfaces the license type once it's admin-approved, same rule as every
+// other public-facing driver payload.
+const shapeDriverParticipant = (driverDoc) => {
+  const json = driverDoc?.toJSON?.();
+  if (!json) return null;
+  return {
+    id: json.id,
+    name: json.name,
+    role: json.role,
+    licenseType: json.licenseStatus === 'approved' ? json.licenseType || null : null,
+  };
+};
+
 const mapConversationResponse = (conversation, currentUserId) => {
   const view = conversation.toJSON();
   const isTraveler = view.traveler?.toString?.() === currentUserId;
@@ -233,7 +247,7 @@ export const listConversations = async (req, res) => {
       $or: [{ traveler: req.user.id }, { driver: req.user.id }],
     })
       .populate('traveler', 'id name role')
-      .populate('driver', 'id name role')
+      .populate('driver', 'id name role licenseType licenseStatus')
       .populate('vehicle', 'id model pricePerDay')
       .populate('lastMessage')
       .sort({ lastMessageAt: -1, updatedAt: -1 })
@@ -246,7 +260,7 @@ export const listConversations = async (req, res) => {
       }
       mapped.participants = {
         traveler: conversation.traveler?.toJSON?.() || null,
-        driver: conversation.driver?.toJSON?.() || null,
+        driver: shapeDriverParticipant(conversation.driver),
       };
       mapped.vehicle = conversation.vehicle?.toJSON?.() || null;
       return mapped;

@@ -34,6 +34,8 @@ const sanitizeDriver = (driverDoc, extras = {}) => {
     address: source.address,
     createdAt: source.createdAt,
     profilePhoto: buildAssetUrl(source.profilePhoto, req),
+    // Only surface the license type once an admin has approved it.
+    licenseType: source.licenseStatus === 'approved' ? source.licenseType || null : null,
     location: source.driverLocation
       ? {
           label: source.driverLocation.label || '',
@@ -473,7 +475,7 @@ export const getVehicleDetails = async (req, res) => {
       .populate({
         path: 'driver',
         select:
-          'name description contactNumber tripAdvisor address driverStatus createdAt profilePhoto driverLocation',
+          'name description contactNumber tripAdvisor address driverStatus createdAt profilePhoto driverLocation licenseType licenseStatus',
         match: { driverStatus: DRIVER_STATUS.APPROVED, deletedAt: null },
         options: { lean: true },
       })

@@ -6,6 +6,8 @@ import {
   getDriverApplications,
   updateDriverStatus,
   updateDriverDetails,
+  listLicenseSubmissions,
+  updateLicenseStatus,
   listDriverCommissions,
   updateDriverCommissionStatus,
   getVehicleSubmissions,
@@ -44,7 +46,7 @@ import {
   setReviewFeatured,
   reorderFeaturedReviews,
 } from '../controllers/reviewController.js';
-import { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
+import { DRIVER_STATUS, USER_ROLES, LICENSE_STATUS } from '../models/User.js';
 import { VEHICLE_STATUS } from '../models/Vehicle.js';
 import { REVIEW_STATUS } from '../models/Review.js';
 import { BOOKING_STATUS } from '../models/Booking.js';
@@ -133,6 +135,24 @@ router.post(
       .withMessage('Message must be between 10 and 2000 characters'),
   ],
   sendDriverDirectMessage
+);
+
+router.get(
+  '/licenses',
+  [query('status').optional().isIn(Object.values(LICENSE_STATUS)).withMessage('Invalid license status')],
+  listLicenseSubmissions
+);
+
+router.patch(
+  '/licenses/:id/status',
+  [
+    param('id').isMongoId().withMessage('Invalid driver identifier'),
+    body('status')
+      .isIn(Object.values(LICENSE_STATUS))
+      .withMessage(`Status must be one of: ${Object.values(LICENSE_STATUS).join(', ')}`),
+    body('adminNote').optional().isString().trim().isLength({ max: 500 }),
+  ],
+  updateLicenseStatus
 );
 
 router.get('/vehicles', getVehicleSubmissions);

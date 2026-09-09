@@ -5,6 +5,7 @@ import { fetchDriverDirectory } from '../services/driverDirectoryApi.js';
 import { fetchLatestReviews } from '../services/reviewApi.js';
 import { useLoaderData } from 'react-router';
 import { getStoredToken, redirectToSsoLogin } from '../services/authToken.js';
+import { LicenseIconBadge, LicenseTypeChip } from '../components/LicenseBadge.jsx';
 
 // Prefill stash read by the traveller "My Requests" tab to open a new quote request.
 const PENDING_BRIEF_KEY = 'carwithdriver:pending-brief';
@@ -676,9 +677,13 @@ const DriverCard = ({ driver }) => {
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-[7px]">
             <h3 className="text-[16.5px] font-extrabold">{driver.name}</h3>
-            <span className="rounded-full bg-[#e9f8ef] px-2 py-1 text-[10.5px] font-extrabold text-brand-dark">Verified</span>
+            <LicenseIconBadge licenseType={driver.licenseType} />
           </div>
-          <div className="mt-[3px] text-[12.5px] font-semibold text-muted-soft">{location}</div>
+          {driver.licenseType ? (
+            <LicenseTypeChip licenseType={driver.licenseType} />
+          ) : (
+            <div className="mt-[3px] text-[12.5px] font-semibold text-muted-soft">{location}</div>
+          )}
         </div>
       </div>
       <div className="mt-3.5 flex flex-wrap items-center gap-1.5 text-[13.5px] font-bold">
