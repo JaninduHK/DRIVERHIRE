@@ -10,7 +10,7 @@ import { sanitizeMessageContent } from '../utils/chatSanitizer.js';
 import { hasVehicleDateConflict, VEHICLE_UNAVAILABLE_MESSAGE } from '../utils/vehicleAvailability.js';
 import { createChatMessage } from '../services/chatService.js';
 import { notifyUser } from '../services/expoPushService.js';
-import { mapAssetUrls } from '../utils/assetUtils.js';
+import { mapAssetUrls, buildAssetUrl } from '../utils/assetUtils.js';
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
@@ -90,13 +90,14 @@ const normalizeDateInput = (value) => {
 // Shapes a populated driver doc for the "other participant" view — only
 // surfaces the license type once it's admin-approved, same rule as every
 // other public-facing driver payload.
-const shapeDriverParticipant = (driverDoc) => {
+const shapeDriverParticipant = (driverDoc, req) => {
   const json = driverDoc?.toJSON?.();
   if (!json) return null;
   return {
     id: json.id,
     name: json.name,
     role: json.role,
+    profilePhoto: json.profilePhoto ? buildAssetUrl(json.profilePhoto, req) : null,
     licenseType: json.licenseStatus === 'approved' ? json.licenseType || null : null,
   };
 };
@@ -247,7 +248,7 @@ export const listConversations = async (req, res) => {
       $or: [{ traveler: req.user.id }, { driver: req.user.id }],
     })
       .populate('traveler', 'id name role')
-      .populate('driver', 'id name role licenseType licenseStatus')
+      .populate('driver', 'id name role profilePhoto licenseType licenseStatus')
       .populate('vehicle', 'id model pricePerDay')
       .populate('lastMessage')
       .sort({ lastMessageAt: -1, updatedAt: -1 })
@@ -260,7 +261,7 @@ export const listConversations = async (req, res) => {
       }
       mapped.participants = {
         traveler: conversation.traveler?.toJSON?.() || null,
-        driver: shapeDriverParticipant(conversation.driver),
+        driver: shapeDriverParticipant(conversation.driver, req),
       };
       mapped.vehicle = conversation.vehicle?.toJSON?.() || null;
       return mapped;

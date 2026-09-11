@@ -208,7 +208,7 @@ const ConversationDetail = ({ conversation, isUpdating, isDeleting, onStatusChan
                 : 'bg-brand-tint text-ink';
             return (
               <div key={message.id} className={`flex flex-col gap-1 ${align}`}>
-                <div className={`max-w-[74%] rounded-2xl px-3.5 py-2.5 text-[13.5px] leading-relaxed ${bubble}`}>
+                <div className={`max-w-[74%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-[13.5px] leading-relaxed ${bubble}`}>
                   {message.body}
                 </div>
                 {message.warning ? (

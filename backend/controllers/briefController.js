@@ -123,6 +123,15 @@ export const createBrief = async (req, res) => {
     return res.status(400).json({ message: 'Please provide a valid start and end date.' });
   }
 
+  // The traveller form already blocks this client-side (date-input `min` + a toast
+  // check), but that's bypassable via a direct API call or a stale auto-submit
+  // payload replayed after login — the server is the actual gate.
+  const todayUtc = new Date();
+  todayUtc.setUTCHours(0, 0, 0, 0);
+  if (startDate < todayUtc) {
+    return res.status(400).json({ message: 'Start date cannot be in the past.' });
+  }
+
   const normalizedAdults = normalizeNumber(adults, 0);
   if (!Number.isFinite(normalizedAdults) || normalizedAdults < 1) {
     return res.status(400).json({ message: 'Number of adults must be at least 1.' });

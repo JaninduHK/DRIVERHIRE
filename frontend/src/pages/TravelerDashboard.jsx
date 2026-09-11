@@ -731,7 +731,7 @@ const OverviewMessageCard = ({ conversation, tone, onOpen }) => {
   return (
     <div className="rounded-[18px] bg-white p-[15px] shadow-card" style={{ borderLeft: `4px solid ${isOffer ? '#10a35a' : '#d6e9fb'}` }}>
       <div className="mb-2.5 flex items-center gap-[11px]">
-        <Avatar name={driverName} tone={tone} className="h-10 w-10 text-sm" />
+        <Avatar name={driverName} image={conversation.participants?.driver?.profilePhoto} tone={tone} className="h-10 w-10 text-sm" />
         <div className="min-w-0 flex-1">
           <div className="truncate text-[15px] font-bold text-ink">{driverName}</div>
           <div className="truncate text-[12px] text-muted-soft">{preview}</div>
@@ -1320,6 +1320,7 @@ const TravelerMessages = ({
 
   const driverNameOf = (conversation) =>
     conversation?.participants?.driver?.name || conversation?.participants?.driver?.email || 'Driver';
+  const driverPhotoOf = (conversation) => conversation?.participants?.driver?.profilePhoto || '';
   const filtered = conversations.filter((c) => driverNameOf(c).toLowerCase().includes(search.trim().toLowerCase()));
 
   const activeName = selectedConversation ? driverNameOf(selectedConversation) : '';
@@ -1327,6 +1328,7 @@ const TravelerMessages = ({
     ? `Discussing ${selectedConversation.vehicle.model}`
     : 'General conversation';
   const activeDriverId = selectedConversation?.participants?.driver?.id;
+  const activeDriverPhoto = selectedConversation ? driverPhotoOf(selectedConversation) : '';
   const activeDriverLicenseType = selectedConversation?.participants?.driver?.licenseType || null;
   const openDriverProfile = () => { if (activeDriverId) setDriverProfileOpen(true); };
 
@@ -1418,6 +1420,7 @@ const TravelerMessages = ({
     }
     return filtered.map((conversation, index) => {
       const name = driverNameOf(conversation);
+      const photo = driverPhotoOf(conversation);
       const preview = conversation.lastMessage?.body || 'Conversation started.';
       const timestamp = formatShortDateTime(conversation.lastMessageAt || conversation.updatedAt);
       const unread = conversation.unreadCount > 0;
@@ -1433,7 +1436,7 @@ const TravelerMessages = ({
               : `px-3.5 ${index > 0 ? 'border-t border-hairline' : ''} ${unread ? 'bg-[#f3fbf6]' : ''}`
           }`}
         >
-          <Avatar name={name} tone={AVATAR_TONES[index % AVATAR_TONES.length]} className="h-11 w-11 flex-shrink-0 rounded-[11px] text-sm" />
+          <Avatar name={name} image={photo} tone={AVATAR_TONES[index % AVATAR_TONES.length]} className="h-11 w-11 flex-shrink-0 rounded-[11px] text-sm" />
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2">
               <span className="truncate text-[14.5px] font-bold text-ink">{name}</span>
@@ -1469,7 +1472,7 @@ const TravelerMessages = ({
                   aria-label={`View ${activeName}'s driver profile`}
                   className="flex min-w-0 flex-1 items-center gap-3 rounded-xl py-1 pr-2 text-left transition active:bg-white/10 disabled:cursor-default"
                 >
-                  <Avatar name={activeName} tone="light" className="h-10 w-10 flex-shrink-0 text-[15px]" />
+                  <Avatar name={activeName} image={activeDriverPhoto} tone="light" className="h-10 w-10 flex-shrink-0 text-[15px]" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <div className="truncate text-[16px] font-extrabold">{activeName}</div>
@@ -1548,7 +1551,7 @@ const TravelerMessages = ({
                   aria-label={`View ${activeName}'s driver profile`}
                   className="group flex min-w-0 flex-1 items-center gap-3 rounded-xl py-1.5 pr-3 text-left transition hover:bg-canvas disabled:cursor-default disabled:hover:bg-transparent"
                 >
-                  <Avatar name={activeName} tone="brand" className="h-10 w-10 flex-shrink-0 rounded-[11px] text-[15px]" />
+                  <Avatar name={activeName} image={activeDriverPhoto} tone="brand" className="h-10 w-10 flex-shrink-0 rounded-[11px] text-[15px]" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <b className="block truncate text-[15px] text-ink">{activeName}</b>
@@ -2214,7 +2217,7 @@ const DeskMsgRow = ({ conversation, tone, onOpen }) => {
     : conversation.lastMessage?.body || 'Conversation started.';
   return (
     <button type="button" onClick={onOpen} className="flex w-full items-center gap-[11px] text-left">
-      <Avatar name={name} tone={tone} className="h-9 w-9 flex-shrink-0 rounded-[10px] text-[13px]" />
+      <Avatar name={name} image={conversation.participants?.driver?.profilePhoto} tone={tone} className="h-9 w-9 flex-shrink-0 rounded-[10px] text-[13px]" />
       <div className="min-w-0 flex-1">
         <b className="block truncate text-[13.5px] text-ink">{name}</b>
         <div className="truncate text-[12px] text-muted-soft">{preview}</div>
