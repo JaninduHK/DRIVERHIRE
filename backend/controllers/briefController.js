@@ -139,6 +139,10 @@ export const createBrief = async (req, res) => {
     return res.status(400).json({ message: 'All fields are required.' });
   }
 
+  if (trimmedMessage.length > 2000) {
+    return res.status(400).json({ message: 'Itinerary details must be 2000 characters or fewer.' });
+  }
+
   try {
     const brief = new TourBrief({
       traveler: req.user.id,
@@ -164,6 +168,13 @@ export const createBrief = async (req, res) => {
     return res.status(201).json({ brief: plainBrief });
   } catch (error) {
     console.error('Create brief error:', error);
+    // A Mongoose ValidationError here means bad input slipped past the checks above
+    // (e.g. a field length changed on one side and not the other) — worth surfacing
+    // the real reason to the traveller instead of a generic "try again" 500.
+    if (error.name === 'ValidationError') {
+      const firstMessage = Object.values(error.errors)[0]?.message || 'Please check your itinerary details and try again.';
+      return res.status(400).json({ message: firstMessage });
+    }
     return res.status(500).json({ message: 'Unable to save your tour brief right now.' });
   }
 };

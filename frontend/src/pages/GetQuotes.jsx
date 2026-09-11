@@ -10,6 +10,7 @@ import { createBrief } from '../services/briefApi.js';
 // what they already typed here.
 const AUTO_SUBMIT_BRIEF_KEY = 'carwithdriver:auto-submit-brief';
 const REQUESTS_PATH = '/dashboard?tab=requests';
+const MESSAGE_MAX_LENGTH = 2000; // matches TourBrief.message's maxlength in backend/models/TourBrief.js
 
 const buildForm = () => ({
   startDate: '',
@@ -63,6 +64,10 @@ const GetQuotes = () => {
     }
     if (!payload.startLocation || !payload.endLocation || !payload.message || !payload.country) {
       toast.error('Please fill in all fields.');
+      return;
+    }
+    if (payload.message.length > MESSAGE_MAX_LENGTH) {
+      toast.error(`Itinerary details must be ${MESSAGE_MAX_LENGTH} characters or fewer.`);
       return;
     }
     if (payload.adults < 1) {
@@ -208,13 +213,19 @@ const GetQuotes = () => {
             <textarea
               rows="4"
               required
+              maxLength={MESSAGE_MAX_LENGTH}
               value={form.message}
               onChange={setField('message')}
               placeholder="Places you want to see, flight times, kids or extra luggage. Anything that helps drivers quote accurately."
               className={`${inputCls} resize-y leading-[1.5]`}
             />
-            <span className="mt-1.5 block text-[11.5px] leading-[1.5] text-muted-soft">
-              Please don&apos;t include phone numbers or emails here — we&apos;ll share contact details once you accept an offer and your booking is confirmed.
+            <span className="mt-1.5 flex items-start justify-between gap-2 text-[11.5px] leading-[1.5] text-muted-soft">
+              <span>
+                Please don&apos;t include phone numbers or emails here — we&apos;ll share contact details once you accept an offer and your booking is confirmed.
+              </span>
+              <span className={`flex-shrink-0 whitespace-nowrap ${form.message.length > MESSAGE_MAX_LENGTH ? 'text-red-600' : ''}`}>
+                {form.message.length}/{MESSAGE_MAX_LENGTH}
+              </span>
             </span>
           </label>
 

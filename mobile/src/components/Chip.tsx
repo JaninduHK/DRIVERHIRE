@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 
-type Tone = 'neutral' | 'brand' | 'warn' | 'info' | 'purple';
+type Tone = 'neutral' | 'brand' | 'warn' | 'info' | 'purple' | 'danger';
 
 const toneStyles: Record<Tone, { bg: string; text: string; border?: string }> = {
   neutral: { bg: 'bg-[#eef1f0]', text: 'text-ink-soft' },
@@ -9,6 +9,7 @@ const toneStyles: Record<Tone, { bg: string; text: string; border?: string }> = 
   warn: { bg: 'bg-warn-tint', text: 'text-warn' },
   info: { bg: 'bg-[#e5f0fb]', text: 'text-[#1d6fb8]' },
   purple: { bg: 'bg-[#e7ddfb]', text: 'text-[#6b3fc0]' },
+  danger: { bg: 'bg-[#fde8ea]', text: 'text-danger' },
 };
 
 interface ChipProps {

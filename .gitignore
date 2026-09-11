@@ -15,6 +15,9 @@ frontend/dist/
 certbot/
 backups/
 
+# Real backup config (destination host, SSH key path) — keep backup.env.example tracked
+scripts/backup.env
+
 # Logs
 logs/
 *.log

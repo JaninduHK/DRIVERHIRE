@@ -1,7 +1,24 @@
 import { apiRequest } from './client';
-import type { DriverOverview, Vehicle, EarningsSummary, EarningsHistoryEntry } from '../types';
+import type { DriverOverview, Vehicle, EarningsSummary, EarningsHistoryEntry, LicenseType, LicenseStatus } from '../types';
 
 export const getOverview = () => apiRequest<DriverOverview>('/driver/overview');
+
+export interface LicenseResponse {
+  message: string;
+  license: {
+    type: LicenseType;
+    image: string | null;
+    status: LicenseStatus;
+    submittedAt: string | null;
+    reviewedAt: string | null;
+    adminNote: string | null;
+  };
+}
+
+// body: FormData with `licenseType` (+ `licenseImage` file on first submission, optional on
+// resubmission if keeping the existing photo) — matches PUT /driver/license on the backend.
+export const submitLicense = (form: FormData) =>
+  apiRequest<LicenseResponse>('/driver/license', { method: 'PUT', body: form });
 
 export const getVehicles = () =>
   apiRequest<{ vehicles: Vehicle[] } | Vehicle[]>('/driver/vehicles');

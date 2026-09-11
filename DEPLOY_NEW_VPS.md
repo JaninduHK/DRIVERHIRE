@@ -150,13 +150,59 @@ cd /opt/driverhire && git pull && \
 # Logs / restart
 docker compose -f docker-compose.yml -f docker-compose.proxied.yml logs -f backend
 docker compose -f docker-compose.yml -f docker-compose.proxied.yml restart backend
-
-# Backups
-docker compose exec mongo mongodump --uri="mongodb://localhost:27017/driverhire" --archive=/tmp/b.archive --gzip
-docker compose cp mongo:/tmp/b.archive ./backups/db-$(date +%F).archive
-docker run --rm -v driverhire_uploads_data:/data -v $(pwd)/backups:/backup alpine \
-  tar czf /backup/uploads-$(date +%F).tar.gz -C /data .
 ```
+
+---
+
+## Backups
+
+`scripts/backup.sh` dumps Mongo, archives the `uploads_data` volume, optionally
+encrypts a snapshot of `backend/.env`/`.env`, and ships all of it over SSH to a
+**second server you control** — backups sitting only on this VPS wouldn't
+survive a disk failure or compromise of this box.
+
+**One-time setup:**
+```bash
+cd /opt/driverhire
+cp scripts/backup.env.example scripts/backup.env
+nano scripts/backup.env        # REMOTE_HOST, REMOTE_USER, REMOTE_PATH, SSH_KEY
+
+# Dedicated SSH key for the backup target (no passphrase — cron can't prompt for one):
+ssh-keygen -t ed25519 -f /root/.ssh/driverhire_backup_ed25519 -N ""
+ssh-copy-id -i /root/.ssh/driverhire_backup_ed25519.pub backup@<REMOTE_HOST>
+
+# Optional but recommended: encrypt the .env secrets snapshot too
+openssl rand -base64 32 > /root/.driverhire-backup-passphrase
+chmod 600 /root/.driverhire-backup-passphrase
+
+# Try it once by hand before trusting it to cron
+scripts/backup.sh
+```
+
+**Cron (nightly at 2am, logs to `logs/backup.log`):**
+```bash
+crontab -e
+# add:
+0 2 * * * /opt/driverhire/scripts/backup.sh >> /opt/driverhire/logs/backup.log 2>&1
+```
+
+**Restore** (on the target server, from a backup pulled off the remote):
+```bash
+# MongoDB
+docker compose exec -T mongo mongorestore --archive --gzip --drop < db-2026-09-10_020000.archive
+
+# Uploaded files
+docker run --rm -v driverhire_uploads_data:/data -v "$(pwd)":/backup:ro alpine \
+  sh -c "rm -rf /data/* && tar xzf /backup/uploads-2026-09-10_020000.tar.gz -C /data"
+
+# .env secrets (only if SECRETS_PASSPHRASE_FILE was configured)
+gpg --batch --passphrase-file /root/.driverhire-backup-passphrase \
+  -d secrets-2026-09-10_020000.tar.gz.gpg | tar xzf -
+```
+Restore the DB and uploads together — mixing a DB dump with mismatched upload
+files leaves reviews/vehicles pointing at photos that no longer exist locally
+(Cloudinary-hosted images are unaffected either way, since Cloudinary keeps its
+own copies independent of this backup).
 
 ## Notes
 - `caddy_data` volume holds ALL TLS certs (both sites) — never delete it.

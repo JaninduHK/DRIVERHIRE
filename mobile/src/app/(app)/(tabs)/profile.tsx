@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { View, Text, Pressable, Alert, Linking, ScrollView } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Menu, BadgeCheck, Star, Camera, Pencil, KeyRound, Bell, LifeBuoy, ChevronRight, Trash2 } from 'lucide-react-native';
+import { Menu, BadgeCheck, ShieldCheck, Star, Camera, Pencil, KeyRound, Bell, LifeBuoy, ChevronRight, Trash2 } from 'lucide-react-native';
 import { Screen } from '../../../components/Screen';
 import { Card } from '../../../components/Card';
+import { Chip } from '../../../components/Chip';
 import { Divider } from '../../../components/Divider';
 import { IconButton } from '../../../components/IconButton';
 import { useAuth } from '../../../auth/AuthContext';
@@ -17,6 +18,12 @@ import { initials } from '../../../lib/format';
 import { resolveAssetUrl } from '../../../api/client';
 import { colors, headerGradient } from '../../../theme/colors';
 import type { User } from '../../../types';
+
+const LICENSE_STATUS_CHIP: Record<string, { label: string; tone: 'brand' | 'warn' | 'danger' }> = {
+  approved: { label: 'Verified', tone: 'brand' },
+  pending: { label: 'Pending', tone: 'warn' },
+  rejected: { label: 'Rejected', tone: 'danger' },
+};
 
 const normalizeUser = (payload: { user: User } | User): User =>
   payload && typeof payload === 'object' && 'user' in payload ? (payload as { user: User }).user : (payload as User);
@@ -32,6 +39,8 @@ export default function Profile() {
   const rating = overview.data?.activity?.rating || 0;
   const trips = overview.data?.activity?.totalTrips || 0;
   const photo = resolveAssetUrl(user?.profilePhoto);
+  const licenseStatus = overview.data?.profile?.licenseStatus;
+  const licenseChip = licenseStatus ? LICENSE_STATUS_CHIP[licenseStatus] : null;
 
   const handlePhoto = async () => {
     const uri = await pickImage();
@@ -129,6 +138,13 @@ export default function Profile() {
             <Card className="mt-3 px-1 py-1.5">
               <SettingRow icon={Pencil} label="Edit profile details" onPress={() => router.push('/(app)/edit-profile')} />
               <Divider />
+              <SettingRow
+                icon={ShieldCheck}
+                label="License verification"
+                right={licenseChip ? <Chip label={licenseChip.label} tone={licenseChip.tone} /> : undefined}
+                onPress={() => router.push('/(app)/license')}
+              />
+              <Divider />
               <SettingRow icon={KeyRound} label="Change password" onPress={() => router.push('/(app)/change-password')} />
               <Divider />
               <SettingRow icon={Bell} label="Notifications" onPress={() => router.push('/(app)/notifications')} />
@@ -158,11 +174,22 @@ function Stat({ value, label, star }: { value: string; label: string; star?: boo
   );
 }
 
-function SettingRow({ icon: Icon, label, onPress }: { icon: typeof Pencil; label: string; onPress: () => void }) {
+function SettingRow({
+  icon: Icon,
+  label,
+  right,
+  onPress,
+}: {
+  icon: typeof Pencil;
+  label: string;
+  right?: ReactNode;
+  onPress: () => void;
+}) {
   return (
     <Pressable onPress={onPress} className="flex-row items-center gap-3 px-3 py-3.5 active:bg-hairline">
       <Icon size={19} color={colors.muted} strokeWidth={1.8} />
       <Text className="flex-1 font-semi text-[14px] text-ink">{label}</Text>
+      {right}
       <ChevronRight size={16} color="#c3ccd3" strokeWidth={2} />
     </Pressable>
   );

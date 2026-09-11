@@ -1,435 +1,571 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useLoaderData } from 'react-router';
 import {
   Activity,
-  ArrowUpDown,
-  Compass,
-  GaugeCircle,
-  Loader2,
-  MapPin,
+  Check,
+  ChevronDown,
+  Minus,
+  Plus,
   Route as RouteIcon,
+  Search,
   Sparkles,
   Users,
+  X,
 } from 'lucide-react';
-import { fetchVehicles } from '../services/vehicleCatalogApi.js';
 import {
-  buildSeatDistribution,
+  DEFAULT_ITINERARY,
+  ITINERARY_PRESETS,
+  PLACES,
+  placeTypeLabel,
+  roadDistanceKm,
+} from '../lib/tripPlaces.js';
+import {
+  calculateClassEstimates,
+  calculateInclusionRates,
   calculateTripEstimate,
-  getRouteInsight,
   priceFormatter,
 } from '../lib/tripCostEstimator.js';
 
-const popularLocations = [
-  'Colombo',
-  'Negombo',
-  'Katunayake (CMB)',
-  'Kandy',
-  'Sigiriya',
-  'Dambulla',
-  'Ella',
-  'Nuwara Eliya',
-  'Galle',
-  'Mirissa',
-  'Yala',
-  'Trincomalee',
-  'Jaffna',
+const money = (value) => priceFormatter(value) || '—';
+
+const isoToday = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 21); // default to a few weeks out, a reasonable planning horizon
+  return d.toISOString().slice(0, 10);
+};
+
+const formatDate = (iso) => {
+  const d = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+};
+
+const toIso = (d) => {
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+};
+
+const FAQS = [
+  {
+    q: 'Is fuel included in the daily rate?',
+    a: 'For a normal touring day of roughly 120–150 km, yes on most listings — check the "what\'s included" panel for how many vehicles matching your itinerary include it. Long transfer days sometimes carry a per-kilometre surcharge instead.',
+  },
+  {
+    q: "Do I pay for the driver's hotel and meals?",
+    a: "Most drivers arrange their own accommodation and meals on multi-day trips, and it's commonly folded into the daily rate rather than billed separately — again, the inclusion panel reflects real listings for your current search.",
+  },
+  {
+    q: 'What is typically not included?',
+    a: 'Entrance tickets to sites like Sigiriya or the Temple of the Tooth, safari jeep hire inside national parks, and highway tolls are usually paid separately from the driver day-rate.',
+  },
+  {
+    q: 'How accurate is this estimate?',
+    a: 'It is built from the current rates of approved drivers on carwithdriver.lk and real road distances between your stops — not a flat industry average. Final pricing comes from drivers themselves once you request quotes for your exact itinerary.',
+  },
+  {
+    q: 'Can I change the itinerary after booking?',
+    a: 'Small changes are normally fine and agreed with your driver directly. If you add days or change the route significantly, your driver sends an updated offer before the trip starts.',
+  },
 ];
 
+let uidCounter = 0;
+const nextUid = () => {
+  uidCounter += 1;
+  return `stop-${uidCounter}`;
+};
+const withUids = (stops) => stops.map((s) => ({ uid: nextUid(), ...s }));
+
 const TripCostCalculator = () => {
-  const [vehicles, setVehicles] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [lastSync, setLastSync] = useState(null);
-  const [formValues, setFormValues] = useState({
-    start: 'Colombo',
-    end: 'Ella',
-    seatCount: '2',
-    days: '5',
-  });
+  const { vehicles } = useLoaderData();
 
-  useEffect(() => {
-    let active = true;
-    const loadVehicles = async () => {
-      setLoading(true);
-      try {
-        const response = await fetchVehicles({ sort: 'priceAsc' });
-        if (!active) return;
-        setVehicles(response?.vehicles ?? []);
-        setLastSync(new Date().toISOString());
-        setError(null);
-      } catch (err) {
-        if (!active) return;
-        setError(err?.message || 'Unable to fetch live pricing right now.');
-      } finally {
-        if (active) {
-          setLoading(false);
-        }
-      }
-    };
+  const [startDate, setStartDate] = useState(isoToday);
+  const [pax, setPax] = useState(2);
+  const [stops, setStops] = useState(() => withUids(DEFAULT_ITINERARY));
+  const [searchOpenUid, setSearchOpenUid] = useState(null);
+  const [query, setQuery] = useState('');
 
-    loadVehicles();
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const handleChange = (field) => (event) => {
-    const { value } = event.target;
-    setFormValues((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+  const dateForIndex = (index) => {
+    const d = new Date(`${startDate}T00:00:00`);
+    if (Number.isNaN(d.getTime())) return null;
+    let offset = 0;
+    for (let j = 0; j < index; j += 1) offset += Math.max(1, stops[j].nights || 1);
+    d.setDate(d.getDate() + offset);
+    return d;
   };
 
-  const swapLocations = () =>
-    setFormValues((prev) => ({
-      ...prev,
-      start: prev.end,
-      end: prev.start,
-    }));
+  const legs = useMemo(() => {
+    const out = [];
+    for (let i = 1; i < stops.length; i += 1) {
+      const km = roadDistanceKm(stops[i - 1].place, stops[i].place);
+      const hours = km / 42;
+      out.push({
+        from: PLACES[stops[i - 1].place]?.name || '',
+        to: PLACES[stops[i].place]?.name || '',
+        km,
+        timeLabel: hours < 1 ? `~${Math.round(hours * 60)} min drive` : `~${Math.round(hours * 2) / 2} hrs drive`,
+      });
+    }
+    return out;
+  }, [stops]);
 
-  const seatCountNumber = Number(formValues.seatCount) || 0;
-  const dayCount = Number(formValues.days) || 0;
+  const totalKm = legs.reduce((sum, l) => sum + l.km, 0);
+  const nightsTotal = stops.reduce(
+    (sum, s, i) => sum + (i === 0 ? s.nights || 0 : Math.max(1, s.nights || 1)),
+    0
+  );
+  const days = Math.max(1, nightsTotal + 1);
+  const paxNumber = Number(pax) || 0;
 
-  const estimate = useMemo(
-    () =>
-      calculateTripEstimate({
-        vehicles,
-        seatCount: seatCountNumber,
-        days: dayCount,
-      }),
-    [vehicles, seatCountNumber, dayCount]
+  const overallEstimate = useMemo(
+    () => calculateTripEstimate({ vehicles, seatCount: paxNumber, days }),
+    [vehicles, paxNumber, days]
+  );
+  const classEstimates = useMemo(
+    () => calculateClassEstimates({ vehicles, seatCount: paxNumber, days }),
+    [vehicles, paxNumber, days]
+  );
+  const inclusionRates = useMemo(
+    () => calculateInclusionRates({ vehicles, seatCount: paxNumber }),
+    [vehicles, paxNumber]
   );
 
-  const seatDistribution = useMemo(() => buildSeatDistribution(vehicles), [vehicles]);
-  const routeInsight = useMemo(
-    () => getRouteInsight(formValues.start, formValues.end),
-    [formValues.start, formValues.end]
-  );
-
-  const coveragePercent = estimate?.coverage ? Math.round(estimate.coverage * 100) : 0;
-  const perDayRangeLabel =
-    estimate?.perDay && priceFormatter(estimate.perDay.low) && priceFormatter(estimate.perDay.high)
-      ? `${priceFormatter(estimate.perDay.low)} – ${priceFormatter(estimate.perDay.high)}`
-      : '—';
-  const averagePerDayLabel = estimate?.perDay ? priceFormatter(estimate.perDay.average) : '—';
-  const totalAverageLabel = estimate?.totals ? priceFormatter(estimate.totals.average) : '—';
-  const totalRangeLabel =
-    estimate?.totals && priceFormatter(estimate.totals.low) && priceFormatter(estimate.totals.high)
-      ? `${priceFormatter(estimate.totals.low)} – ${priceFormatter(estimate.totals.high)}`
-      : '—';
-  const lastSyncLabel = lastSync
-    ? new Date(lastSync).toLocaleString('en-US', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-      })
-    : null;
-
-  const seatPhrase = seatCountNumber > 0 ? `${seatCountNumber}+ seat vehicles` : 'any seat size';
-  const bufferAmount =
-    estimate?.totals && Number.isFinite(estimate.totals.high) && Number.isFinite(estimate.totals.average)
-      ? priceFormatter(estimate.totals.high - estimate.totals.average)
+  const resultReady = Boolean(overallEstimate?.perDay);
+  const totalAverage = resultReady ? money(overallEstimate.totals.average) : '—';
+  const totalRange = resultReady ? `${money(overallEstimate.totals.low)} – ${money(overallEstimate.totals.high)}` : '—';
+  const perDayAverage = resultReady ? money(overallEstimate.perDay.average) : '—';
+  const perDayRange = resultReady ? `${money(overallEstimate.perDay.low)} – ${money(overallEstimate.perDay.high)}` : '—';
+  const buffer =
+    resultReady && Number.isFinite(overallEstimate.totals.high) && Number.isFinite(overallEstimate.totals.average)
+      ? money(overallEstimate.totals.high - overallEstimate.totals.average)
       : null;
 
-  const insightsList = [
-    estimate?.perDay
-      ? `The middle 50% of drivers quote ${perDayRangeLabel} per day for ${seatPhrase}.`
-      : 'Pricing insights will display as soon as live rates finish loading.',
-    estimate?.seatMatches
-      ? `${estimate.seatMatches} of ${estimate.fleetSize} approved vehicles currently meet your seat requirement (${coveragePercent}% coverage).`
-      : 'Set a seat count to see how many vehicles are available right now.',
-    estimate?.totals && bufferAmount
-      ? `Plan an average of ${totalAverageLabel} for this itinerary and keep ~${bufferAmount} as a flexibility buffer.`
-      : 'Add trip length so we can highlight the total budget band.',
-  ];
+  const paceOk = totalKm / days <= 190;
+  const kmPerDay = Math.round(totalKm / days);
 
-  const resultReady = Boolean(estimate?.perDay) && !loading && !error;
+  const updateStop = (uid, patch) =>
+    setStops((prev) => prev.map((s) => (s.uid === uid ? { ...s, ...patch } : s)));
+
+  const addStop = () => setStops((prev) => [...prev, { uid: nextUid(), place: 'galle', nights: 1 }]);
+  const removeStop = (uid) => setStops((prev) => (prev.length <= 2 ? prev : prev.filter((s) => s.uid !== uid)));
+  const startOver = () => setStops(withUids([{ place: 'cmb', nights: 0 }, { place: 'colombo', nights: 2 }]));
+  const applyPreset = (presetStops) => setStops(withUids(presetStops));
+
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQS.map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  };
 
   return (
-    <div className="space-y-16 py-6">
-      <section className="space-y-6 rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-500 to-emerald-400 p-8 text-white shadow-lg">
+    <div className="space-y-8 py-6">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
+
+      <section className="space-y-6 rounded-[28px] bg-gradient-to-br from-[#0c7a44] via-brand to-[#18b866] p-8 text-white shadow-lg">
         <p className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]">
           <Sparkles className="h-3.5 w-3.5" />
           Trip Cost Calculator
         </p>
         <div className="space-y-4">
-          <h1 className="text-3xl font-semibold leading-tight sm:text-4xl lg:text-5xl">
-            Plan your Sri Lanka driver budget using live marketplace data.
+          <h1 className="text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl lg:text-5xl">
+            Build your Sri Lanka itinerary and see the real cost of a car with driver
           </h1>
-          <p className="max-w-3xl text-base text-white/80 sm:text-lg">
-            Enter your route, seat requirement, and days on the road. We average today&apos;s verified driver
-            quotes to show a realistic price before you request offers.
+          <p className="max-w-3xl text-base text-white/85 sm:text-lg">
+            Add your stops day by day. We work out the driving distance between them and price the trip from
+            today&apos;s live driver rates — not a flat industry average.
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <article className="rounded-2xl bg-white/10 p-4">
-            <p className="text-xs uppercase tracking-wide text-white/70">Live fleet</p>
-            <p className="text-2xl font-semibold">{estimate?.fleetSize || 0}</p>
-            <p className="text-sm text-white/70">Approved driver vehicles</p>
+          <article className="rounded-2xl bg-white/[0.13] border border-white/[0.15] p-4">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-white/70">Live fleet</p>
+            <p className="mt-1 text-2xl font-extrabold">{vehicles.length}</p>
+            <p className="text-sm font-medium text-white/70">Approved driver vehicles</p>
           </article>
-          <article className="rounded-2xl bg-white/10 p-4">
-            <p className="text-xs uppercase tracking-wide text-white/70">Median daily rate</p>
-            <p className="text-2xl font-semibold">{averagePerDayLabel || '—'}</p>
-            <p className="text-sm text-white/70">Across current listings</p>
+          <article className="rounded-2xl bg-white/[0.13] border border-white/[0.15] p-4">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-white/70">Median daily rate</p>
+            <p className="mt-1 text-2xl font-extrabold">{perDayAverage}</p>
+            <p className="text-sm font-medium text-white/70">For {paxNumber || 'any'} {paxNumber === 1 ? 'passenger' : 'passengers'}</p>
           </article>
-          <article className="rounded-2xl bg-white/10 p-4">
-            <p className="text-xs uppercase tracking-wide text-white/70">Typical daily range</p>
-            <p className="text-2xl font-semibold">{perDayRangeLabel}</p>
-            <p className="text-sm text-white/70">Middle 50% of quotes</p>
+          <article className="rounded-2xl bg-white/[0.13] border border-white/[0.15] p-4">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-white/70">Typical daily range</p>
+            <p className="mt-1 text-2xl font-extrabold">{perDayRange}</p>
+            <p className="text-sm font-medium text-white/70">Middle 50% of quotes</p>
           </article>
-          <article className="rounded-2xl bg-white/10 p-4">
-            <p className="text-xs uppercase tracking-wide text-white/70">Last refreshed</p>
-            <p className="text-2xl font-semibold">{lastSyncLabel || 'Fetching…'}</p>
-            <p className="text-sm text-white/70">Based on platform data</p>
+          <article className="rounded-2xl bg-white/[0.13] border border-white/[0.15] p-4">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-white/70">This itinerary</p>
+            <p className="mt-1 text-2xl font-extrabold">{days}{days === 1 ? ' day' : ' days'}</p>
+            <p className="text-sm font-medium text-white/70">{stops.length} stops · {totalKm.toLocaleString('en-US')} km</p>
           </article>
         </div>
       </section>
 
-      {error && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-          {error}
-        </div>
-      )}
-
-      <section className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-        <form
-          className="space-y-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200"
-          onSubmit={(event) => event.preventDefault()}
-        >
-          <header className="space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">Trip inputs</p>
-            <h2 className="text-2xl font-semibold text-slate-900">Tell us the basics</h2>
-            <p className="text-sm text-slate-600">
-              We use real driver rates with similar seat counts and trip durations to calculate your estimate.
-            </p>
-          </header>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-              Start location
-              <div className="relative">
-                <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+      <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+        <div className="min-w-0 space-y-6">
+          {/* Who's travelling */}
+          <div className="space-y-4 rounded-[22px] border border-[#e6ece9] bg-white p-6">
+            <header className="space-y-1">
+              <p className="text-[11.5px] font-extrabold uppercase tracking-wide text-brand-dark">Step 1</p>
+              <h2 className="text-xl font-extrabold tracking-tight text-ink">Who is travelling</h2>
+            </header>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="flex flex-col gap-1.5 text-[13px] font-bold text-ink-soft">
+                Start date
                 <input
-                  type="text"
-                  value={formValues.start}
-                  onChange={handleChange('start')}
-                  list="trip-location-options"
-                  placeholder="e.g. Colombo"
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-10 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="rounded-xl border-[1.5px] border-[#dde4e1] bg-white px-4 py-2.5 text-sm font-medium text-ink focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
                 />
-              </div>
-            </label>
-            <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-              End location
-              <div className="relative">
-                <Compass className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={formValues.end}
-                  onChange={handleChange('end')}
-                  list="trip-location-options"
-                  placeholder="e.g. Ella"
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-10 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                />
-              </div>
-            </label>
-          </div>
-          <datalist id="trip-location-options">
-            {popularLocations.map((location) => (
-              <option value={location} key={location} />
-            ))}
-          </datalist>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-              Seats needed
-              <div className="relative">
-                <Users className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="number"
-                  min="1"
-                  max="12"
-                  step="1"
-                  value={formValues.seatCount}
-                  onChange={handleChange('seatCount')}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-10 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                />
-              </div>
-              <span className="text-xs font-normal text-slate-500">
-                Use total passenger seats (excludes driver seat).
-              </span>
-            </label>
-
-            <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-              Number of days
-              <div className="relative">
-                <GaugeCircle className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="number"
-                  min="1"
-                  max="21"
-                  step="1"
-                  value={formValues.days}
-                  onChange={handleChange('days')}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-10 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                />
-              </div>
-              <span className="text-xs font-normal text-slate-500">Include travel days with the driver.</span>
-            </label>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3 pt-2">
-            <button
-              type="button"
-              onClick={swapLocations}
-              className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-900"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-              Swap locations
-            </button>
-            <p className="text-xs text-slate-500">
-              Every edit re-runs the calculator using today&apos;s fleet prices.
-            </p>
-          </div>
-        </form>
-
-        <aside className="space-y-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <header className="space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">Estimate</p>
-            <h2 className="text-2xl font-semibold text-slate-900">Your projected trip budget</h2>
-            <p className="text-sm text-slate-600">
-              Based on {estimate?.sampleSize || 0} recent quotes that match your selections.
-            </p>
-          </header>
-
-          <div className="rounded-3xl bg-slate-900 p-6 text-white shadow-inner">
-            <p className="text-xs uppercase tracking-wide text-white/70">Estimated total</p>
-            <p className="mt-2 text-4xl font-semibold">{resultReady ? totalAverageLabel : '—'}</p>
-            <p className="text-sm text-white/70">
-              {formValues.days || '—'} days · {seatPhrase}
-            </p>
-            <div className="mt-6 grid gap-4 text-sm text-white/90 sm:grid-cols-2">
-              <div>
-                <p className="text-xs uppercase tracking-wide text-white/60">Comfortable buffer</p>
-                <p className="text-lg font-semibold">{bufferAmount || '—'}</p>
-                <p className="text-xs text-white/60">Keep this aside for extra kms or upgrades.</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wide text-white/60">Likely total span</p>
-                <p className="text-lg font-semibold">{resultReady ? totalRangeLabel : '—'}</p>
-                <p className="text-xs text-white/60">Based on middle 50% of quotes.</p>
-              </div>
-            </div>
-          </div>
-
-          <dl className="grid gap-4 text-sm text-slate-700 sm:grid-cols-2">
-            <div className="rounded-2xl border border-slate-200 p-4">
-              <dt className="text-xs uppercase tracking-wide text-slate-500">Per-day baseline</dt>
-              <dd className="mt-1 text-2xl font-semibold text-slate-900">{averagePerDayLabel || '—'}</dd>
-              <p className="text-xs text-slate-500">Average of matching drivers.</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 p-4">
-              <dt className="text-xs uppercase tracking-wide text-slate-500">Coverage</dt>
-              <dd className="mt-1 text-2xl font-semibold text-slate-900">
-                {estimate?.seatMatches ? `${coveragePercent}%` : '—'}
-              </dd>
-              <p className="text-xs text-slate-500">
-                {estimate?.seatMatches ? `${estimate.seatMatches} / ${estimate.fleetSize} vehicles` : 'Matching seats pending'}
-              </p>
-            </div>
-            <div className="rounded-2xl border border-slate-200 p-4 sm:col-span-2">
-              <dt className="text-xs uppercase tracking-wide text-slate-500">Live insight</dt>
-              <dd className="mt-1 text-base text-slate-700">
-                {insightsList[0]}
-                <br />
-                {insightsList[1]}
-                <br />
-                {insightsList[2]}
-              </dd>
-            </div>
-          </dl>
-
-          <article className="rounded-3xl border border-slate-200 p-5">
-            <div className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-              <RouteIcon className="h-4 w-4 text-emerald-600" />
-              Route insight
-            </div>
-            <p className="mt-2 text-lg font-semibold text-slate-900">
-              {formValues.start || '—'} → {formValues.end || '—'}
-            </p>
-            <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-500">
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">
-                <Activity className="h-3.5 w-3.5" />
-                {routeInsight.distance}
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">
-                <GaugeCircle className="h-3.5 w-3.5" />
-                {routeInsight.travelTime}
-              </span>
-            </div>
-            <p className="mt-3 text-sm text-slate-700">{routeInsight.summary}</p>
-            <p className="mt-2 text-xs font-medium text-emerald-700">{routeInsight.tip}</p>
-          </article>
-        </aside>
-      </section>
-
-      <section className="space-y-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <header className="space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">
-            Fleet snapshot
-          </p>
-          <h2 className="text-2xl font-semibold text-slate-900">What the data says this week</h2>
-          <p className="text-sm text-slate-600">
-            We look at every approved vehicle to surface price patterns you can use when negotiating.
-          </p>
-        </header>
-
-        {loading ? (
-          <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-600">
-            <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />
-            Crunching the latest pricing signals…
-          </div>
-        ) : (
-          <>
-            <div className="grid gap-4 lg:grid-cols-2">
-              <article className="rounded-3xl border border-slate-200 p-6">
-                <h3 className="text-lg font-semibold text-slate-900">Seat mix</h3>
-                <p className="text-sm text-slate-600">How the current fleet breaks down by capacity.</p>
-                <div className="mt-4 flex flex-wrap gap-3">
-                  {seatDistribution.map((bucket) => (
-                    <div
-                      key={bucket.id}
-                      className="flex flex-col rounded-2xl border border-slate-200 px-4 py-3"
-                    >
-                      <p className="text-sm font-semibold text-slate-900">{bucket.label}</p>
-                      <p className="text-xs text-slate-500">
-                        {bucket.count} vehicles · {bucket.percentage}%
-                      </p>
-                    </div>
-                  ))}
+              </label>
+              <label className="flex flex-col gap-1.5 text-[13px] font-bold text-ink-soft">
+                Passengers
+                <div className="relative">
+                  <Users className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-soft" />
+                  <input
+                    type="number"
+                    min="1"
+                    max="15"
+                    step="1"
+                    value={pax}
+                    onChange={(e) => setPax(e.target.value)}
+                    className="w-full rounded-xl border-[1.5px] border-[#dde4e1] bg-white px-10 py-2.5 text-sm font-medium text-ink focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+                  />
                 </div>
-              </article>
+              </label>
+            </div>
+          </div>
 
-              <article className="rounded-3xl border border-slate-200 p-6">
-                <h3 className="text-lg font-semibold text-slate-900">Negotiation cues</h3>
-                <ul className="mt-4 space-y-3 text-sm text-slate-700">
-                  {insightsList.map((insight, index) => (
-                    <li key={`insight-${index}`} className="flex gap-2">
-                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                      <span>{insight}</span>
-                    </li>
-                  ))}
-                </ul>
-              </article>
+          {/* Itinerary */}
+          <div className="space-y-4 rounded-[22px] border border-[#e6ece9] bg-white p-6">
+            <header className="flex flex-wrap items-start justify-between gap-3">
+              <div className="space-y-1">
+                <p className="text-[11.5px] font-extrabold uppercase tracking-wide text-brand-dark">Step 2</p>
+                <h2 className="text-xl font-extrabold tracking-tight text-ink">Your itinerary</h2>
+                <p className="text-sm text-muted">Pick a destination and how many nights you stay. Distances update as you go.</p>
+              </div>
+            </header>
+
+            <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+              {ITINERARY_PRESETS.map((preset) => (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => applyPreset(preset.stops)}
+                  className="flex-shrink-0 whitespace-nowrap rounded-full border-[1.5px] border-[#dde4e1] bg-white px-3.5 py-1.5 text-xs font-bold text-ink transition hover:border-brand hover:text-brand-dark"
+                >
+                  {preset.label}
+                </button>
+              ))}
             </div>
-            <div className="rounded-3xl border border-slate-200 p-6 text-sm text-slate-600">
-              <p>
-                This calculator is directional guidance only. Final pricing depends on detailed itineraries,
-                highway tolls, accommodation for drivers on multi-day trips, and seasonal demand. Share your
-                preferred comfort level when requesting quotes so drivers can fine-tune offers.
+
+            <div className="space-y-3">
+              {stops.map((stop, i) => {
+                const place = PLACES[stop.place];
+                const leg = i > 0 ? legs[i - 1] : null;
+                const open = searchOpenUid === stop.uid;
+                const q = query.trim().toLowerCase();
+                const results = Object.entries(PLACES).filter(
+                  ([, p]) => !q || p.name.toLowerCase().includes(q) || placeTypeLabel(p.type).toLowerCase().includes(q)
+                );
+                const isLast = i === stops.length - 1;
+
+                return (
+                  <React.Fragment key={stop.uid}>
+                    {leg ? (
+                      <div className="flex items-center justify-center py-1">
+                        <span className="inline-flex items-center gap-2 rounded-full border border-[#d6ece0] bg-[#f2faf6] px-3 py-1 text-xs font-bold text-brand-dark">
+                          <RouteIcon className="h-3.5 w-3.5" />
+                          {leg.km} km · {leg.timeLabel}
+                        </span>
+                      </div>
+                    ) : null}
+
+                    <article className={`rounded-2xl border-[1.5px] p-4 ${isLast ? 'border-[#d6ece0] bg-[#f7fbf9]' : 'border-[#e6ece9] bg-white'}`}>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-ink text-sm font-extrabold text-[#7fd9a8]">
+                          {i + 1}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-base font-extrabold tracking-tight text-ink">{place?.name}</p>
+                          <p className="text-xs font-semibold text-muted-soft">
+                            {i === 0 ? 'Arrive · ' : ''}
+                            {formatDate(toIso(dateForIndex(i) || new Date()))}
+                          </p>
+                        </div>
+                        {stops.length > 2 ? (
+                          <button
+                            type="button"
+                            onClick={() => removeStop(stop.uid)}
+                            aria-label="Remove stop"
+                            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-[#e6ece9] bg-white text-muted-soft hover:border-[#c3ccd3] hover:text-ink"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        ) : null}
+                      </div>
+
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                        <div className="relative">
+                          <label className="mb-1.5 block text-xs font-bold text-ink-soft">Destination</label>
+                          <div className="relative">
+                            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-soft" />
+                            <input
+                              type="text"
+                              value={open ? query : place?.name || ''}
+                              onFocus={() => {
+                                setSearchOpenUid(stop.uid);
+                                setQuery('');
+                              }}
+                              onChange={(e) => setQuery(e.target.value)}
+                              onBlur={() => setTimeout(() => setSearchOpenUid(null), 120)}
+                              placeholder="Search destinations…"
+                              className="w-full rounded-xl border-[1.5px] border-[#dde4e1] bg-white py-2 pl-8 pr-3 text-sm font-medium text-ink focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+                            />
+                          </div>
+                          {open ? (
+                            <div className="absolute z-20 mt-1.5 max-h-56 w-full overflow-y-auto rounded-xl border border-[#dde4e1] bg-white p-1 shadow-lg">
+                              {results.length === 0 ? (
+                                <p className="p-3 text-xs font-semibold text-muted-soft">No destination matches that search.</p>
+                              ) : (
+                                results.map(([id, p]) => (
+                                  <button
+                                    key={id}
+                                    type="button"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      updateStop(stop.uid, { place: id });
+                                      setSearchOpenUid(null);
+                                      setQuery('');
+                                    }}
+                                    className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm ${
+                                      id === stop.place ? 'bg-brand-tint text-brand-dark' : 'hover:bg-hairline'
+                                    }`}
+                                  >
+                                    <span className="font-bold">{p.name}</span>
+                                    <span className="text-xs font-semibold text-muted-soft">{placeTypeLabel(p.type)}</span>
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          ) : null}
+                        </div>
+
+                        <div>
+                          <label className="mb-1.5 block text-xs font-bold text-ink-soft">
+                            {i === 0 ? 'Nights here' : 'Nights'}
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => updateStop(stop.uid, { nights: Math.max(0, (stop.nights || 0) - 1) })}
+                              aria-label="Fewer nights"
+                              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border-[1.5px] border-[#dde4e1] bg-white text-ink hover:border-brand"
+                            >
+                              <Minus className="h-4 w-4" />
+                            </button>
+                            <span className="flex-1 text-center text-sm font-extrabold text-ink">
+                              {(stop.nights || 0) === 0 ? 'Same day' : `${stop.nights} night${stop.nights === 1 ? '' : 's'}`}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => updateStop(stop.uid, { nights: Math.min(14, (stop.nights || 0) + 1) })}
+                              aria-label="More nights"
+                              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border-[1.5px] border-[#dde4e1] bg-white text-ink hover:border-brand"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {place?.hl ? (
+                        <p className="mt-3 flex items-start gap-2 rounded-xl border border-[#f0dcae] bg-[#fdf7e8] px-3 py-2 text-xs font-semibold leading-relaxed text-[#7a5410]">
+                          {place.hl}
+                        </p>
+                      ) : null}
+                    </article>
+                  </React.Fragment>
+                );
+              })}
+            </div>
+
+            <div className="flex flex-wrap gap-2 pt-1">
+              <button
+                type="button"
+                onClick={addStop}
+                className="inline-flex items-center gap-2 rounded-xl border-[1.5px] border-dashed border-[#b9d8c7] bg-[#f7fbf9] px-4 py-2.5 text-sm font-bold text-brand-dark hover:bg-brand-tint"
+              >
+                <Plus className="h-4 w-4" />
+                Add another stop
+              </button>
+              <button
+                type="button"
+                onClick={startOver}
+                className="inline-flex items-center rounded-xl border-[1.5px] border-[#dde4e1] bg-white px-4 py-2.5 text-sm font-bold text-muted hover:border-[#c3ccd3]"
+              >
+                Start over
+              </button>
+            </div>
+          </div>
+
+          {/* Vehicle classes */}
+          <div className="space-y-4 rounded-[22px] border border-[#e6ece9] bg-white p-6">
+            <header className="space-y-1">
+              <p className="text-[11.5px] font-extrabold uppercase tracking-wide text-brand-dark">Step 3</p>
+              <h2 className="text-xl font-extrabold tracking-tight text-ink">Recommended vehicle classes for this itinerary</h2>
+              <p className="text-sm text-muted">
+                Priced from live listings that currently seat {paxNumber || 'your group'} — not an assumed base rate.
               </p>
+            </header>
+
+            {classEstimates.length === 0 ? (
+              <p className="rounded-2xl border-[1.5px] border-dashed border-[#dde4e1] p-5 text-sm text-muted">
+                No live vehicles currently match {paxNumber || 'that many'} passengers. Try a lower passenger count,
+                or <Link to="/get-quotes" className="font-bold text-brand-dark underline">request quotes</Link> directly —
+                drivers sometimes have vehicles not yet reflected in the public listings.
+              </p>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {classEstimates.map((cls, i) => (
+                  <article
+                    key={cls.id}
+                    className={`flex flex-col gap-3 rounded-2xl border-[1.5px] p-4 ${i === 0 ? 'border-brand bg-[#f7fbf9]' : 'border-[#e6ece9] bg-white'}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-base font-extrabold tracking-tight text-ink">{cls.label}</p>
+                        <p className="text-xs font-semibold text-muted-soft">{cls.seatLabel}{cls.example ? ` · e.g. ${cls.example}` : ''}</p>
+                      </div>
+                      {i === 0 ? (
+                        <span className="flex-shrink-0 rounded-lg bg-brand px-2 py-1 text-[11px] font-extrabold text-white">Best match</span>
+                      ) : null}
+                    </div>
+                    <div>
+                      <p className="text-2xl font-extrabold tracking-tight text-ink">{money(cls.total.average)}</p>
+                      <p className="text-xs font-semibold text-muted-soft">≈ {money(Math.round(cls.total.average / days))}/day · {cls.sampleSize} listed</p>
+                    </div>
+                    <Link
+                      to="/get-quotes"
+                      className="mt-auto inline-flex items-center justify-center rounded-xl bg-brand px-3 py-2.5 text-xs font-extrabold text-white hover:bg-brand-dark"
+                    >
+                      Get quotes
+                    </Link>
+                  </article>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* FAQ */}
+          <div className="space-y-4 rounded-[22px] border border-[#e6ece9] bg-white p-6">
+            <h2 className="text-xl font-extrabold tracking-tight text-ink">Frequently asked questions</h2>
+            <div className="space-y-2">
+              {FAQS.map((f) => (
+                <details key={f.q} className="group rounded-2xl border border-[#e6ece9] bg-[#f9fbfa] p-4">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-extrabold text-ink">
+                    {f.q}
+                    <ChevronDown className="h-4 w-4 flex-shrink-0 text-muted-soft transition group-open:rotate-180" />
+                  </summary>
+                  <p className="mt-2 text-sm leading-relaxed text-muted">{f.a}</p>
+                </details>
+              ))}
             </div>
-          </>
-        )}
+          </div>
+        </div>
+
+        {/* Sidebar */}
+        <aside className="min-w-0 space-y-4">
+          <div className="rounded-[22px] bg-ink p-6 text-white">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-white/65">Estimated trip cost</p>
+            <div className="mt-2 flex items-end gap-2">
+              <p className="text-4xl font-extrabold tracking-tight">{totalAverage}</p>
+              <p className="pb-1 text-sm font-bold text-white/55">≈ {money(overallEstimate.totals ? Math.round(overallEstimate.totals.average / days) : null)}/day</p>
+            </div>
+            <p className="mt-1 text-sm font-medium text-white/70">
+              {days} days · {nightsTotal} nights · {paxNumber || '—'} {paxNumber === 1 ? 'passenger' : 'passengers'}
+            </p>
+            <div className="mt-5 grid grid-cols-2 gap-2.5">
+              <div className="rounded-xl bg-white/10 p-3">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-white/55">Likely range</p>
+                <p className="mt-1 text-lg font-extrabold">{totalRange}</p>
+              </div>
+              <div className="rounded-xl bg-white/10 p-3">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-white/55">Total distance</p>
+                <p className="mt-1 text-lg font-extrabold">{totalKm.toLocaleString('en-US')} km</p>
+              </div>
+            </div>
+            {buffer ? (
+              <p className="mt-4 text-xs font-medium text-white/55">Keep ~{buffer} aside as a flexibility buffer for extra km or upgrades.</p>
+            ) : null}
+            <Link
+              to="/get-quotes"
+              className="mt-5 flex items-center justify-center rounded-2xl bg-brand px-4 py-3.5 text-sm font-extrabold text-white hover:bg-brand-dark"
+            >
+              Request free driver quotes
+            </Link>
+            <p className="mt-2 text-center text-[11px] font-medium leading-relaxed text-white/45">
+              No payment now. Drivers reply with a fixed price for this exact itinerary.
+            </p>
+          </div>
+
+          <div className="rounded-[20px] border border-[#e6ece9] bg-white p-5">
+            <div className="flex items-center gap-2 text-sm font-extrabold text-ink">
+              <Activity className="h-4 w-4 text-brand-dark" />
+              Distance by leg
+            </div>
+            <div className="mt-3 space-y-2.5">
+              {legs.length === 0 ? (
+                <p className="text-xs font-medium text-muted-soft">Add a second stop to see leg distances.</p>
+              ) : (
+                legs.map((leg, i) => (
+                  <div key={i} className="flex items-center justify-between gap-3 border-b border-[#f1f5f3] pb-2.5 text-sm last:border-0 last:pb-0">
+                    <div className="min-w-0">
+                      <p className="truncate font-bold text-ink">{leg.from} → {leg.to}</p>
+                      <p className="text-xs font-semibold text-muted-soft">{leg.timeLabel}</p>
+                    </div>
+                    <span className="flex-shrink-0 font-extrabold text-brand-dark">{leg.km} km</span>
+                  </div>
+                ))
+              )}
+            </div>
+            {legs.length > 0 ? (
+              <div
+                className={`mt-3 rounded-xl border px-3 py-2 text-xs font-semibold leading-relaxed ${
+                  paceOk ? 'border-[#d6ece0] bg-[#f2faf6] text-brand-dark' : 'border-[#f0dcae] bg-[#fdf7e8] text-[#7a5410]'
+                }`}
+              >
+                {paceOk
+                  ? `Comfortable pace — about ${kmPerDay} km a day, leaving time for stops.`
+                  : `That's about ${kmPerDay} km a day. Consider adding a night somewhere so the drive days stay enjoyable.`}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="rounded-[20px] border border-[#d6ece0] bg-[#f2faf6] p-5">
+            <p className="text-sm font-extrabold text-ink">What&apos;s included on this fleet</p>
+            {inclusionRates.length === 0 ? (
+              <p className="mt-2 text-xs font-medium text-muted">
+                Set a passenger count with at least one matching vehicle to see real inclusion rates.
+              </p>
+            ) : (
+              <div className="mt-3 space-y-2">
+                {inclusionRates.map((flag) => (
+                  <div key={flag.key} className="flex items-start gap-2.5">
+                    <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-brand-dark" />
+                    <p className="text-sm text-ink-soft">
+                      <span className="font-bold">{flag.label}</span> — included on {flag.percent}% of the {flag.total}{' '}
+                      matching {flag.total === 1 ? 'vehicle' : 'vehicles'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </aside>
       </section>
     </div>
   );

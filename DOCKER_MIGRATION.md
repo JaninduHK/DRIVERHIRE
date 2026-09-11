@@ -224,16 +224,10 @@ docker compose exec mongo mongosh driverhire
 ```
 
 ### Backups (run regularly)
-```bash
-# Database
-docker compose exec mongo mongodump --uri="mongodb://localhost:27017/driverhire" \
-  --archive=/tmp/backup.archive --gzip
-docker compose cp mongo:/tmp/backup.archive ./backups/db-$(date +%F).archive
-
-# Uploads
-docker run --rm -v driverhire_uploads_data:/data -v $(pwd)/backups:/backup \
-  alpine tar czf /backup/uploads-$(date +%F).tar.gz -C /data .
-```
+`scripts/backup.sh` automates this end-to-end — mongodump + uploads_data
+archive + encrypted `.env` snapshot, shipped off-box via SSH to a second
+server, with cron setup and restore commands in the "Backups" section of
+[DEPLOY_NEW_VPS.md](DEPLOY_NEW_VPS.md).
 > Volume names are prefixed with the project directory name (`driverhire_`). Check with `docker volume ls`.
 
 ---

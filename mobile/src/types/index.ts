@@ -2,6 +2,8 @@
 
 export type Role = 'guest' | 'driver' | 'admin';
 export type DriverStatus = 'pending' | 'approved' | 'rejected';
+export type LicenseType = 'Tourist Driver' | 'Chauffeur Guide Lecturer' | 'National Guide Lecturer';
+export type LicenseStatus = 'pending' | 'approved' | 'rejected';
 
 export interface User {
   id: string;
@@ -23,6 +25,12 @@ export interface User {
     longitude?: number;
     updatedAt?: string;
   } | null;
+  licenseType?: LicenseType;
+  licenseImage?: string | null;
+  licenseStatus?: LicenseStatus;
+  licenseSubmittedAt?: string | null;
+  licenseReviewedAt?: string | null;
+  licenseAdminNote?: string | null;
   createdAt?: string;
 }
 

@@ -111,15 +111,19 @@ export const calculateTripEstimate = ({ vehicles = [], seatCount = 0, days = 1 }
   };
 };
 
+export const SEAT_BUCKETS = [
+  { id: 'sedan', label: 'Sedan', seatLabel: '1-3 seats', min: 1, max: 3 },
+  { id: 'mpv', label: 'MPV', seatLabel: '4-6 seats', min: 4, max: 6 },
+  { id: 'van', label: 'Van', seatLabel: '7-10 seats', min: 7, max: 10 },
+  { id: 'coach', label: 'Mini coach', seatLabel: '11+ seats', min: 11, max: Infinity },
+];
+
 export const buildSeatDistribution = (vehicles = []) => {
   const sanitized = sanitizeVehicles(vehicles);
   const total = sanitized.length || 1;
 
   const buckets = [
-    { id: 'sedan', label: 'Sedan (1-3 seats)', min: 1, max: 3 },
-    { id: 'mpv', label: 'MPV (4-6 seats)', min: 4, max: 6 },
-    { id: 'van', label: 'Van (7-10 seats)', min: 7, max: 10 },
-    { id: 'coach', label: 'Mini coach (11+ seats)', min: 11, max: Infinity },
+    ...SEAT_BUCKETS.map((b) => ({ ...b, label: `${b.label} (${b.seatLabel})` })),
     { id: 'flex', label: 'Flexible / unspecified', min: null, max: null },
   ];
 
@@ -140,6 +144,45 @@ export const buildSeatDistribution = (vehicles = []) => {
       percentage: Math.round((count / total) * 1000) / 10,
     };
   });
+};
+
+// Per-vehicle-class price bands, built entirely from the live fleet (no assumed base
+// rates or per-km surcharges) — a bucket is only returned if at least one real vehicle
+// in that class currently meets the seat requirement.
+export const calculateClassEstimates = ({ vehicles = [], seatCount = 0, days = 1 } = {}) => {
+  const totalDays = clampDays(days);
+  const normalizedSeat = (() => {
+    const parsed = normalizeNumber(seatCount);
+    return Number.isFinite(parsed) && parsed > 0 ? Math.min(Math.round(parsed), 15) : null;
+  })();
+
+  const valid = (Array.isArray(vehicles) ? vehicles : [])
+    .map((v) => ({
+      model: v?.model || null,
+      pricePerDay: normalizeNumber(v?.pricePerDay),
+      seats: normalizeNumber(v?.seats),
+    }))
+    .filter((v) => v.pricePerDay !== null && v.pricePerDay > 0 && v.seats !== null);
+
+  return SEAT_BUCKETS.map((bucket) => {
+    const inBucket = valid.filter((v) => v.seats >= bucket.min && v.seats <= bucket.max);
+    const matching = normalizedSeat ? inBucket.filter((v) => v.seats >= normalizedSeat) : inBucket;
+    if (matching.length === 0) return null;
+
+    const sorted = [...matching].sort((a, b) => a.pricePerDay - b.pricePerDay);
+    const dailyAverage = sorted.reduce((sum, v) => sum + v.pricePerDay, 0) / sorted.length;
+    const dailyLow = computePercentile(sorted, 0.25) ?? sorted[0].pricePerDay;
+    const dailyHigh = computePercentile(sorted, 0.75) ?? sorted[sorted.length - 1].pricePerDay;
+    const example = sorted.find((v) => v.model)?.model || null;
+
+    return {
+      ...bucket,
+      sampleSize: sorted.length,
+      example,
+      perDay: { average: dailyAverage, low: dailyLow, high: dailyHigh },
+      total: { average: toTotal(dailyAverage, totalDays), low: toTotal(dailyLow, totalDays), high: toTotal(dailyHigh, totalDays) },
+    };
+  }).filter(Boolean);
 };
 
 export const normalizeLocation = (value = '') =>
@@ -206,6 +249,34 @@ export const getRouteInsight = (start, end) => {
     summary: 'Sri Lankan driver-guided trips average 120–150 km per day with lots of scenic pauses.',
     tip: 'Plan one buffer day per week for weather or spontaneous stops.',
   };
+};
+
+const INCLUSION_FLAGS = [
+  { key: 'fuelAndInsurance', label: 'Fuel & insurance' },
+  { key: 'driverMealsAndAccommodation', label: "Driver's meals & accommodation" },
+  { key: 'meetAndGreetAtAirport', label: 'Airport meet & greet' },
+  { key: 'englishSpeakingDriver', label: 'English-speaking driver' },
+  { key: 'parkingFeesAndTolls', label: 'Parking fees & tolls' },
+  { key: 'allTaxes', label: 'All taxes' },
+];
+
+// Real inclusion rates (percent of the currently matching fleet that has each flag set),
+// so "what's included" reflects actual listings instead of a blanket marketing claim.
+export const calculateInclusionRates = ({ vehicles = [], seatCount = 0 } = {}) => {
+  const normalizedSeat = (() => {
+    const parsed = normalizeNumber(seatCount);
+    return Number.isFinite(parsed) && parsed > 0 ? Math.min(Math.round(parsed), 15) : null;
+  })();
+  const matching = (Array.isArray(vehicles) ? vehicles : []).filter((v) => {
+    const seats = normalizeNumber(v?.seats);
+    return normalizedSeat ? seats === null || seats >= normalizedSeat : true;
+  });
+  if (matching.length === 0) return [];
+
+  return INCLUSION_FLAGS.map((flag) => {
+    const count = matching.filter((v) => v?.[flag.key]).length;
+    return { ...flag, percent: Math.round((count / matching.length) * 100), count, total: matching.length };
+  }).sort((a, b) => b.percent - a.percent);
 };
 
 export const priceFormatter = (value) => {

@@ -1,11 +1,19 @@
 import { buildMeta } from '../lib/seo.js';
+import { fetchVehicles } from '../../src/services/vehicleCatalogApi.js';
+
+// Fetched server-side so the estimate is real, crawlable HTML on first load — not a
+// client-only spinner state (see sitemap.jsx for the same fetchVehicles-in-a-loader pattern).
+export async function loader() {
+  const data = await fetchVehicles({ sort: 'priceAsc' }).catch(() => ({ vehicles: [] }));
+  return { vehicles: data?.vehicles || [] };
+}
 
 export function meta() {
   return buildMeta({
-    title: "Sri Lanka Trip Cost Calculator | Car with Driver LK",
+    title: 'Sri Lanka Trip Cost Calculator | Plan Your Itinerary | Car with Driver LK',
     description:
-      "Estimate the cost of hiring a car with driver in Sri Lanka. Plan your route, days and vehicle type for a transparent daily-rate estimate before you book.",
-    path: "/trip-cost-calculator",
+      'Build a day-by-day Sri Lanka itinerary and get a real cost estimate from live driver rates — distances, driving time, and per-vehicle-class pricing for your exact route.',
+    path: '/trip-cost-calculator',
   });
 }
 
