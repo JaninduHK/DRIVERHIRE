@@ -125,6 +125,20 @@ const messageSchema = new mongoose.Schema(
       ref: 'User',
       default: [],
     },
+    // No-login "view this offer" link opened from the offer notification email
+    // (see services/offerReminderService.js and controllers/offerInviteController.js).
+    // Only ever set for type: 'offer' messages. The hash lets a leaked DB row not
+    // be usable to view the offer; unlike the review-invite token this one is not
+    // single-use, since re-opening the same offer link should keep working.
+    offerViewTokenHash: {
+      type: String,
+      index: true,
+    },
+    offerViewTokenExpires: Date,
+    offerReminderSentAt: {
+      type: Date,
+      index: true,
+    },
   },
   {
     timestamps: true,

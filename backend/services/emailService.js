@@ -488,6 +488,42 @@ export const sendConversationNotificationEmail = async ({
   });
 };
 
+export const sendOfferReminderEmail = async ({ recipient, driverName, vehicleModel, offerUrl }) => {
+  if (!recipient?.email || !offerUrl) {
+    return;
+  }
+
+  const recipientName = escapeHtml(recipient.name || 'there');
+  const safeDriverName = escapeHtml(driverName || 'your driver');
+  const brandName = getBrandName();
+
+  const html = buildEmailTemplate({
+    title: 'Your trip offer is still waiting',
+    preheader: `${safeDriverName} is still waiting to hear back about your trip offer on ${brandName}`,
+    bodyLines: [
+      `Hi ${recipientName},`,
+      `You still have an open trip offer from ${safeDriverName}${
+        vehicleModel ? ` for ${escapeHtml(vehicleModel)}` : ''
+      }. Take a look and reply while it's still available.`,
+    ],
+    action: {
+      label: 'View offer',
+      url: offerUrl,
+    },
+  });
+
+  const text = `Hi ${recipient.name || 'there'},\n\nYou still have an open trip offer from ${
+    driverName || 'your driver'
+  }. View it here: ${offerUrl}`;
+
+  await sendEmail({
+    to: recipient.email,
+    subject: `Reminder: your trip offer from ${driverName || 'your driver'} is still open`,
+    html,
+    text,
+  });
+};
+
 export const sendBriefAlertEmail = async ({ drivers = [], brief }) => {
   if (!brief) {
     return;

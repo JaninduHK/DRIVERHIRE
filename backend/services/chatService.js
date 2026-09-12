@@ -1,8 +1,25 @@
+import crypto from 'crypto';
 import ChatMessage from '../models/ChatMessage.js';
 import { USER_ROLES } from '../models/User.js';
 import { sanitizeMessageContent } from '../utils/chatSanitizer.js';
 import { sendConversationNotificationEmail } from './emailService.js';
 import buildAppUrl from '../utils/url.js';
+
+const HOUR = 60 * 60 * 1000;
+
+// Lets a traveller who opens the offer notification email view the offer
+// without an Asgardeo round-trip first (see controllers/offerInviteController.js
+// and services/offerReminderService.js, which both reuse this pair). Not
+// single-use like the review-invite token — re-opening the same email link
+// should keep working, so nothing "burns" it.
+export const OFFER_TOKEN_TTL_MS = 30 * 24 * HOUR;
+
+export const hashOfferToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
+
+export const createOfferToken = () => {
+  const token = crypto.randomBytes(32).toString('hex');
+  return { token, hash: hashOfferToken(token), expires: new Date(Date.now() + OFFER_TOKEN_TTL_MS) };
+};
 
 const participantFields = [
   { path: 'traveler', select: 'id name email role' },
@@ -23,10 +40,18 @@ const toParticipant = (doc) => {
   };
 };
 
-const buildConversationUrl = (role) =>
-  role === USER_ROLES.DRIVER ? buildAppUrl('/portal/driver/messages') : buildAppUrl('/dashboard');
+// Deep-links straight to the conversation instead of a bare dashboard/portal
+// landing page, so a traveller/driver who clicks through from the email does
+// not also have to hunt for the right thread once logged in.
+const buildConversationUrl = (role, conversationId) => {
+  if (role === USER_ROLES.DRIVER) {
+    return buildAppUrl('/portal/driver/messages');
+  }
+  const params = new URLSearchParams({ tab: 'messages', conversationId: String(conversationId || '') });
+  return buildAppUrl(`/dashboard?${params.toString()}`);
+};
 
-const queueConversationNotification = (conversation, senderRole, message) => {
+const queueConversationNotification = (conversation, senderRole, message, offerToken) => {
   if (!conversation || typeof conversation.populate !== 'function' || !message) {
     return;
   }
@@ -43,13 +68,21 @@ const queueConversationNotification = (conversation, senderRole, message) => {
 
       const recipient = senderRole === USER_ROLES.GUEST ? driver : traveler;
       const sender = senderRole === USER_ROLES.GUEST ? traveler : driver;
+      const isOffer = message.type === 'offer';
+
+      // Offers get the no-login magic link; everything else still requires
+      // sign-in but at least lands directly on the right conversation.
+      const conversationUrl =
+        isOffer && recipient.id === traveler.id && offerToken
+          ? buildAppUrl(`/offer/${offerToken}`)
+          : buildConversationUrl(recipient.role, conversation._id);
 
       return sendConversationNotificationEmail({
         recipient,
         sender,
         messagePreview: message.body,
-        isOffer: message.type === 'offer',
-        conversationUrl: buildConversationUrl(recipient.role),
+        isOffer,
+        conversationUrl,
         vehicleModel: conversation.vehicle?.model,
       });
     })
@@ -82,6 +115,16 @@ export const createChatMessage = async ({
 }) => {
   const { sanitized, violations, warning } = sanitizeMessageContent(content);
 
+  let offerToken;
+  let offerViewTokenHash;
+  let offerViewTokenExpires;
+  if (type === 'offer') {
+    const minted = createOfferToken();
+    offerToken = minted.token;
+    offerViewTokenHash = minted.hash;
+    offerViewTokenExpires = minted.expires;
+  }
+
   const message = new ChatMessage({
     conversation: conversation._id,
     sender: senderId,
@@ -92,6 +135,8 @@ export const createChatMessage = async ({
     violations,
     offer,
     readBy: [senderId],
+    offerViewTokenHash,
+    offerViewTokenExpires,
   });
 
   await message.save();
@@ -109,7 +154,7 @@ export const createChatMessage = async ({
 
   await conversation.save();
 
-  queueConversationNotification(conversation, senderRole, message);
+  queueConversationNotification(conversation, senderRole, message, offerToken);
 
   return message;
 };

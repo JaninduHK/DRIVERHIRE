@@ -23,6 +23,8 @@ export default [
   route('verify-email', 'routes/verify-email.jsx'),
   // Opened from the post-trip email; token in the URL, no sign-in required.
   route('review/:token', 'routes/review.$token.jsx'),
+  // Opened from the new-offer email; token in the URL, no sign-in required.
+  route('offer/:token', 'routes/offer.$token.jsx'),
 
   // Dashboards / transactional (client-only, noindex)
   route('dashboard', 'routes/dashboard.jsx'),

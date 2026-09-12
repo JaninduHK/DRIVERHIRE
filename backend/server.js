@@ -13,7 +13,9 @@ import briefRoutes from './routes/briefRoutes.js';
 import publicDriverRoutes from './routes/publicDriverRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import supportRoutes from './routes/supportRoutes.js';
+import offerInviteRoutes from './routes/offerInviteRoutes.js';
 import { startReviewRequestScheduler } from './services/reviewRequestService.js';
+import { startOfferReminderScheduler } from './services/offerReminderService.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -69,6 +71,9 @@ app.use('/api/briefs', briefRoutes);
 app.use('/api/drivers', publicDriverRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/support', supportRoutes);
+// Deliberately its own unauthenticated router — never nested under
+// /api/chat, which applies the Asgardeo-derived `authenticate` middleware.
+app.use('/api/offer-invite', offerInviteRoutes);
 
 // Error handler for multer and other errors
 app.use((error, req, res, next) => {
@@ -132,6 +137,9 @@ const startServer = async () => {
     // Hourly post-trip review request emails. Started after the DB is up so the
     // first sweep can read its cutoff setting.
     startReviewRequestScheduler();
+
+    // Hourly unread-offer reminder emails.
+    startOfferReminderScheduler();
   } catch (error) {
     console.error('Server startup failed:', error.message);
     process.exit(1);

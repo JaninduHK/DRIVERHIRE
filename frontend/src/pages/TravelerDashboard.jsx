@@ -154,7 +154,11 @@ const TravelerDashboard = () => {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [conversationsState, setConversationsState] = useState({ loading: true, error: '', items: [] });
-  const [selectedConversationId, setSelectedConversationId] = useState('');
+  // Seeded from ?conversationId= so an offer/message notification email can
+  // deep-link straight into the right thread instead of landing on the inbox.
+  const [selectedConversationId, setSelectedConversationId] = useState(
+    searchParams.get('conversationId') || ''
+  );
   const [messagesState, setMessagesState] = useState({ loading: false, error: '', items: [], booking: null });
   const [composerValue, setComposerValue] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
@@ -295,15 +299,18 @@ const TravelerDashboard = () => {
     navigate(location.pathname, { replace: true, state: null });
   }, [location, navigate]);
 
-  // If the open conversation disappears, drop back to the inbox list.
+  // If the open conversation disappears, drop back to the inbox list. Gated on
+  // `!loading` so a conversationId seeded from the URL (email deep link) or
+  // location.state isn't cleared before the conversation list has even loaded.
   useEffect(() => {
     if (
+      !conversationsState.loading &&
       selectedConversationId &&
       !conversationsState.items.some((item) => item.id === selectedConversationId)
     ) {
       setSelectedConversationId('');
     }
-  }, [conversationsState.items, selectedConversationId]);
+  }, [conversationsState.loading, conversationsState.items, selectedConversationId]);
 
   useEffect(() => {
     if (activeTab !== 'messages' || !selectedConversationId) return;
