@@ -736,7 +736,7 @@ const OverviewMessageCard = ({ conversation, tone, onOpen }) => {
     ? `Sent an offer${conversation.vehicle?.model ? ` · ${conversation.vehicle.model}` : ''}`
     : conversation.lastMessage?.body || 'Conversation started.';
   return (
-    <div className="rounded-[18px] bg-white p-[15px] shadow-card" style={{ borderLeft: `4px solid ${isOffer ? '#10a35a' : '#d6e9fb'}` }}>
+    <div className="min-w-0 rounded-[18px] bg-white p-[15px] shadow-card" style={{ borderLeft: `4px solid ${isOffer ? '#10a35a' : '#d6e9fb'}` }}>
       <div className="mb-2.5 flex items-center gap-[11px]">
         <Avatar name={driverName} image={conversation.participants?.driver?.profilePhoto} tone={tone} className="h-10 w-10 text-sm" />
         <div className="min-w-0 flex-1">
@@ -1216,7 +1216,7 @@ const TravelerBookingCard = ({ booking, tone, expanded, onToggle, onMessage, onE
   const showReviewPrompt = booking.canReview && !booking.review;
 
   return (
-    <div className="rounded-[18px] bg-white p-[15px] shadow-card" style={{ borderLeft: `4px solid ${chip.border}` }}>
+    <div className="min-w-0 rounded-[18px] bg-white p-[15px] shadow-card" style={{ borderLeft: `4px solid ${chip.border}` }}>
       <div className="mb-2.5 flex items-center justify-between gap-2">
         <span className={`rounded-lg px-2.5 py-1 text-[11px] font-extrabold uppercase ${chip.cls}`}>{chip.text}</span>
         {price ? <b className="text-[16px] text-ink">{price}</b> : null}

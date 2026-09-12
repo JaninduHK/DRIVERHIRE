@@ -103,7 +103,7 @@ const DriverProfileSheet = ({ driverId, activeVehicleId, hasBooking, onClose, on
                     <span className="inline-flex items-center gap-1 rounded-lg bg-white/[0.18] px-2 py-1 text-[12px] font-extrabold">
                       <Star className="h-3 w-3" fill="#ffd166" stroke="none" /> {ratingLabel}
                     </span>
-                  ) : (
+                  ) : driver.licenseType ? null : (
                     <span className="inline-flex items-center rounded-lg bg-white/[0.18] px-2 py-1 text-[11px] font-extrabold">New driver</span>
                   )}
                   <span className="text-[12px] font-semibold opacity-90">
