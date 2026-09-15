@@ -82,6 +82,12 @@ export const sendDriverEmail = (driverId, payload) =>
     body: JSON.stringify(payload),
   });
 
+export const setDriverPassword = (driverId, password) =>
+  request(`/drivers/${driverId}/password`, {
+    method: 'POST',
+    body: JSON.stringify({ password }),
+  });
+
 export const fetchLicenseSubmissions = (filters = {}) =>
   request(`/licenses${buildQueryString(filters)}`, { method: 'GET' });
 

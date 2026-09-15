@@ -17,6 +17,7 @@ import {
   sendVehicleStatusEmail,
   sendBookingStatusUpdateEmail,
   sendDriverAdminMessageEmail,
+  sendPasswordChangedEmail,
 } from '../services/emailService.js';
 import { mapAssetUrls, buildAssetUrl } from '../utils/assetUtils.js';
 import { anonymizeUser, findBlockingBookings } from '../services/accountDeletionService.js';
@@ -575,6 +576,42 @@ export const sendDriverDirectMessage = async (req, res) => {
   } catch (error) {
     console.error('Admin driver message error:', error);
     return res.status(500).json({ message: 'Unable to send email to driver' });
+  }
+};
+
+// Admin override for a driver's login password — e.g. a driver locked out with no
+// working email access. Unlike the driver's own change-password flow, this doesn't
+// require the current password; the driver is emailed a notice either way so a
+// change they didn't make (or forgot happened) doesn't go unnoticed.
+export const setDriverPassword = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+
+  const { id } = req.params;
+  const { password } = req.body;
+
+  try {
+    const driver = await User.findOne({ _id: id, role: USER_ROLES.DRIVER });
+
+    if (!driver) {
+      return res.status(404).json({ message: 'Driver not found' });
+    }
+
+    await driver.setPassword(password);
+    await driver.save();
+
+    if (driver.email) {
+      sendPasswordChangedEmail({ to: driver.email, name: driver.name }).catch((error) =>
+        console.warn('Password-changed notification email failed:', error)
+      );
+    }
+
+    return res.json({ message: 'Driver password updated.' });
+  } catch (error) {
+    console.error('Admin set driver password error:', error);
+    return res.status(500).json({ message: 'Unable to update driver password' });
   }
 };
 

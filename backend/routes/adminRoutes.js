@@ -28,6 +28,7 @@ import {
   updateConversationStatus,
   deleteConversation,
   sendDriverDirectMessage,
+  setDriverPassword,
   getUsersList,
   deleteUserAccount,
   previewUserDeletion,
@@ -135,6 +136,23 @@ router.post(
       .withMessage('Message must be between 10 and 2000 characters'),
   ],
   sendDriverDirectMessage
+);
+
+router.post(
+  '/drivers/:id/password',
+  [
+    param('id').isMongoId().withMessage('Invalid driver identifier'),
+    body('password')
+      .isLength({ min: 8 })
+      .withMessage('Password must be at least 8 characters long')
+      .matches(/[a-z]/)
+      .withMessage('Password must include a lowercase letter')
+      .matches(/[A-Z]/)
+      .withMessage('Password must include an uppercase letter')
+      .matches(/[0-9]/)
+      .withMessage('Password must include a number'),
+  ],
+  setDriverPassword
 );
 
 router.get(

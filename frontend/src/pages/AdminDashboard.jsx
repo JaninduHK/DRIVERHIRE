@@ -57,6 +57,7 @@ import {
   fetchDriverCommissions as fetchAdminCommissions,
   updateDriverCommissionStatus as updateAdminCommissionStatus,
   sendDriverEmail as sendDriverEmailRequest,
+  setDriverPassword as setDriverPasswordRequest,
   fetchUsers,
   fetchUserDeletionPreview,
   deleteUserAccount as deleteUserAccountRequest,
@@ -573,6 +574,10 @@ const AdminDashboard = () => {
     await sendDriverEmailRequest(driverId, payload);
   }, []);
 
+  const handleDriverSetPassword = useCallback(async (driverId, password) => {
+    await setDriverPasswordRequest(driverId, password);
+  }, []);
+
   const handleUserDeletionPreview = useCallback((userId) => fetchUserDeletionPreview(userId), []);
 
   const handleUserDelete = useCallback(async (userId) => {
@@ -975,7 +980,7 @@ const AdminDashboard = () => {
     content = (
       <div className="flex flex-col gap-4">
         <DriverApprovalSetting />
-        <DriversPanel state={{ ...driverState, items: filteredDrivers }} onRetry={loadDrivers} onStatusChange={handleDriverStatusChange} onSendMessage={handleDriverMessageSend} onUpdate={handleDriverDetailsUpdate} />
+        <DriversPanel state={{ ...driverState, items: filteredDrivers }} onRetry={loadDrivers} onStatusChange={handleDriverStatusChange} onSendMessage={handleDriverMessageSend} onUpdate={handleDriverDetailsUpdate} onSetPassword={handleDriverSetPassword} />
       </div>
     );
   } else if (activeSection === 'vehicles') {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle2, ChevronDown, CircleUserRound, Loader2, Mail, Pencil, RotateCcw, Send, XCircle } from 'lucide-react';
+import { CheckCircle2, ChevronDown, CircleUserRound, KeyRound, Loader2, Mail, Pencil, RotateCcw, Send, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fetchSettings as fetchAdminSettings, updateSettings as updateAdminSettings } from '../../services/adminApi.js';
 import { formatDate, formatDateInput, tagClass } from './adminFormatters.js';
@@ -17,6 +17,11 @@ const buildAdminDriverForm = (driver = {}) => ({
   description: driver.description || '',
   memberSince: formatDateInput(driver.createdAt),
 });
+
+// Mirrors the backend's passwordRules validator (authRoutes.js / adminRoutes.js) so
+// a weak password is rejected before the request round-trip.
+const PASSWORD_RULE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+const PASSWORD_HINT = 'At least 8 characters, with an uppercase letter, a lowercase letter, and a number.';
 
 const inputCls =
   'mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/10';
@@ -86,7 +91,7 @@ export const DriverApprovalSetting = () => {
   );
 };
 
-const DriversPanel = ({ state, onRetry, onStatusChange, onSendMessage, onUpdate }) => {
+const DriversPanel = ({ state, onRetry, onStatusChange, onSendMessage, onUpdate, onSetPassword }) => {
   const { items: filtered, loading, error, updatingId } = state;
   const [expandedId, setExpandedId] = useState(null);
   const [messageForm, setMessageForm] = useState({ driverId: null, subject: '', message: '', sending: false, error: '' });
@@ -94,11 +99,48 @@ const DriversPanel = ({ state, onRetry, onStatusChange, onSendMessage, onUpdate 
   const [formData, setFormData] = useState(() => buildAdminDriverForm());
   const [formError, setFormError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ driverId: null, password: '', confirm: '', saving: false, error: '' });
 
   const toggleExpanded = (driverId) => {
     setExpandedId((prev) => (prev === driverId ? null : driverId));
     setEditingId(null);
     setFormError('');
+    setPasswordForm({ driverId: null, password: '', confirm: '', saving: false, error: '' });
+  };
+
+  const togglePasswordForm = (driverId) => {
+    setPasswordForm((prev) => {
+      const shouldClose = !driverId || prev.driverId === driverId;
+      if (shouldClose) return { driverId: null, password: '', confirm: '', saving: false, error: '' };
+      return { driverId, password: '', confirm: '', saving: false, error: '' };
+    });
+  };
+
+  const handlePasswordFieldChange = (event) => {
+    const { name, value } = event.target;
+    setPasswordForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handlePasswordSubmit = async (event) => {
+    event.preventDefault();
+    if (!passwordForm.driverId || !onSetPassword) return;
+    if (!PASSWORD_RULE.test(passwordForm.password)) {
+      setPasswordForm((prev) => ({ ...prev, error: PASSWORD_HINT }));
+      return;
+    }
+    if (passwordForm.password !== passwordForm.confirm) {
+      setPasswordForm((prev) => ({ ...prev, error: 'Passwords do not match.' }));
+      return;
+    }
+    setPasswordForm((prev) => ({ ...prev, saving: true, error: '' }));
+    try {
+      await onSetPassword(passwordForm.driverId, passwordForm.password);
+      toast.success("Driver's password has been updated.");
+      setPasswordForm({ driverId: null, password: '', confirm: '', saving: false, error: '' });
+    } catch (submitError) {
+      setPasswordForm((prev) => ({ ...prev, saving: false, error: submitError?.message || 'Unable to update password.' }));
+      toast.error(submitError?.message || 'Unable to update password.');
+    }
   };
 
   const startEditing = (driver) => {
@@ -247,6 +289,7 @@ const DriversPanel = ({ state, onRetry, onStatusChange, onSendMessage, onUpdate 
           const isFormOpen = messageForm.driverId === application.id;
           const isSendingMessage = isFormOpen && messageForm.sending;
           const isExpanded = expandedId === application.id;
+          const isPasswordFormOpen = passwordForm.driverId === application.id;
 
           return (
             <div key={application.id} className="border-b border-hairline last:border-b-0">
@@ -311,7 +354,61 @@ const DriversPanel = ({ state, onRetry, onStatusChange, onSendMessage, onUpdate 
                     >
                       <Pencil className="h-4 w-4" /> {editingId === application.id ? 'Close edit form' : 'Edit driver'}
                     </button>
+                    {onSetPassword ? (
+                      <button
+                        type="button"
+                        onClick={() => togglePasswordForm(application.id)}
+                        disabled={passwordForm.saving && isPasswordFormOpen}
+                        className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-xs font-bold text-ink transition hover:border-muted-soft"
+                      >
+                        <KeyRound className="h-4 w-4" /> {isPasswordFormOpen ? 'Close password form' : 'Set password'}
+                      </button>
+                    ) : null}
                   </div>
+
+                  {isPasswordFormOpen ? (
+                    <form onSubmit={handlePasswordSubmit} className="mt-3 space-y-3 rounded-xl border border-hairline bg-surface p-4">
+                      <p className="text-[12.5px] text-muted">
+                        Sets this driver&apos;s login password directly — no current password needed. They&apos;ll get an email letting them know it changed.
+                      </p>
+                      {passwordForm.error ? <p className="text-sm font-semibold text-rose-600 dark:text-rose-300">{passwordForm.error}</p> : null}
+                      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                        <div>
+                          <label className={labelCls}>New password</label>
+                          <input
+                            name="password"
+                            type="password"
+                            autoComplete="new-password"
+                            value={passwordForm.password}
+                            onChange={handlePasswordFieldChange}
+                            disabled={passwordForm.saving}
+                            className={inputCls}
+                          />
+                        </div>
+                        <div>
+                          <label className={labelCls}>Confirm password</label>
+                          <input
+                            name="confirm"
+                            type="password"
+                            autoComplete="new-password"
+                            value={passwordForm.confirm}
+                            onChange={handlePasswordFieldChange}
+                            disabled={passwordForm.saving}
+                            className={inputCls}
+                          />
+                        </div>
+                      </div>
+                      <p className="text-[11.5px] text-muted-soft">{PASSWORD_HINT}</p>
+                      <div className="flex flex-wrap gap-2">
+                        <button type="submit" disabled={passwordForm.saving} className="inline-flex items-center gap-2 rounded-lg bg-brand px-3 py-2 text-xs font-bold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60">
+                          {passwordForm.saving ? (<><Loader2 className="h-4 w-4 animate-spin" /> Saving…</>) : (<><KeyRound className="h-4 w-4" /> Set password</>)}
+                        </button>
+                        <button type="button" disabled={passwordForm.saving} onClick={() => togglePasswordForm(application.id)} className="rounded-lg border border-line px-3 py-2 text-xs font-bold text-ink transition hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-60">
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  ) : null}
 
                   {editingId === application.id ? (
                     <form onSubmit={handleEditSubmit} className="mt-3 space-y-3 rounded-xl border border-hairline bg-surface p-4">
