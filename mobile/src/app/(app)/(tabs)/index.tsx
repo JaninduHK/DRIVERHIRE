@@ -17,9 +17,7 @@ import { useOverview, useEarningsSummary, useBookings, useBriefs } from '../../.
 import { formatMoney } from '../../../lib/format';
 import { colors } from '../../../theme/colors';
 import type { Brief } from '../../../types';
-
-const isUpcoming = (status?: string) =>
-  ['confirmed', 'accepted', 'upcoming', 'paid'].includes((status ?? '').toLowerCase());
+import { isCompleted } from './bookings';
 
 export default function Overview() {
   const router = useRouter();
@@ -33,7 +31,7 @@ export default function Overview() {
 
   const firstName = (overview.data?.profile?.name ?? user?.name ?? 'there').split(' ')[0];
   const rating = overview.data?.activity?.rating || 0;
-  const upcoming = (bookings.data ?? []).filter((b) => isUpcoming(b.status)).length;
+  const upcoming = (bookings.data ?? []).filter((b) => !isCompleted(b)).length;
   const openBriefs = briefs.data ?? [];
 
   const refreshing =

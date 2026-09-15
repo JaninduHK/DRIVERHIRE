@@ -651,6 +651,10 @@ export const createVehicleBooking = async (req, res) => {
       .json({ message: 'Full name, email, and phone number are required to confirm a booking' });
   }
 
+  if (typeof specialRequests === 'string' && specialRequests.trim().length > 1000) {
+    return res.status(400).json({ message: 'Notes for the driver must be 1000 characters or fewer.' });
+  }
+
   try {
     let offerMessage = null;
     const vehicle = await Vehicle.findOne({
@@ -859,6 +863,14 @@ export const createVehicleBooking = async (req, res) => {
     });
   } catch (error) {
     console.error('Create vehicle booking error:', error);
+    // A Mongoose ValidationError here means bad input slipped past the checks above —
+    // worth surfacing the real reason instead of a generic "try again" 500 (same fix
+    // applied to tour-brief creation after a traveller hit this with an over-length
+    // message field).
+    if (error.name === 'ValidationError') {
+      const firstMessage = Object.values(error.errors)[0]?.message || 'Please check your booking details and try again.';
+      return res.status(400).json({ message: firstMessage });
+    }
     return res.status(500).json({ message: 'Unable to confirm booking right now' });
   }
 };

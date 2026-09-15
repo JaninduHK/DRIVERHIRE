@@ -25,6 +25,11 @@ const EXTRAS = [
   'Airport meet & greet',
 ];
 
+// Matches Booking.specialRequests's maxlength in backend/models/Booking.js. Selected
+// extras get prepended to whatever's typed here before submit, so the real limit on
+// what a traveller can type is a bit lower than 1000 whenever any extras are picked.
+const SPECIAL_REQUESTS_MAX = 1000;
+
 const fieldCls =
   'w-full min-h-[50px] rounded-[13px] border-[1.5px] border-[#e5ebe8] bg-[#fbfcfc] px-[15px] py-[13px] text-[15px] font-semibold text-ink outline-none transition placeholder:text-[#a3b0bb] focus:border-brand focus:bg-white focus:shadow-[0_0_0_3px_rgba(16,163,90,0.14)]';
 const fieldLabelCls = 'mb-[7px] block text-[12.5px] font-bold text-ink-soft';
@@ -129,6 +134,19 @@ const Checkout = () => {
   const [selectedExtras, setSelectedExtras] = useState({});
   const toggleExtra = (label) =>
     setSelectedExtras((prev) => ({ ...prev, [label]: !prev[label] }));
+
+  // What actually gets sent as `specialRequests` — extras first, then the traveller's
+  // own notes — computed once here so the on-screen counter and the submit guard can't
+  // drift apart from what's really submitted.
+  const combinedNotes = useMemo(() => {
+    const chosenExtras = EXTRAS.filter((label) => selectedExtras[label]);
+    return [
+      chosenExtras.length ? `Requested extras: ${chosenExtras.join(', ')}` : '',
+      formState.specialRequests.trim(),
+    ]
+      .filter(Boolean)
+      .join('\n');
+  }, [selectedExtras, formState.specialRequests]);
 
   const queryParams = useMemo(() => {
     const searchParams = new URLSearchParams(location.search);
@@ -407,13 +425,14 @@ const Checkout = () => {
       return;
     }
 
-    const chosenExtras = EXTRAS.filter((label) => selectedExtras[label]);
-    const combinedNotes = [
-      chosenExtras.length ? `Requested extras: ${chosenExtras.join(', ')}` : '',
-      formState.specialRequests.trim(),
-    ]
-      .filter(Boolean)
-      .join('\n');
+    if (combinedNotes.length > SPECIAL_REQUESTS_MAX) {
+      setBookingFeedback({
+        success: false,
+        message: '',
+        error: `Your notes (including any selected extras) must be ${SPECIAL_REQUESTS_MAX} characters or fewer — currently ${combinedNotes.length}.`,
+      });
+      return;
+    }
 
     const payload = {
       startDate: bookingDates.start,
@@ -794,7 +813,12 @@ const Checkout = () => {
                   </div>
                   <label className="mt-4 block">
                     <span className="mb-[7px] flex items-center justify-between gap-2 text-[12.5px] font-bold text-ink-soft">
-                      Notes for your driver <span className="font-semibold text-[#a3b0bb]">Optional</span>
+                      <span>
+                        Notes for your driver <span className="font-semibold text-[#a3b0bb]">Optional</span>
+                      </span>
+                      <span className={combinedNotes.length > SPECIAL_REQUESTS_MAX ? 'text-red-600' : 'text-[#a3b0bb]'}>
+                        {combinedNotes.length}/{SPECIAL_REQUESTS_MAX}
+                      </span>
                     </span>
                     <textarea
                       rows="3"
@@ -803,6 +827,11 @@ const Checkout = () => {
                       placeholder="Extra stops, dietary needs, hotel names you already booked, anything that helps your driver plan."
                       className={`${fieldCls} min-h-[auto] resize-y leading-[1.55]`}
                     />
+                    {selectedExtras && Object.values(selectedExtras).some(Boolean) ? (
+                      <span className="mt-1.5 block text-[11.5px] text-muted-soft">
+                        Your selected extras above count toward this limit too.
+                      </span>
+                    ) : null}
                   </label>
                 </section>
               </fieldset>

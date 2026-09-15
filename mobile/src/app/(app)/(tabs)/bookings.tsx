@@ -18,7 +18,10 @@ import { formatMoney, formatDateRange } from '../../../lib/format';
 import { colors } from '../../../theme/colors';
 import type { Booking } from '../../../types';
 
-const isCompleted = (b: Booking) => {
+// Exported so the overview tab's "Upcoming" stat counts the exact same set of
+// bookings this tab's Upcoming list shows — a booking whose end date has passed
+// is done regardless of what status it's still stored under.
+export const isCompleted = (b: Booking) => {
   const s = (b.status ?? '').toLowerCase();
   if (['completed', 'cancelled', 'declined', 'rejected'].includes(s)) return true;
   if (b.endDate && new Date(b.endDate).getTime() < Date.now()) return true;
@@ -30,8 +33,10 @@ const isPending = (b: Booking) => ['pending', 'requested'].includes((b.status ??
 const statusLabel = (b: Booking): { text: string; tone: 'brand' | 'info' | 'muted' } => {
   const s = (b.status ?? '').toLowerCase();
   if (isPending(b)) return { text: 'ACTION NEEDED', tone: 'info' };
-  if (['completed'].includes(s)) return { text: 'COMPLETED', tone: 'muted' };
   if (['cancelled', 'declined', 'rejected'].includes(s)) return { text: s.toUpperCase(), tone: 'muted' };
+  // The status stored on the booking is never literally 'completed' (no such stored
+  // status — see isCompleted above); a confirmed trip is done once its end date passes.
+  if (isCompleted(b)) return { text: 'COMPLETED', tone: 'muted' };
   if (b.startDate) {
     const days = Math.ceil((new Date(b.startDate).getTime() - Date.now()) / 86400000);
     if (days > 0 && days <= 7) return { text: `STARTS IN ${days} DAY${days > 1 ? 'S' : ''}`, tone: 'info' };

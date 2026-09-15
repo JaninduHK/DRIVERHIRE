@@ -363,7 +363,10 @@ function OfferModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <View className="flex-1 justify-end bg-black/40">
+      <KeyboardAvoidingView
+        className="flex-1 justify-end bg-black/40"
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <View className="max-h-[88%] rounded-t-[24px] bg-canvas px-[18px] pb-8 pt-4">
           <View className="mb-3 flex-row items-center justify-between">
             <Text className="font-xheavy text-[17px] text-ink">Send an offer</Text>
@@ -441,7 +444,7 @@ function OfferModal({
             />
           </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

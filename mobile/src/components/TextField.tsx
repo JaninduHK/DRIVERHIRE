@@ -61,6 +61,7 @@ export function TextField({
           autoCapitalize={autoCapitalize}
           autoCorrect={false}
           multiline={multiline}
+          blurOnSubmit={multiline ? false : undefined}
           autoFocus={autoFocus}
           editable={editable}
           className="flex-1 font-semi text-[14px] text-ink"

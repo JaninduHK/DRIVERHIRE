@@ -2,6 +2,8 @@ import { validationResult } from 'express-validator';
 import mongoose from 'mongoose';
 import User, { DRIVER_STATUS, LICENSE_STATUS } from '../models/User.js';
 import Vehicle, { VEHICLE_STATUS, VEHICLE_AVAILABILITY_STATUS } from '../models/Vehicle.js';
+import Booking, { BOOKING_STATUS } from '../models/Booking.js';
+import Review, { REVIEW_STATUS } from '../models/Review.js';
 import { mapAssetUrls, buildAssetUrl } from '../utils/assetUtils.js';
 import * as cloudinaryService from '../services/cloudinaryService.js';
 
@@ -91,10 +93,36 @@ export const getDriverOverview = async (req, res) => {
       approvedAt: driver.driverApprovedAt || driver.driverReviewedAt || null,
     };
 
+    // "Completed" isn't a stored booking status (see BOOKING_STATUS) — a trip counts
+    // as finished once a confirmed booking's end date has passed, same rule the web
+    // and mobile dashboards use client-side for their own upcoming/completed split.
+    const now = new Date();
+    const [totalTrips, upcomingTrips, reviewAgg] = await Promise.all([
+      Booking.countDocuments({
+        driver: driver._id,
+        status: BOOKING_STATUS.CONFIRMED,
+        endDate: { $lt: now },
+      }),
+      Booking.countDocuments({
+        driver: driver._id,
+        status: { $in: [BOOKING_STATUS.PENDING, BOOKING_STATUS.CONFIRMED] },
+        endDate: { $gte: now },
+      }),
+      Review.aggregate([
+        { $match: { driver: driver._id, status: REVIEW_STATUS.APPROVED } },
+        { $group: { _id: null, averageRating: { $avg: '$rating' }, reviewCount: { $sum: 1 } } },
+      ]),
+    ]);
+
+    const ratingEntry = reviewAgg[0];
+    const rating = ratingEntry?.reviewCount
+      ? Math.round(Math.min(5, Math.max(1, ratingEntry.averageRating)) * 10) / 10
+      : 0;
+
     const activity = {
-      totalTrips: 0,
-      upcomingTrips: 0,
-      rating: 0,
+      totalTrips,
+      upcomingTrips,
+      rating,
       lastUpdated: new Date(),
     };
 

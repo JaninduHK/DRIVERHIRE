@@ -1203,8 +1203,12 @@ const TravelerBookingCard = ({ booking, tone, expanded, onToggle, onMessage, onE
   const cancelled = ['cancelled', 'rejected'].includes(booking.status);
   const startMs = booking.startDate ? new Date(booking.startDate).getTime() : null;
   const daysAway = startMs ? Math.ceil((startMs - now) / 86400000) : null;
+  // `past` must be checked before the plain "confirmed" branch below, or a finished
+  // trip whose status was never anything but 'confirmed' would show CONFIRMED forever.
   const chip = cancelled
     ? { text: booking.status.toUpperCase(), cls: 'bg-[#ffe4e9] text-[#e11d48]', border: '#f43f5e' }
+    : booking.status === 'confirmed' && past
+    ? { text: 'COMPLETED', cls: 'bg-[#eef1f0] text-muted', border: '#d6e9fb' }
     : booking.status === 'confirmed' && daysAway !== null && daysAway > 0 && daysAway <= 3
     ? { text: `STARTS IN ${daysAway} DAY${daysAway === 1 ? '' : 'S'}`, cls: 'bg-[#e5f0fb] text-[#1d6fb8]', border: '#d6e9fb' }
     : booking.status === 'confirmed'

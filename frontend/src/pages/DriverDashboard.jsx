@@ -2180,7 +2180,11 @@ const DriverBookingsPanel = ({ onMenu, onNavigate, driverName, driverImage, book
   }
 
   const bookings = Array.isArray(items) ? items : [];
-  const isUpcoming = (b) => b.status === 'pending' || b.status === 'confirmed';
+  // A confirmed/pending booking whose trip already ended is done, regardless of
+  // whether anything ever flipped its stored status — same rule as the traveller
+  // dashboard and the mobile app use for their own upcoming/completed split.
+  const isPastEnd = (b) => Boolean(b.endDate) && new Date(b.endDate).getTime() < Date.now();
+  const isUpcoming = (b) => (b.status === 'pending' || b.status === 'confirmed') && !isPastEnd(b);
   const upcoming = bookings.filter(isUpcoming);
   const completed = bookings.filter((b) => !isUpcoming(b));
   const list = view === 'upcoming' ? upcoming : completed;
@@ -2255,15 +2259,20 @@ const BookingCard = ({ booking, tone = 'amber', responding, onRespond, onMessage
   const bookingCommissionRateLabel =
     typeof booking.commissionRate === 'number' ? formatRatePercent(booking.commissionRate, 1) : null;
   const isPending = booking.status === 'pending';
+  // A confirmed trip whose end date has passed reads as "confirmed" forever otherwise —
+  // there's no separate "completed" status stored on the booking (see BOOKING_STATUS).
+  const isPastEnd = Boolean(booking.endDate) && new Date(booking.endDate).getTime() < Date.now();
   const chip = isPending
     ? { text: 'PENDING', cls: 'bg-[#fdf0d8] text-[#a86a15]', border: '#f0b429' }
+    : booking.status === 'confirmed' && isPastEnd
+    ? { text: 'COMPLETED', cls: 'bg-[#eef1f0] text-muted', border: '#d6e9fb' }
     : booking.status === 'confirmed'
     ? { text: 'CONFIRMED', cls: 'bg-brand-tint text-brand-dark', border: '#10a35a' }
     : { text: (booking.status || 'past').toUpperCase(), cls: 'bg-[#eef1f0] text-muted', border: '#d6e9fb' };
   const busy = responding?.id === booking.id;
   return (
     <div
-      className="rounded-[18px] bg-white p-[15px] shadow-card"
+      className="min-w-0 rounded-[18px] bg-white p-[15px] shadow-card"
       style={{ borderLeft: `4px solid ${chip.border}` }}
     >
       <div className="mb-2.5 flex items-center justify-between">
