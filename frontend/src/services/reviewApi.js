@@ -46,12 +46,26 @@ export const fetchReviewInvite = async (token) => {
   return data.invite;
 };
 
-export const submitReviewFromToken = async (token, payload) => {
-  const response = await fetch(`${REVIEWS_BASE_URL}/invite/${encodeURIComponent(token)}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
+export const submitReviewFromToken = async (token, { rating, title, comment, images } = {}) => {
+  // Multipart only when photos are attached (capped at 2 for this no-login flow —
+  // see guestReviewImageUpload on the backend); otherwise the lightweight JSON path.
+  const init =
+    Array.isArray(images) && images.length > 0
+      ? (() => {
+          const form = new FormData();
+          form.append('rating', String(rating));
+          if (title) form.append('title', title);
+          form.append('comment', comment);
+          images.forEach((file) => form.append('images', file));
+          return { method: 'POST', body: form };
+        })()
+      : {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rating, title, comment }),
+        };
+
+  const response = await fetch(`${REVIEWS_BASE_URL}/invite/${encodeURIComponent(token)}`, init);
   if (!response.ok) {
     throw await parseInviteError(response);
   }

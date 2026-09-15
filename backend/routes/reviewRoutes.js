@@ -4,6 +4,7 @@ import {
   getReviewInvite,
   createReviewFromToken,
 } from '../controllers/reviewController.js';
+import { conditionalGuestReviewImageUpload } from '../middleware/cloudinaryUpload.js';
 
 const router = express.Router();
 
@@ -13,6 +14,6 @@ router.get('/latest', listLatestReviews);
 // Public, token-authenticated: opened straight from the post-trip review email so
 // the traveller does not have to sign in. See reviewController for why.
 router.get('/invite/:token', getReviewInvite);
-router.post('/invite/:token', createReviewFromToken);
+router.post('/invite/:token', conditionalGuestReviewImageUpload, createReviewFromToken);
 
 export default router;

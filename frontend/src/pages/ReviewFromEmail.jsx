@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { CheckCircle2, Loader2, Star } from 'lucide-react';
+import { CheckCircle2, Loader2, PlusCircle, Star, X } from 'lucide-react';
 import { fetchReviewInvite, submitReviewFromToken } from '../services/reviewApi.js';
+
+const MAX_REVIEW_PHOTOS = 2;
 
 const formatDateRange = (start, end) => {
   if (!start || !end) return '';
@@ -30,9 +32,19 @@ const ReviewFromEmail = () => {
   const [hovered, setHovered] = useState(0);
   const [title, setTitle] = useState('');
   const [comment, setComment] = useState('');
+  const [images, setImages] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
   const [done, setDone] = useState(false);
+
+  const handleImages = (event) => {
+    const picked = Array.from(event.target.files || []).filter((file) => file.type.startsWith('image/'));
+    setImages((prev) => [...prev, ...picked].slice(0, MAX_REVIEW_PHOTOS));
+    event.target.value = '';
+  };
+  const removeImage = (index) => setImages((prev) => prev.filter((_, i) => i !== index));
+  const imagePreviews = useMemo(() => images.map((file) => URL.createObjectURL(file)), [images]);
+  useEffect(() => () => imagePreviews.forEach((url) => URL.revokeObjectURL(url)), [imagePreviews]);
 
   const load = useCallback(async () => {
     setState({ loading: true, invite: null, error: '' });
@@ -61,7 +73,7 @@ const ReviewFromEmail = () => {
     }
     setSubmitting(true);
     try {
-      await submitReviewFromToken(token, { rating, title: title.trim(), comment: comment.trim() });
+      await submitReviewFromToken(token, { rating, title: title.trim(), comment: comment.trim(), images });
       setDone(true);
     } catch (error) {
       setFormError(error.message || 'Unable to submit your review right now.');
@@ -173,6 +185,34 @@ const ReviewFromEmail = () => {
             className="mt-1.5 w-full resize-y rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3.5 py-3 text-[14px] leading-relaxed text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none"
           />
           <p className="mt-1 text-right text-[11.5px] text-muted-soft">{comment.length}/1200</p>
+        </div>
+
+        <div>
+          <span className="block text-[12px] font-extrabold uppercase tracking-wide text-muted-soft">
+            Photos <span className="font-semibold normal-case text-muted-soft">(optional)</span>
+          </span>
+          <div className="mt-1.5 flex flex-wrap gap-2">
+            {images.map((file, index) => (
+              <div key={`${file.name}-${index}`} className="relative h-16 w-16 overflow-hidden rounded-xl border border-[#e2e8ea]">
+                <img src={imagePreviews[index]} alt="" className="h-full w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => removeImage(index)}
+                  aria-label="Remove photo"
+                  className="absolute right-0.5 top-0.5 grid h-5 w-5 place-items-center rounded-full bg-ink/70 text-white"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+            {images.length < MAX_REVIEW_PHOTOS ? (
+              <label className="grid h-16 w-16 cursor-pointer place-items-center rounded-xl border-[1.5px] border-dashed border-[#cbd5d1] text-muted-soft transition hover:border-brand hover:text-brand">
+                <PlusCircle className="h-5 w-5" />
+                <input type="file" accept="image/*" multiple onChange={handleImages} className="hidden" />
+              </label>
+            ) : null}
+          </div>
+          <p className="mt-1 text-[11.5px] text-muted-soft">Add up to {MAX_REVIEW_PHOTOS} photos from your trip.</p>
         </div>
 
         {formError ? <p className="text-[13px] font-semibold text-[#e11d48]">{formError}</p> : null}

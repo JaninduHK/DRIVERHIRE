@@ -174,6 +174,33 @@ export const conditionalReviewImageUpload = (req, res, next) => {
   return next();
 };
 
+/**
+ * Guest Review Image Upload Middleware
+ * - The no-login, emailed-review-link flow (see reviewController.createReviewFromToken)
+ *   caps photos at 2 rather than the signed-in dashboard flow's 4.
+ */
+export const guestReviewImageUpload = multer({
+  storage: memoryStorage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB per file
+    files: 2,
+  },
+  fileFilter: (_req, file, cb) => {
+    if (isImageUpload(file)) {
+      return cb(null, true);
+    }
+    return cb(new Error('Only image uploads are allowed'));
+  },
+});
+
+export const conditionalGuestReviewImageUpload = (req, res, next) => {
+  const contentType = req.headers['content-type'] || '';
+  if (contentType.includes('multipart/form-data')) {
+    return guestReviewImageUpload.array('images', 2)(req, res, next);
+  }
+  return next();
+};
+
 export default {
   vehicleImageUpload,
   profilePhotoUpload,
@@ -183,4 +210,6 @@ export default {
   conditionalLicenseUpload,
   reviewImageUpload,
   conditionalReviewImageUpload,
+  guestReviewImageUpload,
+  conditionalGuestReviewImageUpload,
 };

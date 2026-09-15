@@ -1217,6 +1217,16 @@ export const createReviewFromToken = async (req, res) => {
       return res.status(409).json({ message: 'A review has already been submitted for this trip.' });
     }
 
+    // Capped at 2 photos here (vs. 4 for the signed-in dashboard review flow) by
+    // guestReviewImageUpload's multer limit on this route.
+    let images = [];
+    try {
+      images = await uploadReviewImages(req.files, booking.travelerUser);
+    } catch (uploadError) {
+      console.error('Guest review image upload failed:', uploadError);
+      return res.status(502).json({ message: 'We could not upload your photos. Please try again.' });
+    }
+
     const review = await Review.create({
       booking: booking._id,
       vehicle: booking.vehicle?._id || booking.vehicle,
@@ -1226,6 +1236,7 @@ export const createReviewFromToken = async (req, res) => {
       rating: normalizedRating,
       title: trimmedTitle || undefined,
       comment: trimmedComment,
+      images,
       visitedStartDate: booking.startDate,
       visitedEndDate: booking.endDate,
       status: REVIEW_STATUS.PENDING,
