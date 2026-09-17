@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Menu, BadgeCheck, ShieldCheck, Star, Camera, Pencil, KeyRound, Bell, LifeBuoy, ChevronRight, Trash2 } from 'lucide-react-native';
+import { Menu, BadgeCheck, ShieldCheck, Star, Camera, Pencil, KeyRound, Bell, ALargeSmall, LifeBuoy, ChevronRight, Trash2 } from 'lucide-react-native';
 import { Screen } from '../../../components/Screen';
 import { Card } from '../../../components/Card';
 import { Chip } from '../../../components/Chip';
@@ -148,6 +148,8 @@ export default function Profile() {
               <SettingRow icon={KeyRound} label="Change password" onPress={() => router.push('/(app)/change-password')} />
               <Divider />
               <SettingRow icon={Bell} label="Notifications" onPress={() => router.push('/(app)/notifications')} />
+              <Divider />
+              <SettingRow icon={ALargeSmall} label="Text size" onPress={() => router.push('/(app)/text-size')} />
               <Divider />
               <SettingRow icon={LifeBuoy} label="Help and support" onPress={() => Linking.openURL('mailto:support@carwithdriver.lk')} />
               <Divider />

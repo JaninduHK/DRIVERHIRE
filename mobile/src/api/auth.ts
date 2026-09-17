@@ -34,13 +34,13 @@ export interface DriverRegistrationPayload {
   experienceYears: number;
 }
 
-// When admin auto-approval is on, the API returns a session (token + user) so the app can
-// open straight to the overview; otherwise it returns just a message (pending review).
-export const registerDriver = (payload: DriverRegistrationPayload) =>
+// FormData: registration now requires a profile photo + a license type/photo up front
+// (see backend/controllers/authController.js), so this is always multipart, never JSON.
+export const registerDriver = (form: FormData) =>
   apiRequest<{ message: string; token?: string; refreshToken?: string; user?: User }>('/auth/register', {
     method: 'POST',
     auth: false,
-    body: { ...payload, role: 'driver' },
+    body: form,
   });
 
 export const requestPasswordReset = (email: string) =>

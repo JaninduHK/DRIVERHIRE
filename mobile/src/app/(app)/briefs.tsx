@@ -11,6 +11,7 @@ import { IconButton } from '../../components/IconButton';
 import { Loading, EmptyState } from '../../components/states';
 import { useBriefs } from '../../hooks/queries';
 import { formatDateRange, relativeTime } from '../../lib/format';
+import { useFontScale } from '../../lib/fontScale';
 import type { Brief } from '../../types';
 
 export default function Briefs() {
@@ -50,6 +51,7 @@ export default function Briefs() {
 }
 
 function BriefCard({ brief, fresh, onPress }: { brief: Brief; fresh: boolean; onPress: () => void }) {
+  const { scale } = useFontScale();
   const route = [brief.startLocation, brief.endLocation].filter(Boolean).join(' → ') || brief.route || 'Trip request';
   const adults = brief.adults ?? 0;
   const children = brief.children ?? 0;
@@ -68,7 +70,7 @@ function BriefCard({ brief, fresh, onPress }: { brief: Brief; fresh: boolean; on
   return (
     <Card className={`p-4 ${fresh ? 'border-l-4 border-brand' : ''}`}>
       <View className="flex-row items-start justify-between gap-2">
-        <Text className="flex-1 font-heavy text-[15.5px] text-ink" numberOfLines={2}>
+        <Text className="flex-1 font-heavy text-ink" style={{ fontSize: 15.5 * scale }} numberOfLines={2}>
           {route}
         </Text>
         {fresh ? (
@@ -85,7 +87,7 @@ function BriefCard({ brief, fresh, onPress }: { brief: Brief; fresh: boolean; on
         </View>
       ) : null}
       {message ? (
-        <Text className="mt-3 font-med text-[13px] leading-5 text-muted" numberOfLines={3}>
+        <Text className="mt-3 font-med text-muted" style={{ fontSize: 13 * scale, lineHeight: 20 * scale }} numberOfLines={3}>
           {message}
         </Text>
       ) : null}

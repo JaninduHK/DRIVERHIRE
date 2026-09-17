@@ -980,7 +980,7 @@ const AdminDashboard = () => {
     content = (
       <div className="flex flex-col gap-4">
         <DriverApprovalSetting />
-        <DriversPanel state={{ ...driverState, items: filteredDrivers }} onRetry={loadDrivers} onStatusChange={handleDriverStatusChange} onSendMessage={handleDriverMessageSend} onUpdate={handleDriverDetailsUpdate} onSetPassword={handleDriverSetPassword} />
+        <DriversPanel state={{ ...driverState, items: filteredDrivers }} onRetry={loadDrivers} onStatusChange={handleDriverStatusChange} onSendMessage={handleDriverMessageSend} onUpdate={handleDriverDetailsUpdate} onSetPassword={handleDriverSetPassword} onViewVerification={() => handleSectionChange('verification')} />
       </div>
     );
   } else if (activeSection === 'vehicles') {

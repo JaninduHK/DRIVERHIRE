@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { View, Text, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { ChevronLeft, Clock, Check } from 'lucide-react-native';
+import { ChevronLeft, Clock, Check, FileText } from 'lucide-react-native';
 import { Screen } from '../../components/Screen';
 import { GradientHeader } from '../../components/GradientHeader';
 import { BodySheet } from '../../components/BodySheet';
@@ -12,7 +13,10 @@ import { Chip } from '../../components/Chip';
 import { IconButton } from '../../components/IconButton';
 import { registerDriver } from '../../api/auth';
 import { useAuth } from '../../auth/AuthContext';
+import { pickImage, appendImage } from '../../lib/media';
+import { LICENSE_TYPES, getLicenseBadge } from '../../constants/driverLicense';
 import { colors } from '../../theme/colors';
+import type { LicenseType } from '../../types';
 
 const LANGUAGES = ['English', 'Sinhala', 'Tamil', 'German', 'French', 'Russian'];
 
@@ -44,6 +48,10 @@ export default function Register() {
   const [years, setYears] = useState('');
   const [bio, setBio] = useState('');
   const [languages, setLanguages] = useState<string[]>(['English']);
+  // Step 3
+  const [profilePhotoUri, setProfilePhotoUri] = useState<string | undefined>();
+  const [licenseType, setLicenseType] = useState<LicenseType | null>(null);
+  const [licenseImageUri, setLicenseImageUri] = useState<string | undefined>();
 
   const toggleLang = (lang: string) =>
     setLanguages((prev) => (prev.includes(lang) ? prev.filter((l) => l !== lang) : [...prev, lang]));
@@ -75,19 +83,41 @@ export default function Register() {
     setStep((s) => Math.min(3, s + 1));
   };
 
-  const handleSubmit = async () => {
+  const validateStep3 = () => {
+    if (!profilePhotoUri) {
+      setError('Upload a profile photo so travellers know who is picking them up.');
+      return false;
+    }
+    if (!licenseType) {
+      setError('Select your license type.');
+      return false;
+    }
+    if (!licenseImageUri) {
+      setError('Upload a photo of your license for verification.');
+      return false;
+    }
     setError('');
+    return true;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateStep3()) return;
     setSubmitting(true);
     try {
-      const res = await registerDriver({
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        password,
-        contactNumber: `+94 ${mobile.trim()}`.trim(),
-        address: city.trim(),
-        description: bio.trim() || `Driver based in ${city.trim()}.`,
-        experienceYears: Math.max(0, parseInt(years, 10) || 0),
-      });
+      const form = new FormData();
+      form.append('name', name.trim());
+      form.append('email', email.trim().toLowerCase());
+      form.append('password', password);
+      form.append('contactNumber', `+94 ${mobile.trim()}`.trim());
+      form.append('address', city.trim());
+      form.append('description', bio.trim() || `Driver based in ${city.trim()}.`);
+      form.append('experienceYears', String(Math.max(0, parseInt(years, 10) || 0)));
+      form.append('role', 'driver');
+      form.append('licenseType', licenseType as string);
+      await appendImage(form, 'profilePhoto', profilePhotoUri as string);
+      await appendImage(form, 'licenseImage', licenseImageUri as string);
+
+      const res = await registerDriver(form);
       // Admin auto-approval on → the API returns a session; open straight to the overview.
       if (res.token && res.refreshToken && res.user) {
         await applySession({ token: res.token, refreshToken: res.refreshToken, user: res.user });
@@ -200,17 +230,93 @@ export default function Register() {
           {step === 3 && (
             <>
               <Card className="p-4">
-                <Text className="font-heavy text-[14px] text-ink">Documents</Text>
+                <Text className="font-heavy text-[14px] text-ink">Profile photo</Text>
                 <Text className="mt-1 font-med text-[12.5px] leading-5 text-muted">
-                  After your account is created and email verified, you will be asked to upload your driving
-                  licence, national ID and vehicle registration so admin can approve your profile.
+                  Travellers see this before their trip — required to submit your application.
                 </Text>
-                <View className="mt-3 gap-2">
-                  <DocRow label="Driving licence" />
-                  <DocRow label="National ID" />
-                  <DocRow label="Vehicle registration" />
+                <Pressable
+                  onPress={async () => {
+                    const uri = await pickImage();
+                    if (uri) setProfilePhotoUri(uri);
+                  }}
+                  className="mt-3 flex-row items-center gap-3"
+                >
+                  {profilePhotoUri ? (
+                    <Image source={{ uri: profilePhotoUri }} style={{ width: 64, height: 64, borderRadius: 16 }} contentFit="cover" />
+                  ) : (
+                    <View className="h-16 w-16 items-center justify-center rounded-2xl bg-hairline">
+                      <FileText size={22} color={colors.mutedSoft} strokeWidth={1.6} />
+                    </View>
+                  )}
+                  <View className="rounded-lg border-[1.5px] border-line px-3 py-1.5">
+                    <Text className="font-heavy text-[12px] text-ink">{profilePhotoUri ? 'Change photo' : 'Upload photo'}</Text>
+                  </View>
+                </Pressable>
+              </Card>
+
+              <Card className="mt-3 p-4">
+                <Text className="font-heavy text-[14px] text-ink">License type</Text>
+                <Text className="mt-1 font-med text-[12.5px] leading-5 text-muted">Choose the license that matches your qualification.</Text>
+                <View className="mt-3 gap-2.5">
+                  {LICENSE_TYPES.map((type) => {
+                    const meta = getLicenseBadge(type)!;
+                    const active = licenseType === type;
+                    return (
+                      <Pressable
+                        key={type}
+                        onPress={() => setLicenseType(type)}
+                        className={`flex-row items-center gap-3 rounded-xl border-[1.5px] p-3 ${active ? 'border-brand bg-brand-tint' : 'border-line bg-white'}`}
+                      >
+                        <View className={`h-9 w-9 items-center justify-center rounded-full ${meta.bg}`}>
+                          <meta.icon size={17} color={meta.iconColor} strokeWidth={2} />
+                        </View>
+                        <View className="flex-1">
+                          <Text className="font-heavy text-[13.5px] text-ink">{type}</Text>
+                          <Text className="mt-0.5 font-med text-[11.5px] leading-4 text-muted-soft">{meta.description}</Text>
+                        </View>
+                        {active ? (
+                          <View className="h-5 w-5 items-center justify-center rounded-full bg-brand">
+                            <Check size={11} color="#fff" strokeWidth={3} />
+                          </View>
+                        ) : (
+                          <View className="h-5 w-5 rounded-full border-2 border-line" />
+                        )}
+                      </Pressable>
+                    );
+                  })}
                 </View>
               </Card>
+
+              <Card className="mt-3 p-4">
+                <Text className="font-heavy text-[14px] text-ink">License photo</Text>
+                <Text className="mt-1 font-med text-[12.5px] leading-5 text-muted">A clear photo of the license selected above.</Text>
+                <Pressable
+                  onPress={async () => {
+                    const uri = await pickImage();
+                    if (uri) setLicenseImageUri(uri);
+                  }}
+                  className="mt-3"
+                >
+                  {licenseImageUri ? (
+                    <Image source={{ uri: licenseImageUri }} style={{ width: '100%', height: 140, borderRadius: 14 }} contentFit="cover" />
+                  ) : (
+                    <View className="h-[140px] items-center justify-center rounded-2xl border-[1.5px] border-dashed border-line bg-hairline">
+                      <FileText size={24} color={colors.mutedSoft} strokeWidth={1.6} />
+                      <Text className="mt-2 font-heavy text-[12.5px] text-muted">Tap to upload a photo</Text>
+                    </View>
+                  )}
+                </Pressable>
+                <Pressable
+                  onPress={async () => {
+                    const uri = await pickImage();
+                    if (uri) setLicenseImageUri(uri);
+                  }}
+                  className="mt-2.5 self-start rounded-lg border-[1.5px] border-line px-3 py-1.5"
+                >
+                  <Text className="font-heavy text-[12px] text-ink">{licenseImageUri ? 'Change photo' : 'Upload'}</Text>
+                </Pressable>
+              </Card>
+
               {error ? <Text className="mt-3 px-1 font-med text-[12.5px] text-danger">{error}</Text> : null}
               <Button title="Submit application" variant="cta" className="mt-3.5" loading={submitting} onPress={handleSubmit} />
             </>
@@ -235,16 +341,6 @@ function StepRow({ label, note, done, active, muted }: { label: string; note: st
         <Text className={`font-heavy text-[13.5px] ${muted ? 'text-muted-soft' : 'text-ink'}`}>{label}</Text>
         <Text className="font-med text-[12.5px] text-muted-soft">{note}</Text>
       </View>
-    </View>
-  );
-}
-
-function DocRow({ label }: { label: string }) {
-  return (
-    <View className="flex-row items-center gap-3 rounded-xl bg-canvas px-3 py-3">
-      <View className="h-[22px] w-[22px] items-center justify-center rounded-full border-2 border-line" />
-      <Text className="flex-1 font-semi text-[13.5px] text-ink">{label}</Text>
-      <Text className="font-med text-[12px] text-muted-soft">After approval</Text>
     </View>
   );
 }

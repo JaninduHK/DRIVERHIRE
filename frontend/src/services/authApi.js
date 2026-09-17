@@ -21,12 +21,15 @@ const parseError = async (response) => {
 };
 
 const request = async (path, options) => {
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
   const response = await fetch(`${AUTH_BASE_URL}${path}`, {
+    ...options,
     headers: {
-      'Content-Type': 'application/json',
+      // A FormData body needs the browser to set its own multipart boundary —
+      // forcing application/json here would corrupt the request.
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(options.headers || {}),
     },
-    ...options,
   });
 
   if (!response.ok) {
@@ -37,10 +40,12 @@ const request = async (path, options) => {
   return response.json();
 };
 
+// `payload` is FormData for a driver signup (profile photo + license photo attached),
+// or a plain object for the JSON-only traveller/admin signup path.
 export const register = async (payload) =>
   request('/register', {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: payload instanceof FormData ? payload : JSON.stringify(payload),
   });
 
 export const login = async (payload) =>

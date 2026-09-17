@@ -18,6 +18,7 @@ import {
 import { AuthProvider } from '../auth/AuthContext';
 import { queryClient } from '../lib/queryClient';
 import { AnimatedSplash } from '../components/AnimatedSplash';
+import { FontScaleProvider } from '../lib/fontScale';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -45,11 +46,13 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
-              <Stack.Screen name="index" />
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(app)" />
-            </Stack>
+            <FontScaleProvider>
+              <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+                <Stack.Screen name="index" />
+                <Stack.Screen name="(auth)" />
+                <Stack.Screen name="(app)" />
+              </Stack>
+            </FontScaleProvider>
           </AuthProvider>
         </QueryClientProvider>
       </SafeAreaProvider>

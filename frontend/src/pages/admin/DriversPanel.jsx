@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle2, ChevronDown, CircleUserRound, KeyRound, Loader2, Mail, Pencil, RotateCcw, Send, XCircle } from 'lucide-react';
+import { ArrowUpRight, CheckCircle2, ChevronDown, CircleUserRound, KeyRound, Loader2, Mail, Pencil, RotateCcw, Send, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fetchSettings as fetchAdminSettings, updateSettings as updateAdminSettings } from '../../services/adminApi.js';
 import { formatDate, formatDateInput, tagClass } from './adminFormatters.js';
+import { getLicenseBadge } from '../../constants/driverLicense.js';
 
 const DRIVER_STATUS = { PENDING: 'pending', APPROVED: 'approved', REJECTED: 'rejected' };
 const STATUS_TAGS = { pending: 'amber', approved: 'green', rejected: 'red' };
@@ -91,7 +92,9 @@ export const DriverApprovalSetting = () => {
   );
 };
 
-const DriversPanel = ({ state, onRetry, onStatusChange, onSendMessage, onUpdate, onSetPassword }) => {
+const LICENSE_STATUS_TAGS = { pending: 'amber', approved: 'green', rejected: 'red' };
+
+const DriversPanel = ({ state, onRetry, onStatusChange, onSendMessage, onUpdate, onSetPassword, onViewVerification }) => {
   const { items: filtered, loading, error, updatingId } = state;
   const [expandedId, setExpandedId] = useState(null);
   const [messageForm, setMessageForm] = useState({ driverId: null, subject: '', message: '', sending: false, error: '' });
@@ -319,6 +322,53 @@ const DriversPanel = ({ state, onRetry, onStatusChange, onSendMessage, onUpdate,
                       <a href={application.tripAdvisor} target="_blank" rel="noreferrer" className="font-bold text-brand-dark hover:underline">View TripAdvisor profile</a>
                     ) : (
                       <span className="text-muted-soft">TripAdvisor link not provided</span>
+                    )}
+                  </div>
+
+                  <div className="mt-3 rounded-xl border border-hairline bg-surface p-3.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <b className="text-[12px] font-extrabold uppercase tracking-wide text-muted-soft">License</b>
+                      {onViewVerification ? (
+                        <button
+                          type="button"
+                          onClick={onViewVerification}
+                          className="inline-flex items-center gap-1 text-[11.5px] font-bold text-brand-dark hover:underline"
+                        >
+                          Review in Verification tab <ArrowUpRight className="h-3 w-3" />
+                        </button>
+                      ) : null}
+                    </div>
+                    {application.licenseType ? (
+                      <div className="mt-2 flex flex-wrap items-center gap-3">
+                        {application.licenseImage ? (
+                          <a href={application.licenseImage} target="_blank" rel="noreferrer">
+                            <img
+                              src={application.licenseImage}
+                              alt="License"
+                              className="h-16 w-24 flex-shrink-0 rounded-lg border border-hairline object-cover"
+                            />
+                          </a>
+                        ) : (
+                          <div className="h-16 w-24 flex-shrink-0 rounded-lg bg-canvas" />
+                        )}
+                        <div className="flex flex-col gap-1.5">
+                          {(() => {
+                            const badge = getLicenseBadge(application.licenseType);
+                            const Icon = badge?.icon;
+                            return (
+                              <span className={`inline-flex w-fit items-center gap-1.5 rounded-lg px-2.5 py-1 text-[11.5px] font-bold ${badge?.badgeClass || 'bg-canvas text-muted'}`}>
+                                {Icon ? <Icon className={`h-3.5 w-3.5 ${badge.iconClass}`} /> : null}
+                                {application.licenseType}
+                              </span>
+                            );
+                          })()}
+                          <span className={tagClass(LICENSE_STATUS_TAGS[application.licenseStatus] || 'amber')}>
+                            {application.licenseStatus || 'pending'}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-[12.5px] text-muted-soft">No license submitted yet.</p>
                     )}
                   </div>
 

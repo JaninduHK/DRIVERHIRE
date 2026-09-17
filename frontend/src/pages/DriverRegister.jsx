@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { register as registerUser } from '../services/authApi.js';
+import { LICENSE_BADGE_STYLES } from '../constants/driverLicense.js';
+
+const LICENSE_TYPES = Object.keys(LICENSE_BADGE_STYLES);
 
 const DriverRegister = () => {
   const navigate = useNavigate();
@@ -15,7 +18,15 @@ const DriverRegister = () => {
     address: '',
     password: '',
   });
+  const [licenseType, setLicenseType] = useState('');
+  const [profilePhoto, setProfilePhoto] = useState(null);
+  const [licenseImage, setLicenseImage] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  const profilePhotoPreview = useMemo(() => (profilePhoto ? URL.createObjectURL(profilePhoto) : ''), [profilePhoto]);
+  const licenseImagePreview = useMemo(() => (licenseImage ? URL.createObjectURL(licenseImage) : ''), [licenseImage]);
+  useEffect(() => () => { if (profilePhotoPreview) URL.revokeObjectURL(profilePhotoPreview); }, [profilePhotoPreview]);
+  useEffect(() => () => { if (licenseImagePreview) URL.revokeObjectURL(licenseImagePreview); }, [licenseImagePreview]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -24,26 +35,40 @@ const DriverRegister = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setLoading(true);
 
     const experienceValue = Number(formData.experienceYears);
     if (!Number.isFinite(experienceValue) || experienceValue < 0) {
       toast.error('Enter how many years you have been driving guests (0 or more).');
-      setLoading(false);
+      return;
+    }
+    if (!licenseType) {
+      toast.error('Select your license type.');
+      return;
+    }
+    if (!profilePhoto) {
+      toast.error('Upload a profile photo so travellers know who is picking them up.');
+      return;
+    }
+    if (!licenseImage) {
+      toast.error('Upload a photo of your license for verification.');
       return;
     }
 
-    const payload = {
-      name: formData.name.trim(),
-      email: formData.email.trim().toLowerCase(),
-      contactNumber: formData.contactNumber.trim(),
-      experienceYears: Math.min(60, Math.round(experienceValue)),
-      description: formData.description.trim(),
-      tripAdvisor: formData.tripAdvisor.trim(),
-      address: formData.address.trim(),
-      password: formData.password,
-      role: 'driver',
-    };
+    setLoading(true);
+
+    const payload = new FormData();
+    payload.append('name', formData.name.trim());
+    payload.append('email', formData.email.trim().toLowerCase());
+    payload.append('contactNumber', formData.contactNumber.trim());
+    payload.append('experienceYears', String(Math.min(60, Math.round(experienceValue))));
+    payload.append('description', formData.description.trim());
+    payload.append('tripAdvisor', formData.tripAdvisor.trim());
+    payload.append('address', formData.address.trim());
+    payload.append('password', formData.password);
+    payload.append('role', 'driver');
+    payload.append('licenseType', licenseType);
+    payload.append('profilePhoto', profilePhoto);
+    payload.append('licenseImage', licenseImage);
 
     try {
       await registerUser(payload);
@@ -180,6 +205,74 @@ const DriverRegister = () => {
                   placeholder="City"
                 />
               </div>
+
+              <div>
+                <span className="block text-sm font-medium text-slate-700">Profile photo</span>
+                <p className="mt-1 text-xs text-slate-500">Required — travellers see this before their trip.</p>
+                <div className="mt-2 flex items-center gap-4">
+                  {profilePhotoPreview ? (
+                    <img src={profilePhotoPreview} alt="" className="h-16 w-16 flex-shrink-0 rounded-xl object-cover" />
+                  ) : (
+                    <div className="h-16 w-16 flex-shrink-0 rounded-xl bg-slate-100" />
+                  )}
+                  <label className="inline-flex cursor-pointer items-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-emerald-500 hover:text-emerald-700">
+                    {profilePhoto ? 'Change photo' : 'Upload photo'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(event) => setProfilePhoto(event.target.files?.[0] || null)}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <span className="block text-sm font-medium text-slate-700">License type</span>
+                <p className="mt-1 text-xs text-slate-500">Required — choose the license you hold.</p>
+                <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                  {LICENSE_TYPES.map((type) => {
+                    const style = LICENSE_BADGE_STYLES[type];
+                    const Icon = style.icon;
+                    const active = licenseType === type;
+                    return (
+                      <button
+                        key={type}
+                        type="button"
+                        onClick={() => setLicenseType(type)}
+                        className={`flex items-center gap-2 rounded-xl border-2 px-3 py-2.5 text-left text-xs font-semibold transition ${
+                          active ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
+                        }`}
+                      >
+                        <Icon className={`h-4 w-4 flex-shrink-0 ${active ? 'text-emerald-600' : style.iconClass}`} />
+                        {type}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <span className="block text-sm font-medium text-slate-700">License photo</span>
+                <p className="mt-1 text-xs text-slate-500">Required — a clear photo of the license selected above.</p>
+                <div className="mt-2 flex items-center gap-4">
+                  {licenseImagePreview ? (
+                    <img src={licenseImagePreview} alt="" className="h-16 w-24 flex-shrink-0 rounded-xl object-cover" />
+                  ) : (
+                    <div className="h-16 w-24 flex-shrink-0 rounded-xl bg-slate-100" />
+                  )}
+                  <label className="inline-flex cursor-pointer items-center rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:border-emerald-500 hover:text-emerald-700">
+                    {licenseImage ? 'Change photo' : 'Upload photo'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(event) => setLicenseImage(event.target.files?.[0] || null)}
+                    />
+                  </label>
+                </div>
+              </div>
+
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-slate-700">
                   Account password

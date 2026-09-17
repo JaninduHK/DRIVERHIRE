@@ -24,6 +24,7 @@ export default function AppLayout() {
       <Stack.Screen name="notifications" />
       <Stack.Screen name="edit-profile" />
       <Stack.Screen name="license" />
+      <Stack.Screen name="text-size" />
       <Stack.Screen name="change-password" />
       <Stack.Screen name="chat/[id]" />
       <Stack.Screen name="request/[id]" />

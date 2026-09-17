@@ -110,6 +110,35 @@ export const conditionalProfileUpload = (req, res, next) => {
 };
 
 /**
+ * Driver Registration Upload Middleware
+ * - Driver signup now requires a profile photo AND a license photo up front
+ *   (field names "profilePhoto" and "licenseImage"), so both need parsing off
+ *   the one multipart request. Traveller/admin registration stays JSON-only
+ *   and skips this entirely (see conditionalDriverRegistrationUpload).
+ */
+export const driverRegistrationUpload = multer({
+  storage: memoryStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (isImageUpload(file)) {
+      return cb(null, true);
+    }
+    return cb(new Error('Only image uploads are allowed'));
+  },
+});
+
+export const conditionalDriverRegistrationUpload = (req, res, next) => {
+  const contentType = req.headers['content-type'] || '';
+  if (contentType.includes('multipart/form-data')) {
+    return driverRegistrationUpload.fields([
+      { name: 'profilePhoto', maxCount: 1 },
+      { name: 'licenseImage', maxCount: 1 },
+    ])(req, res, next);
+  }
+  return next();
+};
+
+/**
  * Driver License Image Upload Middleware
  * - Accepts single image file (field name "licenseImage")
  * - Maximum file size: 10MB
@@ -212,4 +241,6 @@ export default {
   conditionalReviewImageUpload,
   guestReviewImageUpload,
   conditionalGuestReviewImageUpload,
+  driverRegistrationUpload,
+  conditionalDriverRegistrationUpload,
 };

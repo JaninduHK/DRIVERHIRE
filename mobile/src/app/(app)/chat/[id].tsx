@@ -29,6 +29,7 @@ import { useMessages, useConversations, useVehicles, qk } from '../../../hooks/q
 import { sendMessage, sendOffer } from '../../../api/chat';
 import { useAuth } from '../../../auth/AuthContext';
 import { formatMoney, formatRate, formatDateRange } from '../../../lib/format';
+import { useFontScale } from '../../../lib/fontScale';
 import { colors, headerGradient } from '../../../theme/colors';
 import type { ChatMessage } from '../../../types';
 
@@ -186,6 +187,7 @@ export default function Chat() {
 }
 
 function Bubble({ message, mine }: { message: ChatMessage; mine: boolean }) {
+  const { scale } = useFontScale();
   if (message.type === 'brief' && message.briefRequest) {
     return <BriefBubble message={message} />;
   }
@@ -213,7 +215,11 @@ function Bubble({ message, mine }: { message: ChatMessage; mine: boolean }) {
             {kmIncluded} km included{extraKmRate != null ? ` · ${formatRate(extraKmRate)} / extra km` : ''}
           </Text>
         ) : null}
-        {o.note ? <Text className="mt-1.5 font-med text-[12px] leading-4 text-muted-soft">{o.note}</Text> : null}
+        {o.note ? (
+          <Text className="mt-1.5 font-med text-muted-soft" style={{ fontSize: 12 * scale, lineHeight: 16 * scale }}>
+            {o.note}
+          </Text>
+        ) : null}
       </View>
     );
   }
@@ -225,7 +231,9 @@ function Bubble({ message, mine }: { message: ChatMessage; mine: boolean }) {
       }`}
       style={!mine ? { shadowColor: '#0f1f2d', shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 } } : undefined}
     >
-      <Text className={`font-med text-[13.5px] ${mine ? 'text-white' : 'text-ink'}`}>{message.body}</Text>
+      <Text className={`font-med ${mine ? 'text-white' : 'text-ink'}`} style={{ fontSize: 13.5 * scale }}>
+        {message.body}
+      </Text>
     </View>
   );
 }
@@ -234,6 +242,7 @@ function Bubble({ message, mine }: { message: ChatMessage; mine: boolean }) {
 // both sides see the original request. Itinerary text is clamped to a few lines
 // with a Read more / Read less toggle. Contact details are redacted server-side.
 function BriefBubble({ message }: { message: ChatMessage }) {
+  const { scale } = useFontScale();
   const [expanded, setExpanded] = useState(false);
   const b = message.briefRequest ?? {};
   const route = [b.startLocation, b.endLocation].filter(Boolean).join(' → ');
@@ -253,12 +262,21 @@ function BriefBubble({ message }: { message: ChatMessage }) {
       <View className="self-start rounded-md bg-[#eef2f5] px-2 py-0.5">
         <Text className="font-xheavy text-[10.5px] uppercase text-muted-soft">Quote request</Text>
       </View>
-      {route ? <Text className="mt-2 font-heavy text-[13px] text-ink">{route}</Text> : null}
-      {meta ? <Text className="mt-0.5 font-med text-[12px] text-muted-soft">{meta}</Text> : null}
+      {route ? (
+        <Text className="mt-2 font-heavy text-ink" style={{ fontSize: 13 * scale }}>
+          {route}
+        </Text>
+      ) : null}
+      {meta ? (
+        <Text className="mt-0.5 font-med text-muted-soft" style={{ fontSize: 12 * scale }}>
+          {meta}
+        </Text>
+      ) : null}
       {text ? (
         <>
           <Text
-            className="mt-2 font-med text-[12.5px] leading-5 text-muted-soft"
+            className="mt-2 font-med text-muted-soft"
+            style={{ fontSize: 12.5 * scale, lineHeight: 20 * scale }}
             numberOfLines={!expanded && isLong ? 3 : undefined}
           >
             {text}

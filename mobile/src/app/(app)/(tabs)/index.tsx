@@ -15,6 +15,7 @@ import { Loading, EmptyState } from '../../../components/states';
 import { useAuth } from '../../../auth/AuthContext';
 import { useOverview, useEarningsSummary, useBookings, useBriefs } from '../../../hooks/queries';
 import { formatMoney } from '../../../lib/format';
+import { useFontScale } from '../../../lib/fontScale';
 import { colors } from '../../../theme/colors';
 import type { Brief } from '../../../types';
 import { isCompleted } from './bookings';
@@ -112,6 +113,7 @@ export default function Overview() {
 }
 
 function RequestCard({ brief, onPress }: { brief: Brief; onPress: () => void }) {
+  const { scale } = useFontScale();
   const travelerName =
     (brief.traveler && typeof brief.traveler === 'object' ? brief.traveler.name : undefined) || 'Traveller';
   const route =
@@ -136,21 +138,21 @@ function RequestCard({ brief, onPress }: { brief: Brief; onPress: () => void }) 
         <View className="flex-row items-center gap-3">
           <Avatar name={travelerName} size={42} rounded={12} />
           <View className="min-w-0 flex-1">
-            <Text className="font-heavy text-[15px] text-ink" numberOfLines={1}>
+            <Text className="font-heavy text-ink" style={{ fontSize: 15 * scale }} numberOfLines={1}>
               {travelerName}
             </Text>
-            <Text className="mt-0.5 font-med text-[12px] text-muted-soft" numberOfLines={1}>
+            <Text className="mt-0.5 font-med text-muted-soft" style={{ fontSize: 12 * scale }} numberOfLines={1}>
               {route}
             </Text>
           </View>
         </View>
         {meta ? (
-          <Text className="mt-2.5 font-semi text-[12.5px] text-muted" numberOfLines={1}>
+          <Text className="mt-2.5 font-semi text-muted" style={{ fontSize: 12.5 * scale }} numberOfLines={1}>
             {meta}
           </Text>
         ) : null}
         {message ? (
-          <Text className="mt-1.5 font-med text-[13px] leading-5 text-muted" numberOfLines={2}>
+          <Text className="mt-1.5 font-med text-muted" style={{ fontSize: 13 * scale, lineHeight: 20 * scale }} numberOfLines={2}>
             {message}
           </Text>
         ) : null}

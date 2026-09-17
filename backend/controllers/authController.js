@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { validationResult } from 'express-validator';
-import User, { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
+import User, { DRIVER_STATUS, USER_ROLES, LICENSE_STATUS } from '../models/User.js';
 import { getSetting, SETTING_KEYS } from '../models/Setting.js';
 import RefreshToken from '../models/RefreshToken.js';
 import { generateAccessToken } from '../utils/jwt.js';
@@ -67,7 +67,12 @@ export const registerUser = async (req, res) => {
       tripAdvisor,
       address,
       experienceYears,
+      licenseType,
     } = req.body;
+    // Populated only for multipart signups (see conditionalDriverRegistrationUpload) —
+    // a plain JSON signup (traveller/admin) has neither.
+    const profilePhotoFile = req.files?.profilePhoto?.[0];
+    const licenseImageFile = req.files?.licenseImage?.[0];
     const existingUser = await User.findOne({ email: email.toLowerCase() });
 
     if (existingUser) {
@@ -108,11 +113,17 @@ export const registerUser = async (req, res) => {
         { key: 'description', value: description },
         { key: 'address', value: address },
         { key: 'experienceYears', value: experienceYears },
+        { key: 'licenseType', value: licenseType },
       ];
 
       const missingFields = requiredDriverFields
         .filter(({ value }) => value === undefined || value === null || (typeof value === 'string' && !value.trim()))
         .map(({ key }) => key);
+
+      // Required alongside the rest — a driver application isn't reviewable without
+      // a face to match to the name or a license photo to verify.
+      if (!profilePhotoFile) missingFields.push('profilePhoto');
+      if (!licenseImageFile) missingFields.push('licenseImage');
 
       if (missingFields.length > 0) {
         return res.status(400).json({
@@ -131,6 +142,28 @@ export const registerUser = async (req, res) => {
         Math.min(60, Math.round(Number(experienceYears) || 0))
       );
       user.experienceYears = normalizedExperience;
+      user.licenseType = licenseType;
+      user.licenseStatus = LICENSE_STATUS.PENDING;
+      user.licenseSubmittedAt = new Date();
+
+      try {
+        const profileFilename = cloudinaryService.generateUniqueFilename(`user-${user._id}`);
+        user.profilePhoto = await cloudinaryService.uploadImage(
+          profilePhotoFile.buffer,
+          'profiles',
+          profileFilename
+        );
+
+        const licenseFilename = cloudinaryService.generateUniqueFilename(`license-${user._id}`);
+        user.licenseImage = await cloudinaryService.uploadImage(
+          licenseImageFile.buffer,
+          'licenses',
+          licenseFilename
+        );
+      } catch (uploadError) {
+        console.error('Driver registration image upload error:', uploadError);
+        return res.status(500).json({ message: 'Unable to upload your photos. Please try again.' });
+      }
 
       // Approve new drivers automatically when the admin has enabled that mode.
       const autoApproveDrivers = Boolean(

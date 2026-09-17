@@ -15,8 +15,8 @@ import {
   deleteOwnAccount,
 } from '../controllers/authController.js';
 import { authenticate } from '../middleware/authMiddleware.js';
-import { conditionalProfileUpload } from '../middleware/cloudinaryUpload.js';
-import { USER_ROLES } from '../models/User.js';
+import { conditionalProfileUpload, conditionalDriverRegistrationUpload } from '../middleware/cloudinaryUpload.js';
+import { USER_ROLES, LICENSE_TYPES } from '../models/User.js';
 
 const router = express.Router();
 
@@ -32,6 +32,9 @@ const passwordRules = body('password')
 
 router.post(
   '/register',
+  // Parses multipart bodies (driver signups attach a profile photo + license photo)
+  // before the validators below read req.body — plain JSON signups pass straight through.
+  conditionalDriverRegistrationUpload,
   [
     body('name').trim().notEmpty().withMessage('Name is required'),
     body('email').isEmail().withMessage('Valid email is required'),
@@ -46,6 +49,10 @@ router.post(
       .isInt({ min: 0, max: 60 })
       .withMessage('Experience years must be between 0 and 60')
       .toInt(),
+    body('licenseType')
+      .if((value, { req }) => (req.body.role || USER_ROLES.GUEST) === USER_ROLES.DRIVER)
+      .isIn(Object.values(LICENSE_TYPES))
+      .withMessage(`License type must be one of: ${Object.values(LICENSE_TYPES).join(', ')}`),
   ],
   registerUser
 );
