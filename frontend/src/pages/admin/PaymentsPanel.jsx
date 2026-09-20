@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, ChevronDown, FileText, Paperclip, RotateCcw, Wallet, XCircle } from 'lucide-react';
-import { formatCurrency, formatDateTime, tagClass } from './adminFormatters.js';
+import { formatCurrency, formatDate, formatDateTime, tagClass } from './adminFormatters.js';
+import { fetchDriverCommissionBookings } from '../../services/adminApi.js';
 
 const STATUS_TAGS = { pending: 'grey', submitted: 'amber', approved: 'green' };
 const STATUS_LABELS = { pending: 'Awaiting payment', submitted: 'Pending review', approved: 'Approved' };
@@ -17,8 +18,36 @@ const PaymentsPanel = ({ state, month, onReload, onMonthChange, onStatusChange }
   const [statusFilter, setStatusFilter] = useState('submitted');
   const [expandedId, setExpandedId] = useState(null);
   const [noteDrafts, setNoteDrafts] = useState({});
+  const [bookingsByDriver, setBookingsByDriver] = useState({});
 
-  const toggleExpanded = (driverId) => setExpandedId((prev) => (prev === driverId ? null : driverId));
+  // Cached bookings are keyed by driver only, so a month switch would
+  // otherwise show a previous month's bookings under a stale cache hit.
+  useEffect(() => {
+    setBookingsByDriver({});
+    setExpandedId(null);
+  }, [month]);
+
+  const loadBookings = async (item) => {
+    const key = item.driverId;
+    setBookingsByDriver((prev) => ({ ...prev, [key]: { loading: true, error: null, items: prev[key]?.items || [] } }));
+    try {
+      const data = await fetchDriverCommissionBookings(item.driverId, item.year, item.month);
+      setBookingsByDriver((prev) => ({ ...prev, [key]: { loading: false, error: null, items: data.bookings || [] } }));
+    } catch (err) {
+      setBookingsByDriver((prev) => ({
+        ...prev,
+        [key]: { loading: false, error: err.message || 'Unable to load bookings.', items: [] },
+      }));
+    }
+  };
+
+  const toggleExpanded = (item) => {
+    const driverId = item.driverId;
+    setExpandedId((prev) => (prev === driverId ? null : driverId));
+    if (expandedId !== driverId && !bookingsByDriver[driverId]) {
+      loadBookings(item);
+    }
+  };
 
   const statusCounts = useMemo(() => {
     const counts = { all: items.length, pending: 0, submitted: 0, approved: 0 };
@@ -107,7 +136,7 @@ const PaymentsPanel = ({ state, month, onReload, onMonthChange, onStatusChange }
             <div key={item.driverId} className="border-b border-hairline last:border-b-0">
               <button
                 type="button"
-                onClick={() => toggleExpanded(item.driverId)}
+                onClick={() => toggleExpanded(item)}
                 className="grid w-full grid-cols-[1.2fr_.9fr_.9fr_.9fr_.9fr_auto] items-center gap-3 px-5 py-3.5 text-left transition hover:bg-canvas"
               >
                 <div className="min-w-0">
@@ -131,6 +160,56 @@ const PaymentsPanel = ({ state, month, onReload, onMonthChange, onStatusChange }
                     <div><span className="block text-[10.5px] font-extrabold uppercase tracking-wide text-muted-soft">Driver earnings</span>{formatCurrency(item.driverEarnings || 0)}</div>
                     <div><span className="block text-[10.5px] font-extrabold uppercase tracking-wide text-muted-soft">Contact</span>{item.driver?.contactNumber || 'Not shared'}</div>
                     <div><span className="block text-[10.5px] font-extrabold uppercase tracking-wide text-muted-soft">Last updated</span>{item.updatedAt ? formatDateTime(item.updatedAt) : 'Not reviewed yet'}</div>
+                  </div>
+
+                  <div className="mt-4">
+                    <span className="block text-[10.5px] font-extrabold uppercase tracking-wide text-muted-soft">
+                      Bookings this period
+                    </span>
+                    {(() => {
+                      const bookingsState = bookingsByDriver[item.driverId];
+                      if (!bookingsState || bookingsState.loading) {
+                        return <p className="mt-1.5 text-[12.5px] text-muted-soft">Loading bookings…</p>;
+                      }
+                      if (bookingsState.error) {
+                        return <p className="mt-1.5 text-[12.5px] font-semibold text-rose-600 dark:text-rose-300">{bookingsState.error}</p>;
+                      }
+                      if (bookingsState.items.length === 0) {
+                        return <p className="mt-1.5 text-[12.5px] text-muted-soft">No bookings found for this period.</p>;
+                      }
+                      return (
+                        <div className="mt-1.5 overflow-hidden rounded-lg border border-hairline">
+                          <table className="w-full text-[12.5px]">
+                            <thead>
+                              <tr className="bg-canvas text-left text-[10.5px] font-extrabold uppercase tracking-wide text-muted-soft">
+                                <th className="px-3 py-2">Traveller</th>
+                                <th className="px-3 py-2">Vehicle</th>
+                                <th className="px-3 py-2">Dates</th>
+                                <th className="px-3 py-2 text-right">Gross</th>
+                                <th className="px-3 py-2 text-right">Commission</th>
+                                <th className="px-3 py-2 text-right">Driver earnings</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {bookingsState.items.map((booking) => (
+                                <tr key={booking.id} className="border-t border-hairline">
+                                  <td className="px-3 py-2 font-semibold text-ink">{booking.travelerName}</td>
+                                  <td className="px-3 py-2 text-muted-soft">
+                                    {booking.vehicle ? `${booking.vehicle.model} (${booking.vehicle.year})` : '—'}
+                                  </td>
+                                  <td className="px-3 py-2 text-muted-soft">
+                                    {formatDate(booking.startDate)} – {formatDate(booking.endDate)}
+                                  </td>
+                                  <td className="px-3 py-2 text-right text-muted-soft">{formatCurrency(booking.totalGross)}</td>
+                                  <td className="px-3 py-2 text-right font-bold text-brand-dark">{formatCurrency(booking.commissionAmount)}</td>
+                                  <td className="px-3 py-2 text-right text-muted-soft">{formatCurrency(booking.driverEarnings)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   <div className="mt-3">

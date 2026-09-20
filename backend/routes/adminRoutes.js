@@ -9,6 +9,7 @@ import {
   listLicenseSubmissions,
   updateLicenseStatus,
   listDriverCommissions,
+  listDriverCommissionBookings,
   updateDriverCommissionStatus,
   getVehicleSubmissions,
   updateVehicleStatus,
@@ -104,6 +105,16 @@ router.get(
     query('month').optional().isInt({ min: 1, max: 12 }).withMessage('Invalid month'),
   ],
   listDriverCommissions
+);
+
+router.get(
+  '/commissions/:driverId/:year/:month/bookings',
+  [
+    param('driverId').isMongoId().withMessage('Invalid driver identifier'),
+    param('year').isInt({ min: 2000 }).withMessage('Invalid year'),
+    param('month').isInt({ min: 1, max: 12 }).withMessage('Invalid month'),
+  ],
+  listDriverCommissionBookings
 );
 
 router.patch(

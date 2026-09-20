@@ -501,7 +501,7 @@ const Checkout = () => {
   // An offer is a flat price the driver set, so its discount must come from the
   // offer itself. quote.* is priced off the vehicle's daily rate card, and for an
   // offer those totals are unrelated — using quote.discount.amount here would
-  // discount the rate-card total (e.g. 39 days x $43) instead of the $100 offer.
+  // discount the rate-card total (e.g. 39 days x $50) instead of the $100 offer.
   // vehicle?.activeDiscount is deliberately not a fallback: it is only a "some
   // promo is live" marketing flag with no amounts tied to this booking.
   const offerDiscount = offerState.offer?.discount || null;

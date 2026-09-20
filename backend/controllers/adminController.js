@@ -808,7 +808,10 @@ export const listDriverCommissions = async (req, res) => {
         record.commissionRate = totals.commissionRate;
         record.driver = entry.driver;
         results.push(shapeCommission(record, req));
-      } else {
+      } else if (totals.commissionDue > 0) {
+        // No persisted record and nothing actually owed (e.g. a fully
+        // discounted booking) — this driver isn't "awaiting payment", so
+        // don't manufacture a pending entry for them.
         results.push(shapeVirtualCommission(entry.driver, year, month, totals));
       }
     }
@@ -829,6 +832,57 @@ export const listDriverCommissions = async (req, res) => {
   } catch (error) {
     console.error('List driver commissions error:', error);
     return res.status(500).json({ message: 'Unable to load driver commissions.' });
+  }
+};
+
+// The individual confirmed bookings behind a driver's commission total for
+// one period — powers the admin payments row's "view bookings" expansion.
+export const listDriverCommissionBookings = async (req, res) => {
+  const { driverId, year: yearParam, month: monthParam } = req.params;
+  const period = parseYearMonth(yearParam, monthParam);
+  if (!period) {
+    return res.status(400).json({ message: 'Provide a valid year and month.' });
+  }
+  const { year, month } = period;
+
+  try {
+    const driver = await User.findOne({ _id: driverId, role: USER_ROLES.DRIVER });
+    if (!driver) {
+      return res.status(404).json({ message: 'Driver not found.' });
+    }
+
+    const { periodStart, completedEnd } = getPeriodRange(year, month);
+    const bookings = await Booking.find({
+      driver: driverId,
+      status: BOOKING_STATUS.CONFIRMED,
+      endDate: { $gte: periodStart, $lte: completedEnd },
+    })
+      .populate('vehicle', 'model year')
+      .sort({ endDate: 1 });
+
+    const results = bookings.map((booking) => {
+      const { gross, commissionAmount, driverEarnings } = summariseBookingForCommission(booking);
+      return {
+        id: booking._id.toString(),
+        startDate: booking.startDate,
+        endDate: booking.endDate,
+        startPoint: booking.startPoint,
+        endPoint: booking.endPoint,
+        travelerName: booking.traveler?.fullName || 'Traveller',
+        vehicle: booking.vehicle
+          ? { id: booking.vehicle._id.toString(), model: booking.vehicle.model, year: booking.vehicle.year }
+          : null,
+        totalGross: roundMoney(gross),
+        commissionRate: clampCommissionRate(booking.commissionRate),
+        commissionAmount: roundMoney(commissionAmount),
+        driverEarnings: roundMoney(driverEarnings),
+      };
+    });
+
+    return res.json({ bookings: results, period: { year, month, label: `${MONTH_NAMES[month - 1]} ${year}` } });
+  } catch (error) {
+    console.error('List driver commission bookings error:', error);
+    return res.status(500).json({ message: 'Unable to load bookings for this period.' });
   }
 };
 

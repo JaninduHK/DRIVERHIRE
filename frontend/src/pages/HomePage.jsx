@@ -93,7 +93,7 @@ const TRUST_BADGES = [
 const FAQS = [
   {
     q: 'How much does a car with driver cost in Sri Lanka?',
-    a: "Drivers set their own rates, so you'll see a range. Sedans typically start around $43 a day and large touring vans reach about $95. Most daily rates cover the vehicle, fuel, unlimited island-wide kilometres, and the driver's meals and accommodation, and each listing spells out exactly what's included. For a figure based on your own route and dates, use the trip cost calculator.",
+    a: "Drivers set their own rates, so you'll see a range. Sedans typically start around $50 a day and large touring vans reach about $95. Most daily rates cover the vehicle, fuel, unlimited island-wide kilometres, and the driver's meals and accommodation, and each listing spells out exactly what's included. For a figure based on your own route and dates, use the trip cost calculator.",
   },
   {
     q: 'Is it free to book, and do I pay a deposit?',
@@ -257,7 +257,7 @@ const HomePage = () => {
               </Link>
             </div>
             <dl className="mt-8 grid grid-cols-3 gap-[clamp(8px,2.5vw,14px)] border-t border-[#e4ece7] pt-[26px] text-center">
-              <HeroStat label="Daily rate from" value="$43" suffix="/day" />
+              <HeroStat label="Daily rate from" value="$50" suffix="/day" />
               <HeroStat label="Guest rating" value="4.9" suffix=" / 5" />
               <HeroStat label="Reply time" value="< 1 hr" />
             </dl>
@@ -456,13 +456,13 @@ const HomePage = () => {
         <div className="rounded-[22px] border border-[#e5ebe8] bg-[#f7faf8] p-[clamp(20px,2.4vw,28px)]">
           <div className="text-xs font-extrabold tracking-[.06em] text-muted-soft">SAMPLE 6-DAY TRIP · 1–3 TRAVELLERS</div>
           <div className="mt-4 grid gap-3">
-            <PriceRow label="Vehicle & driver ($43 × 6 days)" value="$258" />
+            <PriceRow label="Vehicle & driver ($50 × 6 days)" value="$300" />
             <PriceRow label="Fuel & unlimited km" value="Included" green />
             <PriceRow label="Airport pick-up" value="Included" green />
             <PriceRow label="Platform booking fee" value="$0" green />
             <div className="flex items-center justify-between border-t border-[#e2e9e5] pt-3.5">
               <span className="text-[15px] font-extrabold">Estimated total</span>
-              <span className="text-[24px] font-extrabold">$258</span>
+              <span className="text-[24px] font-extrabold">$300</span>
             </div>
           </div>
           <button

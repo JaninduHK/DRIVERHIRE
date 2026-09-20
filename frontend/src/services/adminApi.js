@@ -295,6 +295,11 @@ export const updateDriverCommissionStatus = (driverId, year, month, payload) =>
     body: JSON.stringify(payload),
   });
 
+export const fetchDriverCommissionBookings = (driverId, year, month) =>
+  request(`/commissions/${driverId}/${year}/${month}/bookings`, {
+    method: 'GET',
+  });
+
 export const fetchUsers = () =>
   request('/users', {
     method: 'GET',
