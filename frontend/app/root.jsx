@@ -66,6 +66,8 @@ const isWidePublic = (pathname) =>
   pathname === '/drivers' ||
   pathname === '/live-map' ||
   pathname === '/blog' ||
+  pathname === '/get-quotes' ||
+  pathname === '/trip-cost-calculator' ||
   pathname.startsWith('/vehicles/') ||
   pathname.startsWith('/drivers/') ||
   pathname.startsWith('/checkout/') ||

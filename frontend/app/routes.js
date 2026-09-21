@@ -17,7 +17,6 @@ export default [
   route('register', 'routes/register.jsx'), // kept as a redirect so old links don't 404
   route('register/driver', 'routes/register.driver.jsx'),
   route('auth/callback', 'routes/auth.callback.jsx'),
-  route('get-quotes', 'routes/get-quotes.jsx'),
   route('forgot-password', 'routes/forgot-password.jsx'),
   route('reset-password', 'routes/reset-password.jsx'),
   route('verify-email', 'routes/verify-email.jsx'),
@@ -43,6 +42,8 @@ export default [
 
   // Public marketing (server-rendered)
   route('about', 'routes/about.jsx'),
+  // Server-rendered and indexable: the quote form sits inside a real content page.
+  route('get-quotes', 'routes/get-quotes.jsx'),
   route('blog', 'routes/blog.jsx'),
   route('blog/:slug', 'routes/blog.$slug.jsx'),
   route('driver-guide', 'routes/driver-guide.jsx'),

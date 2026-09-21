@@ -159,6 +159,7 @@ export const calculateClassEstimates = ({ vehicles = [], seatCount = 0, days = 1
   const valid = (Array.isArray(vehicles) ? vehicles : [])
     .map((v) => ({
       model: v?.model || null,
+      image: Array.isArray(v?.images) && v.images.length > 0 ? v.images[0] : null,
       pricePerDay: normalizeNumber(v?.pricePerDay),
       seats: normalizeNumber(v?.seats),
     }))
@@ -173,12 +174,16 @@ export const calculateClassEstimates = ({ vehicles = [], seatCount = 0, days = 1
     const dailyAverage = sorted.reduce((sum, v) => sum + v.pricePerDay, 0) / sorted.length;
     const dailyLow = computePercentile(sorted, 0.25) ?? sorted[0].pricePerDay;
     const dailyHigh = computePercentile(sorted, 0.75) ?? sorted[sorted.length - 1].pricePerDay;
-    const example = sorted.find((v) => v.model)?.model || null;
+    // One real listing represents the class, so the photo and the model name always
+    // describe the same actual vehicle rather than being stitched from two.
+    const representative =
+      sorted.find((v) => v.model && v.image) || sorted.find((v) => v.model) || sorted[0] || null;
 
     return {
       ...bucket,
       sampleSize: sorted.length,
-      example,
+      example: representative?.model || null,
+      exampleImage: representative?.image || null,
       perDay: { average: dailyAverage, low: dailyLow, high: dailyHigh },
       total: { average: toTotal(dailyAverage, totalDays), low: toTotal(dailyLow, totalDays), high: toTotal(dailyHigh, totalDays) },
     };

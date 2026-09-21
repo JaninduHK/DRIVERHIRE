@@ -5,6 +5,7 @@ import {
   Activity,
   Check,
   ChevronDown,
+  Clock,
   Minus,
   Plus,
   Route as RouteIcon,
@@ -161,11 +162,50 @@ const TripCostCalculator = () => {
     })),
   };
 
+  // Rendered in the sidebar on desktop, and inline right after the itinerary on
+  // mobile, where the sidebar would otherwise land at the very bottom of the page.
+  const costSummary = (
+      <div className="rounded-[22px] bg-ink p-6 text-white">
+        <p className="text-[11px] font-bold uppercase tracking-wide text-white/65">Estimated trip cost</p>
+        <div className="mt-2 flex items-end gap-2">
+          <p className="text-4xl font-extrabold tracking-tight">{totalAverage}</p>
+          <p className="pb-1 text-sm font-bold text-white/55">≈ {money(overallEstimate.totals ? Math.round(overallEstimate.totals.average / days) : null)}/day</p>
+        </div>
+        <p className="mt-1 text-sm font-medium text-white/70">
+          {days} days · {nightsTotal} nights · {paxNumber || '—'} {paxNumber === 1 ? 'passenger' : 'passengers'}
+        </p>
+        <div className="mt-5 grid grid-cols-2 gap-2.5">
+          <div className="rounded-xl bg-white/10 p-3">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-white/55">Likely range</p>
+            <p className="mt-1 text-lg font-extrabold">{totalRange}</p>
+          </div>
+          <div className="rounded-xl bg-white/10 p-3">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-white/55">Total distance</p>
+            <p className="mt-1 text-lg font-extrabold">{totalKm.toLocaleString('en-US')} km</p>
+          </div>
+        </div>
+        {buffer ? (
+          <p className="mt-4 text-xs font-medium text-white/55">Keep ~{buffer} aside as a flexibility buffer for extra km or upgrades.</p>
+        ) : null}
+        <Link
+          to="/get-quotes"
+          className="mt-5 flex items-center justify-center rounded-2xl bg-brand px-4 py-3.5 text-sm font-extrabold text-white hover:bg-brand-dark"
+        >
+          Request free driver quotes
+        </Link>
+        <p className="mt-2 text-center text-[11px] font-medium leading-relaxed text-white/45">
+          No payment now. Drivers reply with a fixed price for this exact itinerary.
+        </p>
+      </div>
+  );
+
   return (
-    <div className="space-y-8 py-6">
+    <div className="pb-10">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
 
-      <section className="space-y-6 rounded-[28px] bg-gradient-to-br from-[#0c7a44] via-brand to-[#18b866] p-8 text-white shadow-lg">
+      {/* Full-bleed hero; the page owns its own gutters since this route renders wide. */}
+      <section className="bg-gradient-to-br from-[#0c7a44] via-brand to-[#18b866] text-white">
+        <div className="mx-auto max-w-[1240px] space-y-6 px-4 py-[clamp(30px,4.5vw,58px)] sm:px-6 lg:px-10">
         <p className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]">
           <Sparkles className="h-3.5 w-3.5" />
           Trip Cost Calculator
@@ -200,16 +240,23 @@ const TripCostCalculator = () => {
             <p className="mt-1 text-2xl font-extrabold">{days}{days === 1 ? ' day' : ' days'}</p>
             <p className="text-sm font-medium text-white/70">{stops.length} stops · {totalKm.toLocaleString('en-US')} km</p>
           </article>
+          </div>
         </div>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
+      <section className="mx-auto grid max-w-[1240px] gap-6 px-4 pt-[clamp(22px,3vw,36px)] sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-start lg:px-10">
         <div className="min-w-0 space-y-6">
           {/* Who's travelling */}
           <div className="space-y-4 rounded-[22px] border border-[#e6ece9] bg-white p-6">
-            <header className="space-y-1">
-              <p className="text-[11.5px] font-extrabold uppercase tracking-wide text-brand-dark">Step 1</p>
-              <h2 className="text-xl font-extrabold tracking-tight text-ink">Who is travelling</h2>
+            <header className="flex flex-wrap items-end justify-between gap-3">
+              <div className="space-y-1">
+                <p className="text-[11.5px] font-extrabold uppercase tracking-wide text-brand-dark">Step 1</p>
+                <h2 className="text-xl font-extrabold tracking-tight text-ink">Who is travelling</h2>
+              </div>
+              <span className="inline-flex items-center gap-2 rounded-xl border border-[#d6ece0] bg-[#f2faf6] px-3 py-2 text-[13px] font-bold text-brand-dark">
+                <Clock className="h-[15px] w-[15px]" />
+                {days} {days === 1 ? 'day' : 'days'} · {nightsTotal} {nightsTotal === 1 ? 'night' : 'nights'}
+              </span>
             </header>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="flex flex-col gap-1.5 text-[13px] font-bold text-ink-soft">
@@ -240,7 +287,7 @@ const TripCostCalculator = () => {
           </div>
 
           {/* Itinerary */}
-          <div className="space-y-4 rounded-[22px] border border-[#e6ece9] bg-white p-6">
+          <div id="itinerary" className="scroll-mt-24 space-y-4 rounded-[22px] border border-[#e6ece9] bg-white p-6">
             <header className="flex flex-wrap items-start justify-between gap-3">
               <div className="space-y-1">
                 <p className="text-[11.5px] font-extrabold uppercase tracking-wide text-brand-dark">Step 2</p>
@@ -412,6 +459,8 @@ const TripCostCalculator = () => {
             </div>
           </div>
 
+          <div className="lg:hidden">{costSummary}</div>
+
           {/* Vehicle classes */}
           <div className="space-y-4 rounded-[22px] border border-[#e6ece9] bg-white p-6">
             <header className="space-y-1">
@@ -429,24 +478,46 @@ const TripCostCalculator = () => {
                 drivers sometimes have vehicles not yet reflected in the public listings.
               </p>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {classEstimates.map((cls, i) => (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {classEstimates.slice(0, 2).map((cls, i) => (
                   <article
                     key={cls.id}
                     className={`flex flex-col gap-3 rounded-2xl border-[1.5px] p-4 ${i === 0 ? 'border-brand bg-[#f7fbf9]' : 'border-[#e6ece9] bg-white'}`}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-base font-extrabold tracking-tight text-ink">{cls.label}</p>
-                        <p className="text-xs font-semibold text-muted-soft">{cls.seatLabel}{cls.example ? ` · e.g. ${cls.example}` : ''}</p>
+                        {cls.example ? (
+                          <p className="truncate text-xs font-semibold text-muted-soft">e.g. {cls.example}</p>
+                        ) : null}
                       </div>
                       {i === 0 ? (
                         <span className="flex-shrink-0 rounded-lg bg-brand px-2 py-1 text-[11px] font-extrabold text-white">Best match</span>
                       ) : null}
                     </div>
+                    {cls.exampleImage ? (
+                      <img
+                        src={cls.exampleImage}
+                        alt={cls.example ? `${cls.example} — example ${cls.label.toLowerCase()} listed on carwithdriver.lk` : cls.label}
+                        loading="lazy"
+                        className="h-24 w-full rounded-[13px] object-cover"
+                      />
+                    ) : null}
+                    <div className="flex flex-wrap gap-1.5">
+                      {[cls.seatLabel, `${cls.sampleSize} listed`, `${money(cls.perDay.low)}–${money(cls.perDay.high)}/day`].map((spec) => (
+                        <span
+                          key={spec}
+                          className="rounded-lg border border-[#e6ece9] bg-white px-2.5 py-1 text-[12px] font-bold text-ink-soft"
+                        >
+                          {spec}
+                        </span>
+                      ))}
+                    </div>
                     <div>
                       <p className="text-2xl font-extrabold tracking-tight text-ink">{money(cls.total.average)}</p>
-                      <p className="text-xs font-semibold text-muted-soft">≈ {money(Math.round(cls.total.average / days))}/day · {cls.sampleSize} listed</p>
+                      <p className="text-xs font-semibold text-muted-soft">
+                        ≈ {money(Math.round(cls.total.average / days))}/day over {days} {days === 1 ? 'day' : 'days'}
+                      </p>
                     </div>
                     <Link
                       to="/get-quotes"
@@ -463,6 +534,15 @@ const TripCostCalculator = () => {
           {/* FAQ */}
           <div className="space-y-4 rounded-[22px] border border-[#e6ece9] bg-white p-6">
             <h2 className="text-xl font-extrabold tracking-tight text-ink">Frequently asked questions</h2>
+            {resultReady ? (
+              <p className="max-w-[680px] text-[15px] leading-[1.7] text-muted">
+                Travellers matching this group size mostly pay between{' '}
+                <b className="text-ink">{money(overallEstimate.perDay.low)} and {money(overallEstimate.perDay.high)} per day</b> for a
+                private driver and vehicle, depending on the size of the car. The daily rate normally covers the
+                driver, fuel for a typical 120–150 km day, and the driver&apos;s own accommodation and meals. Entrance
+                tickets, safari jeeps and highway tolls are usually paid separately.
+              </p>
+            ) : null}
             <div className="space-y-2">
               {FAQS.map((f) => (
                 <details key={f.q} className="group rounded-2xl border border-[#e6ece9] bg-[#f9fbfa] p-4">
@@ -474,43 +554,31 @@ const TripCostCalculator = () => {
                 </details>
               ))}
             </div>
+
+            <div className="pt-2">
+              <h3 className="text-base font-extrabold tracking-tight text-ink">Popular routes travellers price here</h3>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {ITINERARY_PRESETS.map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => {
+                      applyPreset(preset.stops);
+                      document.getElementById('itinerary')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                    className="inline-flex min-h-[44px] items-center rounded-xl border border-[#e6ece9] bg-[#f9fbfa] px-3.5 text-[13.5px] font-bold text-ink-soft transition hover:border-brand hover:text-brand-dark"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Sidebar */}
-        <aside className="min-w-0 space-y-4">
-          <div className="rounded-[22px] bg-ink p-6 text-white">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-white/65">Estimated trip cost</p>
-            <div className="mt-2 flex items-end gap-2">
-              <p className="text-4xl font-extrabold tracking-tight">{totalAverage}</p>
-              <p className="pb-1 text-sm font-bold text-white/55">≈ {money(overallEstimate.totals ? Math.round(overallEstimate.totals.average / days) : null)}/day</p>
-            </div>
-            <p className="mt-1 text-sm font-medium text-white/70">
-              {days} days · {nightsTotal} nights · {paxNumber || '—'} {paxNumber === 1 ? 'passenger' : 'passengers'}
-            </p>
-            <div className="mt-5 grid grid-cols-2 gap-2.5">
-              <div className="rounded-xl bg-white/10 p-3">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-white/55">Likely range</p>
-                <p className="mt-1 text-lg font-extrabold">{totalRange}</p>
-              </div>
-              <div className="rounded-xl bg-white/10 p-3">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-white/55">Total distance</p>
-                <p className="mt-1 text-lg font-extrabold">{totalKm.toLocaleString('en-US')} km</p>
-              </div>
-            </div>
-            {buffer ? (
-              <p className="mt-4 text-xs font-medium text-white/55">Keep ~{buffer} aside as a flexibility buffer for extra km or upgrades.</p>
-            ) : null}
-            <Link
-              to="/get-quotes"
-              className="mt-5 flex items-center justify-center rounded-2xl bg-brand px-4 py-3.5 text-sm font-extrabold text-white hover:bg-brand-dark"
-            >
-              Request free driver quotes
-            </Link>
-            <p className="mt-2 text-center text-[11px] font-medium leading-relaxed text-white/45">
-              No payment now. Drivers reply with a fixed price for this exact itinerary.
-            </p>
-          </div>
+        {/* Sidebar — sticks alongside the builder so the cost stays visible while editing. */}
+        <aside className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start">
+          <div className="hidden lg:block">{costSummary}</div>
 
           <div className="rounded-[20px] border border-[#e6ece9] bg-white p-5">
             <div className="flex items-center gap-2 text-sm font-extrabold text-ink">
@@ -567,6 +635,7 @@ const TripCostCalculator = () => {
           </div>
         </aside>
       </section>
+
     </div>
   );
 };
