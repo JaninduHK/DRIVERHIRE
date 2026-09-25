@@ -8,6 +8,7 @@ import { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
 import { createChatMessage } from '../services/chatService.js';
 import { sendBriefAlertEmail } from '../services/emailService.js';
 import { sendExpoPushNotifications } from '../services/expoPushService.js';
+import { expiredBefore } from '../services/briefExpiryService.js';
 import { sanitizeMessageContent } from '../utils/chatSanitizer.js';
 import { hasVehicleDateConflict, VEHICLE_UNAVAILABLE_MESSAGE } from '../utils/vehicleAvailability.js';
 import { mapAssetUrls } from '../utils/assetUtils.js';
@@ -217,6 +218,9 @@ export const listOpenBriefs = async (req, res) => {
     // they continue the conversation in chat instead. Other drivers still see it.
     const briefs = await TourBrief.find({
       status: 'open',
+      // The hourly expiry sweep flips these to 'closed', but guard on read too so a
+      // brief whose dates have passed never shows up in the window between sweeps.
+      endDate: { $gte: expiredBefore() },
       'responses.driver': { $ne: req.user.id },
     })
       .populate('traveler', 'id name country')
