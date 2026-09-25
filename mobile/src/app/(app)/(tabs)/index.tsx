@@ -45,7 +45,7 @@ export default function Overview() {
   };
 
   return (
-    <Screen>
+    <Screen edges={[]}>
       <AppHeader eyebrow="DRIVER HOME" title={`Welcome back, ${firstName}`} showBell hasNotifications={openBriefs.length > 0}>
         <View className="mt-2 flex-row">
           <View className="flex-row items-center gap-1.5 rounded-full bg-white/20 px-2.5 py-[5px]">

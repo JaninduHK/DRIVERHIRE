@@ -71,7 +71,7 @@ export default function Bookings() {
   const list = tab === 'upcoming' ? upcoming : completed;
 
   return (
-    <Screen>
+    <Screen edges={[]}>
       <AppHeader eyebrow="TRIPS" title="My Bookings" />
       <BodySheet onRefresh={refetch} refreshing={isRefetching}>
         <SegmentedTabs

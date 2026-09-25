@@ -6,6 +6,7 @@ import {
   Pressable,
   ScrollView,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   Modal,
   Alert,
@@ -53,8 +54,26 @@ export default function Chat() {
   const booking = messagesData?.booking ?? null;
 
   const [text, setText] = useState('');
+  const [keyboardUp, setKeyboardUp] = useState(false);
   const [offerOpen, setOfferOpen] = useState(false);
   const [bookingOpen, setBookingOpen] = useState(false);
+
+  // While the keyboard is up it already covers the home-indicator area, so the
+  // composer must drop its safe-area padding or it floats above the keyboard.
+  useEffect(() => {
+    const show = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setKeyboardUp(true)
+    );
+    const hide = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardUp(false)
+    );
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: qk.messages(conversationId) });
@@ -107,8 +126,7 @@ export default function Chat() {
 
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={insets.top + 8}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {booking ? (
           <Pressable
@@ -144,8 +162,8 @@ export default function Chat() {
 
         {/* Composer */}
         <View
-          className="flex-row items-center gap-2 border-t border-[#eef1f0] bg-white px-4 pt-3"
-          style={{ paddingBottom: (insets.bottom || 12) + 4 }}
+          className="flex-row items-end gap-2 border-t border-[#eef1f0] bg-white px-4 pt-3"
+          style={{ paddingBottom: keyboardUp ? 8 : (insets.bottom || 12) + 4 }}
         >
           <Pressable
             onPress={() => setOfferOpen(true)}
@@ -158,7 +176,11 @@ export default function Chat() {
             onChangeText={setText}
             placeholder="Message"
             placeholderTextColor={colors.placeholder}
-            className="h-10 flex-1 rounded-[11px] border-[1.5px] border-line px-3 font-med text-[13px] text-ink"
+            multiline
+            // Keeps Return inserting a newline instead of dismissing the keyboard.
+            blurOnSubmit={false}
+            textAlignVertical="top"
+            className="max-h-[120px] min-h-[40px] flex-1 rounded-[11px] border-[1.5px] border-line px-3 py-2 font-med text-[13px] text-ink"
           />
           <Pressable
             onPress={() => text.trim() && send.mutate(text.trim())}

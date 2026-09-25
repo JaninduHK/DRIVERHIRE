@@ -57,6 +57,27 @@ const PaymentsPanel = ({ state, month, onReload, onMonthChange, onStatusChange }
     return counts;
   }, [items]);
 
+  // Commission owed for the period, split by whether it has actually been settled.
+  // Every figure comes from bookings whose tour ENDED inside the selected month.
+  const totals = useMemo(() => {
+    let total = 0;
+    let received = 0;
+    let awaitingReview = 0;
+    items.forEach((item) => {
+      const due = Number(item.commissionDue) || 0;
+      total += due;
+      if (item.status === 'approved') received += due;
+      else if (item.status === 'submitted') awaitingReview += due;
+    });
+    return { total, received, pending: total - received, awaitingReview };
+  }, [items]);
+
+  const periodLabel = useMemo(() => {
+    const [y, m] = String(month || '').split('-').map(Number);
+    if (!y || !m) return '';
+    return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  }, [month]);
+
   const visibleItems = useMemo(
     () => (statusFilter === 'all' ? items : items.filter((item) => item.status === statusFilter)),
     [items, statusFilter]
@@ -73,6 +94,14 @@ const PaymentsPanel = ({ state, month, onReload, onMonthChange, onStatusChange }
     onStatusChange?.(item.driverId, item.year, item.month, {
       status: 'pending',
       adminNote: noteDrafts[item.driverId] || 'Payment slip rejected — please re-upload.',
+    });
+  };
+
+  const handleMarkPaid = (item) => {
+    if (!window.confirm('Mark this commission as paid without a driver-uploaded slip?')) return;
+    onStatusChange?.(item.driverId, item.year, item.month, {
+      status: 'approved',
+      adminNote: noteDrafts[item.driverId] || 'Marked as paid by admin.',
     });
   };
 
@@ -96,7 +125,32 @@ const PaymentsPanel = ({ state, month, onReload, onMonthChange, onStatusChange }
   }
 
   return (
-    <div className="rounded-[18px] bg-surface shadow-card">
+    <div className="flex flex-col gap-4">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="rounded-[14px] bg-surface p-4 shadow-card">
+          <p className="text-[11px] font-extrabold uppercase tracking-wide text-muted-soft">
+            Commission due{periodLabel ? ` · ${periodLabel}` : ''}
+          </p>
+          <p className="mt-1 text-xl font-extrabold text-ink">{formatCurrency(totals.total)}</p>
+          <p className="mt-0.5 text-[11.5px] text-muted-soft">From tours ending this month</p>
+        </div>
+        <div className="rounded-[14px] bg-surface p-4 shadow-card">
+          <p className="text-[11px] font-extrabold uppercase tracking-wide text-muted-soft">Received</p>
+          <p className="mt-1 text-xl font-extrabold text-emerald-600 dark:text-emerald-400">{formatCurrency(totals.received)}</p>
+          <p className="mt-0.5 text-[11.5px] text-muted-soft">Approved payments</p>
+        </div>
+        <div className="rounded-[14px] bg-surface p-4 shadow-card">
+          <p className="text-[11px] font-extrabold uppercase tracking-wide text-muted-soft">Pending</p>
+          <p className="mt-1 text-xl font-extrabold text-amber-600 dark:text-amber-400">{formatCurrency(totals.pending)}</p>
+          <p className="mt-0.5 text-[11.5px] text-muted-soft">
+            {totals.awaitingReview > 0
+              ? `${formatCurrency(totals.awaitingReview)} awaiting your review`
+              : 'Not yet settled'}
+          </p>
+        </div>
+      </div>
+
+      <div className="rounded-[18px] bg-surface shadow-card">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline px-5 py-4">
         <b className="text-[15px] text-ink">Driver payments <span className="font-semibold text-muted-soft">({visibleItems.length})</span></b>
         <div className="flex items-center gap-2">
@@ -274,7 +328,19 @@ const PaymentsPanel = ({ state, month, onReload, onMonthChange, onStatusChange }
                         <RotateCcw className="h-4 w-4" /> Reopen for review
                       </button>
                     ) : (
-                      <p className="text-[12px] text-muted-soft">Waiting for the driver to upload a payment slip.</p>
+                      <>
+                        <button
+                          type="button"
+                          disabled={isUpdating}
+                          onClick={() => handleMarkPaid(item)}
+                          className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 dark:border-emerald-400/30 bg-emerald-50 dark:bg-emerald-400/10 px-3 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 transition hover:bg-emerald-100 dark:hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <CheckCircle2 className="h-4 w-4" /> {isUpdating ? 'Updating…' : 'Mark as paid'}
+                        </button>
+                        <span className="self-center text-[12px] text-muted-soft">
+                          No slip uploaded yet — use this if the driver settled outside the app.
+                        </span>
+                      </>
                     )}
                   </div>
                 </div>
@@ -283,6 +349,7 @@ const PaymentsPanel = ({ state, month, onReload, onMonthChange, onStatusChange }
           );
         })
       )}
+      </div>
     </div>
   );
 };

@@ -31,7 +31,7 @@ export default function Messages() {
   }, [data, query]);
 
   return (
-    <Screen>
+    <Screen edges={[]}>
       <AppHeader eyebrow="INBOX" title="Messages" />
       <BodySheet onRefresh={refetch} refreshing={isRefetching}>
         <View className="mb-3.5 flex-row items-center gap-2 rounded-xl border-[1.5px] border-line bg-white px-3 py-3">

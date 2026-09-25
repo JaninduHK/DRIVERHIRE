@@ -823,6 +823,13 @@ export const listDriverCommissions = async (req, res) => {
     const orphanRecords = await DriverCommission.find({ year, month, driver: { $nin: driverIds } }).populate('driver', 'name email contactNumber');
     for (const record of orphanRecords) {
       if (!record.driver) continue;
+      // The driver-facing earnings page writes a record whenever it is opened, so a
+      // driver with no bookings this period leaves behind an empty pending row. Only
+      // surface a bookingless record when it actually carries something to act on.
+      const hasMoneyDue = Number(record.commissionDue) > 0;
+      const hasProof = Boolean(record.paymentSlipUrl);
+      const wasActioned = record.status !== COMMISSION_STATUS.PENDING;
+      if (!hasMoneyDue && !hasProof && !wasActioned) continue;
       results.push(shapeCommission(record, req));
     }
 
