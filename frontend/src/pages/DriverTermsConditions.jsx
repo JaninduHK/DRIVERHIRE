@@ -20,7 +20,7 @@ const CANCELLATION_ROWS = [
 ];
 
 const DriverTermsConditions = () => {
-  const updatedOn = '2026-08-22';
+  const updatedOn = '2026-09-26';
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
@@ -69,14 +69,20 @@ const DriverTermsConditions = () => {
             <Point n="3.3">If a quotation of yours is removed and you do not understand why, email Admin with a link to the quotation and you will receive an explanation.</Point>
             <Point n="3.4">Do not invent rules. Telling a traveller that something is &ldquo;not allowed by the site&rdquo; when it is not covered by these terms is not permitted. If you are unsure whether something is allowed, ask Admin rather than telling the traveller.</Point>
             <Point n="3.5">If a traveller asks for a price for a separate trip that cannot be covered by the current quotation, ask them to submit a new enquiry through the site. Do not price a second hire inside an existing quotation or message.</Point>
-            <Point n="3.6">Prices for third-party items such as safari jeeps, entrance tickets, hotels, guides and boat rides may be discussed in quotations and messages, as may per-kilometre rates for extra distance and currency exchange rates.</Point>
-            <Point n="3.7">Once a price has been agreed and the booking confirmed, it may not be increased. Requesting additional money from a traveller after confirmation — for fuel, parking, driver accommodation or any other reason not stated in the quotation — is a breach of these terms.</Point>
+            <Point n="3.6">The <b className="text-slate-900">Total price (USD)</b> field must contain the full price of the hire. It is the only figure the traveller is asked to accept, so it must already include everything you expect to be paid — the vehicle, the driver, fuel, and any third-party items you have agreed to arrange on the traveller&rsquo;s behalf, such as safari jeeps, entrance tickets, hotels, guides or boat rides.</Point>
+            <Point n="3.7">Do not quote one figure for the vehicle or transport and then list further amounts for extras in the notes, in chat or anywhere else. A quotation that leaves the traveller adding up several numbers to find the real price will be removed. You may use the notes to set out an itemised breakdown of what the total covers, provided those items add up to the total you have quoted and no further payment is implied.</Point>
+            <Point n="3.8">Per-kilometre rates for distance beyond the agreed itinerary, and currency exchange rates, may be explained in the notes so the traveller understands what would happen if the trip changes. Any amount you already expect to charge for the itinerary as quoted must still be inside the total price.</Point>
+            <Point n="3.9">Once a price has been agreed and the booking confirmed, it may not be increased. Requesting additional money from a traveller after confirmation — for fuel, parking, driver accommodation, entrance tickets or any other reason not stated in the quotation — is a breach of these terms.</Point>
           </Section>
 
           <Section title="4. Reviews">
             <Point n="4.1">Submitting, arranging or encouraging fake reviews is prohibited. Any driver found to have done so will be permanently banned from the site.</Point>
             <Point n="4.2">Do not ask travellers to look up your reviews on other platforms, and do not discuss the number or rating of reviews your business holds elsewhere, within quotations or messages on the site.</Point>
             <Point n="4.3">You may ask a traveller for an honest review on carwithdriver.lk after the hire is complete. You may not offer a discount, refund, gift or any other incentive in exchange for a review.</Point>
+            <Point n="4.4">You may add a link to your TripAdvisor profile when you sign up, or at any time from <b className="text-slate-900">Profile details</b> in your dashboard. Adding the link is your consent for us to import the reviews from that profile and show them on your carwithdriver.lk profile.</Point>
+            <Point n="4.5">The TripAdvisor profile you link must be your own business. Imported reviews are shown as having come from TripAdvisor and are not presented as carwithdriver.lk reviews. Linking a profile that is not yours is treated as a fake review under 4.1.</Point>
+            <Point n="4.6">You may remove the link at any time from Profile details. Once it is removed we stop importing from that profile, and reviews already imported from it are taken off your carwithdriver.lk profile.</Point>
+            <Point n="4.7">Clause 4.2 is unaffected by this. Your imported reviews may appear on your profile, but you still may not direct travellers to other platforms or discuss your off-site ratings inside quotations or messages.</Point>
           </Section>
 
           <Section title="5. Carrying out the hire">
