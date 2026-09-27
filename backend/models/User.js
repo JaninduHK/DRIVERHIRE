@@ -146,6 +146,18 @@ const userSchema = new mongoose.Schema(
       // No default — stays undefined until the driver submits a license for
       // the first time, distinguishing "not submitted" from "pending review".
     },
+    // Admin-handpicked for the homepage driver strip, independent of ranking.
+    // Mirrors Review.featured / Review.featuredOrder.
+    featured: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    // Lower sorts first. Only meaningful while featured is true.
+    featuredOrder: {
+      type: Number,
+      default: null,
+    },
     licenseSubmittedAt: Date,
     licenseReviewedAt: Date,
     licenseReviewedBy: {

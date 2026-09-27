@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowUpRight, CheckCircle2, ChevronDown, CircleUserRound, KeyRound, Loader2, Mail, Pencil, RotateCcw, Send, XCircle } from 'lucide-react';
+import { ArrowUpRight, CheckCircle2, ChevronDown, CircleUserRound, KeyRound, Loader2, Mail, Pencil, RotateCcw, Send, Star, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fetchSettings as fetchAdminSettings, updateSettings as updateAdminSettings } from '../../services/adminApi.js';
 import { formatDate, formatDateInput, tagClass } from './adminFormatters.js';
@@ -94,7 +94,7 @@ export const DriverApprovalSetting = () => {
 
 const LICENSE_STATUS_TAGS = { pending: 'amber', approved: 'green', rejected: 'red' };
 
-const DriversPanel = ({ state, onRetry, onStatusChange, onSendMessage, onUpdate, onSetPassword, onViewVerification }) => {
+const DriversPanel = ({ state, onRetry, onStatusChange, onSendMessage, onUpdate, onSetPassword, onViewVerification, onToggleFeatured }) => {
   const { items: filtered, loading, error, updatingId } = state;
   const [expandedId, setExpandedId] = useState(null);
   const [messageForm, setMessageForm] = useState({ driverId: null, subject: '', message: '', sending: false, error: '' });
@@ -412,6 +412,21 @@ const DriversPanel = ({ state, onRetry, onStatusChange, onSendMessage, onUpdate,
                         className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-xs font-bold text-ink transition hover:border-muted-soft"
                       >
                         <KeyRound className="h-4 w-4" /> {isPasswordFormOpen ? 'Close password form' : 'Set password'}
+                      </button>
+                    ) : null}
+                    {onToggleFeatured && application.driverStatus === DRIVER_STATUS.APPROVED ? (
+                      <button
+                        type="button"
+                        disabled={isUpdating}
+                        onClick={() => onToggleFeatured(application.id, !application.featured)}
+                        className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                          application.featured
+                            ? 'border-amber-200 dark:border-amber-400/30 bg-amber-50 dark:bg-amber-400/10 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-400/20'
+                            : 'border-line bg-surface text-ink hover:bg-canvas'
+                        }`}
+                      >
+                        <Star className={`h-4 w-4 ${application.featured ? 'fill-current' : ''}`} />
+                        {application.featured ? 'On homepage' : 'Feature on homepage'}
                       </button>
                     ) : null}
                   </div>

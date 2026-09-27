@@ -169,7 +169,15 @@ const HomePage = () => {
   }, []);
 
   const featuredVehicles = useMemo(() => vehicleState.items.slice(0, 3), [vehicleState.items]);
-  const featuredDrivers = useMemo(() => driverState.items.slice(0, 3), [driverState.items]);
+  // Admin's handpicked drivers lead (in their chosen order); any remaining slots
+  // fall back to the ranked directory order, so the strip is never short.
+  const featuredDrivers = useMemo(() => {
+    const picked = driverState.items
+      .filter((d) => d.featured)
+      .sort((a, b) => (a.featuredOrder ?? 0) - (b.featuredOrder ?? 0));
+    const rest = driverState.items.filter((d) => !d.featured);
+    return [...picked, ...rest].slice(0, 3);
+  }, [driverState.items]);
 
   // Latest approved reviews across ALL vehicles (so admin-added reviews appear too),
   // not just the featured vehicles' reviews.

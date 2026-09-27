@@ -5,6 +5,7 @@ import { Car, Check, ChevronDown, Loader2, Search, SlidersHorizontal, Star, X } 
 import { fetchDriverDirectory } from '../services/driverDirectoryApi.js';
 import { Avatar } from '../components/dashboard/primitives.jsx';
 import { LicenseIconBadge, LicenseTypeChip } from '../components/LicenseBadge.jsx';
+import { getLicenseBadge } from '../constants/driverLicense.js';
 
 const formatCurrency = (value) => (!Number.isFinite(value) ? '$0' : `$${value.toLocaleString('en-US')}`);
 const yearsLabel = (years) => {
@@ -30,6 +31,13 @@ const EXPERIENCE_OPTIONS = [
   { value: '5', label: '5+ yrs' },
   { value: '10', label: '10+ yrs' },
 ];
+// Values must match User.licenseType exactly; the API only exposes licenseType
+// once the licence has been approved, so these filter on verified badges only.
+const LICENSE_OPTIONS = [
+  { value: 'Tourist Driver', label: 'Tourist Driver' },
+  { value: 'Chauffeur Guide Lecturer', label: 'Chauffeur Guide' },
+];
+
 const SORT_OPTIONS = [
   { value: 'recommended', label: 'Recommended' },
   { value: 'reviews_desc', label: 'Highest rated' },
@@ -40,11 +48,15 @@ const defaultFilters = {
   search: '',
   sort: 'recommended',
   perks: [],
+  licenseTypes: [],
   minPrice: '',
   maxPrice: '',
   minReview: '',
   minExperience: '',
 };
+
+const withLicenseToggled = (list, value) =>
+  (list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
 
 const perkMatch = (driver, perk) => {
   const badges = (driver.badges || []).join(' ').toLowerCase();
@@ -96,6 +108,7 @@ const DriversDirectory = () => {
         if (!haystack.includes(term)) return false;
       }
       if (filters.perks.length && !filters.perks.every((p) => perkMatch(driver, p))) return false;
+      if (filters.licenseTypes.length && !filters.licenseTypes.includes(driver.licenseType)) return false;
       const price = Number(driver.averagePricePerDay) || 0;
       if (filters.minPrice !== '' && Number.isFinite(minPrice) && price < minPrice) return false;
       if (filters.maxPrice !== '' && Number.isFinite(maxPrice) && price > maxPrice) return false;
@@ -111,7 +124,9 @@ const DriversDirectory = () => {
         case 'reviews_desc':
           return (b.reviewScore || 0) - (a.reviewScore || 0);
         default:
-          return (b.badges?.length || 0) - (a.badges?.length || 0);
+          // "Recommended" is ranked server-side (proven drivers first, newcomers
+          // salted in, rotated daily) — preserve that order rather than re-sorting.
+          return 0;
       }
     };
 
@@ -123,7 +138,11 @@ const DriversDirectory = () => {
   const otherPerks = filters.perks.filter((p) => p !== 'English speaking');
   const priceActive = Boolean(filters.minPrice || filters.maxPrice);
   const activeCount =
-    filters.perks.length + (priceActive ? 1 : 0) + (filters.minReview ? 1 : 0) + (filters.minExperience ? 1 : 0);
+    filters.perks.length +
+    filters.licenseTypes.length +
+    (priceActive ? 1 : 0) +
+    (filters.minReview ? 1 : 0) +
+    (filters.minExperience ? 1 : 0);
   const hasAnyFilter = activeCount > 0 || filters.search || filters.sort !== 'recommended';
 
   return (
@@ -169,6 +188,25 @@ const DriversDirectory = () => {
               English speaking
               {englishOn ? <X className="h-[11px] w-[11px]" strokeWidth={2.5} /> : null}
             </button>
+            {LICENSE_OPTIONS.map((o) => {
+              const on = filters.licenseTypes.includes(o.value);
+              const badge = getLicenseBadge(o.value);
+              const Icon = badge?.icon;
+              return (
+                <button
+                  key={o.value}
+                  type="button"
+                  onClick={() => set({ licenseTypes: withLicenseToggled(filters.licenseTypes, o.value) })}
+                  className={`flex flex-shrink-0 items-center gap-1.5 rounded-full px-[13px] text-[13px] font-bold transition ${
+                    on ? 'bg-brand py-[9px] text-white' : 'border-[1.5px] border-[#e2e8ea] bg-white py-2 font-semibold text-ink-soft'
+                  }`}
+                >
+                  {Icon ? <Icon className={`h-[13px] w-[13px] ${on ? 'text-white' : badge.iconClass}`} strokeWidth={2.4} /> : null}
+                  {o.label}
+                  {on ? <X className="h-[11px] w-[11px]" strokeWidth={2.5} /> : null}
+                </button>
+              );
+            })}
             {otherPerks.length ? (
               <ActiveChip onClear={() => set({ perks: englishOn ? ['English speaking'] : [] })}>
                 {otherPerks.length === 1 ? otherPerks[0] : `${otherPerks.length} perks`}
@@ -336,6 +374,7 @@ const Section = ({ label, children }) => (
 const DriverFilterSheet = ({ filters, set, count, onReset, onClose }) => {
   const togglePerk = (perk) =>
     set({ perks: filters.perks.includes(perk) ? filters.perks.filter((p) => p !== perk) : [...filters.perks, perk] });
+  const toggleLicense = (value) => set({ licenseTypes: withLicenseToggled(filters.licenseTypes, value) });
   const priceActive = (min, max) => (filters.minPrice || '') === min && (filters.maxPrice || '') === max;
 
   return (
@@ -362,6 +401,31 @@ const DriverFilterSheet = ({ filters, set, count, onReset, onClose }) => {
                     className={`rounded-full px-[15px] py-2.5 text-[13px] font-bold transition ${on ? 'border-[1.5px] border-brand bg-brand-tint text-brand-dark' : 'bg-[#f2f4f3] text-muted'}`}
                   >
                     {perk}
+                  </button>
+                );
+              })}
+            </div>
+          </Section>
+
+          <Section label="Verified licence">
+            <div className="mt-2.5 flex flex-col gap-2">
+              {LICENSE_OPTIONS.map((o) => {
+                const on = filters.licenseTypes.includes(o.value);
+                const badge = getLicenseBadge(o.value);
+                const Icon = badge?.icon;
+                return (
+                  <button
+                    key={o.value}
+                    type="button"
+                    onClick={() => toggleLicense(o.value)}
+                    className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-bold transition ${on ? 'bg-brand text-white' : 'bg-[#f2f4f3] text-muted'}`}
+                  >
+                    {Icon ? (
+                      <span className={`inline-flex h-[22px] w-[22px] flex-shrink-0 items-center justify-center rounded-full ${on ? 'bg-white/20' : badge.badgeClass}`}>
+                        <Icon className={`h-3.5 w-3.5 ${on ? 'text-white' : badge.iconClass}`} strokeWidth={2.4} />
+                      </span>
+                    ) : null}
+                    {o.label}
                   </button>
                 );
               })}

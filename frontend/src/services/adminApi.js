@@ -175,6 +175,18 @@ export const removeReviewImage = (reviewId, image) =>
     body: JSON.stringify({ image }),
   });
 
+export const setDriverFeatured = (driverId, featured) =>
+  request(`/drivers/${driverId}/featured`, {
+    method: 'PATCH',
+    body: JSON.stringify({ featured }),
+  });
+
+export const reorderFeaturedDrivers = (orderedIds) =>
+  request('/drivers/featured-order', {
+    method: 'PATCH',
+    body: JSON.stringify({ orderedIds }),
+  });
+
 export const setReviewFeatured = (reviewId, featured) =>
   request(`/reviews/${reviewId}/featured`, {
     method: 'PATCH',

@@ -58,6 +58,7 @@ import {
   updateDriverCommissionStatus as updateAdminCommissionStatus,
   sendDriverEmail as sendDriverEmailRequest,
   setDriverPassword as setDriverPasswordRequest,
+  setDriverFeatured as setDriverFeaturedRequest,
   fetchUsers,
   fetchUserDeletionPreview,
   deleteUserAccount as deleteUserAccountRequest,
@@ -578,6 +579,19 @@ const AdminDashboard = () => {
     await setDriverPasswordRequest(driverId, password);
   }, []);
 
+  const handleDriverToggleFeatured = useCallback(async (driverId, featured) => {
+    try {
+      const { driver } = await setDriverFeaturedRequest(driverId, featured);
+      setDriverState((prev) => ({
+        ...prev,
+        items: prev.items.map((application) => (application.id === driver.id ? driver : application)),
+      }));
+      toast.success(featured ? 'Driver added to the homepage.' : 'Driver removed from the homepage.');
+    } catch (error) {
+      toast.error(error?.message || 'Unable to update homepage picks.');
+    }
+  }, []);
+
   const handleUserDeletionPreview = useCallback((userId) => fetchUserDeletionPreview(userId), []);
 
   const handleUserDelete = useCallback(async (userId) => {
@@ -980,7 +994,7 @@ const AdminDashboard = () => {
     content = (
       <div className="flex flex-col gap-4">
         <DriverApprovalSetting />
-        <DriversPanel state={{ ...driverState, items: filteredDrivers }} onRetry={loadDrivers} onStatusChange={handleDriverStatusChange} onSendMessage={handleDriverMessageSend} onUpdate={handleDriverDetailsUpdate} onSetPassword={handleDriverSetPassword} onViewVerification={() => handleSectionChange('verification')} />
+        <DriversPanel state={{ ...driverState, items: filteredDrivers }} onRetry={loadDrivers} onStatusChange={handleDriverStatusChange} onSendMessage={handleDriverMessageSend} onUpdate={handleDriverDetailsUpdate} onSetPassword={handleDriverSetPassword} onViewVerification={() => handleSectionChange('verification')} onToggleFeatured={handleDriverToggleFeatured} />
       </div>
     );
   } else if (activeSection === 'vehicles') {

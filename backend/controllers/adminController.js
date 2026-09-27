@@ -348,6 +348,77 @@ export const getDriverApplications = async (req, res) => {
   }
 };
 
+// Admin picks which drivers front the homepage strip. Mirrors setReviewFeatured:
+// featuring appends to the end of the running order so existing picks keep theirs.
+export const setDriverFeatured = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+
+  const { id } = req.params;
+  const { featured } = req.body || {};
+
+  try {
+    const driver = await User.findOne({ _id: id, role: USER_ROLES.DRIVER });
+    if (!driver) {
+      return res.status(404).json({ message: 'Driver not found.' });
+    }
+    // Featuring an unapproved driver would surface them publicly on the homepage.
+    if (featured && driver.driverStatus !== DRIVER_STATUS.APPROVED) {
+      return res.status(400).json({ message: 'Only approved drivers can be featured on the homepage.' });
+    }
+
+    if (featured) {
+      const highest = await User.findOne({ role: USER_ROLES.DRIVER, featured: true })
+        .sort({ featuredOrder: -1 })
+        .select('featuredOrder');
+      driver.featured = true;
+      driver.featuredOrder = (highest?.featuredOrder ?? -1) + 1;
+    } else {
+      driver.featured = false;
+      driver.featuredOrder = null;
+    }
+
+    await driver.save();
+    return res.json({ driver: driver.toJSON() });
+  } catch (error) {
+    console.error('Set driver featured error:', error);
+    return res.status(500).json({ message: 'Unable to update homepage picks.' });
+  }
+};
+
+// Persists a reorder of the featured drivers. Body: { orderedIds: [...] } — every id
+// must already be featured; their featuredOrder is rewritten 0..n-1 in that order.
+export const reorderFeaturedDrivers = async (req, res) => {
+  const orderedIds = Array.isArray(req.body?.orderedIds) ? req.body.orderedIds : [];
+  if (!orderedIds.length) {
+    return res.status(400).json({ message: 'Provide a non-empty list of driver ids.' });
+  }
+
+  try {
+    const count = await User.countDocuments({
+      _id: { $in: orderedIds },
+      role: USER_ROLES.DRIVER,
+      featured: true,
+    });
+    if (count !== orderedIds.length) {
+      return res.status(400).json({ message: 'All drivers being reordered must already be featured.' });
+    }
+
+    await User.bulkWrite(
+      orderedIds.map((driverId, index) => ({
+        updateOne: { filter: { _id: driverId }, update: { $set: { featuredOrder: index } } },
+      }))
+    );
+
+    return res.json({ message: 'Homepage picks reordered.' });
+  } catch (error) {
+    console.error('Reorder featured drivers error:', error);
+    return res.status(500).json({ message: 'Unable to reorder homepage picks.' });
+  }
+};
+
 export const updateDriverStatus = async (req, res) => {
   const validationError = handleValidation(req, res);
   if (validationError) {

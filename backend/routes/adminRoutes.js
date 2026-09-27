@@ -5,6 +5,8 @@ import { vehicleImageUpload, conditionalReviewImageUpload } from '../middleware/
 import {
   getDriverApplications,
   updateDriverStatus,
+  setDriverFeatured,
+  reorderFeaturedDrivers,
   updateDriverDetails,
   listLicenseSubmissions,
   updateLicenseStatus,
@@ -66,6 +68,22 @@ router.use(authenticate);
 router.use(authorizeRoles(USER_ROLES.ADMIN));
 
 router.get('/drivers', getDriverApplications);
+
+// Registered before /drivers/:id so "featured-order" isn't captured as an :id.
+router.patch(
+  '/drivers/featured-order',
+  [body('orderedIds').isArray({ min: 1 }).withMessage('orderedIds must be a non-empty array')],
+  reorderFeaturedDrivers
+);
+
+router.patch(
+  '/drivers/:id/featured',
+  [
+    param('id').isMongoId().withMessage('Invalid driver identifier'),
+    body('featured').isBoolean().withMessage('featured must be true or false'),
+  ],
+  setDriverFeatured
+);
 
 router.patch(
   '/drivers/:id/status',

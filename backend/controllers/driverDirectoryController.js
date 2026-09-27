@@ -4,6 +4,7 @@ import Vehicle, { VEHICLE_STATUS } from '../models/Vehicle.js';
 import Review, { REVIEW_STATUS } from '../models/Review.js';
 import CommissionDiscount from '../models/CommissionDiscount.js';
 import { buildAssetUrl } from '../utils/assetUtils.js';
+import { rankDrivers } from '../utils/driverRanking.js';
 
 const FEATURE_FLAGS = [
   { key: 'englishSpeakingDriver', label: 'English speaking' },
@@ -142,6 +143,8 @@ const buildDriverSummary = (driver, vehicles = [], reviewStats = null, req, acti
     badges,
     experienceYears,
     joinedAt: driver.createdAt,
+    featured: Boolean(driver.featured),
+    featuredOrder: Number.isFinite(driver.featuredOrder) ? driver.featuredOrder : null,
     hasEnglishDriver: featureCounts.englishSpeakingDriver,
     reviewScore: reviewScore !== null ? Math.round(reviewScore * 10) / 10 : null,
     reviewCount,
@@ -208,7 +211,7 @@ export const listPublicDrivers = async (req, res) => {
       deletedAt: null,
     })
       .select(
-        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation experienceYears licenseType licenseStatus'
+        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation experienceYears licenseType licenseStatus featured featuredOrder'
       )
       .sort({ createdAt: -1 })
       .lean();
@@ -249,7 +252,9 @@ export const listPublicDrivers = async (req, res) => {
       )
     );
 
-    return res.json({ drivers: summaries });
+    // Proven drivers first, newcomers salted through, incomplete profiles last —
+    // reordered only, since the live map and sitemap read this same payload.
+    return res.json({ drivers: rankDrivers(summaries) });
   } catch (error) {
     console.error('List public drivers error:', error);
     return res.status(500).json({ message: 'Unable to load drivers right now.' });
@@ -271,7 +276,7 @@ export const getPublicDriverDetails = async (req, res) => {
       deletedAt: null,
     })
       .select(
-        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation experienceYears licenseType licenseStatus'
+        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation experienceYears licenseType licenseStatus featured featuredOrder'
       )
       .lean();
 
