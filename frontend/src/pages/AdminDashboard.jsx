@@ -180,6 +180,13 @@ const AdminDashboard = () => {
     setSearchTerm('');
   }, []);
 
+  // Deep-link between admin tabs: switch section and seed the search so the
+  // destination list is already narrowed (e.g. a brief's offers).
+  const handleSectionSearch = useCallback((section, search) => {
+    setActiveSection(section);
+    setSearchTerm(search || '');
+  }, []);
+
   const loadBookings = useCallback(async () => {
     setBookingState((prev) => ({ ...prev, loading: true, error: '' }));
     try {
@@ -856,7 +863,7 @@ const AdminDashboard = () => {
     [briefState.items, term]
   );
   const filteredOffers = useMemo(
-    () => offerState.items.filter((o) => matches(term, [o.driver?.name, o.vehicle?.model, o.traveler?.name, o.status])),
+    () => offerState.items.filter((o) => matches(term, [o.driver?.name, o.vehicle?.model, o.traveler?.name, o.status, o.brief?.id])),
     [offerState.items, term]
   );
   const filteredConversations = useMemo(
@@ -979,7 +986,7 @@ const AdminDashboard = () => {
     content = (
       <div className="flex flex-col gap-4">
         <BriefDriverTypeSetting />
-        <BriefsPanel state={{ ...briefState, items: filteredBriefs }} onReload={loadBriefs} onUpdate={handleBriefUpdate} onDelete={handleBriefDelete} />
+        <BriefsPanel state={{ ...briefState, items: filteredBriefs }} onReload={loadBriefs} onUpdate={handleBriefUpdate} onDelete={handleBriefDelete} onViewOffers={(briefId) => handleSectionSearch('offers', briefId)} />
       </div>
     );
   } else if (activeSection === 'offers') {

@@ -502,6 +502,8 @@ export const updateTravelerBooking = async (req, res) => {
 
 export const cancelTravelerBooking = async (req, res) => {
   const { id } = req.params;
+  const rawReason = typeof req.body?.reason === 'string' ? req.body.reason.trim() : '';
+  const reason = rawReason.slice(0, 500);
 
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(400).json({ message: 'Invalid booking identifier.' });
@@ -524,6 +526,9 @@ export const cancelTravelerBooking = async (req, res) => {
     }
 
     booking.status = BOOKING_STATUS.CANCELLED;
+    booking.cancellationReason = reason;
+    booking.cancelledAt = new Date();
+    booking.cancelledBy = 'traveller';
 
     await booking.save();
 
@@ -555,7 +560,9 @@ export const cancelTravelerBooking = async (req, res) => {
         booking: hydrated,
         vehicle: hydrated.vehicle,
         status: booking.status,
-        note: 'We cancelled this booking at your request.',
+        note: reason
+          ? `We cancelled this booking at your request. Reason given: ${reason}`
+          : 'We cancelled this booking at your request.',
       }).catch((error) => console.warn('Traveler cancel email failed:', error));
     }
 
@@ -565,7 +572,9 @@ export const cancelTravelerBooking = async (req, res) => {
         booking: hydrated,
         vehicle: hydrated.vehicle,
         status: booking.status,
-        note: 'The traveller cancelled this booking.',
+        note: reason
+          ? `The traveller cancelled this booking. Reason given: ${reason}`
+          : 'The traveller cancelled this booking.',
       }).catch((error) => console.warn('Driver cancel email failed:', error));
     }
 

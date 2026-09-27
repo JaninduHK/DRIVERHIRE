@@ -1,8 +1,17 @@
 import { useMemo, useState } from 'react';
 import { CalendarDays, ChevronDown, Loader2, Mail, Phone, RotateCcw, XCircle } from 'lucide-react';
 import { formatCurrency, formatDate, formatDateInput, formatDateTime, tagClass } from './adminFormatters.js';
+import { calculateCancellationFee } from '../../lib/cancellationPolicy.js';
 
 const BOOKING_STATUS_OPTIONS = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'confirmed', label: 'Confirmed' },
+  { value: 'cancelled', label: 'Cancelled' },
+  { value: 'rejected', label: 'Rejected' },
+];
+
+const STATUS_FILTERS = [
+  { value: 'all', label: 'All' },
   { value: 'pending', label: 'Pending' },
   { value: 'confirmed', label: 'Confirmed' },
   { value: 'cancelled', label: 'Cancelled' },
@@ -40,16 +49,33 @@ const BookingsPanel = ({ state, onReload, onUpdate, onDelete }) => {
   // Filters on createdAt — the same basis the Overview GBV card and the Reports
   // settlement table bucket by, so a month's rows reconcile against those totals.
   const [month, setMonth] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const visible = useMemo(() => {
-    if (!month) return filtered;
-    return filtered.filter((booking) => {
+    const byStatus = statusFilter === 'all' ? filtered : filtered.filter((b) => b.status === statusFilter);
+    if (!month) return byStatus;
+    return byStatus.filter((booking) => {
       if (!booking.createdAt) return false;
       const d = new Date(booking.createdAt);
       if (Number.isNaN(d.getTime())) return false;
       return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` === month;
     });
-  }, [filtered, month]);
+  }, [filtered, month, statusFilter]);
+
+  const statusCounts = useMemo(() => {
+    const counts = { all: filtered.length, pending: 0, confirmed: 0, cancelled: 0, rejected: 0 };
+    filtered.forEach((b) => { if (counts[b.status] !== undefined) counts[b.status] += 1; });
+    return counts;
+  }, [filtered]);
+
+  // What the travellers owe their drivers across the cancellations in view.
+  const cancellationTotal = useMemo(
+    () =>
+      visible
+        .filter((b) => b.status === 'cancelled')
+        .reduce((sum, b) => sum + (calculateCancellationFee(b).amount || 0), 0),
+    [visible]
+  );
 
   // Shown for the current view so a month's value can be checked against the
   // dashboard's GBV, which counts confirmed bookings only.
@@ -153,6 +179,29 @@ const BookingsPanel = ({ state, onReload, onUpdate, onDelete }) => {
         </div>
       </div>
 
+      <div className="flex flex-wrap gap-2 border-b border-hairline px-5 py-3">
+        {STATUS_FILTERS.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => setStatusFilter(option.value)}
+            className={tagClass(statusFilter === option.value ? STATUS_TAGS[option.value] || 'green' : 'grey')}
+          >
+            {option.label} {statusCounts[option.value] ?? 0}
+          </button>
+        ))}
+      </div>
+
+      {statusFilter === 'cancelled' && visible.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1 border-b border-hairline px-5 py-2.5 text-[12px] font-semibold text-muted">
+          <span>
+            Owed to drivers under the cancellation policy{' '}
+            <b className="text-ink">{formatCurrency(cancellationTotal)}</b>
+          </span>
+          <span className="text-muted-soft">Calculated from each booking's dates — not charged automatically.</span>
+        </div>
+      ) : null}
+
       {month && visible.length > 0 ? (
         <div className="flex flex-wrap items-center gap-x-5 gap-y-1 border-b border-hairline px-5 py-2.5 text-[12px] font-semibold text-muted">
           <span>Confirmed <b className="text-ink">{formatCurrency(totals.confirmed)}</b></span>
@@ -196,7 +245,13 @@ const BookingsPanel = ({ state, onReload, onUpdate, onDelete }) => {
                       Booked {booking.createdAt ? formatDateTime(booking.createdAt) : '—'}
                     </div>
                     <div className="truncate text-[11.5px] text-muted-soft">
-                      Conv. {booking.conversationId ? booking.conversationId.slice(-6) : '—'} · Offer {booking.offerId ? booking.offerId.slice(-6) : '—'}
+                      {booking.status === 'cancelled'
+                        ? `Cancelled ${booking.cancelledAt ? formatDateTime(booking.cancelledAt) : ''}${
+                            calculateCancellationFee(booking).amount !== null
+                              ? ` · owed ${formatCurrency(calculateCancellationFee(booking).amount)}`
+                              : ''
+                          }`
+                        : `Conv. ${booking.conversationId ? booking.conversationId.slice(-6) : '—'} · Offer ${booking.offerId ? booking.offerId.slice(-6) : '—'}`}
                     </div>
                   </div>
                   <div className="text-[13.5px] font-extrabold text-brand-dark">{formatCurrency(booking.totalPrice || 0)}</div>
@@ -208,6 +263,38 @@ const BookingsPanel = ({ state, onReload, onUpdate, onDelete }) => {
 
                 {isEditing ? (
                   <form onSubmit={handleSubmit} className="space-y-3 border-t border-hairline bg-canvas/60 px-5 py-4">
+                    {booking.status === 'cancelled' || booking.cancellationReason ? (
+                      <div className="rounded-xl border border-rose-200 dark:border-rose-400/30 bg-rose-50 dark:bg-rose-400/10 p-3.5">
+                        <p className="text-[11px] font-extrabold uppercase tracking-wide text-rose-700 dark:text-rose-300">
+                          Cancellation
+                          {booking.cancelledBy ? ` · by ${booking.cancelledBy}` : ''}
+                          {booking.cancelledAt ? ` · ${formatDateTime(booking.cancelledAt)}` : ''}
+                        </p>
+                        <p className="mt-1.5 text-[13px] font-semibold text-ink">
+                          {booking.cancellationReason || 'No reason recorded.'}
+                        </p>
+                        {(() => {
+                          const fee = calculateCancellationFee(booking);
+                          if (fee.amount === null) {
+                            return <p className="mt-2 text-[12px] font-semibold text-muted-soft">{fee.label}</p>;
+                          }
+                          return (
+                            <div className="mt-2.5 border-t border-rose-200 dark:border-rose-400/30 pt-2">
+                              <p className="text-[11px] font-extrabold uppercase tracking-wide text-rose-700 dark:text-rose-300">
+                                Payable to driver
+                              </p>
+                              <p className="mt-0.5 text-[15px] font-extrabold text-ink">
+                                {formatCurrency(fee.amount)}
+                                <span className="ml-2 text-[12px] font-semibold text-muted">
+                                  of {formatCurrency(booking.totalPrice || 0)} · {fee.label}
+                                </span>
+                              </p>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    ) : null}
+
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="rounded-xl border border-hairline bg-surface p-3.5">
                         <p className="text-[11px] font-extrabold uppercase tracking-wide text-muted-soft">

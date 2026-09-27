@@ -97,10 +97,10 @@ export const updateTravelerBooking = (bookingId, payload) =>
     body: JSON.stringify(payload),
   });
 
-export const cancelTravelerBooking = (bookingId) =>
+export const cancelTravelerBooking = (bookingId, reason = '') =>
   request(`/${bookingId}/cancel`, {
     method: 'POST',
-    body: JSON.stringify({}),
+    body: JSON.stringify({ reason }),
   });
 
 export const submitBookingReview = (bookingId, { rating, title, comment, images } = {}) => {

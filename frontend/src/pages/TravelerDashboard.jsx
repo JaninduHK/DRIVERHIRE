@@ -126,6 +126,18 @@ const BOOKING_CANCELLATION_NOTICE = [
   '100% of completed days and 50% of uncompleted days to be paid to driver if cancelling after start date.',
 ].join('\n\n');
 
+// Presets keep the reason useful to admin, and the explanation is required so a
+// cancellation row is never just a one-word shrug.
+const CANCELLATION_REASONS = [
+  'Travel plans changed',
+  'Found a better price elsewhere',
+  'Trip dates moved',
+  'Driver stopped responding',
+  'Driver asked to cancel',
+  'No longer travelling to Sri Lanka',
+  'Something else',
+];
+
 const buildBriefForm = () => ({
   startDate: '',
   endDate: '',
@@ -777,6 +789,9 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
   const [editForm, setEditForm] = useState(buildBookingEditForm({}));
   const [savingEdit, setSavingEdit] = useState(false);
   const [cancellingId, setCancellingId] = useState('');
+  const [cancellingBooking, setCancellingBooking] = useState(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelDetail, setCancelDetail] = useState('');
   const [reviewingBooking, setReviewingBooking] = useState(null);
   const [reviewForm, setReviewForm] = useState({ rating: '5', title: '', comment: '', images: [] });
   const [submittingReview, setSubmittingReview] = useState(false);
@@ -831,12 +846,36 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
     }
   };
 
-  const handleCancelBooking = async (booking) => {
-    if (!window.confirm(`${BOOKING_CANCELLATION_NOTICE}\n\nDo you want to cancel this booking?`)) return;
+  const openCancelModal = (booking) => {
+    setCancellingBooking(booking);
+    setCancelReason('');
+    setCancelDetail('');
+  };
+  const closeCancelModal = () => {
+    setCancellingBooking(null);
+    setCancelReason('');
+    setCancelDetail('');
+  };
+
+  const handleCancelBooking = async (event) => {
+    event.preventDefault();
+    if (!cancellingBooking) return;
+    const detail = cancelDetail.trim();
+    if (!cancelReason) {
+      toast.error('Please choose a reason for cancelling.');
+      return;
+    }
+    if (!detail) {
+      toast.error('Please explain the reason for cancelling.');
+      return;
+    }
+    const reason = detail && cancelReason !== 'Something else' ? `${cancelReason} — ${detail}` : detail || cancelReason;
+    const booking = cancellingBooking;
     setCancellingId(booking.id);
     try {
-      await cancelTravelerBooking(booking.id);
+      await cancelTravelerBooking(booking.id, reason);
       toast.success('Booking cancelled.');
+      closeCancelModal();
       onReload();
     } catch (err) {
       toast.error(err?.message || 'Unable to cancel booking.');
@@ -974,7 +1013,7 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
             onToggle={() => setExpandedId((prev) => (prev === booking.id ? '' : booking.id))}
             onMessage={() => (booking.conversationId ? onOpenConversation(booking.conversationId) : toast('No conversation for this trip yet.'))}
             onEdit={() => openEditModal(booking)}
-            onCancel={() => handleCancelBooking(booking)}
+            onCancel={() => openCancelModal(booking)}
             onReview={() => openReviewModal(booking)}
             cancelling={cancellingId === booking.id}
           />
@@ -1028,7 +1067,7 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
                     onToggle={() => setExpandedId((prev) => (prev === booking.id ? '' : booking.id))}
                     onMessage={() => (booking.conversationId ? onOpenConversation(booking.conversationId) : toast('No conversation for this trip yet.'))}
                     onEdit={() => openEditModal(booking)}
-                    onCancel={() => handleCancelBooking(booking)}
+                    onCancel={() => openCancelModal(booking)}
                     onReview={() => openReviewModal(booking)}
                     cancelling={cancellingId === booking.id}
                   />
@@ -1050,6 +1089,63 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
           {desktopBookings}
         </div>
       </div>
+
+      {cancellingBooking ? (
+        <BottomSheet title="Cancel booking" onClose={closeCancelModal}>
+          <p className="mb-3 whitespace-pre-line rounded-xl bg-[#fdf0d8] px-3 py-2 text-[12px] font-semibold leading-[1.5] text-[#a86a15]">
+            {BOOKING_CANCELLATION_NOTICE}
+          </p>
+          <form onSubmit={handleCancelBooking} className="flex flex-col gap-3">
+            <div>
+              <label className={labelCls}>Why are you cancelling?</label>
+              <div className="mt-1.5 flex flex-col gap-1.5">
+                {CANCELLATION_REASONS.map((reason) => (
+                  <button
+                    key={reason}
+                    type="button"
+                    onClick={() => setCancelReason(reason)}
+                    className={`rounded-[10px] border-[1.5px] px-3 py-2 text-left text-[13px] font-bold transition ${
+                      cancelReason === reason
+                        ? 'border-brand bg-brand-tint text-brand-dark'
+                        : 'border-[#e2e8ea] text-ink hover:border-muted-soft'
+                    }`}
+                  >
+                    {reason}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className={labelCls}>Explain the reason</label>
+              <textarea
+                rows={3}
+                maxLength={400}
+                value={cancelDetail}
+                onChange={(e) => setCancelDetail(e.target.value)}
+                required
+                placeholder="This is shared with our team and your driver."
+                className={`mt-1 ${inputCls} resize-y`}
+              />
+            </div>
+            <div className="flex gap-2.5">
+              <button
+                type="button"
+                onClick={closeCancelModal}
+                className="flex-1 rounded-[10px] border-[1.5px] border-[#e2e8ea] py-2.5 text-[13px] font-bold text-ink transition hover:border-muted-soft"
+              >
+                Keep booking
+              </button>
+              <button
+                type="submit"
+                disabled={Boolean(cancellingId)}
+                className="flex-1 rounded-[10px] border-[1.5px] border-[#ffd3d9] bg-[#fff5f6] py-2.5 text-[13px] font-bold text-[#f43f5e] transition hover:border-[#f43f5e] disabled:opacity-60"
+              >
+                {cancellingId ? 'Cancelling…' : 'Cancel booking'}
+              </button>
+            </div>
+          </form>
+        </BottomSheet>
+      ) : null}
 
       {editingBooking ? (
         <BottomSheet title="Update booking" onClose={closeEditModal}>

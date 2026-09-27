@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { ChevronDown, FileText, Loader2, RotateCcw, XCircle } from 'lucide-react';
+import { ArrowUpRight, ChevronDown, FileText, Loader2, RotateCcw, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { formatDate, formatDateInput, tagClass } from './adminFormatters.js';
+import { formatDate, formatDateInput, formatDateTime, tagClass } from './adminFormatters.js';
 import { fetchSettings as fetchAdminSettings, updateSettings as updateAdminSettings } from '../../services/adminApi.js';
 
 const BRIEF_STATUS_OPTIONS = [
@@ -94,7 +94,7 @@ export const BriefDriverTypeSetting = () => {
   );
 };
 
-const BriefsPanel = ({ state, onReload, onUpdate, onDelete }) => {
+const BriefsPanel = ({ state, onReload, onUpdate, onDelete, onViewOffers }) => {
   const { items: filtered, loading, error, updatingId, deletingId } = state;
   const [editingId, setEditingId] = useState(null);
   const [formState, setFormState] = useState(() => buildAdminBriefForm());
@@ -182,7 +182,9 @@ const BriefsPanel = ({ state, onReload, onUpdate, onDelete }) => {
               <button type="button" onClick={() => startEditing(brief)} className="grid w-full grid-cols-[1.1fr_1.4fr_.9fr_.7fr_.7fr] items-center gap-3 px-5 py-3.5 text-left transition hover:bg-canvas">
                 <div className="min-w-0">
                   <div className="truncate text-[13.5px] font-bold text-ink">{travelerName}</div>
-                  <div className="truncate text-[12px] font-semibold text-muted-soft">{brief.country}</div>
+                  <div className="truncate text-[12px] font-semibold text-muted-soft">
+                    {brief.country} · posted {brief.createdAt ? formatDateTime(brief.createdAt) : '—'}
+                  </div>
                 </div>
                 <div className="truncate text-[12.5px] font-semibold text-muted">{brief.startLocation} → {brief.endLocation}</div>
                 <div className="text-[12px] text-muted-soft">{formatDate(brief.startDate)} – {formatDate(brief.endDate)}</div>
@@ -195,7 +197,48 @@ const BriefsPanel = ({ state, onReload, onUpdate, onDelete }) => {
 
               {isEditing ? (
                 <form onSubmit={handleSubmit} className="space-y-3 border-t border-hairline bg-canvas/60 px-5 py-4">
-                  <p className="text-[12px] text-muted-soft">Traveller email: {brief.traveler?.email || '—'} · {brief.responses?.length || 0} response(s)</p>
+                  <p className="text-[12px] text-muted-soft">
+                    Traveller email: {brief.traveler?.email || '—'} · posted {brief.createdAt ? formatDateTime(brief.createdAt) : '—'}
+                  </p>
+
+                  <div className="rounded-xl border border-hairline bg-surface p-3.5">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-[11px] font-extrabold uppercase tracking-wide text-muted-soft">
+                        Offers received ({brief.responses?.length || 0})
+                      </p>
+                      {onViewOffers && (brief.responses?.length || 0) > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => onViewOffers(brief.id)}
+                          className="inline-flex items-center gap-1.5 text-[12px] font-bold text-brand-dark hover:underline"
+                        >
+                          Open in Offers <ArrowUpRight className="h-3.5 w-3.5" />
+                        </button>
+                      ) : null}
+                    </div>
+                    {(brief.responses?.length || 0) === 0 ? (
+                      <p className="mt-1.5 text-[12.5px] text-muted-soft">No driver has quoted on this brief yet.</p>
+                    ) : (
+                      <div className="mt-2 flex flex-col gap-1.5">
+                        {brief.responses.map((response) => (
+                          <div
+                            key={response.message || response.conversation || response.driver}
+                            className="flex flex-wrap items-center justify-between gap-2 border-b border-hairline pb-1.5 last:border-b-0 last:pb-0"
+                          >
+                            <span className="text-[12.5px] font-bold text-ink">
+                              {response.driverName || 'Driver'}
+                              {response.vehicleModel ? (
+                                <span className="ml-1.5 font-semibold text-muted-soft">· {response.vehicleModel}</span>
+                              ) : null}
+                            </span>
+                            <span className="text-[11.5px] font-semibold text-muted-soft">
+                              {response.createdAt ? formatDateTime(response.createdAt) : ''}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <div className="grid gap-3 sm:grid-cols-3">
                     <div>
                       <label className={labelCls}>Status</label>

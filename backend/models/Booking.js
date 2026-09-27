@@ -175,6 +175,24 @@ const bookingSchema = new mongoose.Schema(
     },
     reviewTokenExpires: Date,
     reviewSubmittedAt: Date,
+    // Captured when a booking is cancelled, so admin can see why it fell through
+    // rather than only that it did.
+    cancellationReason: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+      default: '',
+    },
+    cancelledAt: {
+      type: Date,
+      default: null,
+    },
+    // Who ended it. Null on bookings cancelled before this was introduced.
+    cancelledBy: {
+      type: String,
+      enum: ['traveller', 'driver', 'admin'],
+      default: null,
+    },
     paymentNote: {
       type: String,
       trim: true,

@@ -129,6 +129,9 @@ const shapeBooking = (booking, req) => {
     conversationId: booking.offerMessage?.conversation
       ? toId(booking.offerMessage.conversation)
       : null,
+    cancellationReason: booking.cancellationReason || '',
+    cancelledAt: booking.cancelledAt || null,
+    cancelledBy: booking.cancelledBy || null,
     createdAt: booking.createdAt,
     updatedAt: booking.updatedAt,
   };
@@ -161,7 +164,9 @@ const shapeBrief = (brief) => ({
   offersCount: brief.offersCount ?? brief.responses.length,
   responses: (brief.responses || []).map((response) => ({
     driver: toId(response.driver),
+    driverName: response.driver?.name || null,
     vehicle: toId(response.vehicle),
+    vehicleModel: response.vehicle?.model || null,
     conversation: toId(response.conversation),
     message: toId(response.message),
     note: response.note,
@@ -1427,6 +1432,10 @@ export const listBriefs = async (_req, res) => {
   try {
     const briefs = await TourBrief.find()
       .populate('traveler', 'name email')
+      // Named drivers/vehicles so the briefs panel can list the offers received
+      // rather than a column of ObjectIds.
+      .populate('responses.driver', 'name email')
+      .populate('responses.vehicle', 'model')
       .sort({ createdAt: -1 });
     return res.json({ briefs: briefs.map((brief) => shapeBrief(brief)) });
   } catch (error) {
