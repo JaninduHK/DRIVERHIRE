@@ -22,6 +22,20 @@ const KM_PER_DAY = { low: 120, high: 150 };
 
 const DRIVER_TYPES_ARTICLE = '/blog/tourist-driver-vs-chauffeur-guide-vs-national-guide';
 
+const QUOTE_LIMIT_OPTIONS = [
+  { value: '', label: 'No limit' },
+  { value: '10', label: '10' },
+  { value: '15', label: '15' },
+  { value: '20', label: '20' },
+];
+
+// Values must match LICENSE_TYPES on the backend exactly.
+const DRIVER_TYPE_OPTIONS = [
+  { value: '', label: 'All drivers' },
+  { value: 'Tourist Driver', label: 'Tourist Drivers only' },
+  { value: 'Chauffeur Guide Lecturer', label: 'Chauffeur Guides only' },
+];
+
 // A class with a single listing has identical bounds; "$120–$120" reads as a bug.
 const formatBand = (low, high) =>
   Math.round(low) === Math.round(high)
@@ -37,6 +51,8 @@ const buildForm = () => ({
   children: '0',
   country: '',
   message: '',
+  maxOffers: '',
+  requiredLicenseType: '',
 });
 
 const inputCls =
@@ -152,6 +168,7 @@ const GetQuotes = () => {
   const navigate = useNavigate();
   const loaderData = useLoaderData();
   const vehicles = useMemo(() => (Array.isArray(loaderData?.vehicles) ? loaderData.vehicles : []), [loaderData]);
+  const driverTypeSelectionEnabled = loaderData?.driverTypeSelectionEnabled !== false;
   const recommendedDrivers = useMemo(
     () => (Array.isArray(loaderData?.recommendedDrivers) ? loaderData.recommendedDrivers : []),
     [loaderData]
@@ -232,6 +249,8 @@ const GetQuotes = () => {
       children: Math.max(0, Number(form.children || 0)),
       message: form.message.trim(),
       country: form.country.trim(),
+      maxOffers: form.maxOffers ? Number(form.maxOffers) : null,
+      requiredLicenseType: driverTypeSelectionEnabled ? form.requiredLicenseType || null : null,
     };
 
     if (!payload.startDate || !payload.endDate) {
@@ -439,6 +458,42 @@ const GetQuotes = () => {
                         className={inputCls}
                       />
                     </label>
+                  </div>
+
+                  <div className={`grid grid-cols-1 gap-4 ${driverTypeSelectionEnabled ? 'sm:grid-cols-2' : ''}`}>
+                    <label className="block">
+                      <span className={labelCls}>Limit quotations <span className="font-semibold text-muted-soft">(optional)</span></span>
+                      <select
+                        value={form.maxOffers}
+                        onChange={setField('maxOffers')}
+                        className={inputCls}
+                      >
+                        {QUOTE_LIMIT_OPTIONS.map((o) => (
+                          <option key={o.label} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                      <span className="mt-1.5 block text-[11.5px] leading-[1.5] text-muted-soft">
+                        We stop accepting quotes once this many drivers have replied.
+                      </span>
+                    </label>
+
+                    {driverTypeSelectionEnabled ? (
+                      <label className="block">
+                        <span className={labelCls}>Driver type <span className="font-semibold text-muted-soft">(optional)</span></span>
+                        <select
+                          value={form.requiredLicenseType}
+                          onChange={setField('requiredLicenseType')}
+                          className={inputCls}
+                        >
+                          {DRIVER_TYPE_OPTIONS.map((o) => (
+                            <option key={o.label} value={o.value}>{o.label}</option>
+                          ))}
+                        </select>
+                        <span className="mt-1.5 block text-[11.5px] leading-[1.5] text-muted-soft">
+                          Restricting this means only drivers with that SLTDA-verified licence can quote, so you may receive fewer offers.
+                        </span>
+                      </label>
+                    ) : null}
                   </div>
 
                   <label className="block">

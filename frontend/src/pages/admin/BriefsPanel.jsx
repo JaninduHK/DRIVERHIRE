@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronDown, FileText, Loader2, RotateCcw, XCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { formatDate, formatDateInput, tagClass } from './adminFormatters.js';
+import { fetchSettings as fetchAdminSettings, updateSettings as updateAdminSettings } from '../../services/adminApi.js';
 
 const BRIEF_STATUS_OPTIONS = [
   { value: 'open', label: 'Open' },
@@ -23,6 +25,74 @@ const buildAdminBriefForm = (brief = {}) => ({
 const inputCls =
   'mt-1 w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/10';
 const labelCls = 'block text-[11px] font-extrabold uppercase tracking-wide text-muted-soft';
+
+// Controls whether the public quote form offers the driver-type choice at all.
+// Mirrors DriverApprovalSetting in DriversPanel.jsx — self-contained, no dashboard wiring.
+export const BriefDriverTypeSetting = () => {
+  const [enabled, setEnabled] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchAdminSettings()
+      .then((data) => {
+        if (!cancelled) setEnabled(data?.settings?.briefDriverTypeSelection !== false);
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleSet = async (value) => {
+    if (value === enabled || saving) return;
+    const previous = enabled;
+    setSaving(true);
+    setEnabled(value);
+    try {
+      const response = await updateAdminSettings({ briefDriverTypeSelection: value });
+      setEnabled(response?.settings?.briefDriverTypeSelection !== false);
+      toast.success(value ? 'Travellers can choose a driver type.' : 'Driver type choice hidden from the form.');
+    } catch (err) {
+      setEnabled(previous);
+      toast.error(err.message || 'Unable to update setting.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] bg-surface p-5 shadow-card">
+      <div>
+        <p className="text-[11px] font-extrabold uppercase tracking-wide text-muted-soft">Quote form</p>
+        <b className="text-[15px] text-ink">Driver type selection</b>
+        <p className="mt-1 max-w-xl text-[12.5px] text-muted">
+          {enabled
+            ? 'Travellers can restrict a request to Tourist Drivers or Chauffeur Guides. Only drivers with that approved licence can then quote.'
+            : 'The choice is hidden from the quote form, so every new request goes to all drivers. Requests already restricted keep their restriction.'}
+        </p>
+      </div>
+      <div className="inline-flex rounded-xl bg-canvas p-1">
+        {[{ value: true, label: 'Shown' }, { value: false, label: 'Hidden' }].map((option) => {
+          const active = enabled === option.value;
+          return (
+            <button
+              key={option.label}
+              type="button"
+              disabled={loading || saving}
+              onClick={() => handleSet(option.value)}
+              className={`min-w-[92px] rounded-lg px-4 py-2 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                active ? 'bg-surface text-ink shadow-sm' : 'text-muted-soft hover:text-muted'
+              }`}
+            >
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
 const BriefsPanel = ({ state, onReload, onUpdate, onDelete }) => {
   const { items: filtered, loading, error, updatingId, deletingId } = state;

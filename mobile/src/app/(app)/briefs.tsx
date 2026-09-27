@@ -64,6 +64,8 @@ function BriefCard({ brief, fresh, onPress }: { brief: Brief; fresh: boolean; on
     guestsLabel,
     brief.country || null,
     brief.offersCount ? `${brief.offersCount} offer${brief.offersCount === 1 ? '' : 's'}` : null,
+    brief.requiredLicenseType ? `${brief.requiredLicenseType}s only` : null,
+    brief.maxOffers ? `Limit ${brief.maxOffers}` : null,
   ].filter(Boolean) as string[];
   const message = brief.message || brief.description;
 

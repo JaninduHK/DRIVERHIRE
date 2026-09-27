@@ -53,7 +53,21 @@ export default function RequestDetail() {
     onError: (err) => Alert.alert('Could not send offer', err instanceof Error ? err.message : 'Try again.'),
   });
 
+  // The server decides eligibility (backend/controllers/briefController.js); this
+  // only reflects it, so the rule can't drift between mobile and web.
+  const blockReason =
+    brief?.eligibility && !brief.eligibility.canRespond && brief.eligibility.reason !== 'already_responded'
+      ? brief.eligibility.reason
+      : null;
+  const blockCopy =
+    blockReason === 'limit_reached'
+      ? 'This traveller has reached their quotation limit.'
+      : blockReason === 'license_mismatch'
+        ? `Only verified ${brief?.requiredLicenseType ?? 'selected'}s can quote on this request.`
+        : null;
+
   const canSend =
+    !blockReason &&
     Number(price) > 0 &&
     Boolean(vehicleId) &&
     Number(includedKm) > 0 &&
@@ -150,10 +164,23 @@ export default function RequestDetail() {
           </ScrollView>
 
           {/* Sticky footer */}
+          {blockCopy ? (
+            <View className="border-t border-[#f0dcae] bg-[#fdf7e8] px-4 py-2.5">
+              <Text className="font-semi text-[12.5px] leading-[18px] text-[#7a5410]">{blockCopy}</Text>
+            </View>
+          ) : null}
           <View className="flex-row items-center gap-2.5 border-t border-[#eef1f0] bg-white px-4 pb-6 pt-3">
             <Button title="Decline" variant="secondary" onPress={() => router.back()} />
             <Button
-              title={price ? `Send offer, ${formatMoney(Number(price))}` : 'Send offer'}
+              title={
+                blockReason === 'limit_reached'
+                  ? 'Quote limit reached'
+                  : blockReason === 'license_mismatch'
+                    ? 'Not open to your licence'
+                    : price
+                      ? `Send offer, ${formatMoney(Number(price))}`
+                      : 'Send offer'
+              }
               variant="primary"
               className="flex-1 py-3.5"
               loading={respond.isPending}

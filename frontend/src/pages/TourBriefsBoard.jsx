@@ -60,6 +60,13 @@ const formatDateInput = (value) => {
   return date.toISOString().slice(0, 10);
 };
 
+// Server decides eligibility (backend/controllers/briefController.js) so web and
+// mobile can't drift on the rule; this only renders the reason.
+const BLOCK_COPY = {
+  limit_reached: 'Quote limit reached',
+  license_mismatch: 'Not open to your licence type',
+};
+
 const TourBriefsBoard = () => {
   const navigate = useNavigate();
   const [userState, setUserState] = useState({ loading: true, error: '', data: null });
@@ -376,6 +383,15 @@ const TourBriefsBoard = () => {
                     const end = formatDateLabel(brief.endDate);
                     const offerLabel = brief.offersCount === 1 ? 'offer' : 'offers';
                     const hasResponded = Boolean(brief.hasResponded);
+                    const blockReason =
+                      brief.eligibility && !brief.eligibility.canRespond && brief.eligibility.reason !== 'already_responded'
+                        ? brief.eligibility.reason
+                        : null;
+                    const restrictionLabel = brief.requiredLicenseType
+                      ? `${brief.requiredLicenseType}s only`
+                      : brief.maxOffers
+                        ? `${brief.offersCount} of ${brief.maxOffers} quotes`
+                        : null;
                     const noVehicles = vehiclesState.items.length === 0;
                     return (
                       <article key={brief.id} id={`brief-${brief.id}`} className="min-w-0 rounded-[18px] bg-white p-4 shadow-card">
@@ -420,14 +436,21 @@ const TourBriefsBoard = () => {
                             {brief.offersCount} {offerLabel}
                           </span>
                         </div>
+                        {restrictionLabel ? (
+                          <div className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-[#fdf7e8] px-2.5 py-1.5 text-[12px] font-bold text-[#7a5410]">
+                            {restrictionLabel}
+                          </div>
+                        ) : null}
                         <button
                           type="button"
                           onClick={() => openOfferModal(brief)}
-                          disabled={hasResponded || noVehicles}
+                          disabled={hasResponded || noVehicles || blockReason}
                           className="mt-3.5 flex w-full items-center justify-center gap-1.5 rounded-[12px] bg-brand py-3 text-[13.5px] font-bold text-white transition hover:bg-brand-dark disabled:opacity-50"
                         >
                           {hasResponded ? (
                             'Offer sent'
+                          ) : blockReason ? (
+                            BLOCK_COPY[blockReason] || 'Not accepting quotes'
                           ) : (
                             <>
                               <Send className="h-[15px] w-[15px]" />

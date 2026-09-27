@@ -4,7 +4,8 @@ import ChatConversation from '../models/ChatConversation.js';
 import ChatMessage from '../models/ChatMessage.js';
 import Vehicle, { VEHICLE_STATUS } from '../models/Vehicle.js';
 import User from '../models/User.js';
-import { DRIVER_STATUS, USER_ROLES } from '../models/User.js';
+import { DRIVER_STATUS, USER_ROLES, LICENSE_TYPES, LICENSE_STATUS } from '../models/User.js';
+import { getSetting, SETTING_KEYS } from '../models/Setting.js';
 import { createChatMessage } from '../services/chatService.js';
 import { sendBriefAlertEmail } from '../services/emailService.js';
 import { sendExpoPushNotifications } from '../services/expoPushService.js';
@@ -29,7 +30,30 @@ const normalizeNumber = (value, fallback = 0) => {
   return parsed;
 };
 
-const toPlainBrief = (brief, currentUserId = null) => {
+const ALLOWED_MAX_OFFERS = [10, 15, 20];
+// Only the two types the traveller form offers; National Guide Lecturer is not
+// selectable because no driver currently holds one.
+const SELECTABLE_LICENSE_TYPES = [LICENSE_TYPES.TOURIST_DRIVER, LICENSE_TYPES.CHAUFFEUR_GUIDE_LECTURER];
+
+export const isDriverTypeSelectionEnabled = () =>
+  getSetting(SETTING_KEYS.BRIEF_DRIVER_TYPE_SELECTION, true).then((v) => v !== false);
+
+// Why a driver may not quote on this brief. null reason = they can.
+const eligibilityFor = (source, responses, viewer) => {
+  if (!viewer || viewer.role !== USER_ROLES.DRIVER) return { canRespond: false, reason: null };
+  // Already quoted: they keep the brief and their chat, they just can't quote twice.
+  const already = responses.some((r) => (r.driver?.id || r.driver?.toString?.()) === viewer.id);
+  if (already) return { canRespond: false, reason: 'already_responded' };
+  const max = Number(source.maxOffers) || null;
+  if (max && responses.length >= max) return { canRespond: false, reason: 'limit_reached' };
+  const required = source.requiredLicenseType || null;
+  if (required && !(viewer.licenseStatus === LICENSE_STATUS.APPROVED && viewer.licenseType === required)) {
+    return { canRespond: false, reason: 'license_mismatch' };
+  }
+  return { canRespond: true, reason: null };
+};
+
+const toPlainBrief = (brief, currentUserId = null, viewer = null) => {
   const source = typeof brief.toJSON === 'function' ? brief.toJSON() : brief;
   const responses = Array.isArray(source.responses) ? source.responses : [];
   const travelerId =
@@ -62,6 +86,9 @@ const toPlainBrief = (brief, currentUserId = null) => {
     country: source.country,
     status: source.status,
     offersCount: typeof source.offersCount === 'number' ? source.offersCount : responses.length,
+    maxOffers: source.maxOffers ?? null,
+    requiredLicenseType: source.requiredLicenseType ?? null,
+    eligibility: eligibilityFor(source, responses, viewer),
     lastResponseAt: source.lastResponseAt,
     createdAt: source.createdAt,
     updatedAt: source.updatedAt,
@@ -115,6 +142,8 @@ export const createBrief = async (req, res) => {
     children = 0,
     message = '',
     country = '',
+    maxOffers = null,
+    requiredLicenseType = null,
   } = req.body || {};
 
   const startDate = parseDate(startInput);
@@ -122,6 +151,24 @@ export const createBrief = async (req, res) => {
 
   if (!startDate || !endDate || endDate < startDate) {
     return res.status(400).json({ message: 'Please provide a valid start and end date.' });
+  }
+
+  let normalizedMaxOffers = null;
+  if (maxOffers !== null && maxOffers !== undefined && maxOffers !== '') {
+    normalizedMaxOffers = Number(maxOffers);
+    if (!ALLOWED_MAX_OFFERS.includes(normalizedMaxOffers)) {
+      return res.status(400).json({ message: 'Quotation limit must be 10, 15 or 20.' });
+    }
+  }
+
+  let normalizedLicenseType = null;
+  if (requiredLicenseType) {
+    if (!SELECTABLE_LICENSE_TYPES.includes(requiredLicenseType)) {
+      return res.status(400).json({ message: 'Invalid driver type selection.' });
+    }
+    // The payload is replayed from sessionStorage after SSO, so a stale form
+    // must not be able to set a restriction the admin has since switched off.
+    normalizedLicenseType = (await isDriverTypeSelectionEnabled()) ? requiredLicenseType : null;
   }
 
   // The traveller form already blocks this client-side (date-input `min` + a toast
@@ -164,6 +211,8 @@ export const createBrief = async (req, res) => {
       children: normalizedChildren,
       message: trimmedMessage,
       country: trimmedCountry,
+      maxOffers: normalizedMaxOffers,
+      requiredLicenseType: normalizedLicenseType,
       status: 'open',
     });
 
@@ -227,8 +276,19 @@ export const listOpenBriefs = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(100);
 
+    // Restricted briefs stay on the board so the driver can see WHY they cannot
+    // quote, rather than the brief silently vanishing. Their licence is needed to
+    // work that out, and is the same for every brief, so fetch it once.
+    const driver = await User.findById(req.user.id).select('licenseType licenseStatus').lean();
+    const viewer = {
+      id: req.user.id,
+      role: req.user.role,
+      licenseType: driver?.licenseType || null,
+      licenseStatus: driver?.licenseStatus || null,
+    };
+
     return res.json({
-      briefs: briefs.map((brief) => toPlainBrief(brief, req.user.id)),
+      briefs: briefs.map((brief) => toPlainBrief(brief, req.user.id, viewer)),
     });
   } catch (error) {
     console.error('List open briefs error:', error);
@@ -404,6 +464,27 @@ export const respondToBrief = async (req, res) => {
       return res.status(409).json({ message: 'You already sent an offer for this brief.' });
     }
 
+    // Traveller's quote cap. Checked here so a refused offer never creates a
+    // conversation, and re-checked at push time below to close the race between
+    // two drivers submitting at once.
+    if (brief.maxOffers && brief.responses.length >= brief.maxOffers) {
+      return res.status(409).json({ message: 'This traveller has reached their quotation limit.' });
+    }
+
+    // Traveller asked for a specific licence type. req.user carries no licence
+    // data (authMiddleware), so load it. Only an admin-APPROVED licence counts.
+    if (brief.requiredLicenseType) {
+      const driver = await User.findById(req.user.id).select('licenseType licenseStatus').lean();
+      const verified =
+        driver?.licenseStatus === LICENSE_STATUS.APPROVED &&
+        driver?.licenseType === brief.requiredLicenseType;
+      if (!verified) {
+        return res.status(403).json({
+          message: `This traveller is only accepting quotes from verified ${brief.requiredLicenseType}s.`,
+        });
+      }
+    }
+
     const vehicle = await Vehicle.findOne({
       _id: vehicleId,
       driver: req.user.id,
@@ -477,6 +558,16 @@ Total: $${normalizedPrice.toFixed(0)} (includes ${normalizedKms} km)`;
           message.violations = Array.from(mergedViolations);
         }
         await message.save();
+      }
+    }
+
+    // Re-read: another driver may have filled the last slot while this offer was
+    // being prepared. Cheap, and the only way to keep the cap honest.
+    if (brief.maxOffers) {
+      const fresh = await TourBrief.findById(briefId).select('responses maxOffers').lean();
+      const count = Array.isArray(fresh?.responses) ? fresh.responses.length : 0;
+      if (count >= brief.maxOffers) {
+        return res.status(409).json({ message: 'This traveller has reached their quotation limit.' });
       }
     }
 

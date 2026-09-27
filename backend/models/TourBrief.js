@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { LICENSE_TYPES } from './User.js';
 
 const briefResponseSchema = new mongoose.Schema(
   {
@@ -80,6 +81,20 @@ const tourBriefSchema = new mongoose.Schema(
       required: true,
       trim: true,
       maxlength: 120,
+    },
+    // Optional traveller restrictions. null on both = unrestricted, which is the
+    // behaviour every brief had before these were introduced.
+    maxOffers: {
+      type: Number,
+      enum: [10, 15, 20],
+      default: null,
+    },
+    // Stored as the exact LICENSE_TYPES string so it compares directly against
+    // User.licenseType with no mapping layer.
+    requiredLicenseType: {
+      type: String,
+      enum: Object.values(LICENSE_TYPES),
+      default: null,
     },
     status: {
       type: String,

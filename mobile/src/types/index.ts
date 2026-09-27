@@ -167,6 +167,9 @@ export interface Brief {
   country?: string;
   message?: string;
   offersCount?: number;
+  maxOffers?: number | null;
+  requiredLicenseType?: string | null;
+  eligibility?: { canRespond: boolean; reason: string | null };
   traveler?: { id?: string; name?: string; email?: string } | string | null;
   status?: string;
   createdAt?: string;

@@ -5,6 +5,8 @@ export const SETTING_KEYS = {
   DRIVER_AUTO_APPROVAL: 'driverAutoApproval',
   PLATFORM_BANK_DETAILS: 'platformBankDetails',
   REVIEW_REQUESTS_START_AT: 'reviewRequestsStartAt',
+  // Admin switch for the driver-type selector on the public quote form.
+  BRIEF_DRIVER_TYPE_SELECTION: 'briefDriverTypeSelection',
 };
 
 const settingSchema = new mongoose.Schema(

@@ -107,3 +107,11 @@ export default {
   fetchOpenBriefs,
   respondToBrief,
 };
+
+// Unauthenticated read of the public feature flags (see backend/routes/publicSettingsRoutes.js).
+export const fetchPublicSettings = async () => {
+  const response = await fetch(`${API_BASE_URL}/settings/public`, { headers: { Accept: 'application/json' } });
+  if (!response.ok) throw new Error('Unable to load settings');
+  const data = await response.json();
+  return data?.settings || {};
+};

@@ -1,5 +1,6 @@
 import { fetchVehicles } from '../../src/services/vehicleCatalogApi.js';
 import { fetchDriverProfile } from '../../src/services/driverDirectoryApi.js';
+import { fetchPublicSettings } from '../../src/services/briefApi.js';
 import { buildMeta } from '../lib/seo.js';
 
 // Hand-picked drivers surfaced on this page. Their details are always fetched
@@ -14,7 +15,7 @@ const RECOMMENDED_DRIVER_IDS = [
 // Server-rendered so the rate tables and guidance are real HTML for crawlers; the
 // quote form itself hydrates and behaves exactly as before.
 export async function loader() {
-  const [vehicles, recommendedDrivers] = await Promise.all([
+  const [vehicles, recommendedDrivers, settings] = await Promise.all([
     fetchVehicles()
       .then((r) => (Array.isArray(r?.vehicles) ? r.vehicles : []))
       .catch(() => []),
@@ -32,9 +33,15 @@ export async function loader() {
           .catch(() => null)
       )
     ).then((list) => list.filter(Boolean)),
+    // Admin can switch the driver-type selector off; default to on if unreachable.
+    fetchPublicSettings().catch(() => ({ briefDriverTypeSelection: true })),
   ]);
 
-  return { vehicles, recommendedDrivers };
+  return {
+    vehicles,
+    recommendedDrivers,
+    driverTypeSelectionEnabled: settings?.briefDriverTypeSelection !== false,
+  };
 }
 
 export function meta() {

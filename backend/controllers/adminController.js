@@ -1736,7 +1736,9 @@ export const getAdminSettings = async (_req, res) => {
       await getSetting(SETTING_KEYS.DRIVER_AUTO_APPROVAL, false)
     );
     const bankDetails = await resolveBankDetails();
-    return res.json({ settings: { driverAutoApproval, bankDetails } });
+    const briefDriverTypeSelection =
+      (await getSetting(SETTING_KEYS.BRIEF_DRIVER_TYPE_SELECTION, true)) !== false;
+    return res.json({ settings: { driverAutoApproval, bankDetails, briefDriverTypeSelection } });
   } catch (error) {
     console.error('Get admin settings error:', error);
     return res.status(500).json({ message: 'Unable to load settings.' });
@@ -1747,9 +1749,12 @@ export const getAdminSettings = async (_req, res) => {
 // shown to drivers for commission payment.
 export const updateAdminSettings = async (req, res) => {
   try {
-    const { driverAutoApproval, bankDetails } = req.body || {};
+    const { driverAutoApproval, bankDetails, briefDriverTypeSelection } = req.body || {};
     if (typeof driverAutoApproval === 'boolean') {
       await setSetting(SETTING_KEYS.DRIVER_AUTO_APPROVAL, driverAutoApproval);
+    }
+    if (typeof briefDriverTypeSelection === 'boolean') {
+      await setSetting(SETTING_KEYS.BRIEF_DRIVER_TYPE_SELECTION, briefDriverTypeSelection);
     }
     if (bankDetails && typeof bankDetails === 'object' && !Array.isArray(bankDetails)) {
       const existing = await getSetting(SETTING_KEYS.PLATFORM_BANK_DETAILS, {});
@@ -1767,7 +1772,12 @@ export const updateAdminSettings = async (req, res) => {
       message: current
         ? 'New drivers are now approved automatically.'
         : 'New drivers now require manual approval.',
-      settings: { driverAutoApproval: current, bankDetails: currentBankDetails },
+      settings: {
+        driverAutoApproval: current,
+        bankDetails: currentBankDetails,
+        briefDriverTypeSelection:
+          (await getSetting(SETTING_KEYS.BRIEF_DRIVER_TYPE_SELECTION, true)) !== false,
+      },
     });
   } catch (error) {
     console.error('Update admin settings error:', error);

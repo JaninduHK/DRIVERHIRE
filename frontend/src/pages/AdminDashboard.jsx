@@ -74,7 +74,7 @@ import AdminShell from './admin/AdminShell.jsx';
 import OverviewPanel from './admin/OverviewPanel.jsx';
 import BookingsPanel from './admin/BookingsPanel.jsx';
 import DiscountsPanel from './admin/DiscountsPanel.jsx';
-import BriefsPanel from './admin/BriefsPanel.jsx';
+import BriefsPanel, { BriefDriverTypeSetting } from './admin/BriefsPanel.jsx';
 import OffersPanel from './admin/OffersPanel.jsx';
 import ConversationsPanel from './admin/ConversationsPanel.jsx';
 import UsersPanel from './admin/UsersPanel.jsx';
@@ -976,7 +976,12 @@ const AdminDashboard = () => {
   } else if (activeSection === 'discounts') {
     content = <DiscountsPanel state={{ ...discountState, items: filteredDiscounts }} onReload={loadDiscounts} onCreate={handleDiscountCreate} onUpdate={handleDiscountUpdate} onDelete={handleDiscountDelete} />;
   } else if (activeSection === 'briefs') {
-    content = <BriefsPanel state={{ ...briefState, items: filteredBriefs }} onReload={loadBriefs} onUpdate={handleBriefUpdate} onDelete={handleBriefDelete} />;
+    content = (
+      <div className="flex flex-col gap-4">
+        <BriefDriverTypeSetting />
+        <BriefsPanel state={{ ...briefState, items: filteredBriefs }} onReload={loadBriefs} onUpdate={handleBriefUpdate} onDelete={handleBriefDelete} />
+      </div>
+    );
   } else if (activeSection === 'offers') {
     content = <OffersPanel state={{ ...offerState, items: filteredOffers }} onReload={loadOffers} onStatusChange={handleOfferStatusChange} onDelete={handleOfferDelete} />;
   } else if (activeSection === 'conversations') {
