@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowUpRight, ChevronDown, FileText, Loader2, RotateCcw, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { formatDate, formatDateInput, formatDateTime, tagClass } from './adminFormatters.js';
+import { formatCurrency, formatDate, formatDateInput, formatDateTime, tagClass } from './adminFormatters.js';
 import { fetchSettings as fetchAdminSettings, updateSettings as updateAdminSettings } from '../../services/adminApi.js';
 
 const BRIEF_STATUS_OPTIONS = [
@@ -205,6 +205,17 @@ const BriefsPanel = ({ state, onReload, onUpdate, onDelete, onViewOffers }) => {
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className="text-[11px] font-extrabold uppercase tracking-wide text-muted-soft">
                         Offers received ({brief.responses?.length || 0})
+                        {(() => {
+                          const prices = (brief.responses || [])
+                            .map((r) => Number(r.totalPrice))
+                            .filter((n) => Number.isFinite(n) && n > 0);
+                          if (prices.length < 2) return null;
+                          return (
+                            <span className="ml-2 font-bold normal-case tracking-normal text-muted">
+                              · {formatCurrency(Math.min(...prices))} – {formatCurrency(Math.max(...prices))}
+                            </span>
+                          );
+                        })()}
                       </p>
                       {onViewOffers && (brief.responses?.length || 0) > 0 ? (
                         <button
@@ -231,8 +242,23 @@ const BriefsPanel = ({ state, onReload, onUpdate, onDelete, onViewOffers }) => {
                                 <span className="ml-1.5 font-semibold text-muted-soft">· {response.vehicleModel}</span>
                               ) : null}
                             </span>
-                            <span className="text-[11.5px] font-semibold text-muted-soft">
-                              {response.createdAt ? formatDateTime(response.createdAt) : ''}
+                            <span className="flex items-center gap-3">
+                              <span
+                                className={`text-[12.5px] font-extrabold ${
+                                  response.offerStatus === 'accepted'
+                                    ? 'text-emerald-600 dark:text-emerald-400'
+                                    : response.offerStatus === 'declined'
+                                      ? 'text-muted-soft line-through'
+                                      : 'text-ink'
+                                }`}
+                              >
+                                {Number.isFinite(Number(response.totalPrice)) && Number(response.totalPrice) > 0
+                                  ? formatCurrency(Number(response.totalPrice))
+                                  : '—'}
+                              </span>
+                              <span className="text-[11.5px] font-semibold text-muted-soft">
+                                {response.createdAt ? formatDateTime(response.createdAt) : ''}
+                              </span>
                             </span>
                           </div>
                         ))}

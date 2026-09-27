@@ -169,6 +169,9 @@ const shapeBrief = (brief) => ({
     vehicleModel: response.vehicle?.model || null,
     conversation: toId(response.conversation),
     message: toId(response.message),
+    totalPrice: response.message?.offer?.totalPrice ?? null,
+    currency: response.message?.offer?.currency || 'USD',
+    offerStatus: response.message?.offer?.status || null,
     note: response.note,
     createdAt: response.createdAt,
   })),
@@ -1436,6 +1439,9 @@ export const listBriefs = async (_req, res) => {
       // rather than a column of ObjectIds.
       .populate('responses.driver', 'name email')
       .populate('responses.vehicle', 'model')
+      // The quoted price lives on the offer message, not the brief, so pull it
+      // through to show what each driver actually offered.
+      .populate('responses.message', 'offer.totalPrice offer.currency offer.status')
       .sort({ createdAt: -1 });
     return res.json({ briefs: briefs.map((brief) => shapeBrief(brief)) });
   } catch (error) {
