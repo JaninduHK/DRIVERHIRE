@@ -86,15 +86,20 @@ const OverviewPanel = ({ bookings, briefs, drivers, vehicles, onNavigate }) => {
     const thisMonth = nowDate.getMonth();
     const thisYear = nowDate.getFullYear();
     const lastMonthDate = new Date(thisYear, thisMonth - 1, 1);
+    // Confirmed only — a pending, cancelled or rejected booking is not booking
+    // value. Matches the chart above and the Reports settlement table, which
+    // both count confirmed bookings; counting everything here inflated both
+    // this figure and the commission beside it.
+    const confirmed = bookings.filter((b) => b.status === 'confirmed');
     let currentTotal = 0;
     let lastTotal = 0;
-    bookings.forEach((booking) => {
+    confirmed.forEach((booking) => {
       const created = new Date(booking.createdAt);
       if (created.getFullYear() === thisYear && created.getMonth() === thisMonth) currentTotal += booking.totalPrice || 0;
       else if (created.getFullYear() === lastMonthDate.getFullYear() && created.getMonth() === lastMonthDate.getMonth()) lastTotal += booking.totalPrice || 0;
     });
     const delta = lastTotal > 0 ? Math.round(((currentTotal - lastTotal) / lastTotal) * 100) : null;
-    const commission = bookings
+    const commission = confirmed
       .filter((b) => { const c = new Date(b.createdAt); return c.getFullYear() === thisYear && c.getMonth() === thisMonth; })
       .reduce((sum, b) => sum + (b.commissionAmount || 0), 0);
     return { currentTotal, delta, commission, monthLabel: nowDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }) };

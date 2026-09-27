@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { CalendarDays, ChevronDown, Loader2, Mail, Phone, RotateCcw, XCircle } from 'lucide-react';
-import { formatCurrency, formatDate, formatDateInput, tagClass } from './adminFormatters.js';
+import { formatCurrency, formatDate, formatDateInput, formatDateTime, tagClass } from './adminFormatters.js';
 
 const BOOKING_STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending' },
@@ -37,6 +37,32 @@ const labelCls = 'block text-[11px] font-extrabold uppercase tracking-wide text-
 
 const BookingsPanel = ({ state, onReload, onUpdate, onDelete }) => {
   const { items: filtered, loading, error, updatingId, deletingId } = state;
+  // Filters on createdAt — the same basis the Overview GBV card and the Reports
+  // settlement table bucket by, so a month's rows reconcile against those totals.
+  const [month, setMonth] = useState('');
+
+  const visible = useMemo(() => {
+    if (!month) return filtered;
+    return filtered.filter((booking) => {
+      if (!booking.createdAt) return false;
+      const d = new Date(booking.createdAt);
+      if (Number.isNaN(d.getTime())) return false;
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` === month;
+    });
+  }, [filtered, month]);
+
+  // Shown for the current view so a month's value can be checked against the
+  // dashboard's GBV, which counts confirmed bookings only.
+  const totals = useMemo(() => {
+    let confirmed = 0;
+    let other = 0;
+    visible.forEach((b) => {
+      const value = Number(b.totalPrice) || 0;
+      if (b.status === 'confirmed') confirmed += value;
+      else other += value;
+    });
+    return { confirmed, other };
+  }, [visible]);
   const [editingId, setEditingId] = useState(null);
   const [formState, setFormState] = useState(() => buildAdminBookingForm());
   const [formError, setFormError] = useState('');
@@ -107,20 +133,43 @@ const BookingsPanel = ({ state, onReload, onUpdate, onDelete }) => {
   return (
     <div className="rounded-[18px] bg-surface shadow-card">
       <div className="flex items-center justify-between gap-2 border-b border-hairline px-5 py-4">
-        <b className="text-[15px] text-ink">Bookings <span className="font-semibold text-muted-soft">({filtered.length})</span></b>
-        <button type="button" onClick={onReload} className="rounded-lg border border-line px-3 py-1.5 text-xs font-extrabold uppercase tracking-wide text-muted transition hover:border-brand hover:text-brand-dark">
-          Refresh
-        </button>
+        <b className="text-[15px] text-ink">Bookings <span className="font-semibold text-muted-soft">({visible.length})</span></b>
+        <div className="flex items-center gap-2">
+          <label className="text-[11px] font-extrabold uppercase tracking-wide text-muted-soft">Booked in</label>
+          <input
+            type="month"
+            value={month}
+            onChange={(event) => setMonth(event.target.value)}
+            className="rounded-lg border border-line bg-surface px-3 py-1.5 text-xs font-bold text-ink focus:border-ink focus:outline-none"
+          />
+          {month ? (
+            <button type="button" onClick={() => setMonth('')} className="rounded-lg border border-line px-3 py-1.5 text-xs font-extrabold uppercase tracking-wide text-muted transition hover:border-brand hover:text-brand-dark">
+              Clear
+            </button>
+          ) : null}
+          <button type="button" onClick={onReload} className="rounded-lg border border-line px-3 py-1.5 text-xs font-extrabold uppercase tracking-wide text-muted transition hover:border-brand hover:text-brand-dark">
+            Refresh
+          </button>
+        </div>
       </div>
 
-      {filtered.length === 0 ? (
+      {month && visible.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1 border-b border-hairline px-5 py-2.5 text-[12px] font-semibold text-muted">
+          <span>Confirmed <b className="text-ink">{formatCurrency(totals.confirmed)}</b></span>
+          {totals.other > 0 ? (
+            <span>Not confirmed <b className="text-ink">{formatCurrency(totals.other)}</b> <span className="text-muted-soft">(excluded from GBV)</span></span>
+          ) : null}
+        </div>
+      ) : null}
+
+      {visible.length === 0 ? (
         <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 text-center text-sm text-muted">
           <CalendarDays className="h-9 w-9 text-muted-soft" />
           <p>No bookings found.</p>
         </div>
       ) : (
         <div>
-          {filtered.map((booking) => {
+          {visible.map((booking) => {
             const isEditing = editingId === booking.id;
             const isUpdating = updatingId === booking.id;
             const isDeleting = deletingId === booking.id;
@@ -142,8 +191,13 @@ const BookingsPanel = ({ state, onReload, onUpdate, onDelete }) => {
                   <div className="truncate text-[12.5px] font-semibold text-muted">
                     {formatDate(booking.startDate)} – {formatDate(booking.endDate)}
                   </div>
-                  <div className="truncate text-[12px] text-muted-soft">
-                    Conv. {booking.conversationId ? booking.conversationId.slice(-6) : '—'} · Offer {booking.offerId ? booking.offerId.slice(-6) : '—'}
+                  <div className="min-w-0">
+                    <div className="truncate text-[12.5px] font-semibold text-ink-soft">
+                      Booked {booking.createdAt ? formatDateTime(booking.createdAt) : '—'}
+                    </div>
+                    <div className="truncate text-[11.5px] text-muted-soft">
+                      Conv. {booking.conversationId ? booking.conversationId.slice(-6) : '—'} · Offer {booking.offerId ? booking.offerId.slice(-6) : '—'}
+                    </div>
                   </div>
                   <div className="text-[13.5px] font-extrabold text-brand-dark">{formatCurrency(booking.totalPrice || 0)}</div>
                   <div className="flex items-center justify-between gap-2">
@@ -156,7 +210,12 @@ const BookingsPanel = ({ state, onReload, onUpdate, onDelete }) => {
                   <form onSubmit={handleSubmit} className="space-y-3 border-t border-hairline bg-canvas/60 px-5 py-4">
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="rounded-xl border border-hairline bg-surface p-3.5">
-                        <p className="text-[11px] font-extrabold uppercase tracking-wide text-muted-soft">Traveller contact</p>
+                        <p className="text-[11px] font-extrabold uppercase tracking-wide text-muted-soft">
+                          Traveller contact
+                          <span className="ml-2 font-bold normal-case tracking-normal text-muted">
+                            · booked {booking.createdAt ? formatDateTime(booking.createdAt) : 'date unknown'}
+                          </span>
+                        </p>
                         <p className="mt-1.5 text-[13.5px] font-bold text-ink">{travelerName}</p>
                         <p className="mt-1 flex items-center gap-1.5 truncate text-[12.5px] text-muted"><Mail className="h-3.5 w-3.5 flex-shrink-0" /> {booking.traveler?.email || 'Not on file'}</p>
                         <p className="mt-0.5 flex items-center gap-1.5 text-[12.5px] text-muted"><Phone className="h-3.5 w-3.5 flex-shrink-0" /> {booking.traveler?.phoneNumber || 'Not on file'}</p>
