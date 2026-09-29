@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowUpRight, CheckCircle2, ChevronDown, CircleUserRound, KeyRound, Loader2, Mail, Pencil, RotateCcw, Send, Star, XCircle } from 'lucide-react';
+import { ArrowUpRight, Ban, CheckCircle2, ChevronDown, CircleUserRound, KeyRound, Loader2, Mail, Pencil, RotateCcw, Send, Star, Undo2, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fetchSettings as fetchAdminSettings, updateSettings as updateAdminSettings } from '../../services/adminApi.js';
 import { formatDate, formatDateInput, tagClass } from './adminFormatters.js';
@@ -94,7 +94,7 @@ export const DriverApprovalSetting = () => {
 
 const LICENSE_STATUS_TAGS = { pending: 'amber', approved: 'green', rejected: 'red' };
 
-const DriversPanel = ({ state, onRetry, onStatusChange, onSendMessage, onUpdate, onSetPassword, onViewVerification, onToggleFeatured }) => {
+const DriversPanel = ({ state, onRetry, onStatusChange, onSendMessage, onUpdate, onSetPassword, onViewVerification, onToggleFeatured, onToggleSuspension }) => {
   const { items: filtered, loading, error, updatingId } = state;
   const [expandedId, setExpandedId] = useState(null);
   const [messageForm, setMessageForm] = useState({ driverId: null, subject: '', message: '', sending: false, error: '' });
@@ -414,6 +414,26 @@ const DriversPanel = ({ state, onRetry, onStatusChange, onSendMessage, onUpdate,
                         <KeyRound className="h-4 w-4" /> {isPasswordFormOpen ? 'Close password form' : 'Set password'}
                       </button>
                     ) : null}
+                    {onToggleSuspension && application.driverStatus === DRIVER_STATUS.APPROVED ? (() => {
+                      const paused =
+                        application.messagingSuspendedUntil &&
+                        new Date(application.messagingSuspendedUntil) > new Date();
+                      return (
+                        <button
+                          type="button"
+                          disabled={isUpdating}
+                          onClick={() => onToggleSuspension(application, paused)}
+                          className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-bold transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                            paused
+                              ? 'border-line bg-surface text-ink hover:bg-canvas'
+                              : 'border-rose-200 dark:border-rose-400/30 bg-rose-50 dark:bg-rose-400/10 text-rose-600 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-400/20'
+                          }`}
+                        >
+                          {paused ? <Undo2 className="h-4 w-4" /> : <Ban className="h-4 w-4" />}
+                          {paused ? 'Resume messaging' : 'Pause messaging'}
+                        </button>
+                      );
+                    })() : null}
                     {onToggleFeatured && application.driverStatus === DRIVER_STATUS.APPROVED ? (
                       <button
                         type="button"

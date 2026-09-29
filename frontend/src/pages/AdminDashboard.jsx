@@ -631,6 +631,46 @@ const AdminDashboard = () => {
     }
   }, []);
 
+  // Shared by the Drivers tab and the Abuse tab, so both behave identically.
+  const handleDriverToggleSuspension = useCallback(async (driver, currentlyPaused) => {
+    if (currentlyPaused) {
+      if (!window.confirm(`Resume messaging for ${driver.name || 'this driver'}?`)) return;
+    } else {
+      const reason = window.prompt(
+        `Pause messaging for ${driver.name || 'this driver'} for 24 hours.\n\nReason (shown to the driver):`,
+        'Repeatedly sharing contact details in chat.'
+      );
+      if (reason === null) return;
+      try {
+        setDriverState((prev) => ({ ...prev, updatingId: driver.id }));
+        const response = await setDriverMessagingSuspensionRequest(driver.id, { hours: 24, reason });
+        setDriverState((prev) => ({
+          ...prev,
+          updatingId: '',
+          items: prev.items.map((d) => (d.id === driver.id ? { ...d, messagingSuspendedUntil: response.suspendedUntil, suspensionReason: response.suspensionReason } : d)),
+        }));
+        toast.success(response?.message || 'Messaging paused.');
+      } catch (error) {
+        setDriverState((prev) => ({ ...prev, updatingId: '' }));
+        toast.error(error?.message || 'Unable to update messaging status.');
+      }
+      return;
+    }
+    try {
+      setDriverState((prev) => ({ ...prev, updatingId: driver.id }));
+      const response = await setDriverMessagingSuspensionRequest(driver.id, { hours: 0, reason: '' });
+      setDriverState((prev) => ({
+        ...prev,
+        updatingId: '',
+        items: prev.items.map((d) => (d.id === driver.id ? { ...d, messagingSuspendedUntil: null, suspensionReason: '' } : d)),
+      }));
+      toast.success(response?.message || 'Messaging restored.');
+    } catch (error) {
+      setDriverState((prev) => ({ ...prev, updatingId: '' }));
+      toast.error(error?.message || 'Unable to update messaging status.');
+    }
+  }, []);
+
   const handleUserDeletionPreview = useCallback((userId) => fetchUserDeletionPreview(userId), []);
 
   const handleUserDelete = useCallback(async (userId) => {
@@ -1041,7 +1081,7 @@ const AdminDashboard = () => {
     content = (
       <div className="flex flex-col gap-4">
         <DriverApprovalSetting />
-        <DriversPanel state={{ ...driverState, items: filteredDrivers }} onRetry={loadDrivers} onStatusChange={handleDriverStatusChange} onSendMessage={handleDriverMessageSend} onUpdate={handleDriverDetailsUpdate} onSetPassword={handleDriverSetPassword} onViewVerification={() => handleSectionChange('verification')} onToggleFeatured={handleDriverToggleFeatured} />
+        <DriversPanel state={{ ...driverState, items: filteredDrivers }} onRetry={loadDrivers} onStatusChange={handleDriverStatusChange} onSendMessage={handleDriverMessageSend} onUpdate={handleDriverDetailsUpdate} onSetPassword={handleDriverSetPassword} onViewVerification={() => handleSectionChange('verification')} onToggleFeatured={handleDriverToggleFeatured} onToggleSuspension={handleDriverToggleSuspension} />
       </div>
     );
   } else if (activeSection === 'vehicles') {
