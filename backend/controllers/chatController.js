@@ -9,6 +9,8 @@ import TourBrief from '../models/TourBrief.js';
 import { sanitizeMessageContent } from '../utils/chatSanitizer.js';
 import { hasVehicleDateConflict, VEHICLE_UNAVAILABLE_MESSAGE } from '../utils/vehicleAvailability.js';
 import { createChatMessage } from '../services/chatService.js';
+import { checkMessagingSuspension } from '../utils/messagingSuspension.js';
+import { observeDriverSend } from '../services/abuseSignals.js';
 import { notifyUser } from '../services/expoPushService.js';
 import { mapAssetUrls, buildAssetUrl } from '../utils/assetUtils.js';
 
@@ -408,12 +410,23 @@ export const sendMessage = async (req, res) => {
       return res.status(403).json({ message: 'Access denied.' });
     }
 
+    // Only drivers can be frozen; travellers are never restricted.
+    if (senderRole === USER_ROLES.DRIVER) {
+      const suspended = await checkMessagingSuspension(req.user.id);
+      if (suspended) return res.status(suspended.status).json({ message: suspended.message });
+    }
+
     const message = await createChatMessage({
       conversation,
       senderId: req.user.id,
       senderRole,
       content: body,
     });
+
+    // Observation only — records what would have tripped a limit, never blocks.
+    if (senderRole === USER_ROLES.DRIVER) {
+      observeDriverSend(req.user.id, { bodyHash: message.bodyHash });
+    }
 
     const response = await ChatMessage.findById(message.id)
       .populate('sender', 'id name role')
@@ -534,6 +547,9 @@ export const sendOffer = async (req, res) => {
       return res.status(403).json({ message: 'Only the assigned driver can send offers.' });
     }
 
+    const suspended = await checkMessagingSuspension(req.user.id);
+    if (suspended) return res.status(suspended.status).json({ message: suspended.message });
+
     const vehicle = await Vehicle.findOne({
       _id: vehicleId,
       driver: req.user.id,
@@ -590,6 +606,8 @@ export const sendOffer = async (req, res) => {
         ...(inheritedBriefId ? { brief: inheritedBriefId } : {}),
       },
     });
+
+    observeDriverSend(req.user.id, { bodyHash: message.bodyHash });
 
     if (sanitizedNote) {
       message.body = `${message.body}\n\nNotes: ${sanitizedNote}`;

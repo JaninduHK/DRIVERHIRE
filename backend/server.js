@@ -18,6 +18,7 @@ import offerInviteRoutes from './routes/offerInviteRoutes.js';
 import { startReviewRequestScheduler } from './services/reviewRequestService.js';
 import { startOfferReminderScheduler } from './services/offerReminderService.js';
 import { startBriefExpiryScheduler } from './services/briefExpiryService.js';
+import { startCommissionReminderScheduler } from './services/commissionReminderService.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -146,6 +147,9 @@ const startServer = async () => {
 
     // Hourly sweep closing tour briefs whose travel dates have passed unbooked.
     startBriefExpiryScheduler();
+
+    // Monthly commission-due email, to drivers who actually owe something.
+    startCommissionReminderScheduler();
   } catch (error) {
     console.error('Server startup failed:', error.message);
     process.exit(1);

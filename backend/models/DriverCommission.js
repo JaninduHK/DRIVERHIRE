@@ -74,6 +74,12 @@ const driverCommissionSchema = new mongoose.Schema(
       maxlength: 500,
     },
     lastRecalculatedAt: Date,
+    // Set when the monthly "commission due" email goes out, so a restart or an
+    // extra tick can never chase the same driver twice for the same month.
+    reminderSentAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

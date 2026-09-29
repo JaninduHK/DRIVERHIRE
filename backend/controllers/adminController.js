@@ -9,6 +9,7 @@ import TourBrief from '../models/TourBrief.js';
 import ChatConversation from '../models/ChatConversation.js';
 import ChatMessage from '../models/ChatMessage.js';
 import DriverCommission, { COMMISSION_STATUS } from '../models/DriverCommission.js';
+import { OBSERVE_THRESHOLDS } from '../services/abuseSignals.js';
 import { getSetting, setSetting, SETTING_KEYS } from '../models/Setting.js';
 import { DEFAULT_BANK_DETAILS } from '../config/bankDetailsDefaults.js';
 import {
@@ -1428,6 +1429,145 @@ export const deleteBooking = async (req, res) => {
   } catch (error) {
     console.error('Delete booking error:', error);
     return res.status(500).json({ message: 'Unable to delete booking.' });
+  }
+};
+
+// Per-driver abuse rollup. The Conversations tab already flags individual
+// conversations; this answers the question it cannot — which DRIVER is doing it,
+// and how often, across every chat they are in.
+export const listAbuseSignals = async (_req, res) => {
+  try {
+    const [violationRows, duplicateRows] = await Promise.all([
+      // Contact-detail attempts, grouped by driver.
+      ChatMessage.aggregate([
+        { $match: { senderRole: USER_ROLES.DRIVER, violations: { $exists: true, $ne: [] } } },
+        {
+          $group: {
+            _id: '$sender',
+            total: { $sum: 1 },
+            phone: { $sum: { $cond: [{ $in: ['phone', '$violations'] }, 1, 0] } },
+            email: { $sum: { $cond: [{ $in: ['email', '$violations'] }, 1, 0] } },
+            link: { $sum: { $cond: [{ $in: ['link', '$violations'] }, 1, 0] } },
+            firstAt: { $min: '$createdAt' },
+            lastAt: { $max: '$createdAt' },
+            samples: { $push: { body: '$body', createdAt: '$createdAt' } },
+          },
+        },
+      ]),
+      // Same normalised text sent into several different conversations.
+      ChatMessage.aggregate([
+        { $match: { senderRole: USER_ROLES.DRIVER, bodyHash: { $ne: null } } },
+        {
+          $group: {
+            _id: { sender: '$sender', bodyHash: '$bodyHash' },
+            conversations: { $addToSet: '$conversation' },
+            sample: { $first: '$body' },
+            lastAt: { $max: '$createdAt' },
+          },
+        },
+        { $project: { sender: '$_id.sender', recipients: { $size: '$conversations' }, sample: 1, lastAt: 1 } },
+        { $match: { recipients: { $gte: 3 } } },
+        { $sort: { recipients: -1 } },
+      ]),
+    ]);
+
+    const byDriver = new Map();
+    const ensure = (id) => {
+      const key = id.toString();
+      if (!byDriver.has(key)) {
+        byDriver.set(key, {
+          driverId: key,
+          driver: null,
+          violations: { total: 0, phone: 0, email: 0, link: 0 },
+          firstViolationAt: null,
+          lastViolationAt: null,
+          violationSamples: [],
+          duplicateClusters: [],
+        });
+      }
+      return byDriver.get(key);
+    };
+
+    for (const row of violationRows) {
+      const entry = ensure(row._id);
+      entry.violations = { total: row.total, phone: row.phone, email: row.email, link: row.link };
+      entry.firstViolationAt = row.firstAt;
+      entry.lastViolationAt = row.lastAt;
+      entry.violationSamples = (row.samples || [])
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 5);
+    }
+
+    for (const row of duplicateRows) {
+      const entry = ensure(row.sender);
+      entry.duplicateClusters.push({
+        recipients: row.recipients,
+        sample: (row.sample || '').slice(0, 200),
+        lastAt: row.lastAt,
+      });
+    }
+
+    const driverIds = Array.from(byDriver.keys());
+    const drivers = await User.find({ _id: { $in: driverIds } })
+      .select('name email messagingSuspendedUntil suspensionReason')
+      .lean();
+    const driverMap = new Map(drivers.map((d) => [d._id.toString(), d]));
+
+    const results = [];
+    for (const entry of byDriver.values()) {
+      const driver = driverMap.get(entry.driverId);
+      if (!driver) continue; // deleted account
+      results.push({
+        ...entry,
+        driver: { id: entry.driverId, name: driver.name, email: driver.email },
+        suspendedUntil: driver.messagingSuspendedUntil || null,
+        suspensionReason: driver.suspensionReason || '',
+        // Worst-first: a blast to many travellers outweighs a single slip.
+        score: entry.violations.total + entry.duplicateClusters.reduce((n, c) => n + c.recipients, 0),
+      });
+    }
+    results.sort((a, b) => b.score - a.score);
+
+    return res.json({ signals: results, thresholds: OBSERVE_THRESHOLDS });
+  } catch (error) {
+    console.error('List abuse signals error:', error);
+    return res.status(500).json({ message: 'Unable to load abuse signals.' });
+  }
+};
+
+// Freeze or lift a driver's ability to send messages, offers and brief responses.
+// Their profile stays approved and bookable throughout.
+export const setDriverMessagingSuspension = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) return validationError;
+
+  const { id } = req.params;
+  const { hours, reason } = req.body || {};
+
+  try {
+    const driver = await User.findOne({ _id: id, role: USER_ROLES.DRIVER });
+    if (!driver) {
+      return res.status(404).json({ message: 'Driver not found.' });
+    }
+
+    if (!hours) {
+      driver.messagingSuspendedUntil = null;
+      driver.suspensionReason = '';
+    } else {
+      driver.messagingSuspendedUntil = new Date(Date.now() + Number(hours) * 60 * 60 * 1000);
+      driver.suspensionReason = (reason || '').trim().slice(0, 300);
+    }
+
+    await driver.save();
+    return res.json({
+      driverId: driver.id,
+      suspendedUntil: driver.messagingSuspendedUntil,
+      suspensionReason: driver.suspensionReason,
+      message: hours ? 'Messaging paused for this driver.' : 'Messaging restored.',
+    });
+  } catch (error) {
+    console.error('Set driver messaging suspension error:', error);
+    return res.status(500).json({ message: 'Unable to update messaging status.' });
   }
 };
 

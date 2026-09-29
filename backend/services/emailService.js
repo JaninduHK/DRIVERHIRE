@@ -811,6 +811,54 @@ export const sendVehicleStatusEmail = async ({ driver, vehicle, status, note }) 
   });
 };
 
+// Sent once a month to drivers who actually owe commission for the month just
+// ended. Drivers with nothing due are never contacted.
+export const sendCommissionDueEmail = async ({
+  to,
+  driverName,
+  periodLabel,
+  amountLabel,
+  bookingCount,
+  earningsUrl,
+}) => {
+  const safeName = escapeHtml(driverName || 'there');
+  const safePeriod = escapeHtml(periodLabel || 'last month');
+  const safeAmount = escapeHtml(amountLabel || '');
+  const trips = Number(bookingCount) || 0;
+  const tripLabel = `${trips} completed trip${trips === 1 ? '' : 's'}`;
+  const brandName = getBrandName();
+
+  const html = buildEmailTemplate({
+    title: `Commission due for ${safePeriod}`,
+    preheader: `${safeAmount} commission is due for ${safePeriod}`,
+    bodyLines: [
+      `Hi ${safeName},`,
+      `Your commission for <b>${safePeriod}</b> is <b>${safeAmount}</b>, based on ${tripLabel} that ended during the month.`,
+      'You can see the full breakdown, along with our bank details for the transfer, in the <b>My Earnings</b> tab of your driver dashboard.',
+      'Once you have paid, upload your transfer slip there so we can confirm it against your account.',
+      'If anything looks wrong, reply to this email or contact support@carwithdriver.lk and we will check it with you.',
+    ],
+    action: {
+      label: 'Open My Earnings',
+      url: earningsUrl,
+    },
+  });
+
+  const text =
+    `Hi ${driverName || 'there'},\n\n` +
+    `Your commission for ${periodLabel} is ${amountLabel}, based on ${tripLabel} that ended during the month.\n\n` +
+    `The full breakdown and our bank details are in the My Earnings tab of your driver dashboard:\n${earningsUrl}\n\n` +
+    `After paying, upload your transfer slip there so we can confirm it.\n\n` +
+    `Questions? Contact support@carwithdriver.lk.\n\n${brandName}`;
+
+  await sendEmail({
+    to,
+    subject: `Commission due for ${periodLabel} — ${amountLabel}`,
+    html,
+    text,
+  });
+};
+
 export const sendReviewRequestEmail = async ({ to, travelerName, driverName, vehicleModel, tripDates, reviewUrl }) => {
   const safeName = escapeHtml(travelerName || 'there');
   const safeDriver = escapeHtml(driverName || 'your driver');

@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import ChatMessage from '../models/ChatMessage.js';
 import { USER_ROLES } from '../models/User.js';
 import { sanitizeMessageContent } from '../utils/chatSanitizer.js';
+import { fingerprintMessage } from '../utils/messageFingerprint.js';
 import { sendConversationNotificationEmail } from './emailService.js';
 import buildAppUrl from '../utils/url.js';
 
@@ -133,6 +134,7 @@ export const createChatMessage = async ({
     body: sanitized || (type === 'offer' ? content : ''),
     warning: warning || undefined,
     violations,
+    bodyHash: fingerprintMessage(sanitized || content),
     offer,
     readBy: [senderId],
     offerViewTokenHash,

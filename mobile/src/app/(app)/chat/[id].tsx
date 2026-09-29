@@ -19,6 +19,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { ChevronLeft, Send, FileText, X, CalendarCheck, ChevronRight } from 'lucide-react-native';
 import { Avatar } from '../../../components/Avatar';
+import { ContactWarning } from '../../../components/ContactWarning';
 import { IconButton } from '../../../components/IconButton';
 import { Button } from '../../../components/Button';
 import { TextField } from '../../../components/TextField';
@@ -162,9 +163,11 @@ export default function Chat() {
 
         {/* Composer */}
         <View
-          className="flex-row items-end gap-2 border-t border-[#eef1f0] bg-white px-4 pt-3"
+          className="border-t border-[#eef1f0] bg-white px-4 pt-3"
           style={{ paddingBottom: keyboardUp ? 8 : (insets.bottom || 12) + 4 }}
         >
+          {text ? <View className="mb-2"><ContactWarning value={text} /></View> : null}
+          <View className="flex-row items-end gap-2">
           <Pressable
             onPress={() => setOfferOpen(true)}
             className="h-10 w-10 items-center justify-center rounded-[11px] border-[1.5px] border-line bg-white active:bg-hairline"
@@ -189,6 +192,7 @@ export default function Chat() {
           >
             <Send size={17} color="#fff" fill="#fff" />
           </Pressable>
+          </View>
         </View>
       </KeyboardAvoidingView>
 
@@ -473,6 +477,7 @@ function OfferModal({
               placeholder="Share highlights, inclusions, or expectations."
               multiline
             />
+            <ContactWarning value={note} />
 
             <Button
               title={totalPrice ? `Send offer, ${formatMoney(Number(totalPrice))}` : 'Send offer'}

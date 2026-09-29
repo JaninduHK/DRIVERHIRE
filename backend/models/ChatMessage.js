@@ -112,6 +112,13 @@ const messageSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    // Normalised hash of the body, for spotting the same text blasted to many
+    // travellers. Null for short/trivial messages — see utils/messageFingerprint.js.
+    bodyHash: {
+      type: String,
+      default: null,
+      index: true,
+    },
     offer: {
       type: offerSchema,
       default: null,

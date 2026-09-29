@@ -6,6 +6,7 @@ import { ChevronLeft } from 'lucide-react-native';
 import { Screen } from '../../../components/Screen';
 import { GradientHeader } from '../../../components/GradientHeader';
 import { Card } from '../../../components/Card';
+import { ContactWarning } from '../../../components/ContactWarning';
 import { Button } from '../../../components/Button';
 import { TextField } from '../../../components/TextField';
 import { Chip } from '../../../components/Chip';
@@ -160,6 +161,7 @@ export default function RequestDetail() {
                 placeholder="Happy to add stops along the way at no extra cost."
                 multiline
               />
+              <ContactWarning value={note} />
             </Card>
           </ScrollView>
 

@@ -146,6 +146,19 @@ const userSchema = new mongoose.Schema(
       // No default — stays undefined until the driver submits a license for
       // the first time, distinguishing "not submitted" from "pending review".
     },
+    // Admin-imposed messaging freeze. Deliberately separate from driverStatus:
+    // rejecting a driver would delist them publicly and email them, whereas a
+    // freeze should silence the behaviour while leaving the profile bookable.
+    messagingSuspendedUntil: {
+      type: Date,
+      default: null,
+    },
+    suspensionReason: {
+      type: String,
+      trim: true,
+      maxlength: 300,
+      default: '',
+    },
     // Admin-handpicked for the homepage driver strip, independent of ranking.
     // Mirrors Review.featured / Review.featuredOrder.
     featured: {

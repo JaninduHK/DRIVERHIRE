@@ -16,6 +16,7 @@ import {
   Star,
   Users,
   Wallet,
+  ShieldAlert,
 } from 'lucide-react';
 import {
   fetchDriverApplications,
@@ -59,6 +60,8 @@ import {
   sendDriverEmail as sendDriverEmailRequest,
   setDriverPassword as setDriverPasswordRequest,
   setDriverFeatured as setDriverFeaturedRequest,
+  fetchAbuseSignals,
+  setDriverMessagingSuspension as setDriverMessagingSuspensionRequest,
   fetchUsers,
   fetchUserDeletionPreview,
   deleteUserAccount as deleteUserAccountRequest,
@@ -75,6 +78,7 @@ import OverviewPanel from './admin/OverviewPanel.jsx';
 import BookingsPanel from './admin/BookingsPanel.jsx';
 import DiscountsPanel from './admin/DiscountsPanel.jsx';
 import BriefsPanel, { BriefDriverTypeSetting } from './admin/BriefsPanel.jsx';
+import AbusePanel from './admin/AbusePanel.jsx';
 import OffersPanel from './admin/OffersPanel.jsx';
 import ConversationsPanel from './admin/ConversationsPanel.jsx';
 import UsersPanel from './admin/UsersPanel.jsx';
@@ -126,6 +130,7 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
+  const [abuseState, setAbuseState] = useState({ items: [], loading: false, error: '', updatingId: '' });
 
   const [bookingState, setBookingState] = useState({ items: [], loading: true, error: '', updatingId: null, deletingId: null });
   const [briefState, setBriefState] = useState({ items: [], loading: true, error: '', updatingId: null, deletingId: null });
@@ -186,6 +191,29 @@ const AdminDashboard = () => {
     setActiveSection(section);
     setSearchTerm(search || '');
   }, []);
+
+  const loadAbuseSignals = useCallback(async () => {
+    setAbuseState((prev) => ({ ...prev, loading: true, error: '' }));
+    try {
+      const response = await fetchAbuseSignals();
+      setAbuseState({ items: response.signals || [], loading: false, error: '', updatingId: '' });
+    } catch (error) {
+      setAbuseState((prev) => ({ ...prev, loading: false, error: error?.message || 'Unable to load abuse signals.' }));
+    }
+  }, []);
+
+  const handleDriverSuspension = useCallback(async (driverId, { hours, reason }) => {
+    setAbuseState((prev) => ({ ...prev, updatingId: driverId }));
+    try {
+      const response = await setDriverMessagingSuspensionRequest(driverId, { hours, reason });
+      toast.success(response?.message || 'Updated.');
+      await loadAbuseSignals();
+    } catch (error) {
+      toast.error(error?.message || 'Unable to update messaging status.');
+    } finally {
+      setAbuseState((prev) => ({ ...prev, updatingId: '' }));
+    }
+  }, [loadAbuseSignals]);
 
   const loadBookings = useCallback(async () => {
     setBookingState((prev) => ({ ...prev, loading: true, error: '' }));
@@ -347,6 +375,10 @@ const AdminDashboard = () => {
   useEffect(() => {
     if (activeSection === 'conversations') loadAdminConversations();
   }, [activeSection, loadAdminConversations]);
+
+  useEffect(() => {
+    if (activeSection === 'abuse') loadAbuseSignals();
+  }, [activeSection, loadAbuseSignals]);
 
   useEffect(() => {
     if (activeSection === 'discounts') loadDiscounts();
@@ -950,6 +982,7 @@ const AdminDashboard = () => {
         { id: 'briefs', label: 'Briefs', icon: FileText, badge: openBriefsCount },
         { id: 'offers', label: 'Offers', icon: Send, badge: pendingOfferCount },
         { id: 'conversations', label: 'Conversations', icon: MessageCircle, badge: flaggedConversationCount },
+        { id: 'abuse', label: 'Abuse', icon: ShieldAlert, badge: abuseState.items.length },
       ],
     },
     {
@@ -991,6 +1024,8 @@ const AdminDashboard = () => {
     );
   } else if (activeSection === 'offers') {
     content = <OffersPanel state={{ ...offerState, items: filteredOffers }} onReload={loadOffers} onStatusChange={handleOfferStatusChange} onDelete={handleOfferDelete} />;
+  } else if (activeSection === 'abuse') {
+    content = <AbusePanel state={abuseState} onReload={loadAbuseSignals} onSuspend={handleDriverSuspension} />;
   } else if (activeSection === 'conversations') {
     content = <ConversationsPanel state={{ ...conversationState, items: filteredConversations }} onReload={loadAdminConversations} onStatusChange={handleConversationStatusChange} onDelete={handleConversationDelete} />;
   } else if (activeSection === 'users') {

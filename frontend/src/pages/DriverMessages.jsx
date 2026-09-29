@@ -27,6 +27,7 @@ import {
 } from '../services/chatApi.js';
 import { fetchDriverVehicles } from '../services/driverApi.js';
 import { DashboardSidebar, DriverDrawer, MobileHeader, Sheet } from '../components/dashboard/mobile.jsx';
+import ContactWarning from '../components/ContactWarning.jsx';
 import { Avatar } from '../components/dashboard/primitives.jsx';
 import BookingDetailsModal from '../components/BookingDetailsModal.jsx';
 import { clearStoredToken, getStoredUser } from '../services/authToken.js';
@@ -662,6 +663,7 @@ const DriverMessages = () => {
                     )}
                   </button>
                 </form>
+                  <ContactWarning value={composerValue} />
               </div>
             </div>
           </div>
@@ -817,6 +819,7 @@ const DriverMessages = () => {
                       {sendingMessage ? 'Sending…' : 'Send'}
                     </button>
                   </form>
+                  <ContactWarning value={composerValue} />
                 </div>
               </>
             ) : (
@@ -884,6 +887,7 @@ const DriverMessages = () => {
               <div>
                 <label className={labelCls}>Notes to traveller (optional)</label>
                 <textarea rows={3} value={offerForm.note} onChange={(e) => handleOfferChange('note', e.target.value)} placeholder="Share highlights, inclusions, or expectations." className="mt-1 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 py-2.5 text-sm text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none" />
+                <ContactWarning value={offerForm.note} />
               </div>
               {vehiclesState.error ? <p className="text-[12px] text-[#e11d48]">{vehiclesState.error}</p> : null}
               <button

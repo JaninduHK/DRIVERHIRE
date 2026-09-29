@@ -175,6 +175,15 @@ export const removeReviewImage = (reviewId, image) =>
     body: JSON.stringify({ image }),
   });
 
+export const fetchAbuseSignals = () =>
+  request('/abuse-signals', { method: 'GET' });
+
+export const setDriverMessagingSuspension = (driverId, { hours, reason } = {}) =>
+  request(`/drivers/${driverId}/messaging-suspension`, {
+    method: 'PATCH',
+    body: JSON.stringify({ hours, reason }),
+  });
+
 export const setDriverFeatured = (driverId, featured) =>
   request(`/drivers/${driverId}/featured`, {
     method: 'PATCH',

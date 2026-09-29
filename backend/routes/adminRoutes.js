@@ -22,6 +22,8 @@ import {
   updateBooking,
   deleteBooking,
   listBriefs,
+  listAbuseSignals,
+  setDriverMessagingSuspension,
   updateBrief,
   deleteBrief,
   listOffers,
@@ -384,6 +386,18 @@ router.patch(
     body('featured').isBoolean().withMessage('featured must be true or false'),
   ],
   setReviewFeatured
+);
+
+router.get('/abuse-signals', listAbuseSignals);
+
+router.patch(
+  '/drivers/:id/messaging-suspension',
+  [
+    param('id').isMongoId().withMessage('Invalid driver identifier'),
+    body('hours').optional({ nullable: true }).isInt({ min: 0, max: 8760 }).withMessage('Invalid duration'),
+    body('reason').optional({ nullable: true }).isString().trim().isLength({ max: 300 }),
+  ],
+  setDriverMessagingSuspension
 );
 
 router.get('/bookings', listBookings);

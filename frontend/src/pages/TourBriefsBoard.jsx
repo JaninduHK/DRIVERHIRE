@@ -21,6 +21,7 @@ import { fetchDriverVehicles } from '../services/driverApi.js';
 import { fetchCurrentUser } from '../services/profileApi.js';
 import { getStoredToken, saveReturnPath, clearStoredToken } from '../services/authToken.js';
 import { DashboardSidebar, DriverDrawer, MobileHeader, Sheet } from '../components/dashboard/mobile.jsx';
+import ContactWarning from '../components/ContactWarning.jsx';
 import { Avatar } from '../components/dashboard/primitives.jsx';
 
 const NAV_ITEMS = [
@@ -533,6 +534,7 @@ const TourBriefsBoard = () => {
                   <div>
                     <label className={labelCls}>Personal note</label>
                     <textarea name="note" rows={3} value={offerForm.note} onChange={handleOfferFieldChange} placeholder="Share what's included, vehicle perks, or daily plan highlights." className="mt-1 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 py-2.5 text-sm text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none" />
+                    <ContactWarning value={offerForm.note} />
                     <p className="mt-1 text-[11.5px] text-muted-soft">Contact details are hidden automatically to keep travellers safe.</p>
                   </div>
                   <button

@@ -20,16 +20,11 @@ import { startConversation as startChatConversation } from '../services/chatApi.
 import { getStoredToken, redirectToSsoLogin } from '../services/authToken.js';
 import { Avatar } from '../components/dashboard/primitives.jsx';
 import ReviewPhotos from '../components/ReviewPhotos.jsx';
+import ReviewsSection from '../components/ReviewsSection.jsx';
 import { useAggregatedDriverReviews } from '../hooks/useAggregatedDriverReviews.js';
 import { LicenseIconBadge, LicenseTypeChip } from '../components/LicenseBadge.jsx';
 
 const formatCurrency = (value) => (!Number.isFinite(value) ? '$0' : `$${value.toLocaleString('en-US')}`);
-const formatDate = (value) => {
-  if (!value) return null;
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-};
-
 const DriverDetails = () => {
   const { id } = useParams();
   const location = useLocation();
@@ -68,6 +63,50 @@ const DriverDetails = () => {
     vehicles,
     loaderData?.reviews ? { reviews: loaderData.reviews, meta: loaderData.reviewMeta } : undefined,
   );
+
+  const [reviewFilters, setReviewFilters] = useState({ rating: 'all', sort: 'recent' });
+
+  // Driver reviews are aggregated across the driver's vehicles in memory, so the
+  // filtering the vehicle page does server-side happens here instead.
+  const reviewProps = useMemo(() => {
+    const all = Array.isArray(reviews.reviews) ? reviews.reviews : [];
+    const counts = reviews.meta?.counts || [0, 0, 0, 0, 0];
+    const dateOf = (r) => new Date(r.reviewDate || r.publishedAt || r.visitedStartDate || r.createdAt || 0).getTime();
+
+    let list = all;
+    if (reviewFilters.rating !== 'all') {
+      const wanted = Number(reviewFilters.rating);
+      list = list.filter((r) => Math.round(Number(r.rating) || 0) === wanted);
+    }
+    list = [...list].sort((a, b) => {
+      if (reviewFilters.sort === 'ratingDesc') return (b.rating || 0) - (a.rating || 0);
+      if (reviewFilters.sort === 'ratingAsc') return (a.rating || 0) - (b.rating || 0);
+      if (reviewFilters.sort === 'oldest') return dateOf(a) - dateOf(b);
+      return dateOf(b) - dateOf(a);
+    });
+
+    return {
+      reviews: list,
+      // total stays the unfiltered count, matching the vehicle page's header.
+      reviewMeta: { total: reviews.meta?.total ?? all.length },
+      reviewsLoading: reviews.loading,
+      reviewsError: reviews.error,
+      averageRatingLabel:
+        typeof reviews.meta?.averageRating === 'number' ? reviews.meta.averageRating.toFixed(1) : '—',
+      ratingCounts: counts,
+      ratingOptions: [
+        { value: 'all', label: 'All', count: reviews.meta?.total ?? all.length },
+        ...[5, 4, 3, 2, 1].map((v) => ({ value: String(v), label: `${v}★`, count: counts[v - 1] ?? 0 })),
+      ],
+      reviewFilters,
+      handleReviewRatingFilter: (value) =>
+        setReviewFilters((prev) => (prev.rating === value ? prev : { ...prev, rating: value })),
+      handleReviewSortChange: (value) =>
+        setReviewFilters((prev) => (prev.sort === value ? prev : { ...prev, sort: value })),
+      handleReviewReload: reviews.reload,
+      firstName: (driver?.name || 'this driver').split(' ')[0],
+    };
+  }, [reviews, reviewFilters, driver]);
 
   useEffect(() => {
     if (!driver || location.hash !== '#reviews') return undefined;
@@ -143,7 +182,7 @@ const DriverDetails = () => {
     }
   };
 
-  const shared = { driver, vehicles, reviews, cover, cityLabel, perks, primaryVehicle, rateLabel, ratingLabel, expYears, tab, setTab, goBook, goMessage, creatingConversation, navigate };
+  const shared = { driver, vehicles, reviewProps, cover, cityLabel, perks, primaryVehicle, rateLabel, ratingLabel, expYears, tab, setTab, goBook, goMessage, creatingConversation, navigate };
 
   return (
     <div className="bg-[#eef1f4] font-sans text-ink">
@@ -154,7 +193,7 @@ const DriverDetails = () => {
 };
 
 // ---------------- MOBILE ----------------
-const MobileProfile = ({ driver, vehicles, reviews, cover, cityLabel, perks, rateLabel, ratingLabel, expYears, tab, setTab, goBook, goMessage, creatingConversation, navigate }) => {
+const MobileProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks, rateLabel, ratingLabel, expYears, tab, setTab, goBook, goMessage, creatingConversation, navigate }) => {
   const scrollTo = (t) => {
     setTab(t);
     document.getElementById(`m-${t}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -273,8 +312,8 @@ const MobileProfile = ({ driver, vehicles, reviews, cover, cityLabel, perks, rat
         {/* Reviews */}
         <div id="m-reviews">
           <SectionLabel className="mt-6">Reviews</SectionLabel>
-          <div className="mt-2.5 rounded-[18px] bg-white p-4 shadow-card">
-            <ReviewsSummary reviews={reviews} />
+          <div className="mt-2.5">
+            <ReviewsSection {...reviewProps} />
           </div>
         </div>
       </div>
@@ -301,7 +340,7 @@ const MobileProfile = ({ driver, vehicles, reviews, cover, cityLabel, perks, rat
 };
 
 // ---------------- DESKTOP ----------------
-const DesktopProfile = ({ driver, vehicles, reviews, cover, cityLabel, perks, rateLabel, ratingLabel, expYears, goBook, goMessage, creatingConversation, navigate }) => (
+const DesktopProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks, rateLabel, ratingLabel, expYears, goBook, goMessage, creatingConversation, navigate }) => (
   <div className="hidden min-h-screen lg:block">
     <div className="relative h-[300px] w-full">
       {cover ? <img src={cover} alt="" className="h-full w-full object-cover" /> : <div className="h-full w-full bg-ink" />}
@@ -388,8 +427,8 @@ const DesktopProfile = ({ driver, vehicles, reviews, cover, cityLabel, perks, ra
 
           <div id="d-reviews" />
           <h3 className="mt-8 text-[17px] font-extrabold text-ink">Reviews</h3>
-          <div className="mt-3.5 rounded-[18px] border border-[#e7ebe9] bg-white p-6">
-            <ReviewsSummary reviews={reviews} desktop />
+          <div className="mt-3.5">
+            <ReviewsSection {...reviewProps} />
           </div>
         </div>
 
@@ -450,66 +489,5 @@ const PerkRow = ({ children }) => (
     {children}
   </div>
 );
-
-const ReviewsSummary = ({ reviews, desktop = false }) => {
-  const { loading, error, reviews: list, meta, reload } = reviews;
-  if (loading) {
-    return <div className="flex items-center gap-2 py-4 text-sm text-muted"><Loader2 className="h-4 w-4 animate-spin text-brand" /> Loading reviews…</div>;
-  }
-  if (error) {
-    return (
-      <div className="text-sm text-muted">
-        <p className="text-[#e11d48]">{error}</p>
-        <button type="button" onClick={reload} className="mt-2 rounded-full border border-[#e2e8ea] px-3 py-1.5 text-xs font-bold text-ink">Try again</button>
-      </div>
-    );
-  }
-  if (meta.total === 0) {
-    return (
-      <div>
-        <div className="flex items-center gap-1.5 text-[12.5px] font-bold text-[#a86a15]"><Star className="h-3.5 w-3.5" stroke="#f5b400" fill="none" /> No ratings yet</div>
-        <p className="mt-2.5 text-[12.5px] leading-relaxed text-muted-soft">No reviews yet. Be the first to explore Sri Lanka with this driver and share your story.</p>
-      </div>
-    );
-  }
-  const maxCount = Math.max(...meta.counts, 1);
-  const top = list.slice(0, desktop ? 2 : 1);
-  return (
-    <div>
-      <div className="flex items-center gap-3.5">
-        <div className="text-center">
-          <div className={`font-extrabold leading-none text-ink ${desktop ? 'text-[40px]' : 'text-[28px]'}`}>{meta.averageRating?.toFixed(1)}</div>
-          <div className="mt-1.5 text-[11px] text-muted-soft">{meta.total} review{meta.total === 1 ? '' : 's'}</div>
-        </div>
-        <div className="flex flex-1 flex-col gap-1.5">
-          {[5, 4, 3].map((star) => (
-            <div key={star} className="flex items-center gap-2">
-              <span className="w-2.5 text-[10.5px] text-muted-soft">{star}</span>
-              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-hairline">
-                <div className="h-full rounded-full bg-brand" style={{ width: `${((meta.counts[star - 1] || 0) / maxCount) * 100}%` }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className={`mt-3.5 ${desktop ? 'grid grid-cols-2 gap-4' : ''}`}>
-        {top.map((review) => (
-          <div key={review.id} className="mt-3.5 border-t border-hairline pt-3.5 first:mt-0 lg:border-t-0 lg:pt-0">
-            <div className="flex items-center gap-2.5">
-              <Avatar name={review.travelerName || 'Traveller'} tone="purple" className="h-8 w-8 rounded-[10px] text-[12px]" />
-              <div>
-                <b className="text-[13px] text-ink">{review.travelerName || 'Traveller'}</b>
-                <div className="text-[11px] text-muted-soft">{formatDate(review.reviewDate || review.publishedAt) || 'Recent trip'}{review.vehicle?.model ? ` · ${review.vehicle.model}` : ''}</div>
-              </div>
-            </div>
-            {review.title ? <p className="mt-2 text-[13px] font-bold text-ink">{review.title}</p> : null}
-            <p className="mt-1.5 text-[13px] leading-relaxed text-ink-soft">{review.comment}</p>
-            <ReviewPhotos images={review.images} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
 
 export default DriverDetails;

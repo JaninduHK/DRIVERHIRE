@@ -7,6 +7,8 @@ import User from '../models/User.js';
 import { DRIVER_STATUS, USER_ROLES, LICENSE_TYPES, LICENSE_STATUS } from '../models/User.js';
 import { getSetting, SETTING_KEYS } from '../models/Setting.js';
 import { createChatMessage } from '../services/chatService.js';
+import { checkMessagingSuspension } from '../utils/messagingSuspension.js';
+import { observeDriverSend } from '../services/abuseSignals.js';
 import { sendBriefAlertEmail } from '../services/emailService.js';
 import { sendExpoPushNotifications } from '../services/expoPushService.js';
 import { expiredBefore } from '../services/briefExpiryService.js';
@@ -457,6 +459,9 @@ export const respondToBrief = async (req, res) => {
       return res.status(400).json({ message: 'You cannot respond to your own tour brief.' });
     }
 
+    const suspended = await checkMessagingSuspension(req.user.id);
+    if (suspended) return res.status(suspended.status).json({ message: suspended.message });
+
     const alreadyResponded = brief.responses.some(
       (response) => response.driver?.toString?.() === req.user.id
     );
@@ -582,6 +587,10 @@ Total: $${normalizedPrice.toFixed(0)} (includes ${normalizedKms} km)`;
     brief.offersCount = brief.responses.length;
     brief.lastResponseAt = new Date();
     await brief.save();
+
+    // Observation only — brief responses are the one way a driver reaches a new
+    // traveller, so this is the blast vector worth measuring.
+    observeDriverSend(req.user.id, { bodyHash: message.bodyHash });
 
     const populatedMessage = await ChatMessage.findById(message.id)
       .populate('sender', 'id name role')
