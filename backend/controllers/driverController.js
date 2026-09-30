@@ -68,7 +68,7 @@ const serializeDriverVehicle = (vehicle, req) => {
 export const getDriverOverview = async (req, res) => {
   try {
     const driver = await User.findById(req.user.id).select(
-      'name email contactNumber address description tripAdvisor driverStatus createdAt profilePhoto driverLocation driverApprovedAt driverProfileTourCompletedAt driverReviewedAt experienceYears licenseType licenseImage licenseStatus licenseSubmittedAt licenseReviewedAt licenseAdminNote'
+      'name email contactNumber address description tripAdvisor driverStatus createdAt profilePhoto driverLocation shareLiveLocation driverApprovedAt driverProfileTourCompletedAt driverReviewedAt experienceYears licenseType licenseImage licenseStatus licenseSubmittedAt licenseReviewedAt licenseAdminNote'
     );
 
     if (!driver) {

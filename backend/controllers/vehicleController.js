@@ -36,7 +36,9 @@ const sanitizeDriver = (driverDoc, extras = {}) => {
     profilePhoto: buildAssetUrl(source.profilePhoto, req),
     // Only surface the license type once an admin has approved it.
     licenseType: source.licenseStatus === 'approved' ? source.licenseType || null : null,
-    location: source.driverLocation
+    // Drivers who switch "Available today" off stop publishing their position, so
+    // no coordinates leave the API for them. Defaults to shared when unset.
+    location: source.shareLiveLocation !== false && source.driverLocation
       ? {
           label: source.driverLocation.label || '',
           latitude: source.driverLocation.latitude,
@@ -373,7 +375,7 @@ export const listVehicles = async (req, res) => {
         path: 'driver',
         match: { driverStatus: DRIVER_STATUS.APPROVED, deletedAt: null },
         select:
-          'name description contactNumber tripAdvisor address driverStatus createdAt profilePhoto driverLocation',
+          'name description contactNumber tripAdvisor address driverStatus createdAt profilePhoto driverLocation shareLiveLocation',
         options: { lean: true },
       })
       .lean();
@@ -475,7 +477,7 @@ export const getVehicleDetails = async (req, res) => {
       .populate({
         path: 'driver',
         select:
-          'name description contactNumber tripAdvisor address driverStatus createdAt profilePhoto driverLocation licenseType licenseStatus',
+          'name description contactNumber tripAdvisor address driverStatus createdAt profilePhoto driverLocation shareLiveLocation licenseType licenseStatus',
         match: { driverStatus: DRIVER_STATUS.APPROVED, deletedAt: null },
         options: { lean: true },
       })
@@ -665,7 +667,7 @@ export const createVehicleBooking = async (req, res) => {
       .populate({
         path: 'driver',
         match: { driverStatus: DRIVER_STATUS.APPROVED, deletedAt: null },
-        select: '_id name email driverStatus contactNumber profilePhoto driverLocation',
+        select: '_id name email driverStatus contactNumber profilePhoto driverLocation shareLiveLocation',
       });
 
     if (!vehicle || !vehicle.driver) {

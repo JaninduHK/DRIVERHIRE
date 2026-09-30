@@ -140,6 +140,18 @@ export const removeVehicleImage = (vehicleId, image) =>
     body: JSON.stringify({ image }),
   });
 
+export const fetchVehicleAvailability = (vehicleId) =>
+  request(`/vehicles/${vehicleId}/availability`, { method: 'GET' });
+
+export const createVehicleAvailability = (vehicleId, payload) =>
+  request(`/vehicles/${vehicleId}/availability`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+
+export const deleteVehicleAvailability = (vehicleId, availabilityId) =>
+  request(`/vehicles/${vehicleId}/availability/${availabilityId}`, { method: 'DELETE' });
+
 export const fetchReviews = (filters = {}) =>
   request(`/reviews${buildQueryString(filters)}`, { method: 'GET' });
 

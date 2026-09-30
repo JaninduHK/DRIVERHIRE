@@ -25,6 +25,8 @@ export interface User {
     longitude?: number;
     updatedAt?: string;
   } | null;
+  /** "Available today" switch: false hides the driver from the traveller live map. */
+  shareLiveLocation?: boolean;
   licenseType?: LicenseType;
   licenseImage?: string | null;
   licenseStatus?: LicenseStatus;

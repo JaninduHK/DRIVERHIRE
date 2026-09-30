@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { VEHICLE_FEATURES, getVehicleFeatureLabels } from '../../constants/vehicleFeatures.js';
 import { tagClass } from './adminFormatters.js';
 import AdminModal from './AdminModal.jsx';
+import VehicleAvailabilitySection from './VehicleAvailabilitySection.jsx';
 
 const VEHICLE_STATUS = { PENDING: 'pending', APPROVED: 'approved', REJECTED: 'rejected' };
 const STATUS_TAGS = { pending: 'amber', approved: 'green', rejected: 'red' };
@@ -395,6 +396,8 @@ const VehiclesPanel = ({ state, onRetry, onStatusChange, onUpdate, onAddImages, 
                       </form>
                     </div>
                   ) : null}
+
+                  <VehicleAvailabilitySection vehicleId={vehicle.id} />
                 </div>
               ) : null}
             </div>

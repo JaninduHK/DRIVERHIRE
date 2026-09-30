@@ -18,6 +18,9 @@ import {
   updateVehicleDetails,
   addVehicleImages,
   removeVehicleImage,
+  listVehicleAvailability,
+  createVehicleAvailability,
+  deleteVehicleAvailability,
   listBookings,
   updateBooking,
   deleteBooking,
@@ -53,7 +56,7 @@ import {
   reorderFeaturedReviews,
 } from '../controllers/reviewController.js';
 import { DRIVER_STATUS, USER_ROLES, LICENSE_STATUS } from '../models/User.js';
-import { VEHICLE_STATUS } from '../models/Vehicle.js';
+import { VEHICLE_STATUS, VEHICLE_AVAILABILITY_STATUS } from '../models/Vehicle.js';
 import { REVIEW_STATUS } from '../models/Review.js';
 import { BOOKING_STATUS } from '../models/Booking.js';
 import { COMMISSION_STATUS } from '../models/DriverCommission.js';
@@ -281,6 +284,40 @@ router.delete(
     body('image').isString().trim().notEmpty().withMessage('Image path is required'),
   ],
   removeVehicleImage
+);
+
+// Admin can view and edit a vehicle's driver-set availability, but not the
+// booking-derived blocks — those are returned read-only by the GET.
+router.get(
+  '/vehicles/:id/availability',
+  [param('id').isMongoId().withMessage('Invalid vehicle identifier')],
+  listVehicleAvailability
+);
+
+router.post(
+  '/vehicles/:id/availability',
+  [
+    param('id').isMongoId().withMessage('Invalid vehicle identifier'),
+    body('startDate').isISO8601().withMessage('Start date must be a valid ISO date'),
+    body('endDate').isISO8601().withMessage('End date must be a valid ISO date'),
+    body('status')
+      .optional()
+      .isIn(Object.values(VEHICLE_AVAILABILITY_STATUS))
+      .withMessage(
+        `Status must be one of: ${Object.values(VEHICLE_AVAILABILITY_STATUS).join(', ')}`
+      ),
+    body('note').optional().isString().trim().isLength({ max: 500 }),
+  ],
+  createVehicleAvailability
+);
+
+router.delete(
+  '/vehicles/:id/availability/:availabilityId',
+  [
+    param('id').isMongoId().withMessage('Invalid vehicle identifier'),
+    param('availabilityId').isMongoId().withMessage('Invalid availability identifier'),
+  ],
+  deleteVehicleAvailability
 );
 
 router.get(

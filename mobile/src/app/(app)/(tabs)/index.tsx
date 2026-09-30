@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Star, Check } from 'lucide-react-native';
@@ -14,6 +13,7 @@ import { Badge } from '../../../components/Badge';
 import { Loading, EmptyState } from '../../../components/states';
 import { useAuth } from '../../../auth/AuthContext';
 import { useOverview, useEarningsSummary, useBookings, useBriefs } from '../../../hooks/queries';
+import { useLiveLocationSharing } from '../../../hooks/useLiveLocationSharing';
 import { formatMoney } from '../../../lib/format';
 import { useFontScale } from '../../../lib/fontScale';
 import { colors } from '../../../theme/colors';
@@ -23,7 +23,8 @@ import { isCompleted } from './bookings';
 export default function Overview() {
   const router = useRouter();
   const { user } = useAuth();
-  const [available, setAvailable] = useState(true);
+  const { sharing: available, saving: savingAvailable, setSharing: setAvailable } =
+    useLiveLocationSharing();
 
   const overview = useOverview();
   const earnings = useEarningsSummary();
@@ -58,16 +59,18 @@ export default function Overview() {
       <BodySheet onRefresh={onRefresh} refreshing={refreshing} bottomInset={24}>
         {/* Availability */}
         <Card className="flex-row items-center gap-3 px-4 py-3.5">
-          <View className="h-2.5 w-2.5 rounded-full bg-brand" />
+          <View className={`h-2.5 w-2.5 rounded-full ${available ? 'bg-brand' : 'bg-line'}`} />
           <View className="flex-1">
             <Text className="font-xheavy text-[14.5px] text-ink">
               {available ? 'Available today' : 'Not available'}
             </Text>
             <Text className="font-med text-[12px] text-muted-soft">
-              {available ? `Visible to travellers near ${user?.address ?? 'you'}` : 'Turn on to appear in search'}
+              {available
+                ? `Visible on the live map near ${user?.address ?? 'you'}`
+                : 'Turn on to appear on the traveller live map'}
             </Text>
           </View>
-          <Toggle value={available} onChange={setAvailable} />
+          <Toggle value={available} onChange={setAvailable} disabled={savingAvailable} />
         </Card>
 
         {/* Stats */}

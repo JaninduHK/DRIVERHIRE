@@ -146,6 +146,13 @@ const userSchema = new mongoose.Schema(
       // No default — stays undefined until the driver submits a license for
       // the first time, distinguishing "not submitted" from "pending review".
     },
+    // Driver's "Available today" switch. Controls whether their saved location is
+    // shared publicly (i.e. whether they appear on the traveller live map). It does
+    // NOT touch vehicle availability — that stays date-range based.
+    shareLiveLocation: {
+      type: Boolean,
+      default: true,
+    },
     // Admin-imposed messaging freeze. Deliberately separate from driverStatus:
     // rejecting a driver would delist them publicly and email them, whereas a
     // freeze should silence the behaviour while leaving the profile bookable.

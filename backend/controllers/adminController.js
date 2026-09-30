@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { validationResult } from 'express-validator';
 import User, { DRIVER_STATUS, USER_ROLES, LICENSE_STATUS } from '../models/User.js';
-import Vehicle, { VEHICLE_STATUS } from '../models/Vehicle.js';
+import Vehicle, { VEHICLE_STATUS, VEHICLE_AVAILABILITY_STATUS } from '../models/Vehicle.js';
 import Booking, { BOOKING_STATUS, DEFAULT_COMMISSION_RATE } from '../models/Booking.js';
 import Review from '../models/Review.js';
 import TourBrief from '../models/TourBrief.js';
@@ -30,6 +30,32 @@ const handleValidation = (req, res) => {
     return res.status(400).json({ errors: errors.array() });
   }
   return null;
+};
+
+const entryTimeValue = (value) => {
+  const time = value ? new Date(value).getTime() : NaN;
+  return Number.isNaN(time) ? 0 : time;
+};
+
+const sanitizeAvailability = (entries = []) =>
+  entries
+    .map((entry) => ({
+      id: entry._id ? entry._id.toString() : entry.id,
+      startDate: entry.startDate,
+      endDate: entry.endDate,
+      status: entry.status,
+      note: entry.note,
+      createdAt: entry.createdAt,
+      updatedAt: entry.updatedAt,
+    }))
+    .sort((a, b) => entryTimeValue(a.startDate) - entryTimeValue(b.startDate));
+
+const normalizeDateInput = (value) => {
+  if (!value) {
+    return null;
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
 };
 
 const toVehicleResponse = (vehicle, req) => {
@@ -1278,6 +1304,113 @@ export const removeVehicleImage = async (req, res) => {
   } catch (error) {
     console.error('Remove vehicle image error:', error);
     return res.status(500).json({ message: 'Unable to remove vehicle image' });
+  }
+};
+
+export const listVehicleAvailability = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+
+  const { id } = req.params;
+
+  try {
+    const vehicle = await Vehicle.findById(id).select('availability model driver');
+    if (!vehicle) {
+      return res.status(404).json({ message: 'Vehicle not found' });
+    }
+
+    // Bookings block dates just as driver-set "unavailable" entries do, but admin
+    // must not be able to silently free a date a traveller has already booked, so
+    // these come back read-only alongside the editable entries.
+    const bookings = await Booking.find({
+      vehicle: id,
+      status: { $nin: [BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED] },
+    })
+      .select('startDate endDate status traveler')
+      .sort({ startDate: 1 })
+      .lean();
+
+    return res.json({
+      availability: sanitizeAvailability(vehicle.availability),
+      bookings: bookings.map((booking) => ({
+        id: booking._id.toString(),
+        startDate: booking.startDate,
+        endDate: booking.endDate,
+        status: booking.status,
+        travelerName: booking.traveler?.fullName || 'Traveller',
+      })),
+    });
+  } catch (error) {
+    console.error('List vehicle availability error:', error);
+    return res.status(500).json({ message: 'Unable to load availability' });
+  }
+};
+
+export const createVehicleAvailability = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+
+  const { id } = req.params;
+  const startDate = normalizeDateInput(req.body.startDate);
+  const endDate = normalizeDateInput(req.body.endDate);
+  const status = Object.values(VEHICLE_AVAILABILITY_STATUS).includes(req.body.status)
+    ? req.body.status
+    : VEHICLE_AVAILABILITY_STATUS.UNAVAILABLE;
+  const note = typeof req.body.note === 'string' ? req.body.note.trim() : undefined;
+
+  if (!startDate || !endDate) {
+    return res.status(400).json({ message: 'Start and end dates are required' });
+  }
+  if (startDate > endDate) {
+    return res.status(400).json({ message: 'Start date must be before end date' });
+  }
+
+  try {
+    const vehicle = await Vehicle.findById(id);
+    if (!vehicle) {
+      return res.status(404).json({ message: 'Vehicle not found' });
+    }
+
+    vehicle.availability.push({ startDate, endDate, status, note: note || undefined });
+    await vehicle.save();
+
+    return res.status(201).json({ availability: sanitizeAvailability(vehicle.availability) });
+  } catch (error) {
+    console.error('Create vehicle availability error:', error);
+    return res.status(500).json({ message: 'Unable to add availability entry' });
+  }
+};
+
+export const deleteVehicleAvailability = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+
+  const { id, availabilityId } = req.params;
+
+  try {
+    const vehicle = await Vehicle.findById(id);
+    if (!vehicle) {
+      return res.status(404).json({ message: 'Vehicle not found' });
+    }
+
+    const entry = vehicle.availability.id(availabilityId);
+    if (!entry) {
+      return res.status(404).json({ message: 'Availability entry not found' });
+    }
+
+    entry.deleteOne();
+    await vehicle.save();
+
+    return res.json({ availability: sanitizeAvailability(vehicle.availability) });
+  } catch (error) {
+    console.error('Delete vehicle availability error:', error);
+    return res.status(500).json({ message: 'Unable to remove availability entry' });
   }
 };
 

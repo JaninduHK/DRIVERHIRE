@@ -470,6 +470,7 @@ export const updateProfile = async (req, res) => {
     removeProfilePhoto,
     clearLocation,
     experienceYears,
+    shareLiveLocation,
   } = req.body || {};
 
   try {
@@ -505,6 +506,13 @@ export const updateProfile = async (req, res) => {
       if (tripAdvisor !== undefined) {
         user.tripAdvisor =
           typeof tripAdvisor === 'string' && tripAdvisor.trim() ? tripAdvisor.trim() : '';
+      }
+
+      // "Available today" switch in the driver app. Off means the saved location
+      // stops being published, so the driver drops off the traveller live map.
+      // Vehicle date-range availability is untouched by this.
+      if (shareLiveLocation !== undefined) {
+        user.shareLiveLocation = parseBooleanLike(shareLiveLocation);
       }
 
       if (experienceYears !== undefined) {
@@ -565,14 +573,19 @@ export const updateProfile = async (req, res) => {
     if (wantsToClearLocation) {
       user.driverLocation = undefined;
     } else if (hasLat || hasLng || hasLocationLabel) {
-      if (!hasLat || !hasLng) {
+      // Renaming a pin that already has coordinates is allowed on its own; that is
+      // the fallback when the app cannot read GPS but the driver still typed a place.
+      const relabelOnly =
+        !hasLat && !hasLng && hasLocationLabel && Number.isFinite(user.driverLocation?.latitude);
+
+      if (!relabelOnly && (!hasLat || !hasLng)) {
         return res
           .status(400)
           .json({ message: 'Please provide both latitude and longitude for your location.' });
       }
 
-      const latitude = Number(currentLatitude);
-      const longitude = Number(currentLongitude);
+      const latitude = relabelOnly ? user.driverLocation.latitude : Number(currentLatitude);
+      const longitude = relabelOnly ? user.driverLocation.longitude : Number(currentLongitude);
 
       if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
         return res.status(400).json({ message: 'Latitude must be between -90 and 90.' });

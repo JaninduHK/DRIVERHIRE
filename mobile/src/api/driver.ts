@@ -29,6 +29,17 @@ export const createVehicle = (form: FormData) =>
 export const updateVehicle = (id: string, form: FormData) =>
   apiRequest<{ vehicle: Vehicle }>(`/driver/vehicles/${id}`, { method: 'PATCH', body: form });
 
+/**
+ * Mirrors VEHICLE_AVAILABILITY_STATUS in the backend's models/Vehicle.js. The API
+ * rejects anything else, so keep these two in step.
+ */
+export const AVAILABILITY_STATUS = {
+  AVAILABLE: 'available',
+  UNAVAILABLE: 'unavailable',
+} as const;
+
+export type AvailabilityStatus = (typeof AVAILABILITY_STATUS)[keyof typeof AVAILABILITY_STATUS];
+
 export interface AvailabilityBlock {
   id: string;
   startDate: string;
@@ -44,7 +55,7 @@ export const getVehicleAvailability = (vehicleId: string) =>
 
 export const createVehicleAvailability = (
   vehicleId: string,
-  payload: { startDate: string; endDate: string; status?: string; note?: string }
+  payload: { startDate: string; endDate: string; status?: AvailabilityStatus; note?: string }
 ) =>
   apiRequest(`/driver/vehicles/${vehicleId}/availability`, {
     method: 'POST',

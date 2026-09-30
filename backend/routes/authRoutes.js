@@ -110,6 +110,11 @@ router.put(
     body('currentLongitude').optional().isFloat({ min: -180, max: 180 }).toFloat(),
     body('currentLocationLabel').optional().isString().trim().isLength({ max: 120 }),
     body('experienceYears').optional().isInt({ min: 0, max: 60 }).toInt(),
+    // Multipart sends booleans as strings, so accept both spellings of each value.
+    body('shareLiveLocation').optional().custom((value) => {
+      const normalized = String(value).toLowerCase().trim();
+      return ['true', 'false', '1', '0', 'yes', 'no', 'on', 'off'].includes(normalized);
+    }).withMessage('shareLiveLocation must be a boolean'),
     body('removeProfilePhoto').optional().trim().custom((value) => {
       const normalized = String(value).toLowerCase().trim();
       return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';

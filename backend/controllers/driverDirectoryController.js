@@ -121,7 +121,10 @@ const buildDriverSummary = (driver, vehicles = [], reviewStats = null, req, acti
     : null;
   const reviewCount = hasReviewStats ? reviewStats.reviewCount : 0;
 
-  const locationPayload = driver.driverLocation
+  // Drivers who switch "Available today" off stop sharing their position, so they
+  // drop off the traveller live map. Defaults to shared for drivers predating this.
+  const sharesLocation = driver.shareLiveLocation !== false;
+  const locationPayload = sharesLocation && driver.driverLocation
     ? {
         label: driver.driverLocation.label || '',
         latitude: driver.driverLocation.latitude,
@@ -211,7 +214,7 @@ export const listPublicDrivers = async (req, res) => {
       deletedAt: null,
     })
       .select(
-        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation experienceYears licenseType licenseStatus featured featuredOrder'
+        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation shareLiveLocation experienceYears licenseType licenseStatus featured featuredOrder'
       )
       .sort({ createdAt: -1 })
       .lean();
@@ -276,7 +279,7 @@ export const getPublicDriverDetails = async (req, res) => {
       deletedAt: null,
     })
       .select(
-        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation experienceYears licenseType licenseStatus featured featuredOrder'
+        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation shareLiveLocation experienceYears licenseType licenseStatus featured featuredOrder'
       )
       .lean();
 
