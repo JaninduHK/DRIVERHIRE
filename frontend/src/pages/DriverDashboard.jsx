@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useDropzone } from 'react-dropzone';
 import {
+  AlertTriangle,
   BadgeCheck,
   Camera,
   CalendarDays,
@@ -61,6 +62,9 @@ import BookingDetailsModal from '../components/BookingDetailsModal.jsx';
 import { fetchOpenBriefs } from '../services/briefApi.js';
 import { fetchConversations } from '../services/chatApi.js';
 import { VEHICLE_FEATURES, getVehicleFeatureLabels } from '../constants/vehicleFeatures.js';
+import { LICENSE_COPY } from '../constants/driverLicense.js';
+import ContactWarning from '../components/ContactWarning.jsx';
+import { bioContactWarningMessage } from '../lib/contactWarning.js';
 import { clearStoredToken, getStoredToken, saveReturnPath } from '../services/authToken.js';
 import DeleteAccountCard from '../components/DeleteAccountCard.jsx';
 import imageCompression from 'browser-image-compression';
@@ -2867,7 +2871,7 @@ const DriverProfilePanel = ({
       return;
     }
     if (!licenseFile && !profile?.licenseImage) {
-      toast.error('Upload an image of your license.');
+      toast.error('Upload an image of your SLTDA license, not your driving license.');
       return;
     }
     try {
@@ -3124,11 +3128,14 @@ const DriverProfilePanel = ({
               </div>
               <div className="mt-3">
                 <label className={labelCls} htmlFor="driver-profile-address">Base location</label>
-                <input id="driver-profile-address" name="address" value={formState.address} onChange={handleFieldChange} className={inputCls} placeholder="City, region" />
+                <input id="driver-profile-address" name="address" value={formState.address} onChange={handleFieldChange} className={inputCls} placeholder="e.g. Negombo" />
+                <p className="mt-1 text-[11.5px] text-muted-soft">City or town only, not your full address. Travellers use it to find drivers near them.</p>
               </div>
               <div className="mt-3">
                 <label className={labelCls} htmlFor="driver-profile-description">Bio</label>
                 <textarea id="driver-profile-description" name="description" value={formState.description} onChange={handleFieldChange} rows={4} className="mt-1 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 py-2.5 text-sm text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none" placeholder="Tell travellers about your experience and specialties." />
+                <p className="mt-1 text-[11.5px] text-muted-soft">Do not put phone numbers, email addresses or links here — your bio is public and is not masked.</p>
+                <ContactWarning value={formState.description} messageFor={bioContactWarningMessage} />
               </div>
               <div className="mt-3">
                 <label className={labelCls} htmlFor="driver-profile-tripAdvisor">TripAdvisor link</label>
@@ -3190,12 +3197,19 @@ const DriverProfilePanel = ({
           <form onSubmit={handleLicenseSubmit} className="mt-3 flex flex-col gap-3">
             <div className="rounded-[18px] bg-white p-4 shadow-card">
               <div className="flex items-center justify-between">
-                <b className="text-[14px] text-ink">Driving license</b>
+                <b className="text-[14px] text-ink">{LICENSE_COPY.heading}</b>
                 <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${LICENSE_STATUS_TAGS[profile?.licenseStatus] || 'bg-canvas text-muted-soft'}`}>
                   {licenseStatusLabel(profile?.licenseStatus)}
                 </span>
               </div>
               <p className="mt-0.5 text-[12px] text-muted-soft">Select your license type and upload a photo for admin verification.</p>
+
+              <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-[12px] text-amber-800">
+                <p className="flex items-center gap-1.5 font-bold">
+                  <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" /> {LICENSE_COPY.warningTitle}
+                </p>
+                <p className="mt-1 leading-relaxed">{LICENSE_COPY.warningBody}</p>
+              </div>
 
               {profile?.licenseStatus === 'rejected' && profile?.licenseAdminNote ? (
                 <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-[12px] text-amber-700">
@@ -3205,7 +3219,7 @@ const DriverProfilePanel = ({
               ) : null}
 
               <div className="mt-3">
-                <label className={labelCls} htmlFor="driver-license-type">License type</label>
+                <label className={labelCls} htmlFor="driver-license-type">{LICENSE_COPY.typeHeading}</label>
                 <select
                   id="driver-license-type"
                   value={licenseType}
@@ -3229,7 +3243,8 @@ const DriverProfilePanel = ({
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[13.5px] font-bold text-ink">License photo</p>
+                  <p className="text-[13.5px] font-bold text-ink">{LICENSE_COPY.photoHeading}</p>
+                  <p className="mt-0.5 text-[11.5px] text-muted-soft">{LICENSE_COPY.photoHelp}</p>
                   <div className="mt-1.5">
                     <input ref={licenseInputRef} type="file" accept="image/*" className="hidden" onChange={handleLicenseFileChange} />
                     <button type="button" onClick={() => licenseInputRef.current?.click()} className="rounded-lg border-[1.5px] border-[#e2e8ea] px-3 py-1.5 text-[12px] font-bold text-ink">

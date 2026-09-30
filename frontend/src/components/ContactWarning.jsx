@@ -5,9 +5,12 @@ import { contactWarningMessage } from '../lib/contactWarning.js';
  * Inline warning shown to a DRIVER while they type, when the text looks like it
  * contains contact details. Renders nothing otherwise. Travellers never see this —
  * their contact details are redacted too, but they are not the ones being policed.
+ *
+ * `messageFor` overrides the copy for fields the server does NOT redact, such as
+ * the public bio — see bioContactWarningMessage.
  */
-const ContactWarning = ({ value, className = '' }) => {
-  const message = contactWarningMessage(value);
+const ContactWarning = ({ value, className = '', messageFor = contactWarningMessage }) => {
+  const message = messageFor(value);
   if (!message) return null;
   return (
     <p className={`mt-1.5 flex items-start gap-1.5 rounded-lg bg-[#fdf0d8] px-2.5 py-2 text-[11.5px] font-semibold leading-[1.5] text-[#a86a15] ${className}`}>

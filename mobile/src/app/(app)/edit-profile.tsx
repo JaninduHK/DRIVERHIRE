@@ -16,6 +16,8 @@ import { updateProfile } from '../../api/auth';
 import { pickImage, appendImage } from '../../lib/media';
 import { getDeviceLocation } from '../../lib/location';
 import { resolveAssetUrl } from '../../api/client';
+import { ContactWarning } from '../../components/ContactWarning';
+import { bioContactWarningMessage } from '../../lib/contactWarning';
 import { colors } from '../../theme/colors';
 import type { User } from '../../types';
 
@@ -131,8 +133,25 @@ export default function EditProfile() {
             <TextField label="Name" value={name} onChangeText={setName} placeholder="Your name" autoCapitalize="words" />
             <TextField className="mt-3" label="Contact number" value={contactNumber} onChangeText={setContactNumber} placeholder="e.g. +94 71 555 5555" keyboardType="phone-pad" />
             <TextField className="mt-3" label="Years of driving experience" value={experienceYears} onChangeText={setExperienceYears} placeholder="e.g. 5" keyboardType="number-pad" />
-            <TextField className="mt-3" label="Base location" value={address} onChangeText={setAddress} placeholder="City, region" autoCapitalize="words" />
-            <TextField className="mt-3" label="Bio" value={description} onChangeText={setDescription} placeholder="Tell travellers about your experience and specialties." multiline />
+            <TextField
+              className="mt-3"
+              label="Base location"
+              value={address}
+              onChangeText={setAddress}
+              placeholder="e.g. Negombo"
+              autoCapitalize="words"
+              hint="City or town only, not your full address. Travellers use it to find drivers near them."
+            />
+            <TextField
+              className="mt-3"
+              label="Bio"
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Tell travellers about your experience and specialties."
+              multiline
+              hint="Do not put phone numbers, email addresses or links here — your bio is public and is not masked."
+            />
+            <ContactWarning value={description} messageFor={bioContactWarningMessage} />
             <TextField className="mt-3" label="TripAdvisor link" value={tripAdvisor} onChangeText={setTripAdvisor} placeholder="https://" autoCapitalize="none" keyboardType="url" />
           </Card>
 

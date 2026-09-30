@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { View, Text, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { ChevronLeft, Clock, Check, FileText } from 'lucide-react-native';
+import { AlertTriangle, ChevronLeft, Clock, Check, FileText } from 'lucide-react-native';
 import { Screen } from '../../components/Screen';
 import { GradientHeader } from '../../components/GradientHeader';
 import { BodySheet } from '../../components/BodySheet';
@@ -14,7 +14,9 @@ import { IconButton } from '../../components/IconButton';
 import { registerDriver } from '../../api/auth';
 import { useAuth } from '../../auth/AuthContext';
 import { pickImage, appendImage } from '../../lib/media';
-import { LICENSE_TYPES, getLicenseBadge } from '../../constants/driverLicense';
+import { LICENSE_TYPES, getLicenseBadge, LICENSE_COPY } from '../../constants/driverLicense';
+import { ContactWarning } from '../../components/ContactWarning';
+import { bioContactWarningMessage } from '../../lib/contactWarning';
 import { colors } from '../../theme/colors';
 import type { LicenseType } from '../../types';
 
@@ -93,7 +95,7 @@ export default function Register() {
       return false;
     }
     if (!licenseImageUri) {
-      setError('Upload a photo of your license for verification.');
+      setError('Upload a photo of your SLTDA license for verification.');
       return false;
     }
     setError('');
@@ -193,7 +195,15 @@ export default function Register() {
                 <TextField label="Full name" value={name} onChangeText={setName} placeholder="Janindu Hansaka" autoCapitalize="words" />
                 <TextField className="mt-4" label="Email address" value={email} onChangeText={setEmail} placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" />
                 <TextField className="mt-4" label="Mobile number" value={mobile} onChangeText={setMobile} placeholder="71 234 5678" keyboardType="phone-pad" prefix="+94" />
-                <TextField className="mt-4" label="Base city" value={city} onChangeText={setCity} placeholder="Colombo" autoCapitalize="words" />
+                <TextField
+                  className="mt-4"
+                  label="Base city"
+                  value={city}
+                  onChangeText={setCity}
+                  placeholder="e.g. Negombo"
+                  autoCapitalize="words"
+                  hint="City or town only, not your full address. Travellers use it to find drivers near them."
+                />
                 <TextField className="mt-4" label="Create password" value={password} onChangeText={setPassword} placeholder="Minimum 8 characters" secure autoCapitalize="none" />
               </Card>
               {error ? <Text className="mt-3 px-1 font-med text-[12.5px] text-danger">{error}</Text> : null}
@@ -221,7 +231,9 @@ export default function Register() {
                   onChangeText={setBio}
                   placeholder="Tell travellers about your routes, your car and what you enjoy showing people."
                   multiline
+                  hint="Do not put phone numbers, email addresses or links here — your bio is public and is not masked."
                 />
+                <ContactWarning value={bio} messageFor={bioContactWarningMessage} />
               </Card>
               <Button title="Continue" variant="cta" className="mt-3.5" onPress={handleContinue} />
             </>
@@ -254,9 +266,19 @@ export default function Register() {
                 </Pressable>
               </Card>
 
+              <View className="mt-3 rounded-2xl border-[1.5px] border-[#fcd34d] bg-[#fffbeb] p-3.5">
+                <View className="flex-row items-center gap-1.5">
+                  <AlertTriangle size={14} color="#b45309" strokeWidth={2.2} />
+                  <Text className="font-heavy text-[13px] text-[#92400e]">{LICENSE_COPY.warningTitle}</Text>
+                </View>
+                <Text className="mt-1 font-med text-[12px] leading-[17px] text-[#b45309]">
+                  {LICENSE_COPY.warningBody}
+                </Text>
+              </View>
+
               <Card className="mt-3 p-4">
-                <Text className="font-heavy text-[14px] text-ink">License type</Text>
-                <Text className="mt-1 font-med text-[12.5px] leading-5 text-muted">Choose the license that matches your qualification.</Text>
+                <Text className="font-heavy text-[14px] text-ink">{LICENSE_COPY.typeHeading}</Text>
+                <Text className="mt-1 font-med text-[12.5px] leading-5 text-muted">{LICENSE_COPY.typeHelp}</Text>
                 <View className="mt-3 gap-2.5">
                   {LICENSE_TYPES.map((type) => {
                     const meta = getLicenseBadge(type)!;
@@ -288,8 +310,8 @@ export default function Register() {
               </Card>
 
               <Card className="mt-3 p-4">
-                <Text className="font-heavy text-[14px] text-ink">License photo</Text>
-                <Text className="mt-1 font-med text-[12.5px] leading-5 text-muted">A clear photo of the license selected above.</Text>
+                <Text className="font-heavy text-[14px] text-ink">{LICENSE_COPY.photoHeading}</Text>
+                <Text className="mt-1 font-med text-[12.5px] leading-5 text-muted">{LICENSE_COPY.photoHelp}</Text>
                 <Pressable
                   onPress={async () => {
                     const uri = await pickImage();

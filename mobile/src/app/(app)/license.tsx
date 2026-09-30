@@ -3,7 +3,7 @@ import { View, Text, Pressable, Alert, KeyboardAvoidingView, Platform, ActivityI
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ChevronLeft, FileText, Check } from 'lucide-react-native';
+import { AlertTriangle, ChevronLeft, FileText, Check } from 'lucide-react-native';
 import { Screen } from '../../components/Screen';
 import { GradientHeader } from '../../components/GradientHeader';
 import { BodySheet } from '../../components/BodySheet';
@@ -17,7 +17,7 @@ import { pickImage, appendImage } from '../../lib/media';
 import { resolveAssetUrl } from '../../api/client';
 import { formatDate } from '../../lib/format';
 import { colors } from '../../theme/colors';
-import { LICENSE_TYPES, getLicenseBadge } from '../../constants/driverLicense';
+import { LICENSE_TYPES, getLicenseBadge, LICENSE_COPY } from '../../constants/driverLicense';
 import type { LicenseType } from '../../types';
 
 const STATUS_CHIP: Record<string, { label: string; tone: 'brand' | 'warn' | 'danger' }> = {
@@ -65,7 +65,7 @@ export default function License() {
       return;
     }
     if (!photoUri && !profile?.licenseImage) {
-      Alert.alert('Upload a photo', 'Please upload a photo of your license.');
+      Alert.alert('Upload a photo', 'Please upload a photo of your SLTDA license, not your driving license.');
       return;
     }
     const form = new FormData();
@@ -158,9 +158,19 @@ export default function License() {
             </>
           ) : (
             <>
+              <View className="mb-3 rounded-2xl border-[1.5px] border-[#fcd34d] bg-[#fffbeb] p-3.5">
+                <View className="flex-row items-center gap-1.5">
+                  <AlertTriangle size={14} color="#b45309" strokeWidth={2.2} />
+                  <Text className="font-heavy text-[13px] text-[#92400e]">{LICENSE_COPY.warningTitle}</Text>
+                </View>
+                <Text className="mt-1 font-med text-[12px] leading-[17px] text-[#b45309]">
+                  {LICENSE_COPY.warningBody}
+                </Text>
+              </View>
+
               <Card className="p-4">
-                <Text className="font-heavy text-[14px] text-ink">License type</Text>
-                <Text className="mt-0.5 font-med text-[12px] text-muted-soft">Choose the license that matches your qualification.</Text>
+                <Text className="font-heavy text-[14px] text-ink">{LICENSE_COPY.typeHeading}</Text>
+                <Text className="mt-0.5 font-med text-[12px] text-muted-soft">{LICENSE_COPY.typeHelp}</Text>
                 <View className="mt-3 gap-2.5">
                   {LICENSE_TYPES.map((type) => {
                     const meta = getLicenseBadge(type)!;
@@ -192,8 +202,8 @@ export default function License() {
               </Card>
 
               <Card className="mt-3 p-4">
-                <Text className="font-heavy text-[14px] text-ink">License photo</Text>
-                <Text className="mt-0.5 font-med text-[12px] text-muted-soft">A clear photo of your license or ID card.</Text>
+                <Text className="font-heavy text-[14px] text-ink">{LICENSE_COPY.photoHeading}</Text>
+                <Text className="mt-0.5 font-med text-[12px] text-muted-soft">{LICENSE_COPY.photoHelp}</Text>
                 <Pressable onPress={handlePickPhoto} className="mt-3">
                   {photoUri || existingPhoto ? (
                     <Image

@@ -36,5 +36,19 @@ export const LICENSE_BADGE_STYLES: Record<
   },
 };
 
+// Drivers repeatedly upload their national (DMT) driving licence instead of the
+// SLTDA tourism licence, so every place that asks for the document says this.
+// Mirrored in frontend/src/constants/driverLicense.js — keep the two in step.
+export const LICENSE_COPY = {
+  heading: 'SLTDA license',
+  typeHeading: 'License type',
+  typeHelp: 'Choose the SLTDA-issued license you hold.',
+  photoHeading: 'SLTDA license photo',
+  photoHelp: 'A clear photo of the SLTDA license selected above.',
+  warningTitle: 'Do not upload your driving license',
+  warningBody:
+    'We only accept the tourism license issued by the Sri Lanka Tourism Development Authority (SLTDA). An ordinary Department of Motor Traffic (DMT) driving license is not accepted and the application will be rejected.',
+};
+
 export const getLicenseBadge = (licenseType?: LicenseType | null) =>
   licenseType ? LICENSE_BADGE_STYLES[licenseType] ?? null : null;

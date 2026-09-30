@@ -44,3 +44,16 @@ export const contactWarningMessage = (input = ''): string => {
   const what = found.map((k) => LABELS[k]).join(' and ');
   return `This looks like ${what}. It will be hidden from the traveller automatically, and sharing contact details to avoid commission is a serious breach of the driver terms — your account can be suspended or removed.`;
 };
+
+/**
+ * Warning copy for a driver's public BIO. Deliberately different from the chat
+ * wording above: chat messages are run through chatSanitizer.js server-side, but
+ * the profile description is NOT — whatever a driver types there is published
+ * verbatim. So this must not promise that anything gets hidden.
+ */
+export const bioContactWarningMessage = (input = ''): string => {
+  const found = detectContactDetails(input);
+  if (found.length === 0) return '';
+  const what = found.map((k) => LABELS[k]).join(' and ');
+  return `This looks like ${what}. Your bio is public and is not hidden or masked, and sharing contact details to take bookings off-platform is a serious breach of the driver terms — your profile can be rejected and your account suspended.`;
+};

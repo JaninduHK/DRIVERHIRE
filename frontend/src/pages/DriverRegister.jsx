@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { AlertTriangle } from 'lucide-react';
+import ContactWarning from '../components/ContactWarning.jsx';
+import StoreBadges from '../components/StoreBadges.jsx';
+import { bioContactWarningMessage } from '../lib/contactWarning.js';
 import { register as registerUser } from '../services/authApi.js';
-import { LICENSE_BADGE_STYLES } from '../constants/driverLicense.js';
+import { LICENSE_BADGE_STYLES, LICENSE_COPY } from '../constants/driverLicense.js';
 
 const LICENSE_TYPES = Object.keys(LICENSE_BADGE_STYLES);
 
@@ -50,7 +54,7 @@ const DriverRegister = () => {
       return;
     }
     if (!licenseImage) {
-      toast.error('Upload a photo of your license for verification.');
+      toast.error('Upload a photo of your SLTDA license for verification.');
       return;
     }
 
@@ -189,21 +193,24 @@ const DriverRegister = () => {
                   className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
                   placeholder="Tell travellers about your experience, vehicle type, languages, and specialties."
                 />
+                <p className="mt-1.5 text-xs text-slate-500">Do not put phone numbers, email addresses or links here — your bio is public and is not masked.</p>
+                <ContactWarning value={formData.description} messageFor={bioContactWarningMessage} />
               </div>
               <div>
                 <label htmlFor="address" className="block text-sm font-medium text-slate-700">
                   Base location
                 </label>
-                <textarea
+                <input
                   id="address"
                   name="address"
-                  rows={3}
+                  type="text"
                   required
                   value={formData.address}
                   onChange={handleChange}
                   className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                  placeholder="City"
+                  placeholder="e.g. Negombo"
                 />
+                <p className="mt-1.5 text-xs text-slate-500">City or town only, not your full address. Travellers use it to find drivers near them.</p>
               </div>
 
               <div>
@@ -227,9 +234,16 @@ const DriverRegister = () => {
                 </div>
               </div>
 
+              <div className="rounded-xl border border-amber-300 bg-amber-50 p-3">
+                <p className="flex items-center gap-1.5 text-sm font-semibold text-amber-900">
+                  <AlertTriangle className="h-4 w-4 flex-shrink-0" /> {LICENSE_COPY.warningTitle}
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-amber-800">{LICENSE_COPY.warningBody}</p>
+              </div>
+
               <div>
-                <span className="block text-sm font-medium text-slate-700">License type</span>
-                <p className="mt-1 text-xs text-slate-500">Required — choose the license you hold.</p>
+                <span className="block text-sm font-medium text-slate-700">{LICENSE_COPY.typeHeading}</span>
+                <p className="mt-1 text-xs text-slate-500">Required. {LICENSE_COPY.typeHelp}</p>
                 <div className="mt-2 grid gap-2 sm:grid-cols-3">
                   {LICENSE_TYPES.map((type) => {
                     const style = LICENSE_BADGE_STYLES[type];
@@ -253,8 +267,8 @@ const DriverRegister = () => {
               </div>
 
               <div>
-                <span className="block text-sm font-medium text-slate-700">License photo</span>
-                <p className="mt-1 text-xs text-slate-500">Required — a clear photo of the license selected above.</p>
+                <span className="block text-sm font-medium text-slate-700">{LICENSE_COPY.photoHeading}</span>
+                <p className="mt-1 text-xs text-slate-500">Required. {LICENSE_COPY.photoHelp}</p>
                 <div className="mt-2 flex items-center gap-4">
                   {licenseImagePreview ? (
                     <img src={licenseImagePreview} alt="" className="h-16 w-24 flex-shrink-0 rounded-xl object-cover" />
@@ -317,6 +331,14 @@ const DriverRegister = () => {
               <li>Earn trust with reviews linked to your TripAdvisor profile.</li>
             </ul>
           </div>
+          <div>
+            <h3 className="text-sm font-semibold text-slate-900">Get the driver app</h3>
+            <p className="mt-1.5 text-sm text-slate-600">
+              Manage quotes, messages and bookings from your phone, and get notified the moment a traveller replies.
+            </p>
+            <StoreBadges className="mt-3" />
+          </div>
+
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-800">
             <p className="font-semibold">Need help?</p>
             <p className="mt-2">

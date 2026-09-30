@@ -17,6 +17,8 @@ interface TextFieldProps {
   className?: string;
   autoFocus?: boolean;
   editable?: boolean;
+  /** Small guidance line under the input, e.g. what NOT to put in the field. */
+  hint?: string;
 }
 
 export function TextField({
@@ -34,6 +36,7 @@ export function TextField({
   className,
   autoFocus,
   editable = true,
+  hint,
 }: TextFieldProps) {
   const [hidden, setHidden] = useState(secure);
 
@@ -75,6 +78,9 @@ export function TextField({
           rightSlot
         )}
       </View>
+      {hint ? (
+        <Text className="mt-1.5 font-med text-[11.5px] leading-4 text-muted-soft">{hint}</Text>
+      ) : null}
     </View>
   );
 }
