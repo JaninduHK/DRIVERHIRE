@@ -2,6 +2,11 @@ import { useMemo } from 'react';
 import { Star } from 'lucide-react';
 import { formatCurrency, formatPercentValue } from './adminFormatters.js';
 
+// Rolling window, not a calendar month: checking on any day shows the trailing
+// 30 days, so the board re-levels continuously rather than snapping on the 1st.
+const LEADERBOARD_WINDOW_DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 const initialsOf = (name = '') =>
   name.split(' ').filter(Boolean).slice(0, 2).map((word) => word[0]).join('').toUpperCase() || '—';
 
@@ -36,8 +41,17 @@ const PerformancePanel = ({ bookings, briefs, drivers, reviews }) => {
         ratingsByDriver.set(driverId, entry);
       });
 
+    // Bookings received inside the window, by the date the booking came in —
+    // the same basis the GBV card and settlement table use.
+    const since = Date.now() - LEADERBOARD_WINDOW_DAYS * DAY_MS;
+    const inWindow = bookings.filter((b) => {
+      if (b.status !== 'confirmed' || !b.createdAt) return false;
+      const t = new Date(b.createdAt).getTime();
+      return Number.isFinite(t) && t >= since;
+    });
+
     const rows = approvedDrivers.map((driver) => {
-      const driverBookings = bookings.filter((b) => b.driver?.id === driver.id && b.status === 'confirmed');
+      const driverBookings = inWindow.filter((b) => b.driver?.id === driver.id);
       const revenue = driverBookings.reduce((sum, b) => sum + (b.driverEarnings || 0), 0);
       const ratingEntry = ratingsByDriver.get(driver.id);
       const rating = ratingEntry && ratingEntry.count > 0 ? (ratingEntry.sum / ratingEntry.count).toFixed(1) : null;
@@ -82,7 +96,10 @@ const PerformancePanel = ({ bookings, briefs, drivers, reviews }) => {
         </div>
 
         <div className="overflow-hidden rounded-[18px] bg-surface shadow-card">
-          <div className="border-b border-hairline px-5 py-4"><b className="text-[15.5px] text-ink">Driver leaderboard</b></div>
+          <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-hairline px-5 py-4">
+            <b className="text-[15.5px] text-ink">Driver leaderboard</b>
+            <span className="text-[12px] font-semibold text-muted-soft">Last {LEADERBOARD_WINDOW_DAYS} days · by driver earnings</span>
+          </div>
           {leaders.length === 0 ? (
             <p className="px-5 py-8 text-center text-sm text-muted-soft">No confirmed trips yet.</p>
           ) : (
