@@ -138,6 +138,9 @@ export const updateVehicle = (vehicleId, payload) =>
     body: payload instanceof FormData ? payload : JSON.stringify(payload),
   });
 
+export const deleteVehicle = (vehicleId) =>
+  request(`/vehicles/${vehicleId}`, { method: 'DELETE' });
+
 export const createVehicleAvailability = (vehicleId, payload) =>
   request(`/vehicles/${vehicleId}/availability`, {
     method: 'POST',

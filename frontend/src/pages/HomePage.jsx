@@ -93,7 +93,7 @@ const TRUST_BADGES = [
 const FAQS = [
   {
     q: 'How much does a car with driver cost in Sri Lanka?',
-    a: "Drivers set their own rates, so you'll see a range. Sedans typically start around $50 a day and large touring vans reach about $95. Most daily rates cover the vehicle, fuel, unlimited island-wide kilometres, and the driver's meals and accommodation, and each listing spells out exactly what's included. For a figure based on your own route and dates, use the trip cost calculator.",
+    a: "Drivers set their own rates, so you'll see a range. Sedans typically start around $50 a day and large touring vans reach about $95. Most daily rates cover the vehicle, fuel, 120–150 km per day island-wide, and the driver's meals and accommodation, and each listing spells out exactly what's included. For a figure based on your own route and dates, use the trip cost calculator.",
   },
   {
     q: 'Is it free to book, and do I pay a deposit?',
@@ -450,7 +450,7 @@ const HomePage = () => {
           <ul className="mt-[22px] grid gap-[11px]">
             {[
               'Driver fee, meals and accommodation',
-              'Fuel and unlimited island-wide kilometres',
+              'Fuel and 120–150 km per day island-wide',
               'Full vehicle insurance and 24/7 support',
               'Airport meet & greet on arrival day',
             ].map((item) => (
@@ -465,7 +465,7 @@ const HomePage = () => {
           <div className="text-xs font-extrabold tracking-[.06em] text-muted-soft">SAMPLE 6-DAY TRIP · 1–3 TRAVELLERS</div>
           <div className="mt-4 grid gap-3">
             <PriceRow label="Vehicle & driver ($50 × 6 days)" value="$300" />
-            <PriceRow label="Fuel & unlimited km" value="Included" green />
+            <PriceRow label="Fuel &amp; 120–150 km/day" value="Included" green />
             <PriceRow label="Airport pick-up" value="Included" green />
             <PriceRow label="Platform booking fee" value="$0" green />
             <div className="flex items-center justify-between border-t border-[#e2e9e5] pt-3.5">

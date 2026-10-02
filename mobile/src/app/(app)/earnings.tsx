@@ -212,7 +212,7 @@ export default function Earnings() {
                 <DetailLine label="Bank" value={bank?.bankName} />
                 <DetailLine label="Branch" value={bank?.branch} />
                 {bank?.swiftCode ? <DetailLine label="SWIFT / BIC" value={bank.swiftCode} /> : null}
-                <DetailLine label="Reference" value={bank?.referenceNote} />
+                <DetailLine label="Reference" value={bank?.referenceNote} fullWidth />
               </View>
               {canUploadSlip ? (
                 <Pressable
@@ -282,11 +282,19 @@ function StatCard({ label, value, highlight }: { label: string; value: string; h
   );
 }
 
-function DetailLine({ label, value }: { label: string; value?: string }) {
+function DetailLine({
+  label,
+  value,
+  fullWidth = false,
+}: {
+  label: string;
+  value?: string;
+  fullWidth?: boolean;
+}) {
   return (
-    <View className="w-1/2 pr-2">
+    <View className={fullWidth ? 'w-full' : 'w-1/2 pr-2'}>
       <Text className="font-semi text-[11.5px] text-muted-soft">{label}</Text>
-      <Text className="font-heavy text-[13px] text-ink">{value || '—'}</Text>
+      <Text className="font-heavy text-[13px] leading-[19px] text-ink">{value || '—'}</Text>
     </View>
   );
 }

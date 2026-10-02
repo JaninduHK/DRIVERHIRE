@@ -59,6 +59,7 @@ export const formatDateTime = (value) => {
     return '—';
   }
   return date.toLocaleString(undefined, {
+    year: 'numeric',
     month: 'short',
     day: 'numeric',
     hour: '2-digit',

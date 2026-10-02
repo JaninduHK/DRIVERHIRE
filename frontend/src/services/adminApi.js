@@ -70,6 +70,9 @@ const buildQueryString = (params = {}) => {
 
 export const fetchDriverApplications = () => request('/drivers', { method: 'GET' });
 
+export const fetchDriverDetails = (driverId) =>
+  request(`/drivers/${driverId}`, { method: 'GET' });
+
 export const updateDriverStatus = (driverId, status) =>
   request(`/drivers/${driverId}/status`, {
     method: 'PATCH',
@@ -105,6 +108,9 @@ export const updateDriverDetails = (driverId, payload) =>
 
 export const fetchVehicleSubmissions = () => request('/vehicles', { method: 'GET' });
 
+export const fetchVehicleDetails = (vehicleId) =>
+  request(`/vehicles/${vehicleId}`, { method: 'GET' });
+
 export const updateVehicleStatus = (vehicleId, payload) =>
   request(`/vehicles/${vehicleId}/status`, {
     method: 'PATCH',
@@ -139,6 +145,11 @@ export const removeVehicleImage = (vehicleId, image) =>
     method: 'DELETE',
     body: JSON.stringify({ image }),
   });
+
+export const fetchDeletedDrivers = () => request('/deleted-drivers', { method: 'GET' });
+
+export const deleteVehicle = (vehicleId) =>
+  request(`/vehicles/${vehicleId}`, { method: 'DELETE' });
 
 export const fetchVehicleAvailability = (vehicleId) =>
   request(`/vehicles/${vehicleId}/availability`, { method: 'GET' });
@@ -236,6 +247,9 @@ export const fetchBookings = () =>
     method: 'GET',
   });
 
+export const fetchBookingDetails = (bookingId) =>
+  request(`/bookings/${bookingId}`, { method: 'GET' });
+
 export const updateBooking = (bookingId, payload) =>
   request(`/bookings/${bookingId}`, {
     method: 'PATCH',
@@ -251,6 +265,9 @@ export const fetchBriefs = () =>
   request('/briefs', {
     method: 'GET',
   });
+
+export const fetchBriefDetails = (briefId) =>
+  request(`/briefs/${briefId}`, { method: 'GET' });
 
 export const updateBrief = (briefId, payload) =>
   request(`/briefs/${briefId}`, {

@@ -9,6 +9,10 @@ import DriverDashboard from './pages/DriverDashboard.jsx';
 import DriverMessages from './pages/DriverMessages.jsx';
 import TravelerDashboard from './pages/TravelerDashboard.jsx';
 import AdminDashboard from './pages/AdminDashboard.jsx';
+import AdminBookingDetails from './pages/AdminBookingDetails.jsx';
+import AdminBriefDetails from './pages/AdminBriefDetails.jsx';
+import AdminDriverDetails from './pages/AdminDriverDetails.jsx';
+import AdminVehicleDetails from './pages/AdminVehicleDetails.jsx';
 import VehicleDetails from './pages/VehicleDetails.jsx';
 import VehicleCatalog from './pages/VehicleCatalog.jsx';
 import Checkout from './pages/Checkout.jsx';
@@ -36,7 +40,9 @@ const App = () => {
     location.pathname === '/portal/driver' ||
     location.pathname === '/portal/driver/messages' ||
     location.pathname === '/briefs' ||
-    location.pathname === '/dashboard';
+    location.pathname === '/dashboard' ||
+    location.pathname === '/admin' ||
+    location.pathname.startsWith('/admin/');
   // Public marketplace pages that own their full-width layout but keep the marketing NavBar/Footer.
   const isWidePublic =
     location.pathname === '/vehicles' ||
@@ -76,6 +82,10 @@ const App = () => {
           <Route path="/portal/driver" element={<DriverDashboard />} />
           <Route path="/portal/driver/messages" element={<DriverMessages />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/bookings/:bookingId" element={<AdminBookingDetails />} />
+          <Route path="/admin/briefs/:briefId" element={<AdminBriefDetails />} />
+          <Route path="/admin/drivers/:driverId" element={<AdminDriverDetails />} />
+          <Route path="/admin/vehicles/:vehicleId" element={<AdminVehicleDetails />} />
           <Route path="/register/driver" element={<DriverRegister />} />
           <Route path="/briefs" element={<TourBriefsBoard />} />
           <Route path="/vehicles" element={<VehicleCatalog />} />

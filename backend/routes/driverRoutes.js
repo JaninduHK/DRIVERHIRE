@@ -12,6 +12,7 @@ import {
   createVehicleAvailability,
   updateVehicleAvailability,
   deleteVehicleAvailability,
+  deleteDriverVehicle,
   completeDriverProfileTour,
   registerPushToken,
   unregisterPushToken,
@@ -137,6 +138,12 @@ router.patch(
     }),
   ],
   updateDriverVehicle
+);
+
+router.delete(
+  '/vehicles/:id',
+  [param('id').isMongoId().withMessage('Invalid vehicle identifier')],
+  deleteDriverVehicle
 );
 
 router.get(

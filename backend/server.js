@@ -17,6 +17,8 @@ import supportRoutes from './routes/supportRoutes.js';
 import offerInviteRoutes from './routes/offerInviteRoutes.js';
 import { startReviewRequestScheduler } from './services/reviewRequestService.js';
 import { startOfferReminderScheduler } from './services/offerReminderService.js';
+import { startOfferExpiryScheduler } from './services/offerExpiryService.js';
+import { startRetentionScheduler } from './services/retentionSweepService.js';
 import { startBriefExpiryScheduler } from './services/briefExpiryService.js';
 import { startCommissionReminderScheduler } from './services/commissionReminderService.js';
 import path from 'path';
@@ -147,6 +149,12 @@ const startServer = async () => {
 
     // Hourly sweep closing tour briefs whose travel dates have passed unbooked.
     startBriefExpiryScheduler();
+
+    // Hourly sweep expiring offers the traveller never booked.
+    startOfferExpiryScheduler();
+
+    // Daily sweep destroying archived driver records past their retention window.
+    startRetentionScheduler();
 
     // Monthly commission-due email, to drivers who actually owe something.
     startCommissionReminderScheduler();

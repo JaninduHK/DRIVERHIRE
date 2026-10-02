@@ -256,6 +256,7 @@ export const listVehicleReviews = async (req, res) => {
     const vehicleExists = await Vehicle.exists({
       _id: id,
       status: VEHICLE_STATUS.APPROVED,
+      deletedAt: null,
     });
 
     if (!vehicleExists) {
@@ -576,6 +577,7 @@ export const createAdminReview = async (req, res) => {
       vehicleDoc = await Vehicle.findOne({
         driver: driverDoc._id,
         status: VEHICLE_STATUS.APPROVED,
+        deletedAt: null,
       });
     }
 
@@ -1012,6 +1014,7 @@ export const createAdminReviewsBulk = async (req, res) => {
         const vehicleDoc = await Vehicle.findOne({
           driver: driverDoc._id,
           status: VEHICLE_STATUS.APPROVED,
+          deletedAt: null,
         });
         vehicleId = vehicleDoc?._id;
       }

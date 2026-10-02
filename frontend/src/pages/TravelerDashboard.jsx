@@ -6,6 +6,7 @@ import {
   Calculator,
   CalendarDays,
   Car,
+  Clock,
   ChevronLeft,
   ChevronRight,
   Loader2,
@@ -52,6 +53,8 @@ import { LicenseIconBadge, LicenseTypeChip } from '../components/LicenseBadge.js
 import DeleteAccountCard from '../components/DeleteAccountCard.jsx';
 import OfferVehicleImages from '../components/OfferVehicleImages.jsx';
 import BriefRequestBubble from '../components/BriefRequestBubble.jsx';
+import MessageMeta from '../components/MessageMeta.jsx';
+import { offerExpiryNotice, offerExpiryClass } from '../lib/offerExpiry.js';
 
 const NAV_ITEMS = [
   { id: 'overview', label: 'Overview', icon: User2 },
@@ -1453,14 +1456,27 @@ const TravelerMessages = ({
     ) : (
       messages.map((message) => {
         const isTraveller = message.sender?.role === 'guest' || message.senderRole === 'guest';
+        const align = isTraveller ? 'end' : 'start';
+        const meta = <MessageMeta message={message} mine={isTraveller} />;
         if (message.type === 'brief' && message.briefRequest) {
-          return <BriefRequestBubble key={message.id} message={message} align={isTraveller ? 'end' : 'start'} />;
+          return (
+            <div key={message.id}>
+              <BriefRequestBubble message={message} align={align} />
+              {meta}
+            </div>
+          );
         }
         if (message.type === 'offer' && message.offer) {
-          return <TravelerOfferBubble key={message.id} message={message} align={isTraveller ? 'end' : 'start'} onBook={() => onBookOffer(message)} />;
+          return (
+            <div key={message.id}>
+              <TravelerOfferBubble message={message} align={align} onBook={() => onBookOffer(message)} />
+              {meta}
+            </div>
+          );
         }
         return (
-          <div key={message.id} className={`flex ${isTraveller ? 'justify-end' : 'justify-start'}`}>
+          <div key={message.id}>
+          <div className={`flex ${isTraveller ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[80%] px-[13px] py-[10px] text-[13.5px] shadow-[0_2px_8px_rgba(15,31,45,0.05)] ${isTraveller ? 'rounded-[14px_14px_4px_14px] bg-brand text-white' : 'rounded-[14px_14px_14px_4px] bg-white text-ink'}`}>
               <div className="whitespace-pre-wrap">{message.body}</div>
               {message.warning ? (
@@ -1470,6 +1486,8 @@ const TravelerMessages = ({
                 </div>
               ) : null}
             </div>
+          </div>
+          {meta}
           </div>
         );
       })
@@ -1728,9 +1746,11 @@ const TravelerOfferBubble = ({ message, align, onBook }) => {
   const start = formatDateLabel(offer.startDate);
   const end = formatDateLabel(offer.endDate);
   const discount = offer.discount;
+  const expiry = offerExpiryNotice(offer);
+  const lapsed = expiry?.tone === 'expired';
   return (
     <div className={`flex ${align === 'end' ? 'justify-end' : 'justify-start'}`}>
-      <div className="max-w-[88%] rounded-[16px] border-[1.5px] border-[#cdeede] bg-white p-3.5 shadow-[0_4px_14px_rgba(15,31,45,0.06)]">
+      <div className={`max-w-[88%] rounded-[16px] border-[1.5px] border-[#cdeede] bg-white p-3.5 shadow-[0_4px_14px_rgba(15,31,45,0.06)] ${lapsed ? 'opacity-70' : ''}`}>
         <div className="mb-2 flex items-center justify-between gap-3">
           <span className="rounded-[7px] bg-brand-tint px-2 py-[3px] text-[10.5px] font-extrabold uppercase text-brand-dark">Offer received</span>
           <div className="text-right">
@@ -1755,9 +1775,20 @@ const TravelerOfferBubble = ({ message, align, onBook }) => {
           {offer.totalKms} km included · {formatRate(offer.pricePerExtraKm)} / extra km
         </div>
         {message.body ? <div className="mt-1.5 whitespace-pre-wrap text-[12px] leading-relaxed text-muted">{message.body}</div> : null}
+        {expiry ? (
+          <div className={`mt-2 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold ${offerExpiryClass(expiry.tone)}`}>
+            <Clock className="h-3 w-3 flex-none" />
+            {expiry.text}
+          </div>
+        ) : null}
         <div className="mt-3 flex gap-2">
-          <button type="button" onClick={onBook} className="flex-1 rounded-[11px] bg-brand py-[11px] text-[13.5px] font-bold text-white transition hover:bg-brand-dark">
-            Accept offer
+          <button
+            type="button"
+            onClick={onBook}
+            disabled={lapsed}
+            className="flex-1 rounded-[11px] bg-brand py-[11px] text-[13.5px] font-bold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-brand"
+          >
+            {lapsed ? 'Offer expired' : 'Accept offer'}
           </button>
           <button type="button" onClick={() => toast('Reply in the chat to negotiate or decline.')} className="flex-shrink-0 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white px-4 py-[11px] text-[13.5px] font-bold text-ink transition hover:border-muted-soft">
             Decline

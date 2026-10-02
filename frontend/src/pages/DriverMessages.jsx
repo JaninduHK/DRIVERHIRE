@@ -10,7 +10,9 @@ import {
   ChevronLeft,
   ClipboardList,
   DollarSign,
+  Clock,
   Loader2,
+  Lock,
   MapPin,
   MessageCircle,
   Search,
@@ -33,6 +35,8 @@ import BookingDetailsModal from '../components/BookingDetailsModal.jsx';
 import { clearStoredToken, getStoredUser } from '../services/authToken.js';
 import OfferVehicleImages from '../components/OfferVehicleImages.jsx';
 import BriefRequestBubble from '../components/BriefRequestBubble.jsx';
+import MessageMeta from '../components/MessageMeta.jsx';
+import { offerExpiryNotice, offerExpiryClass } from '../lib/offerExpiry.js';
 
 const HEADER_GRADIENT = 'linear-gradient(160deg,#0f7a45,#10a35a 55%,#18b866)';
 const AVATAR_TONES = ['amber', 'purple', 'blue'];
@@ -57,6 +61,8 @@ const DriverMessages = () => {
     error: '',
     items: [],
     booking: null,
+    locked: false,
+    lockMessage: '',
   });
   const [bookingDetailOpen, setBookingDetailOpen] = useState(false);
   const [composerValue, setComposerValue] = useState('');
@@ -141,6 +147,8 @@ const DriverMessages = () => {
           error: '',
           items: [],
           booking: null,
+          locked: false,
+          lockMessage: '',
         });
         return;
       }
@@ -158,7 +166,16 @@ const DriverMessages = () => {
           error: '',
           items: Array.isArray(data?.messages) ? data.messages : [],
           booking: data?.booking || null,
+          locked: Boolean(data?.locked),
+          lockMessage: data?.lockMessage || '',
         });
+        // Keep the inbox badge in step with what the thread just reported.
+        setConversationsState((prev) => ({
+          ...prev,
+          items: prev.items.map((item) =>
+            item.id === conversationId ? { ...item, locked: Boolean(data?.locked) } : item
+          ),
+        }));
         try {
           await markConversationRead(conversationId);
         } catch (readError) {
@@ -178,6 +195,8 @@ const DriverMessages = () => {
             error: message,
             items: [],
             booking: null,
+            locked: false,
+            lockMessage: '',
           });
         }
       }
@@ -402,27 +421,34 @@ const DriverMessages = () => {
 
   const renderMessage = (message) => {
     const isDriver = message.sender?.role === 'driver' || message.senderRole === 'driver';
-    if (message.type === 'brief' && message.briefRequest) {
-      return <BriefRequestBubble key={message.id} message={message} align={isDriver ? 'end' : 'start'} />;
-    }
-    if (message.type === 'offer' && message.offer) {
-      return <OfferBubble key={message.id} message={message} align={isDriver ? 'end' : 'start'} />;
-    }
-    return (
-      <div key={message.id} className={`flex ${isDriver ? 'justify-end' : 'justify-start'}`}>
-        <div
-          className={`max-w-[80%] px-[13px] py-[10px] text-[13.5px] shadow-[0_2px_8px_rgba(15,31,45,0.05)] ${
-            isDriver ? 'rounded-[14px_14px_4px_14px] bg-brand text-white' : 'rounded-[14px_14px_14px_4px] bg-white text-ink'
-          }`}
-        >
-          <div className="whitespace-pre-wrap">{message.body}</div>
-          {message.warning ? (
-            <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-[#fdf0d8] px-2 py-1.5 text-[11px] font-semibold text-[#a86a15]">
-              <AlertTriangle className="mt-0.5 h-3 w-3 flex-none" />
-              <span>{message.warning}</span>
-            </div>
-          ) : null}
+    const align = isDriver ? 'end' : 'start';
+    const bubble =
+      message.type === 'brief' && message.briefRequest ? (
+        <BriefRequestBubble message={message} align={align} />
+      ) : message.type === 'offer' && message.offer ? (
+        <OfferBubble message={message} align={align} />
+      ) : (
+        <div className={`flex ${isDriver ? 'justify-end' : 'justify-start'}`}>
+          <div
+            className={`max-w-[80%] px-[13px] py-[10px] text-[13.5px] shadow-[0_2px_8px_rgba(15,31,45,0.05)] ${
+              isDriver ? 'rounded-[14px_14px_4px_14px] bg-brand text-white' : 'rounded-[14px_14px_14px_4px] bg-white text-ink'
+            }`}
+          >
+            <div className="whitespace-pre-wrap">{message.body}</div>
+            {message.warning ? (
+              <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-[#fdf0d8] px-2 py-1.5 text-[11px] font-semibold text-[#a86a15]">
+                <AlertTriangle className="mt-0.5 h-3 w-3 flex-none" />
+                <span>{message.warning}</span>
+              </div>
+            ) : null}
+          </div>
         </div>
+      );
+
+    return (
+      <div key={message.id}>
+        {bubble}
+        <MessageMeta message={message} mine={isDriver} />
       </div>
     );
   };
@@ -446,6 +472,16 @@ const DriverMessages = () => {
     event.preventDefault();
     if (composerValue.trim()) handleSendMessage();
   };
+
+  // This traveller booked another driver, so this thread is read-only for us. The
+  // server enforces it; this only stops the driver typing a message that would 403.
+  const threadLocked = messagesState.locked;
+  const lockedNotice = (
+    <div className="flex items-start gap-2 rounded-xl border border-[#f0dcae] bg-[#fdf7e8] px-3 py-2.5 text-[12px] font-semibold leading-[1.5] text-[#7a5410]">
+      <Lock className="mt-[1px] h-3.5 w-3.5 flex-shrink-0" />
+      <span>{messagesState.lockMessage || 'This traveller has booked another driver.'}</span>
+    </div>
+  );
 
   // Notice shown at the top of the thread when this traveller already has a booking with
   // the driver. Tapping it opens the full booking-details view.
@@ -514,7 +550,14 @@ const DriverMessages = () => {
           <Avatar name={nm} tone={AVATAR_TONES[index % AVATAR_TONES.length]} className="h-11 w-11 flex-shrink-0 rounded-[11px] text-sm" />
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-2">
-              <span className="truncate text-[14.5px] font-bold text-ink">{nm}</span>
+              <span className="flex min-w-0 items-center gap-1.5">
+                <span className="truncate text-[14.5px] font-bold text-ink">{nm}</span>
+                {conversation.locked ? (
+                  <span className="flex-shrink-0 rounded-md bg-[#fdf0d8] px-1.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[#a86a15]">
+                    Booked another driver
+                  </span>
+                ) : null}
+              </span>
               <span className="flex-shrink-0 text-[11px] text-muted-soft">{timestamp}</span>
             </div>
             <div className="truncate text-[12.5px] text-ink-soft">{preview}</div>
@@ -587,43 +630,14 @@ const DriverMessages = () => {
                     Welcome the traveller and share itinerary ideas.
                   </div>
                 ) : (
-                  messages.map((message) => {
-                    const isDriver =
-                      message.sender?.role === 'driver' || message.senderRole === 'driver';
-                    if (message.type === 'brief' && message.briefRequest) {
-                      return (
-                        <BriefRequestBubble key={message.id} message={message} align={isDriver ? 'end' : 'start'} />
-                      );
-                    }
-                    if (message.type === 'offer' && message.offer) {
-                      return (
-                        <OfferBubble key={message.id} message={message} align={isDriver ? 'end' : 'start'} />
-                      );
-                    }
-                    return (
-                      <div key={message.id} className={`flex ${isDriver ? 'justify-end' : 'justify-start'}`}>
-                        <div
-                          className={`max-w-[80%] px-[13px] py-[10px] text-[13.5px] shadow-[0_2px_8px_rgba(15,31,45,0.05)] ${
-                            isDriver
-                              ? 'rounded-[14px_14px_4px_14px] bg-brand text-white'
-                              : 'rounded-[14px_14px_14px_4px] bg-white text-ink'
-                          }`}
-                        >
-                          <div className="whitespace-pre-wrap">{message.body}</div>
-                          {message.warning ? (
-                            <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-[#fdf0d8] px-2 py-1.5 text-[11px] font-semibold text-[#a86a15]">
-                              <AlertTriangle className="mt-0.5 h-3 w-3 flex-none" />
-                              <span>{message.warning}</span>
-                            </div>
-                          ) : null}
-                        </div>
-                      </div>
-                    );
-                  })
+                  messages.map(renderMessage)
                 )}
               </div>
 
               <div className="sticky bottom-0 z-10 border-t border-hairline bg-white px-4 py-3">
+                {threadLocked ? (
+                  lockedNotice
+                ) : (
                 <form
                   onSubmit={(event) => {
                     event.preventDefault();
@@ -663,6 +677,7 @@ const DriverMessages = () => {
                     )}
                   </button>
                 </form>
+                )}
                   <ContactWarning value={composerValue} />
               </div>
             </div>
@@ -791,6 +806,10 @@ const DriverMessages = () => {
                   {chatBody}
                 </div>
                 <div className="flex-shrink-0 border-t border-hairline bg-white px-6 py-4">
+                  {threadLocked ? (
+                    lockedNotice
+                  ) : (
+                  <>
                   <form onSubmit={submitMessage} className="flex items-end gap-2.5">
                     <button
                       type="button"
@@ -820,6 +839,8 @@ const DriverMessages = () => {
                     </button>
                   </form>
                   <ContactWarning value={composerValue} />
+                  </>
+                  )}
                 </div>
               </>
             ) : (
@@ -921,6 +942,7 @@ const OfferBubble = ({ message, align }) => {
   const { offer } = message;
   const start = formatDateLabel(offer.startDate);
   const end = formatDateLabel(offer.endDate);
+  const expiry = offerExpiryNotice(offer);
   return (
     <div className={`flex ${align === 'end' ? 'justify-end' : 'justify-start'}`}>
       <div className="max-w-[88%] rounded-[16px] border-[1.5px] border-[#cdeede] bg-white p-3.5 shadow-[0_4px_14px_rgba(15,31,45,0.06)]">
@@ -943,6 +965,12 @@ const OfferBubble = ({ message, align }) => {
         </div>
         {message.body ? (
           <div className="mt-1.5 whitespace-pre-wrap text-[12px] leading-relaxed text-muted">{message.body}</div>
+        ) : null}
+        {expiry ? (
+          <div className={`mt-2 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold ${offerExpiryClass(expiry.tone)}`}>
+            <Clock className="h-3 w-3 flex-none" />
+            {expiry.text}
+          </div>
         ) : null}
       </div>
     </div>

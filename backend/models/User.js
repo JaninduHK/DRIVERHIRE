@@ -198,6 +198,9 @@ const userSchema = new mongoose.Schema(
       min: 0,
       max: 60,
     },
+    // Public-facing tenure can be adjusted by an administrator without
+    // destroying the immutable account-registration timestamp in createdAt.
+    memberSince: Date,
     driverLocation: driverLocationSchema,
     // Expo push notification tokens for this user's devices (driver mobile app).
     expoPushTokens: {

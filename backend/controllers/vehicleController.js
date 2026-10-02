@@ -7,6 +7,8 @@ import CommissionDiscount from '../models/CommissionDiscount.js';
 import '../models/ChatConversation.js';
 import ChatMessage from '../models/ChatMessage.js';
 import TourBrief from '../models/TourBrief.js';
+import { closeBriefsForBooking } from '../utils/briefClosure.js';
+import { isOfferBookable, OFFER_EXPIRED_MESSAGE } from '../utils/offerExpiry.js';
 import {
   sendBookingRequestAlertEmail,
   sendBookingRequestConfirmationEmail,
@@ -318,6 +320,7 @@ export const listVehicles = async (req, res) => {
 
   const filters = {
     status: VEHICLE_STATUS.APPROVED,
+    deletedAt: null,
   };
 
   const normalizedSearch = typeof search === 'string' ? search.trim() : '';
@@ -473,6 +476,7 @@ export const getVehicleDetails = async (req, res) => {
     const vehicle = await Vehicle.findOne({
       _id: id,
       status: VEHICLE_STATUS.APPROVED,
+      deletedAt: null,
     })
       .populate({
         path: 'driver',
@@ -525,6 +529,7 @@ export const checkVehicleAvailability = async (req, res) => {
     const vehicle = await Vehicle.findOne({
       _id: id,
       status: VEHICLE_STATUS.APPROVED,
+      deletedAt: null,
     })
       .select('availability pricePerDay driver')
       .populate({
@@ -662,6 +667,7 @@ export const createVehicleBooking = async (req, res) => {
     const vehicle = await Vehicle.findOne({
       _id: id,
       status: VEHICLE_STATUS.APPROVED,
+      deletedAt: null,
     })
       .select('availability pricePerDay model driver')
       .populate({
@@ -725,8 +731,17 @@ export const createVehicleBooking = async (req, res) => {
           .json({ message: 'This offer has already been accepted. Please request a new offer.' });
       }
 
-      if (offerMessage.offer.status === 'declined') {
-        return res.status(409).json({ message: 'This offer is no longer available.' });
+      // Checked positively rather than by listing the bad statuses: a status this
+      // code has not heard of must never fall through into a booking. The date is
+      // re-checked too, because the sweep only runs hourly and an offer can sit
+      // past its expiry while still marked pending.
+      if (!isOfferBookable(offerMessage.offer)) {
+        return res.status(409).json({
+          message:
+            offerMessage.offer.status === 'declined'
+              ? 'This offer is no longer available.'
+              : OFFER_EXPIRED_MESSAGE,
+        });
       }
 
       const offerStart = normalizeDateInput(offerMessage.offer.startDate);
@@ -846,7 +861,9 @@ export const createVehicleBooking = async (req, res) => {
       // decline any other still-pending offers on it so other drivers stop
       // seeing it as live and can't send further quotes.
       if (offerMessage.offer.brief) {
-        await TourBrief.findByIdAndUpdate(offerMessage.offer.brief, { $set: { status: 'booked' } });
+        await TourBrief.findByIdAndUpdate(offerMessage.offer.brief, {
+          $set: { status: 'booked', closedByBooking: booking._id },
+        });
         await ChatMessage.updateMany(
           {
             'offer.brief': offerMessage.offer.brief,
@@ -857,6 +874,11 @@ export const createVehicleBooking = async (req, res) => {
         );
       }
     }
+
+    // Close the traveller's open requests covering these dates. Also catches the
+    // direct-chat and straight-off-a-vehicle-page bookings, which the brief-linked
+    // cascade above never fires for.
+    await closeBriefsForBooking(booking);
 
     return res.status(201).json({
       booking: booking.toJSON(),

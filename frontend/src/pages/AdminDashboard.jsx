@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   CalendarDays,
@@ -20,15 +20,9 @@ import {
 } from 'lucide-react';
 import {
   fetchDriverApplications,
-  updateDriverStatus as updateDriverStatusRequest,
-  updateDriverDetails as updateDriverDetailsRequest,
   fetchLicenseSubmissions,
   updateLicenseStatus as updateLicenseStatusRequest,
   fetchVehicleSubmissions,
-  updateVehicleStatus as updateVehicleStatusRequest,
-  updateVehicleDetails as updateVehicleDetailsRequest,
-  addVehicleImages as addVehicleImagesRequest,
-  removeVehicleImage as removeVehicleImageRequest,
   fetchReviews,
   createReview as createAdminReview,
   updateReview as updateReviewRequest,
@@ -40,11 +34,7 @@ import {
   deleteReview as deleteReviewRequest,
   bulkDeleteReviews as bulkDeleteReviewsRequest,
   fetchBookings as fetchAdminBookings,
-  updateBooking as updateAdminBooking,
-  deleteBooking as deleteAdminBooking,
   fetchBriefs as fetchAdminBriefs,
-  updateBrief as updateAdminBrief,
-  deleteBrief as deleteAdminBrief,
   fetchOffers as fetchAdminOffers,
   updateOfferStatus as updateAdminOfferStatus,
   deleteOffer as deleteAdminOffer,
@@ -57,10 +47,8 @@ import {
   deleteCommissionDiscount as deleteAdminDiscount,
   fetchDriverCommissions as fetchAdminCommissions,
   updateDriverCommissionStatus as updateAdminCommissionStatus,
-  sendDriverEmail as sendDriverEmailRequest,
-  setDriverPassword as setDriverPasswordRequest,
-  setDriverFeatured as setDriverFeaturedRequest,
   fetchAbuseSignals,
+  fetchDeletedDrivers,
   setDriverMessagingSuspension as setDriverMessagingSuspensionRequest,
   fetchUsers,
   fetchUserDeletionPreview,
@@ -79,6 +67,7 @@ import BookingsPanel from './admin/BookingsPanel.jsx';
 import DiscountsPanel from './admin/DiscountsPanel.jsx';
 import BriefsPanel, { BriefDriverTypeSetting } from './admin/BriefsPanel.jsx';
 import AbusePanel from './admin/AbusePanel.jsx';
+import DeletedDriversPanel from './admin/DeletedDriversPanel.jsx';
 import OffersPanel from './admin/OffersPanel.jsx';
 import ConversationsPanel from './admin/ConversationsPanel.jsx';
 import UsersPanel from './admin/UsersPanel.jsx';
@@ -102,6 +91,7 @@ const SECTION_META = {
   briefs: { crumb: 'MARKETPLACE', title: 'Tour briefs' },
   offers: { crumb: 'MARKETPLACE', title: 'Driver offers' },
   conversations: { crumb: 'MARKETPLACE', title: 'Conversations' },
+  abuse: { crumb: 'MARKETPLACE', title: 'Abuse signals' },
   users: { crumb: 'SUPPLY & PEOPLE', title: 'Users' },
   drivers: { crumb: 'SUPPLY & PEOPLE', title: 'Drivers' },
   vehicles: { crumb: 'SUPPLY & PEOPLE', title: 'Vehicle approvals' },
@@ -128,9 +118,12 @@ const getCurrentMonthValue = () => {
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState('overview');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedSection = searchParams.get('section');
+  const [activeSection, setActiveSection] = useState(() => (SECTION_META[requestedSection] ? requestedSection : 'overview'));
+  const [searchTerm, setSearchTerm] = useState(() => searchParams.get('search') || '');
   const [abuseState, setAbuseState] = useState({ items: [], loading: false, error: '', updatingId: '' });
+  const [deletedDriverState, setDeletedDriverState] = useState({ items: [], loading: false, error: '', retentionYears: null });
 
   const [bookingState, setBookingState] = useState({ items: [], loading: true, error: '', updatingId: null, deletingId: null });
   const [briefState, setBriefState] = useState({ items: [], loading: true, error: '', updatingId: null, deletingId: null });
@@ -183,14 +176,23 @@ const AdminDashboard = () => {
   const handleSectionChange = useCallback((section) => {
     setActiveSection(section);
     setSearchTerm('');
-  }, []);
+    setSearchParams(section === 'overview' ? {} : { section });
+  }, [setSearchParams]);
 
-  // Deep-link between admin tabs: switch section and seed the search so the
-  // destination list is already narrowed (e.g. a brief's offers).
-  const handleSectionSearch = useCallback((section, search) => {
-    setActiveSection(section);
-    setSearchTerm(search || '');
-  }, []);
+  useEffect(() => {
+    const section = searchParams.get('section');
+    const nextSection = SECTION_META[section] ? section : 'overview';
+    setActiveSection((current) => (current === nextSection ? current : nextSection));
+    setSearchTerm(searchParams.get('search') || '');
+  }, [searchParams]);
+
+  const handleSearchChange = useCallback((value) => {
+    setSearchTerm(value);
+    setSearchParams(
+      { ...(activeSection !== 'overview' ? { section: activeSection } : {}), ...(value ? { search: value } : {}) },
+      { replace: true }
+    );
+  }, [activeSection, setSearchParams]);
 
   const loadAbuseSignals = useCallback(async () => {
     setAbuseState((prev) => ({ ...prev, loading: true, error: '' }));
@@ -199,6 +201,25 @@ const AdminDashboard = () => {
       setAbuseState({ items: response.signals || [], loading: false, error: '', updatingId: '' });
     } catch (error) {
       setAbuseState((prev) => ({ ...prev, loading: false, error: error?.message || 'Unable to load abuse signals.' }));
+    }
+  }, []);
+
+  const loadDeletedDrivers = useCallback(async () => {
+    setDeletedDriverState((prev) => ({ ...prev, loading: true, error: '' }));
+    try {
+      const response = await fetchDeletedDrivers();
+      setDeletedDriverState({
+        items: response.drivers || [],
+        loading: false,
+        error: '',
+        retentionYears: response.retentionYears ?? null,
+      });
+    } catch (error) {
+      setDeletedDriverState((prev) => ({
+        ...prev,
+        loading: false,
+        error: error?.message || 'Unable to load deleted driver records.',
+      }));
     }
   }, []);
 
@@ -381,64 +402,16 @@ const AdminDashboard = () => {
   }, [activeSection, loadAbuseSignals]);
 
   useEffect(() => {
+    if (activeSection === 'deleted-drivers') loadDeletedDrivers();
+  }, [activeSection, loadDeletedDrivers]);
+
+  useEffect(() => {
     if (activeSection === 'discounts') loadDiscounts();
   }, [activeSection, loadDiscounts]);
 
   useEffect(() => {
     if (activeSection === 'users') loadUsers();
   }, [activeSection, loadUsers]);
-
-  const handleBookingUpdate = useCallback(async (bookingId, payload) => {
-    setBookingState((prev) => ({ ...prev, updatingId: bookingId }));
-    try {
-      const { booking } = await updateAdminBooking(bookingId, payload);
-      setBookingState((prev) => ({ ...prev, items: prev.items.map((item) => (item.id === booking.id ? booking : item)), updatingId: null }));
-      toast.success('Booking updated.');
-    } catch (error) {
-      setBookingState((prev) => ({ ...prev, updatingId: null }));
-      toast.error(error?.message || 'Unable to update booking.');
-      throw error;
-    }
-  }, []);
-
-  const handleBookingDelete = useCallback(async (bookingId) => {
-    setBookingState((prev) => ({ ...prev, deletingId: bookingId }));
-    try {
-      await deleteAdminBooking(bookingId);
-      setBookingState((prev) => ({ ...prev, items: prev.items.filter((item) => item.id !== bookingId), deletingId: null }));
-      toast.success('Booking deleted.');
-    } catch (error) {
-      setBookingState((prev) => ({ ...prev, deletingId: null }));
-      toast.error(error?.message || 'Unable to delete booking.');
-      throw error;
-    }
-  }, []);
-
-  const handleBriefUpdate = useCallback(async (briefId, payload) => {
-    setBriefState((prev) => ({ ...prev, updatingId: briefId }));
-    try {
-      const { brief } = await updateAdminBrief(briefId, payload);
-      setBriefState((prev) => ({ ...prev, items: prev.items.map((item) => (item.id === brief.id ? brief : item)), updatingId: null }));
-      toast.success('Brief updated.');
-    } catch (error) {
-      setBriefState((prev) => ({ ...prev, updatingId: null }));
-      toast.error(error?.message || 'Unable to update brief.');
-      throw error;
-    }
-  }, []);
-
-  const handleBriefDelete = useCallback(async (briefId) => {
-    setBriefState((prev) => ({ ...prev, deletingId: briefId }));
-    try {
-      await deleteAdminBrief(briefId);
-      setBriefState((prev) => ({ ...prev, items: prev.items.filter((item) => item.id !== briefId), deletingId: null }));
-      toast.success('Brief deleted.');
-    } catch (error) {
-      setBriefState((prev) => ({ ...prev, deletingId: null }));
-      toast.error(error?.message || 'Unable to delete brief.');
-      throw error;
-    }
-  }, []);
 
   const handleOfferStatusChange = useCallback(async (offerId, status) => {
     setOfferState((prev) => ({ ...prev, updatingId: offerId }));
@@ -598,79 +571,6 @@ const AdminDashboard = () => {
     [conversationState.items]
   );
 
-  const handleDriverStatusChange = async (applicationId, nextStatus) => {
-    setDriverState((prev) => ({ ...prev, updatingId: applicationId }));
-    try {
-      const { driver } = await updateDriverStatusRequest(applicationId, nextStatus);
-      setDriverState((prev) => ({ ...prev, items: prev.items.map((application) => (application.id === driver.id ? driver : application)), updatingId: null }));
-      toast.success(nextStatus === DRIVER_STATUS.APPROVED ? 'Driver approved successfully.' : 'Driver application updated.');
-    } catch (err) {
-      toast.error(err.message || 'Unable to update driver status.');
-      setDriverState((prev) => ({ ...prev, updatingId: null }));
-    }
-  };
-
-  const handleDriverMessageSend = useCallback(async (driverId, payload) => {
-    await sendDriverEmailRequest(driverId, payload);
-  }, []);
-
-  const handleDriverSetPassword = useCallback(async (driverId, password) => {
-    await setDriverPasswordRequest(driverId, password);
-  }, []);
-
-  const handleDriverToggleFeatured = useCallback(async (driverId, featured) => {
-    try {
-      const { driver } = await setDriverFeaturedRequest(driverId, featured);
-      setDriverState((prev) => ({
-        ...prev,
-        items: prev.items.map((application) => (application.id === driver.id ? driver : application)),
-      }));
-      toast.success(featured ? 'Driver added to the homepage.' : 'Driver removed from the homepage.');
-    } catch (error) {
-      toast.error(error?.message || 'Unable to update homepage picks.');
-    }
-  }, []);
-
-  // Shared by the Drivers tab and the Abuse tab, so both behave identically.
-  const handleDriverToggleSuspension = useCallback(async (driver, currentlyPaused) => {
-    if (currentlyPaused) {
-      if (!window.confirm(`Resume messaging for ${driver.name || 'this driver'}?`)) return;
-    } else {
-      const reason = window.prompt(
-        `Pause messaging for ${driver.name || 'this driver'} for 24 hours.\n\nReason (shown to the driver):`,
-        'Repeatedly sharing contact details in chat.'
-      );
-      if (reason === null) return;
-      try {
-        setDriverState((prev) => ({ ...prev, updatingId: driver.id }));
-        const response = await setDriverMessagingSuspensionRequest(driver.id, { hours: 24, reason });
-        setDriverState((prev) => ({
-          ...prev,
-          updatingId: '',
-          items: prev.items.map((d) => (d.id === driver.id ? { ...d, messagingSuspendedUntil: response.suspendedUntil, suspensionReason: response.suspensionReason } : d)),
-        }));
-        toast.success(response?.message || 'Messaging paused.');
-      } catch (error) {
-        setDriverState((prev) => ({ ...prev, updatingId: '' }));
-        toast.error(error?.message || 'Unable to update messaging status.');
-      }
-      return;
-    }
-    try {
-      setDriverState((prev) => ({ ...prev, updatingId: driver.id }));
-      const response = await setDriverMessagingSuspensionRequest(driver.id, { hours: 0, reason: '' });
-      setDriverState((prev) => ({
-        ...prev,
-        updatingId: '',
-        items: prev.items.map((d) => (d.id === driver.id ? { ...d, messagingSuspendedUntil: null, suspensionReason: '' } : d)),
-      }));
-      toast.success(response?.message || 'Messaging restored.');
-    } catch (error) {
-      setDriverState((prev) => ({ ...prev, updatingId: '' }));
-      toast.error(error?.message || 'Unable to update messaging status.');
-    }
-  }, []);
-
   const handleUserDeletionPreview = useCallback((userId) => fetchUserDeletionPreview(userId), []);
 
   const handleUserDelete = useCallback(async (userId) => {
@@ -688,27 +588,6 @@ const AdminDashboard = () => {
       throw error;
     }
   }, []);
-
-  const handleDriverDetailsUpdate = async (driverId, payload) => {
-    const { driver } = await updateDriverDetailsRequest(driverId, payload);
-    setDriverState((prev) => ({ ...prev, items: prev.items.map((application) => (application.id === driver.id ? driver : application)) }));
-    toast.success('Driver details updated.');
-  };
-
-  const handleVehicleStatusChange = async (vehicleId, nextStatus, rejectedReason) => {
-    setVehicleState((prev) => ({ ...prev, updatingId: vehicleId }));
-    try {
-      const { vehicle } = await updateVehicleStatusRequest(vehicleId, {
-        status: nextStatus,
-        ...(nextStatus === VEHICLE_STATUS.REJECTED ? { rejectedReason } : {}),
-      });
-      setVehicleState((prev) => ({ ...prev, items: prev.items.map((item) => (item.id === vehicle.id ? vehicle : item)), updatingId: null }));
-      toast.success(nextStatus === VEHICLE_STATUS.APPROVED ? 'Vehicle approved successfully.' : 'Vehicle rejected. The driver has been notified by email.');
-    } catch (err) {
-      toast.error(err.message || 'Unable to update vehicle status.');
-      setVehicleState((prev) => ({ ...prev, updatingId: null }));
-    }
-  };
 
   const handleReviewFilterChange = (status) => setReviewFilter(status);
   const handleReviewDriverFilterChange = (driverId) => setReviewDriverFilter(driverId);
@@ -883,45 +762,6 @@ const AdminDashboard = () => {
     }
   }, []);
 
-  const handleVehicleDetailsUpdate = async (vehicleId, payload) => {
-    setVehicleState((prev) => ({ ...prev, updatingId: vehicleId }));
-    try {
-      const { vehicle } = await updateVehicleDetailsRequest(vehicleId, payload);
-      setVehicleState((prev) => ({ ...prev, items: prev.items.map((item) => (item.id === vehicle.id ? vehicle : item)), updatingId: null }));
-      toast.success('Vehicle details updated.');
-    } catch (err) {
-      toast.error(err.message || 'Unable to update vehicle details.');
-      setVehicleState((prev) => ({ ...prev, updatingId: null }));
-      throw err;
-    }
-  };
-
-  const handleVehicleImagesAdd = async (vehicleId, formData) => {
-    setVehicleState((prev) => ({ ...prev, updatingId: vehicleId }));
-    try {
-      const { vehicle } = await addVehicleImagesRequest(vehicleId, formData);
-      setVehicleState((prev) => ({ ...prev, items: prev.items.map((item) => (item.id === vehicle.id ? vehicle : item)), updatingId: null }));
-      toast.success('Images added.');
-    } catch (err) {
-      toast.error(err.message || 'Unable to add images.');
-      setVehicleState((prev) => ({ ...prev, updatingId: null }));
-      throw err;
-    }
-  };
-
-  const handleVehicleImageRemove = async (vehicleId, image) => {
-    setVehicleState((prev) => ({ ...prev, updatingId: vehicleId }));
-    try {
-      const { vehicle } = await removeVehicleImageRequest(vehicleId, image);
-      setVehicleState((prev) => ({ ...prev, items: prev.items.map((item) => (item.id === vehicle.id ? vehicle : item)), updatingId: null }));
-      toast.success('Image removed.');
-    } catch (err) {
-      toast.error(err.message || 'Unable to remove image.');
-      setVehicleState((prev) => ({ ...prev, updatingId: null }));
-      throw err;
-    }
-  };
-
   // Header search filters each table's currently-loaded rows in memory (every
   // admin list endpoint already returns its full collection, unpaginated).
   const term = searchTerm.trim().toLowerCase();
@@ -1052,20 +892,32 @@ const AdminDashboard = () => {
   if (activeSection === 'overview') {
     content = <OverviewPanel bookings={bookingState.items} briefs={briefState.items} drivers={driverState.items} vehicles={vehicleState.items} onNavigate={handleSectionChange} />;
   } else if (activeSection === 'bookings') {
-    content = <BookingsPanel state={{ ...bookingState, items: filteredBookings }} onReload={loadBookings} onUpdate={handleBookingUpdate} onDelete={handleBookingDelete} />;
+    content = (
+      <BookingsPanel
+        state={{ ...bookingState, items: filteredBookings }}
+        onReload={loadBookings}
+        onView={(bookingId) => navigate(`/admin/bookings/${bookingId}`, { state: { from: `/admin?${searchParams.toString()}` } })}
+      />
+    );
   } else if (activeSection === 'discounts') {
     content = <DiscountsPanel state={{ ...discountState, items: filteredDiscounts }} onReload={loadDiscounts} onCreate={handleDiscountCreate} onUpdate={handleDiscountUpdate} onDelete={handleDiscountDelete} />;
   } else if (activeSection === 'briefs') {
     content = (
       <div className="flex flex-col gap-4">
         <BriefDriverTypeSetting />
-        <BriefsPanel state={{ ...briefState, items: filteredBriefs }} onReload={loadBriefs} onUpdate={handleBriefUpdate} onDelete={handleBriefDelete} onViewOffers={(briefId) => handleSectionSearch('offers', briefId)} />
+        <BriefsPanel
+          state={{ ...briefState, items: filteredBriefs }}
+          onReload={loadBriefs}
+          onView={(briefId) => navigate(`/admin/briefs/${briefId}`, { state: { from: `/admin?${searchParams.toString()}` } })}
+        />
       </div>
     );
   } else if (activeSection === 'offers') {
     content = <OffersPanel state={{ ...offerState, items: filteredOffers }} onReload={loadOffers} onStatusChange={handleOfferStatusChange} onDelete={handleOfferDelete} />;
   } else if (activeSection === 'abuse') {
     content = <AbusePanel state={abuseState} onReload={loadAbuseSignals} onSuspend={handleDriverSuspension} />;
+  } else if (activeSection === 'deleted-drivers') {
+    content = <DeletedDriversPanel state={deletedDriverState} onReload={loadDeletedDrivers} />;
   } else if (activeSection === 'conversations') {
     content = <ConversationsPanel state={{ ...conversationState, items: filteredConversations }} onReload={loadAdminConversations} onStatusChange={handleConversationStatusChange} onDelete={handleConversationDelete} />;
   } else if (activeSection === 'users') {
@@ -1081,7 +933,11 @@ const AdminDashboard = () => {
     content = (
       <div className="flex flex-col gap-4">
         <DriverApprovalSetting />
-        <DriversPanel state={{ ...driverState, items: filteredDrivers }} onRetry={loadDrivers} onStatusChange={handleDriverStatusChange} onSendMessage={handleDriverMessageSend} onUpdate={handleDriverDetailsUpdate} onSetPassword={handleDriverSetPassword} onViewVerification={() => handleSectionChange('verification')} onToggleFeatured={handleDriverToggleFeatured} onToggleSuspension={handleDriverToggleSuspension} />
+        <DriversPanel
+          state={{ ...driverState, items: filteredDrivers }}
+          onRetry={loadDrivers}
+          onView={(driverId) => navigate(`/admin/drivers/${driverId}`, { state: { from: `/admin?${searchParams.toString()}` } })}
+        />
       </div>
     );
   } else if (activeSection === 'vehicles') {
@@ -1089,10 +945,7 @@ const AdminDashboard = () => {
       <VehiclesPanel
         state={{ ...vehicleState, items: filteredVehicles }}
         onRetry={loadVehicles}
-        onStatusChange={handleVehicleStatusChange}
-        onUpdate={handleVehicleDetailsUpdate}
-        onAddImages={handleVehicleImagesAdd}
-        onRemoveImage={handleVehicleImageRemove}
+        onView={(vehicleId) => navigate(`/admin/vehicles/${vehicleId}`, { state: { from: `/admin?${searchParams.toString()}` } })}
       />
     );
   } else if (activeSection === 'payments') {
@@ -1169,7 +1022,7 @@ const AdminDashboard = () => {
       crumb={meta.crumb}
       title={meta.title}
       searchValue={searchTerm}
-      onSearchChange={isSearchable ? setSearchTerm : undefined}
+      onSearchChange={isSearchable ? handleSearchChange : undefined}
       searchPlaceholder={`Search ${meta.title.toLowerCase()}…`}
       onExport={isSearchable ? handleExport : undefined}
     >

@@ -2,6 +2,11 @@ import { validationResult } from 'express-validator';
 import mongoose from 'mongoose';
 import User, { DRIVER_STATUS, LICENSE_STATUS } from '../models/User.js';
 import Vehicle, { VEHICLE_STATUS, VEHICLE_AVAILABILITY_STATUS } from '../models/Vehicle.js';
+import {
+  findBlockingVehicleBookings,
+  blockingBookingsMessage,
+  softDeleteVehicle,
+} from '../services/vehicleDeletionService.js';
 import Booking, { BOOKING_STATUS } from '../models/Booking.js';
 import Review, { REVIEW_STATUS } from '../models/Review.js';
 import { mapAssetUrls, buildAssetUrl } from '../utils/assetUtils.js';
@@ -197,7 +202,7 @@ export const updateDriverLicense = async (req, res) => {
 
 export const getDriverVehicles = async (req, res) => {
   try {
-    const vehicles = await Vehicle.find({ driver: req.user.id }).sort({ createdAt: -1 });
+    const vehicles = await Vehicle.find({ driver: req.user.id, deletedAt: null }).sort({ createdAt: -1 });
 
     return res.json({
       vehicles: vehicles.map((vehicle) => serializeDriverVehicle(vehicle, req)),
@@ -221,7 +226,7 @@ export const getVehicleAvailability = async (req, res) => {
   }
 
   try {
-    const vehicle = await Vehicle.findOne({ _id: id, driver: req.user.id }).select('availability');
+    const vehicle = await Vehicle.findOne({ _id: id, driver: req.user.id, deletedAt: null }).select('availability');
 
     if (!vehicle) {
       return res.status(404).json({ message: 'Vehicle not found' });
@@ -258,7 +263,7 @@ export const createVehicleAvailability = async (req, res) => {
   }
 
   try {
-    const vehicle = await Vehicle.findOne({ _id: id, driver: req.user.id });
+    const vehicle = await Vehicle.findOne({ _id: id, driver: req.user.id, deletedAt: null });
 
     if (!vehicle) {
       return res.status(404).json({ message: 'Vehicle not found' });
@@ -306,7 +311,7 @@ export const updateVehicleAvailability = async (req, res) => {
   }
 
   try {
-    const vehicle = await Vehicle.findOne({ _id: id, driver: req.user.id });
+    const vehicle = await Vehicle.findOne({ _id: id, driver: req.user.id, deletedAt: null });
 
     if (!vehicle) {
       return res.status(404).json({ message: 'Vehicle not found' });
@@ -366,7 +371,7 @@ export const deleteVehicleAvailability = async (req, res) => {
   }
 
   try {
-    const vehicle = await Vehicle.findOne({ _id: id, driver: req.user.id });
+    const vehicle = await Vehicle.findOne({ _id: id, driver: req.user.id, deletedAt: null });
 
     if (!vehicle) {
       return res.status(404).json({ message: 'Vehicle not found' });
@@ -506,7 +511,7 @@ export const updateDriverVehicle = async (req, res) => {
   const uploadedUrls = [];
 
   try {
-    const vehicle = await Vehicle.findOne({ _id: id, driver: req.user.id });
+    const vehicle = await Vehicle.findOne({ _id: id, driver: req.user.id, deletedAt: null });
 
     if (!vehicle) {
       return res.status(404).json({ message: 'Vehicle not found' });
@@ -630,6 +635,46 @@ export const updateDriverVehicle = async (req, res) => {
   } catch (error) {
     console.error('Update driver vehicle error:', error);
     return res.status(500).json({ message: 'Unable to update vehicle' });
+  }
+};
+
+export const deleteDriverVehicle = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+
+  const { id } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: 'Invalid vehicle identifier provided' });
+  }
+
+  try {
+    const vehicle = await Vehicle.findOne({ _id: id, driver: req.user.id, deletedAt: null });
+
+    if (!vehicle) {
+      return res.status(404).json({ message: 'Vehicle not found' });
+    }
+
+    const blocking = await findBlockingVehicleBookings(vehicle._id);
+    if (blocking.length > 0) {
+      return res.status(409).json({
+        message: blockingBookingsMessage(blocking),
+        bookings: blocking,
+      });
+    }
+
+    const { withdrawnOffers } = await softDeleteVehicle(vehicle);
+
+    return res.json({
+      message: 'Vehicle deleted.',
+      vehicleId: vehicle._id.toString(),
+      withdrawnOffers,
+    });
+  } catch (error) {
+    console.error('Driver vehicle delete error:', error);
+    return res.status(500).json({ message: 'Unable to delete vehicle' });
   }
 };
 

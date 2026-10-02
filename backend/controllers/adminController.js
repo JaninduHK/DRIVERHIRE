@@ -22,6 +22,14 @@ import {
 } from '../services/emailService.js';
 import { mapAssetUrls, buildAssetUrl } from '../utils/assetUtils.js';
 import { anonymizeUser, findBlockingBookings } from '../services/accountDeletionService.js';
+import DeletedDriverRecord from '../models/DeletedDriverRecord.js';
+import { RETENTION_YEARS } from '../services/driverArchiveService.js';
+import { closeBriefsForBooking, reopenBriefsForBooking } from '../utils/briefClosure.js';
+import {
+  findBlockingVehicleBookings,
+  blockingBookingsMessage,
+  softDeleteVehicle,
+} from '../services/vehicleDeletionService.js';
 import * as cloudinaryService from '../services/cloudinaryService.js';
 
 const handleValidation = (req, res) => {
@@ -148,7 +156,7 @@ const shapeBooking = (booking, req) => {
     arrivalTime: booking.arrivalTime,
     departureTime: booking.departureTime,
     traveler: booking.traveler,
-    travelerUser: booking.travelerUser ? booking.travelerUser.toString() : null,
+    travelerUser: toId(booking.travelerUser),
     vehicle: shapeVehicle(booking.vehicle, req),
     driver: shapeDriver(booking.driver),
     offerId: booking.offerMessage?._id ? booking.offerMessage._id.toString() : null,
@@ -159,6 +167,8 @@ const shapeBooking = (booking, req) => {
     cancellationReason: booking.cancellationReason || '',
     cancelledAt: booking.cancelledAt || null,
     cancelledBy: booking.cancelledBy || null,
+    reviewRequestSentAt: booking.reviewRequestSentAt || null,
+    reviewSubmittedAt: booking.reviewSubmittedAt || null,
     createdAt: booking.createdAt,
     updatedAt: booking.updatedAt,
   };
@@ -187,6 +197,8 @@ const shapeBrief = (brief) => ({
   children: brief.children,
   message: brief.message,
   country: brief.country,
+  maxOffers: brief.maxOffers ?? null,
+  requiredLicenseType: brief.requiredLicenseType ?? null,
   status: brief.status,
   offersCount: brief.offersCount ?? brief.responses.length,
   responses: (brief.responses || []).map((response) => ({
@@ -229,6 +241,11 @@ const shapeOffer = (message) => ({
     ? {
         id: toId(message.offer.brief),
         status: message.offer.brief.status,
+        startLocation: message.offer.brief.startLocation,
+        endLocation: message.offer.brief.endLocation,
+        startDate: message.offer.brief.startDate,
+        endDate: message.offer.brief.endDate,
+        country: message.offer.brief.country,
       }
     : null,
   driver: message.sender
@@ -255,6 +272,21 @@ const shapeMessage = (message) => ({
   type: message.type,
   senderRole: message.senderRole,
   warning: message.warning,
+  violations: Array.isArray(message.violations) ? message.violations : [],
+  readBy: Array.isArray(message.readBy) ? message.readBy.map((user) => toId(user)).filter(Boolean) : [],
+  briefRequest: message.briefRequest
+    ? {
+        briefId: toId(message.briefRequest.brief),
+        startLocation: message.briefRequest.startLocation,
+        endLocation: message.briefRequest.endLocation,
+        startDate: message.briefRequest.startDate,
+        endDate: message.briefRequest.endDate,
+        adults: message.briefRequest.adults,
+        children: message.briefRequest.children,
+        country: message.briefRequest.country,
+        message: message.briefRequest.message,
+      }
+    : null,
   offer: message.offer
     ? {
         startDate: message.offer.startDate,
@@ -278,6 +310,8 @@ const shapeMessage = (message) => ({
     : null,
   createdAt: message.createdAt,
   updatedAt: message.updatedAt,
+  offerReminderSentAt: message.offerReminderSentAt || null,
+  offerViewTokenExpires: message.offerViewTokenExpires || null,
 });
 
 // Mirrors chatController.js's findConversationBooking, shaped as a read-only
@@ -376,10 +410,302 @@ const refreshConversationMetadata = async (conversationId) => {
 export const getDriverApplications = async (req, res) => {
   try {
     const drivers = await User.find({ role: USER_ROLES.DRIVER }).sort({ createdAt: -1 });
-    return res.json({ drivers: drivers.map((driver) => driver.toJSON()) });
+    return res.json({
+      drivers: drivers.map((driver) => {
+        const payload = driver.toJSON();
+        payload.profilePhoto = buildAssetUrl(payload.profilePhoto, req);
+        payload.licenseImage = buildAssetUrl(payload.licenseImage, req);
+        payload.memberSince = payload.memberSince || payload.createdAt;
+        return payload;
+      }),
+    });
   } catch (error) {
     console.error('Fetch driver applications error:', error);
     return res.status(500).json({ message: 'Unable to fetch driver applications' });
+  }
+};
+
+const driverActivityEntry = (type, title, timestamp, metadata = {}) => {
+  if (!timestamp) return null;
+  return { type, title, timestamp, metadata };
+};
+
+// A single admin-facing record for a driver. The response deliberately uses an
+// allow-list rather than returning the User document wholesale: authentication
+// tokens, provider identifiers and device push tokens must never reach this UI.
+export const getDriverDetails = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+
+  const { id } = req.params;
+
+  try {
+    const driver = await User.findOne({ _id: id, role: USER_ROLES.DRIVER })
+      .populate('driverReviewedBy', 'name email')
+      .populate('licenseReviewedBy', 'name email');
+
+    if (!driver) {
+      return res.status(404).json({ message: 'Driver not found.' });
+    }
+
+    const [vehicles, bookings, conversations, offers, reviews, commissions] = await Promise.all([
+      Vehicle.find({ driver: id, deletedAt: null }).sort({ createdAt: -1 }),
+      Booking.find({ driver: id })
+        .sort({ createdAt: -1 })
+        .populate('vehicle', 'model year pricePerDay images')
+        .populate('driver', 'name email contactNumber')
+        .populate({ path: 'offerMessage', select: 'offer conversation' }),
+      ChatConversation.find({ driver: id })
+        .sort({ lastMessageAt: -1 })
+        .populate('traveler', 'name email')
+        .populate('driver', 'name email')
+        .populate('vehicle', 'model')
+        .populate('lastMessage', 'body type createdAt'),
+      ChatMessage.find({ sender: id, type: 'offer' })
+        .sort({ createdAt: -1 })
+        .populate('sender', 'name role email')
+        .populate('offer.vehicle', 'model')
+        .populate('offer.brief', 'status startLocation endLocation')
+        .populate({
+          path: 'conversation',
+          populate: [
+            { path: 'traveler', select: 'name email' },
+            { path: 'driver', select: 'name email' },
+          ],
+        }),
+      Review.find({ driver: id })
+        .sort({ createdAt: -1 })
+        .populate('vehicle', 'model year')
+        .populate('travelerUser', 'name email'),
+      DriverCommission.find({ driver: id })
+        .sort({ year: -1, month: -1 })
+        .populate('driver', 'name email contactNumber'),
+    ]);
+
+    const conversationIds = conversations.map((conversation) => conversation._id);
+    const driverMessages = conversationIds.length
+      ? await ChatMessage.find({ conversation: { $in: conversationIds }, sender: id })
+          .sort({ createdAt: -1 })
+          .populate('sender', 'name role')
+          .populate('offer.vehicle', 'model')
+      : [];
+
+    const messagesByConversation = new Map();
+    driverMessages.forEach((message) => {
+      const key = message.conversation.toString();
+      if (!messagesByConversation.has(key)) messagesByConversation.set(key, []);
+      messagesByConversation.get(key).push(message);
+    });
+
+    const shapedVehicles = vehicles.map((vehicle) => toVehicleResponse(vehicle, req));
+    const shapedBookings = bookings.map((booking) => shapeBooking(booking, req));
+    const shapedOffers = offers.map((offer) => shapeOffer(offer));
+    const shapedConversations = conversations.map((conversation) =>
+      shapeConversation(
+        conversation,
+        messagesByConversation.get(conversation._id.toString()) || [],
+        null
+      )
+    );
+    const shapedReviews = reviews.map((review) => {
+      const json = review.toJSON();
+      return {
+        ...json,
+        vehicle: review.vehicle
+          ? { id: toId(review.vehicle), model: review.vehicle.model, year: review.vehicle.year }
+          : null,
+        traveler: review.travelerUser
+          ? { id: toId(review.travelerUser), name: review.travelerUser.name, email: review.travelerUser.email }
+          : null,
+        images: mapAssetUrls(review.images, req),
+      };
+    });
+    const shapedCommissions = commissions.map((commission) => shapeCommission(commission, req));
+
+    const now = new Date();
+    const completedBookings = bookings.filter(
+      (booking) => booking.status === BOOKING_STATUS.CONFIRMED && booking.endDate < now
+    );
+    const upcomingBookings = bookings.filter(
+      (booking) =>
+        [BOOKING_STATUS.PENDING, BOOKING_STATUS.CONFIRMED].includes(booking.status) &&
+        booking.endDate >= now
+    );
+    const approvedReviews = reviews.filter((review) => review.status === 'approved');
+    const averageRating = approvedReviews.length
+      ? Math.round(
+          (approvedReviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) /
+            approvedReviews.length) *
+            10
+        ) / 10
+      : 0;
+
+    const activity = [
+      driverActivityEntry('account', 'Driver account created', driver.createdAt),
+      driverActivityEntry('account', `Driver application ${driver.driverStatus || 'updated'}`, driver.driverReviewedAt, {
+        status: driver.driverStatus,
+        actor: driver.driverReviewedBy?.name || null,
+      }),
+      driverActivityEntry('account', 'Driver approved', driver.driverApprovedAt),
+      driverActivityEntry('profile', 'Profile onboarding completed', driver.driverProfileTourCompletedAt),
+      driverActivityEntry('profile', 'Driver record updated', driver.updatedAt),
+      driverActivityEntry('location', 'Live location updated', driver.driverLocation?.updatedAt, {
+        label: driver.driverLocation?.label || null,
+      }),
+      driverActivityEntry('license', 'License submitted', driver.licenseSubmittedAt, { status: driver.licenseStatus }),
+      driverActivityEntry('license', `License ${driver.licenseStatus || 'reviewed'}`, driver.licenseReviewedAt, {
+        status: driver.licenseStatus,
+        actor: driver.licenseReviewedBy?.name || null,
+      }),
+      ...vehicles.flatMap((vehicle) => [
+        driverActivityEntry('vehicle', `Vehicle added: ${vehicle.model}`, vehicle.createdAt, {
+          recordId: vehicle._id.toString(),
+          status: vehicle.status,
+        }),
+        driverActivityEntry('vehicle', `Vehicle ${vehicle.status}`, vehicle.reviewedAt, {
+          recordId: vehicle._id.toString(),
+          status: vehicle.status,
+        }),
+        ...(vehicle.availability || []).flatMap((entry) => [
+          driverActivityEntry('availability', `Vehicle availability set to ${entry.status}`, entry.createdAt, {
+            recordId: entry._id?.toString?.() || null,
+            vehicleId: vehicle._id.toString(),
+            status: entry.status,
+          }),
+          entry.updatedAt && entry.createdAt && entry.updatedAt.getTime() !== entry.createdAt.getTime()
+            ? driverActivityEntry('availability', 'Vehicle availability updated', entry.updatedAt, {
+                recordId: entry._id?.toString?.() || null,
+                vehicleId: vehicle._id.toString(),
+                status: entry.status,
+              })
+            : null,
+        ]),
+      ]),
+      ...bookings.flatMap((booking) => [
+        driverActivityEntry('booking', `Booking created with ${booking.traveler?.fullName || 'traveller'}`, booking.createdAt, {
+          recordId: booking._id.toString(),
+          status: booking.status,
+        }),
+        driverActivityEntry('booking', `Booking cancelled by ${booking.cancelledBy || 'unknown'}`, booking.cancelledAt, {
+          recordId: booking._id.toString(),
+          status: booking.status,
+        }),
+        driverActivityEntry('review', 'Review submitted for booking', booking.reviewSubmittedAt, {
+          recordId: booking._id.toString(),
+        }),
+      ]),
+      ...driverMessages.map((message) =>
+        driverActivityEntry(
+          message.type === 'offer' ? 'offer' : 'message',
+          message.type === 'offer' ? 'Offer sent' : 'Message sent',
+          message.createdAt,
+          {
+            recordId: message._id.toString(),
+            conversationId: message.conversation.toString(),
+            status: message.offer?.status || null,
+            warning: message.warning || null,
+          }
+        )
+      ),
+      ...conversations.map((conversation) =>
+        driverActivityEntry('conversation', `Conversation opened with ${conversation.traveler?.name || 'traveller'}`, conversation.createdAt, {
+          recordId: conversation._id.toString(),
+          status: conversation.status,
+        })
+      ),
+      ...reviews.flatMap((review) => [
+        driverActivityEntry('review', `Review received (${review.rating}/5)`, review.createdAt, {
+          recordId: review._id.toString(),
+          status: review.status,
+        }),
+        driverActivityEntry('review', 'Review published', review.publishedAt, {
+          recordId: review._id.toString(),
+          status: review.status,
+        }),
+      ]),
+      ...commissions.flatMap((commission) => [
+        driverActivityEntry('payment', `Payment slip uploaded for ${MONTH_NAMES[commission.month - 1]} ${commission.year}`, commission.paymentSlipUploadedAt, {
+          recordId: commission._id.toString(),
+          status: commission.status,
+        }),
+        driverActivityEntry('payment', `Commission record ${commission.status}`, commission.updatedAt, {
+          recordId: commission._id.toString(),
+          status: commission.status,
+        }),
+      ]),
+    ]
+      .filter(Boolean)
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    const driverPayload = {
+      id: driver._id.toString(),
+      name: driver.name,
+      email: driver.email,
+      contactNumber: driver.contactNumber || '',
+      address: driver.address || '',
+      description: driver.description || '',
+      tripAdvisor: driver.tripAdvisor || '',
+      experienceYears: driver.experienceYears,
+      memberSince: driver.memberSince || driver.createdAt,
+      profilePhoto: buildAssetUrl(driver.profilePhoto, req),
+      role: driver.role,
+      authProvider: driver.authProvider,
+      isVerified: Boolean(driver.isVerified),
+      driverStatus: driver.driverStatus,
+      driverReviewedAt: driver.driverReviewedAt,
+      driverReviewedBy: driver.driverReviewedBy
+        ? { id: toId(driver.driverReviewedBy), name: driver.driverReviewedBy.name, email: driver.driverReviewedBy.email }
+        : null,
+      driverApprovedAt: driver.driverApprovedAt,
+      driverProfileTourCompletedAt: driver.driverProfileTourCompletedAt,
+      featured: Boolean(driver.featured),
+      featuredOrder: driver.featuredOrder,
+      shareLiveLocation: driver.shareLiveLocation !== false,
+      driverLocation: driver.driverLocation || null,
+      messagingSuspendedUntil: driver.messagingSuspendedUntil,
+      suspensionReason: driver.suspensionReason || '',
+      licenseType: driver.licenseType,
+      licenseImage: buildAssetUrl(driver.licenseImage, req),
+      licenseStatus: driver.licenseStatus || null,
+      licenseSubmittedAt: driver.licenseSubmittedAt,
+      licenseReviewedAt: driver.licenseReviewedAt,
+      licenseReviewedBy: driver.licenseReviewedBy
+        ? { id: toId(driver.licenseReviewedBy), name: driver.licenseReviewedBy.name, email: driver.licenseReviewedBy.email }
+        : null,
+      licenseAdminNote: driver.licenseAdminNote || '',
+      deletedAt: driver.deletedAt,
+      createdAt: driver.createdAt,
+      updatedAt: driver.updatedAt,
+    };
+
+    return res.json({
+      driver: driverPayload,
+      summary: {
+        completedTrips: completedBookings.length,
+        upcomingTrips: upcomingBookings.length,
+        bookingCount: bookings.length,
+        offerCount: offers.length,
+        conversationCount: conversations.length,
+        messageCount: driverMessages.length,
+        vehicleCount: vehicles.length,
+        reviewCount: approvedReviews.length,
+        averageRating,
+        totalGross: roundMoney(bookings.reduce((sum, booking) => sum + Number(booking.totalPrice || 0), 0)),
+        totalEarnings: roundMoney(bookings.reduce((sum, booking) => sum + Number(booking.driverEarnings || 0), 0)),
+      },
+      vehicles: shapedVehicles,
+      bookings: shapedBookings,
+      offers: shapedOffers,
+      conversations: shapedConversations,
+      reviews: shapedReviews,
+      commissions: shapedCommissions,
+      activity,
+    });
+  } catch (error) {
+    console.error('Fetch driver details error:', error);
+    return res.status(500).json({ message: 'Unable to load driver details.' });
   }
 };
 
@@ -633,10 +959,7 @@ export const updateDriverDetails = async (req, res) => {
       if (parsedMemberSince.getTime() > Date.now()) {
         return res.status(400).json({ message: 'Member since date cannot be in the future.' });
       }
-      // Mongoose's timestamps plugin marks createdAt `immutable: true`, so a plain
-      // property assignment is silently ignored — overwriteImmutable is required
-      // to actually change it.
-      driver.set('createdAt', parsedMemberSince, undefined, { overwriteImmutable: true });
+      driver.memberSince = parsedMemberSince;
     }
 
     await driver.save();
@@ -1043,7 +1366,7 @@ export const updateDriverCommissionStatus = async (req, res) => {
 
 export const getVehicleSubmissions = async (req, res) => {
   try {
-    const vehicles = await Vehicle.find().populate(
+    const vehicles = await Vehicle.find({ deletedAt: null }).populate(
       'driver',
       'name email contactNumber address'
     );
@@ -1054,6 +1377,223 @@ export const getVehicleSubmissions = async (req, res) => {
   } catch (error) {
     console.error('Fetch vehicle submissions error:', error);
     return res.status(500).json({ message: 'Unable to fetch vehicle submissions' });
+  }
+};
+
+// Complete admin record for one vehicle, including its marketplace history and
+// every persisted timestamp. Related user documents are explicitly field-limited
+// so the response cannot expose authentication data.
+export const getVehicleDetails = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+
+  const { id } = req.params;
+
+  try {
+    const vehicle = await Vehicle.findById(id)
+      .populate('driver', 'name email contactNumber address profilePhoto driverStatus licenseType licenseStatus createdAt memberSince')
+      .populate('reviewedBy', 'name email');
+
+    if (!vehicle) {
+      return res.status(404).json({ message: 'Vehicle not found.' });
+    }
+
+    const [bookings, reviews, conversations, offers] = await Promise.all([
+      Booking.find({ vehicle: id })
+        .sort({ createdAt: -1 })
+        .populate('vehicle', 'model year pricePerDay images')
+        .populate('driver', 'name email contactNumber')
+        .populate({ path: 'offerMessage', select: 'offer conversation' }),
+      Review.find({ vehicle: id })
+        .sort({ createdAt: -1 })
+        .populate('driver', 'name email')
+        .populate('travelerUser', 'name email'),
+      ChatConversation.find({ vehicle: id })
+        .sort({ lastMessageAt: -1 })
+        .populate('traveler', 'name email')
+        .populate('driver', 'name email')
+        .populate('vehicle', 'model')
+        .populate('lastMessage', 'body type createdAt'),
+      ChatMessage.find({ type: 'offer', 'offer.vehicle': id })
+        .sort({ createdAt: -1 })
+        .populate('sender', 'name role email')
+        .populate('offer.vehicle', 'model')
+        .populate('offer.brief', 'status startLocation endLocation')
+        .populate({
+          path: 'conversation',
+          populate: [
+            { path: 'traveler', select: 'name email' },
+            { path: 'driver', select: 'name email' },
+          ],
+        }),
+    ]);
+
+    const conversationIds = conversations.map((conversation) => conversation._id);
+    const messages = conversationIds.length
+      ? await ChatMessage.find({ conversation: { $in: conversationIds } })
+          .sort({ createdAt: 1 })
+          .populate('sender', 'name role')
+          .populate('offer.vehicle', 'model')
+      : [];
+
+    const messagesByConversation = new Map();
+    messages.forEach((message) => {
+      const key = message.conversation.toString();
+      if (!messagesByConversation.has(key)) messagesByConversation.set(key, []);
+      messagesByConversation.get(key).push(message);
+    });
+
+    const shapedBookings = bookings.map((booking) => shapeBooking(booking, req));
+    const shapedOffers = offers.map((offer) => shapeOffer(offer));
+    const shapedConversations = conversations.map((conversation) =>
+      shapeConversation(
+        conversation,
+        messagesByConversation.get(conversation._id.toString()) || [],
+        null
+      )
+    );
+    const shapedReviews = reviews.map((review) => {
+      const json = review.toJSON();
+      return {
+        ...json,
+        driver: review.driver
+          ? { id: toId(review.driver), name: review.driver.name, email: review.driver.email }
+          : null,
+        traveler: review.travelerUser
+          ? { id: toId(review.travelerUser), name: review.travelerUser.name, email: review.travelerUser.email }
+          : null,
+        images: mapAssetUrls(review.images, req),
+      };
+    });
+
+    const now = new Date();
+    const completedBookings = bookings.filter(
+      (booking) => booking.status === BOOKING_STATUS.CONFIRMED && booking.endDate < now
+    );
+    const upcomingBookings = bookings.filter(
+      (booking) =>
+        [BOOKING_STATUS.PENDING, BOOKING_STATUS.CONFIRMED].includes(booking.status) &&
+        booking.endDate >= now
+    );
+    const approvedReviews = reviews.filter((review) => review.status === 'approved');
+    const averageRating = approvedReviews.length
+      ? Math.round(
+          (approvedReviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) /
+            approvedReviews.length) * 10
+        ) / 10
+      : 0;
+
+    const activity = [
+      driverActivityEntry('vehicle', 'Vehicle record created', vehicle.createdAt, { status: vehicle.status }),
+      driverActivityEntry('vehicle', 'Vehicle record updated', vehicle.updatedAt, { status: vehicle.status }),
+      driverActivityEntry('approval', `Vehicle ${vehicle.status}`, vehicle.reviewedAt, {
+        status: vehicle.status,
+        actor: vehicle.reviewedBy?.name || null,
+      }),
+      ...(vehicle.availability || []).flatMap((entry) => [
+        driverActivityEntry('availability', `Availability set to ${entry.status}`, entry.createdAt, {
+          recordId: entry._id?.toString?.() || null,
+          status: entry.status,
+        }),
+        entry.updatedAt && entry.createdAt && entry.updatedAt.getTime() !== entry.createdAt.getTime()
+          ? driverActivityEntry('availability', 'Availability entry updated', entry.updatedAt, {
+              recordId: entry._id?.toString?.() || null,
+              status: entry.status,
+            })
+          : null,
+      ]),
+      ...bookings.flatMap((booking) => [
+        driverActivityEntry('booking', `Booking created by ${booking.traveler?.fullName || 'traveller'}`, booking.createdAt, {
+          recordId: booking._id.toString(),
+          status: booking.status,
+        }),
+        driverActivityEntry('booking', `Booking cancelled by ${booking.cancelledBy || 'unknown'}`, booking.cancelledAt, {
+          recordId: booking._id.toString(),
+          status: booking.status,
+        }),
+        driverActivityEntry('review', 'Review submitted for booking', booking.reviewSubmittedAt, {
+          recordId: booking._id.toString(),
+        }),
+      ]),
+      ...conversations.map((conversation) =>
+        driverActivityEntry('conversation', `Conversation opened with ${conversation.traveler?.name || 'traveller'}`, conversation.createdAt, {
+          recordId: conversation._id.toString(),
+          status: conversation.status,
+        })
+      ),
+      ...messages.map((message) =>
+        driverActivityEntry(
+          message.type === 'offer' ? 'offer' : 'message',
+          message.type === 'offer'
+            ? `Offer sent using ${vehicle.model}`
+            : `${message.senderRole === 'driver' ? 'Driver' : 'Traveller'} message sent`,
+          message.createdAt,
+          {
+            recordId: message._id.toString(),
+            conversationId: message.conversation.toString(),
+            status: message.offer?.status || null,
+            warning: message.warning || null,
+          }
+        )
+      ),
+      ...reviews.flatMap((review) => [
+        driverActivityEntry('review', `Review received (${review.rating}/5)`, review.createdAt, {
+          recordId: review._id.toString(),
+          status: review.status,
+        }),
+        driverActivityEntry('review', 'Review published', review.publishedAt, {
+          recordId: review._id.toString(),
+          status: review.status,
+        }),
+      ]),
+    ]
+      .filter(Boolean)
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    const payload = toVehicleResponse(vehicle, req);
+    payload.driver = vehicle.driver
+      ? {
+          id: toId(vehicle.driver),
+          name: vehicle.driver.name,
+          email: vehicle.driver.email,
+          contactNumber: vehicle.driver.contactNumber || '',
+          address: vehicle.driver.address || '',
+          profilePhoto: buildAssetUrl(vehicle.driver.profilePhoto, req),
+          driverStatus: vehicle.driver.driverStatus,
+          licenseType: vehicle.driver.licenseType,
+          licenseStatus: vehicle.driver.licenseStatus,
+          memberSince: vehicle.driver.memberSince || vehicle.driver.createdAt,
+        }
+      : null;
+    payload.reviewedBy = vehicle.reviewedBy
+      ? { id: toId(vehicle.reviewedBy), name: vehicle.reviewedBy.name, email: vehicle.reviewedBy.email }
+      : null;
+
+    return res.json({
+      vehicle: payload,
+      summary: {
+        completedTrips: completedBookings.length,
+        upcomingTrips: upcomingBookings.length,
+        bookingCount: bookings.length,
+        offerCount: offers.length,
+        conversationCount: conversations.length,
+        messageCount: messages.length,
+        reviewCount: approvedReviews.length,
+        averageRating,
+        totalGross: roundMoney(bookings.reduce((sum, booking) => sum + Number(booking.totalPrice || 0), 0)),
+        driverEarnings: roundMoney(bookings.reduce((sum, booking) => sum + Number(booking.driverEarnings || 0), 0)),
+      },
+      bookings: shapedBookings,
+      offers: shapedOffers,
+      conversations: shapedConversations,
+      reviews: shapedReviews,
+      activity,
+    });
+  } catch (error) {
+    console.error('Fetch vehicle details error:', error);
+    return res.status(500).json({ message: 'Unable to load vehicle details.' });
   }
 };
 
@@ -1307,6 +1847,71 @@ export const removeVehicleImage = async (req, res) => {
   }
 };
 
+/**
+ * Drivers who deleted their account, kept for legal and tax purposes.
+ * Admin-only: these records are the one place the person is still identifiable.
+ */
+export const listDeletedDrivers = async (req, res) => {
+  try {
+    const records = await DeletedDriverRecord.find()
+      .sort({ deletedAt: -1 })
+      .limit(500)
+      .lean();
+
+    return res.json({
+      drivers: records.map((record) => ({
+        ...record,
+        id: record._id.toString(),
+        _id: undefined,
+        driver: record.driver?.toString() || null,
+        licenseImage: buildAssetUrl(record.licenseImage, req),
+      })),
+      retentionYears: RETENTION_YEARS,
+    });
+  } catch (error) {
+    console.error('List deleted drivers error:', error);
+    return res.status(500).json({ message: 'Unable to load deleted driver records' });
+  }
+};
+
+export const deleteVehicle = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+
+  const { id } = req.params;
+
+  try {
+    const vehicle = await Vehicle.findOne({ _id: id, deletedAt: null });
+
+    if (!vehicle) {
+      return res.status(404).json({ message: 'Vehicle not found' });
+    }
+
+    // Admin is blocked by live bookings too: cancel them in the Bookings tab
+    // first, so the traveller is told rather than silently losing their trip.
+    const blocking = await findBlockingVehicleBookings(vehicle._id);
+    if (blocking.length > 0) {
+      return res.status(409).json({
+        message: blockingBookingsMessage(blocking),
+        bookings: blocking,
+      });
+    }
+
+    const { withdrawnOffers } = await softDeleteVehicle(vehicle);
+
+    return res.json({
+      message: 'Vehicle deleted.',
+      vehicleId: vehicle._id.toString(),
+      withdrawnOffers,
+    });
+  } catch (error) {
+    console.error('Admin vehicle delete error:', error);
+    return res.status(500).json({ message: 'Unable to delete vehicle' });
+  }
+};
+
 export const listVehicleAvailability = async (req, res) => {
   const validationError = handleValidation(req, res);
   if (validationError) {
@@ -1432,6 +2037,208 @@ export const listBookings = async (req, res) => {
   }
 };
 
+// Complete administrative record for one booking. This keeps the list endpoint
+// lightweight while making the dedicated page the single place for the trip,
+// financial, offer, conversation, review and payment history.
+export const getBookingDetails = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+
+  const { id } = req.params;
+
+  try {
+    const booking = await Booking.findById(id)
+      .populate('driver', 'name email contactNumber address profilePhoto driverStatus licenseType licenseStatus memberSince createdAt')
+      .populate({
+        path: 'vehicle',
+        populate: { path: 'driver', select: 'name email' },
+      })
+      .populate('travelerUser', 'name email contactNumber authProvider isVerified createdAt deletedAt')
+      .populate({
+        path: 'offerMessage',
+        populate: [
+          { path: 'sender', select: 'name role email' },
+          { path: 'offer.vehicle', select: 'model year pricePerDay images' },
+          { path: 'offer.brief', select: 'status startLocation endLocation startDate endDate country message' },
+          {
+            path: 'conversation',
+            populate: [
+              { path: 'traveler', select: 'name email' },
+              { path: 'driver', select: 'name email' },
+            ],
+          },
+        ],
+      });
+
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found.' });
+    }
+
+    let conversation = null;
+    const linkedConversationId = booking.offerMessage?.conversation?._id || booking.offerMessage?.conversation;
+    if (linkedConversationId) {
+      conversation = await ChatConversation.findById(linkedConversationId)
+        .populate('traveler', 'name email')
+        .populate('driver', 'name email')
+        .populate('vehicle', 'model')
+        .populate('lastMessage', 'body type createdAt');
+    } else if (booking.travelerUser && booking.driver) {
+      conversation = await ChatConversation.findOne({
+        traveler: toId(booking.travelerUser),
+        driver: toId(booking.driver),
+        vehicle: toId(booking.vehicle),
+      })
+        .populate('traveler', 'name email')
+        .populate('driver', 'name email')
+        .populate('vehicle', 'model')
+        .populate('lastMessage', 'body type createdAt');
+    }
+
+    const [messages, review, commission] = await Promise.all([
+      conversation
+        ? ChatMessage.find({ conversation: conversation._id })
+            .sort({ createdAt: 1 })
+            .populate('sender', 'name role')
+            .populate('offer.vehicle', 'model')
+        : [],
+      Review.findOne({ booking: id })
+        .populate('driver', 'name email')
+        .populate('vehicle', 'model year')
+        .populate('travelerUser', 'name email'),
+      booking.driver && booking.endDate
+        ? DriverCommission.findOne({
+            driver: toId(booking.driver),
+            year: booking.endDate.getUTCFullYear(),
+            month: booking.endDate.getUTCMonth() + 1,
+          }).populate('driver', 'name email contactNumber')
+        : null,
+    ]);
+
+    const shapedBooking = shapeBooking(booking, req);
+    const vehicleJson = booking.vehicle
+      ? (typeof booking.vehicle.toJSON === 'function' ? booking.vehicle.toJSON() : booking.vehicle)
+      : null;
+    if (vehicleJson) {
+      vehicleJson.images = mapAssetUrls(vehicleJson.images, req);
+      vehicleJson.driver = booking.vehicle.driver
+        ? { id: toId(booking.vehicle.driver), name: booking.vehicle.driver.name, email: booking.vehicle.driver.email }
+        : null;
+    }
+
+    const driver = booking.driver
+      ? {
+          id: toId(booking.driver),
+          name: booking.driver.name,
+          email: booking.driver.email,
+          contactNumber: booking.driver.contactNumber || '',
+          address: booking.driver.address || '',
+          profilePhoto: buildAssetUrl(booking.driver.profilePhoto, req),
+          driverStatus: booking.driver.driverStatus,
+          licenseType: booking.driver.licenseType,
+          licenseStatus: booking.driver.licenseStatus,
+          memberSince: booking.driver.memberSince || booking.driver.createdAt,
+        }
+      : null;
+
+    const travelerAccount = booking.travelerUser
+      ? {
+          id: toId(booking.travelerUser),
+          name: booking.travelerUser.name,
+          email: booking.travelerUser.email,
+          contactNumber: booking.travelerUser.contactNumber || '',
+          authProvider: booking.travelerUser.authProvider,
+          isVerified: Boolean(booking.travelerUser.isVerified),
+          createdAt: booking.travelerUser.createdAt,
+          deletedAt: booking.travelerUser.deletedAt,
+        }
+      : null;
+
+    const shapedReview = review
+      ? (() => {
+          const json = review.toJSON();
+          return {
+            ...json,
+            driver: review.driver ? { id: toId(review.driver), name: review.driver.name, email: review.driver.email } : null,
+            vehicle: review.vehicle ? { id: toId(review.vehicle), model: review.vehicle.model, year: review.vehicle.year } : null,
+            traveler: review.travelerUser ? { id: toId(review.travelerUser), name: review.travelerUser.name, email: review.travelerUser.email } : null,
+            images: mapAssetUrls(review.images, req),
+          };
+        })()
+      : null;
+
+    const shapedOffer = booking.offerMessage ? shapeOffer(booking.offerMessage) : null;
+    const shapedConversation = conversation ? shapeConversation(conversation, messages, null) : null;
+    const shapedCommission = commission ? shapeCommission(commission, req) : null;
+
+    const activity = [
+      driverActivityEntry('booking', 'Booking created', booking.createdAt, { status: booking.status }),
+      driverActivityEntry('booking', 'Booking record updated', booking.updatedAt, { status: booking.status }),
+      driverActivityEntry('booking', `Booking cancelled by ${booking.cancelledBy || 'unknown'}`, booking.cancelledAt, {
+        status: booking.status,
+      }),
+      driverActivityEntry('review', 'Review request sent', booking.reviewRequestSentAt),
+      driverActivityEntry('review', 'Review submitted', booking.reviewSubmittedAt),
+      driverActivityEntry('offer', 'Offer created', booking.offerMessage?.createdAt, {
+        recordId: booking.offerMessage?._id?.toString?.() || null,
+        status: booking.offerMessage?.offer?.status || null,
+      }),
+      driverActivityEntry('conversation', 'Conversation opened', conversation?.createdAt, {
+        recordId: conversation?._id?.toString?.() || null,
+        status: conversation?.status || null,
+      }),
+      ...messages.map((message) =>
+        driverActivityEntry(
+          message.type === 'offer' ? 'offer' : 'message',
+          message.type === 'offer'
+            ? 'Offer message sent'
+            : `${message.senderRole === 'driver' ? 'Driver' : 'Traveller'} message sent`,
+          message.createdAt,
+          {
+            recordId: message._id.toString(),
+            status: message.offer?.status || null,
+            warning: message.warning || null,
+          }
+        )
+      ),
+      driverActivityEntry('review', `Review received${review ? ` (${review.rating}/5)` : ''}`, review?.createdAt, {
+        recordId: review?._id?.toString?.() || null,
+        status: review?.status || null,
+      }),
+      driverActivityEntry('review', 'Review published', review?.publishedAt, {
+        recordId: review?._id?.toString?.() || null,
+        status: review?.status || null,
+      }),
+      driverActivityEntry('payment', 'Commission payment slip uploaded', commission?.paymentSlipUploadedAt, {
+        recordId: commission?._id?.toString?.() || null,
+        status: commission?.status || null,
+      }),
+      driverActivityEntry('payment', `Commission record ${commission?.status || 'updated'}`, commission?.updatedAt, {
+        recordId: commission?._id?.toString?.() || null,
+        status: commission?.status || null,
+      }),
+    ]
+      .filter(Boolean)
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    return res.json({
+      booking: shapedBooking,
+      driver,
+      vehicle: vehicleJson,
+      travelerAccount,
+      offer: shapedOffer,
+      conversation: shapedConversation,
+      review: shapedReview,
+      commission: shapedCommission,
+      activity,
+    });
+  } catch (error) {
+    console.error('Fetch booking details error:', error);
+    return res.status(500).json({ message: 'Unable to load booking details.' });
+  }
+};
+
 export const updateBooking = async (req, res) => {
   const validationError = handleValidation(req, res);
   if (validationError) {
@@ -1514,6 +2321,16 @@ export const updateBooking = async (req, res) => {
     if (departureTime !== undefined) booking.departureTime = departureTime?.trim() || '';
 
     await booking.save();
+
+    // Admin can cancel or reinstate a booking here too, so keep the traveller's
+    // quote requests in step with the dates actually being free or taken.
+    if (status && status !== previousStatus) {
+      if ([BOOKING_STATUS.CANCELLED, BOOKING_STATUS.REJECTED].includes(status)) {
+        await reopenBriefsForBooking(booking._id);
+      } else if (status === BOOKING_STATUS.CONFIRMED) {
+        await closeBriefsForBooking(booking);
+      }
+    }
 
     if (status && status !== previousStatus) {
       const recipients = [];
@@ -1720,6 +2537,198 @@ export const listBriefs = async (_req, res) => {
   } catch (error) {
     console.error('List briefs error:', error);
     return res.status(500).json({ message: 'Unable to load tour briefs.' });
+  }
+};
+
+// Complete administrative record for one traveller brief. The list stays
+// lightweight; this endpoint joins each response to its driver, vehicle,
+// offer, conversation, messages and any booking created from that offer.
+export const getBriefDetails = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+
+  const { id } = req.params;
+
+  try {
+    const brief = await TourBrief.findById(id)
+      .populate('traveler', 'name email contactNumber authProvider isVerified createdAt deletedAt')
+      .populate('responses.driver', 'name email contactNumber address profilePhoto driverStatus licenseType licenseStatus memberSince createdAt')
+      .populate({
+        path: 'responses.vehicle',
+        populate: { path: 'driver', select: 'name email' },
+      })
+      .populate({
+        path: 'responses.message',
+        populate: [
+          { path: 'sender', select: 'name role email' },
+          { path: 'offer.vehicle', select: 'model year pricePerDay images' },
+          { path: 'offer.brief', select: 'status startLocation endLocation startDate endDate country' },
+          {
+            path: 'conversation',
+            populate: [
+              { path: 'traveler', select: 'name email' },
+              { path: 'driver', select: 'name email' },
+            ],
+          },
+        ],
+      });
+
+    if (!brief) {
+      return res.status(404).json({ message: 'Tour brief not found.' });
+    }
+
+    const conversationIds = [...new Set((brief.responses || []).map((response) => toId(response.conversation)).filter(Boolean))];
+    const offerMessageIds = [...new Set((brief.responses || []).map((response) => toId(response.message)).filter(Boolean))];
+
+    const [conversations, messages, bookings] = await Promise.all([
+      conversationIds.length
+        ? ChatConversation.find({ _id: { $in: conversationIds } })
+            .populate('traveler', 'name email')
+            .populate('driver', 'name email')
+            .populate('vehicle', 'model')
+            .populate('lastMessage', 'body type createdAt')
+        : [],
+      conversationIds.length
+        ? ChatMessage.find({ conversation: { $in: conversationIds } })
+            .sort({ createdAt: 1 })
+            .populate('sender', 'name role')
+            .populate('offer.vehicle', 'model')
+        : [],
+      offerMessageIds.length
+        ? Booking.find({ offerMessage: { $in: offerMessageIds } })
+            .sort({ createdAt: -1 })
+            .populate('vehicle', 'model pricePerDay images')
+            .populate('driver', 'name email contactNumber')
+            .populate({ path: 'offerMessage', select: 'offer conversation' })
+        : [],
+    ]);
+
+    const conversationsById = new Map(conversations.map((conversation) => [conversation._id.toString(), conversation]));
+    const messagesByConversation = new Map();
+    messages.forEach((message) => {
+      const key = toId(message.conversation);
+      if (!messagesByConversation.has(key)) messagesByConversation.set(key, []);
+      messagesByConversation.get(key).push(message);
+    });
+    const bookingsByOffer = new Map(bookings.map((booking) => [toId(booking.offerMessage), booking]));
+
+    const responseRecords = (brief.responses || []).map((response) => {
+      const conversationId = toId(response.conversation);
+      const messageId = toId(response.message);
+      const conversation = conversationsById.get(conversationId) || null;
+      const booking = bookingsByOffer.get(messageId) || null;
+      const driver = response.driver
+        ? {
+            id: toId(response.driver),
+            name: response.driver.name,
+            email: response.driver.email,
+            contactNumber: response.driver.contactNumber || '',
+            address: response.driver.address || '',
+            profilePhoto: buildAssetUrl(response.driver.profilePhoto, req),
+            driverStatus: response.driver.driverStatus,
+            licenseType: response.driver.licenseType,
+            licenseStatus: response.driver.licenseStatus,
+            memberSince: response.driver.memberSince || response.driver.createdAt,
+          }
+        : null;
+      const vehicle = response.vehicle ? toVehicleResponse(response.vehicle, req) : null;
+      if (vehicle) {
+        vehicle.driver = response.vehicle.driver
+          ? { id: toId(response.vehicle.driver), name: response.vehicle.driver.name, email: response.vehicle.driver.email }
+          : null;
+      }
+      return {
+        id: messageId || `${toId(response.driver)}-${response.createdAt?.toISOString?.() || ''}`,
+        note: response.note || '',
+        createdAt: response.createdAt,
+        driver,
+        vehicle,
+        offer: response.message ? shapeOffer(response.message) : null,
+        conversation: conversation
+          ? shapeConversation(conversation, messagesByConversation.get(conversationId) || [], booking ? shapeConversationBooking(booking) : null)
+          : null,
+        booking: booking ? shapeBooking(booking, req) : null,
+      };
+    });
+
+    const traveler = brief.traveler
+      ? {
+          id: toId(brief.traveler),
+          name: brief.traveler.name,
+          email: brief.traveler.email,
+          contactNumber: brief.traveler.contactNumber || '',
+          authProvider: brief.traveler.authProvider,
+          isVerified: Boolean(brief.traveler.isVerified),
+          createdAt: brief.traveler.createdAt,
+          deletedAt: brief.traveler.deletedAt,
+        }
+      : null;
+
+    const offerPrices = responseRecords
+      .map((response) => Number(response.offer?.totalPrice))
+      .filter((price) => Number.isFinite(price));
+    const allMessages = [...new Map(messages.map((message) => [message._id.toString(), message])).values()];
+    const activity = [
+      driverActivityEntry('brief', 'Tour brief created', brief.createdAt, { status: brief.status }),
+      driverActivityEntry('brief', 'Tour brief updated', brief.updatedAt, { status: brief.status }),
+      driverActivityEntry('offer', 'Latest driver response received', brief.lastResponseAt),
+      ...(brief.responses || []).map((response) =>
+        driverActivityEntry('offer', `Offer received from ${response.driver?.name || 'driver'}`, response.createdAt, {
+          recordId: toId(response.message),
+          status: response.message?.offer?.status || null,
+        })
+      ),
+      ...conversations.map((conversation) =>
+        driverActivityEntry('conversation', `Conversation opened with ${conversation.driver?.name || 'driver'}`, conversation.createdAt, {
+          recordId: conversation._id.toString(),
+          status: conversation.status,
+        })
+      ),
+      ...allMessages.map((message) =>
+        driverActivityEntry(
+          message.type === 'offer' ? 'offer' : 'message',
+          message.type === 'offer'
+            ? `Offer message from ${message.sender?.name || 'driver'}`
+            : `${message.sender?.name || 'User'} sent a ${message.type} message`,
+          message.createdAt,
+          {
+            recordId: message._id.toString(),
+            status: message.offer?.status || null,
+            warning: message.warning || null,
+          }
+        )
+      ),
+      ...bookings.map((booking) =>
+        driverActivityEntry('booking', `Booking ${booking.status}`, booking.createdAt, {
+          recordId: booking._id.toString(),
+          status: booking.status,
+        })
+      ),
+    ]
+      .filter(Boolean)
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    return res.json({
+      brief: shapeBrief(brief),
+      traveler,
+      responses: responseRecords,
+      bookings: bookings.map((booking) => shapeBooking(booking, req)),
+      summary: {
+        responseCount: responseRecords.length,
+        acceptedCount: responseRecords.filter((response) => response.offer?.status === 'accepted').length,
+        pendingCount: responseRecords.filter((response) => response.offer?.status === 'pending').length,
+        declinedCount: responseRecords.filter((response) => response.offer?.status === 'declined').length,
+        lowestOffer: offerPrices.length ? Math.min(...offerPrices) : null,
+        highestOffer: offerPrices.length ? Math.max(...offerPrices) : null,
+        messageCount: allMessages.length,
+      },
+      activity,
+    });
+  } catch (error) {
+    console.error('Fetch brief details error:', error);
+    return res.status(500).json({ message: 'Unable to load tour brief details.' });
   }
 };
 
@@ -2124,4 +3133,3 @@ export const previewUserDeletion = async (req, res) => {
     return res.status(500).json({ message: 'Unable to check this account right now.' });
   }
 };
-

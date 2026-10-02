@@ -116,6 +116,8 @@ export interface Conversation {
   unreadCount?: number;
   updatedAt?: string;
   subtitle?: string;
+  /** Traveller booked a different driver, so this thread is read-only for us. */
+  locked?: boolean;
 }
 
 export interface BriefRequestSnapshot {
@@ -140,6 +142,8 @@ export interface ChatMessage {
   offer?: Offer | null;
   briefRequest?: BriefRequestSnapshot | null;
   createdAt?: string;
+  /** The other party has opened the thread since this message landed. */
+  readByRecipient?: boolean;
 }
 
 export interface Offer {
@@ -155,6 +159,8 @@ export interface Offer {
   note?: string;
   startDate?: string;
   endDate?: string;
+  /** When an unbooked offer lapses; the hourly sweep then flips status. */
+  expiresAt?: string | null;
 }
 
 export interface Brief {

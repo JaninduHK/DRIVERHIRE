@@ -65,6 +65,19 @@ export const relativeTime = (value?: string | null): string => {
   return formatDate(value);
 };
 
+/** "Oct 2, 02:32 PM" — the date-and-time line under each chat message. */
+export const messageTime = (value?: string | null): string => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
 // Normalises `{ key: [...] } | [...]` list responses into a plain array.
 export const asList = <T>(value: unknown, key: string): T[] => {
   if (Array.isArray(value)) return value as T[];

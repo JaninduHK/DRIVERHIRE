@@ -228,6 +228,7 @@ export const listPublicDrivers = async (req, res) => {
     const vehicles = await Vehicle.find({
       driver: { $in: driverIds },
       status: VEHICLE_STATUS.APPROVED,
+      deletedAt: null,
     })
       .select(
         'driver model year description pricePerDay seats images englishSpeakingDriver meetAndGreetAtAirport fuelAndInsurance driverMealsAndAccommodation parkingFeesAndTolls allTaxes'
@@ -291,6 +292,7 @@ export const getPublicDriverDetails = async (req, res) => {
     const vehicles = await Vehicle.find({
       driver: id,
       status: VEHICLE_STATUS.APPROVED,
+      deletedAt: null,
     })
       .select(
         'model year description pricePerDay seats images englishSpeakingDriver meetAndGreetAtAirport fuelAndInsurance driverMealsAndAccommodation parkingFeesAndTolls allTaxes availability'

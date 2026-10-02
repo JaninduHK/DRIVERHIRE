@@ -36,8 +36,14 @@ const offerSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'accepted', 'declined'],
+      enum: ['pending', 'accepted', 'declined', 'expired'],
       default: 'pending',
+    },
+    // When this offer stops being bookable. Set on creation from
+    // utils/offerExpiry.js; the hourly sweep flips status to 'expired' past it.
+    expiresAt: {
+      type: Date,
+      default: null,
     },
     // Only set for offers created from a tour-brief response (respondToBrief);
     // direct in-chat offers (sendOffer) leave this unset.

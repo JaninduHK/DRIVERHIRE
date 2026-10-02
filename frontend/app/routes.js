@@ -30,6 +30,10 @@ export default [
   route('portal/driver', 'routes/portal.driver.jsx'),
   route('portal/driver/messages', 'routes/portal.driver.messages.jsx'),
   route('admin', 'routes/admin.jsx'),
+  route('admin/bookings/:bookingId', 'routes/admin.bookings.$bookingId.jsx'),
+  route('admin/briefs/:briefId', 'routes/admin.briefs.$briefId.jsx'),
+  route('admin/drivers/:driverId', 'routes/admin.drivers.$driverId.jsx'),
+  route('admin/vehicles/:vehicleId', 'routes/admin.vehicles.$vehicleId.jsx'),
   route('briefs', 'routes/briefs.jsx'),
   route('checkout/:vehicleId', 'routes/checkout.$vehicleId.jsx'),
 

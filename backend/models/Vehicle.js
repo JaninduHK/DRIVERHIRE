@@ -82,6 +82,15 @@ const vehicleSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    // Soft delete. Bookings, reviews, chat offer cards and commission records all
+    // point at this vehicle, so removing the row would blank out history in five
+    // collections. Deleted vehicles stay readable through populate and simply drop
+    // out of every list, search and new-offer flow.
+    deletedAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
     reviewedAt: Date,
     reviewedBy: {
       type: mongoose.Schema.Types.ObjectId,

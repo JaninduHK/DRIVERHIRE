@@ -13,6 +13,7 @@ import { sendBriefAlertEmail } from '../services/emailService.js';
 import { sendExpoPushNotifications } from '../services/expoPushService.js';
 import { expiredBefore } from '../services/briefExpiryService.js';
 import { sanitizeMessageContent } from '../utils/chatSanitizer.js';
+import { offerExpiresAt } from '../utils/offerExpiry.js';
 import { hasVehicleDateConflict, VEHICLE_UNAVAILABLE_MESSAGE } from '../utils/vehicleAvailability.js';
 import { mapAssetUrls } from '../utils/assetUtils.js';
 
@@ -494,6 +495,7 @@ export const respondToBrief = async (req, res) => {
       _id: vehicleId,
       driver: req.user.id,
       status: VEHICLE_STATUS.APPROVED,
+      deletedAt: null,
     }).select('id model status availability');
 
     if (!vehicle) {
@@ -544,6 +546,7 @@ Total: $${normalizedPrice.toFixed(0)} (includes ${normalizedKms} km)`;
         totalKms: normalizedKms,
         pricePerExtraKm: normalizedExtraKmPrice,
         currency: 'USD',
+        expiresAt: offerExpiresAt({ startDate: offerStart }),
         brief: brief.id,
       },
     });

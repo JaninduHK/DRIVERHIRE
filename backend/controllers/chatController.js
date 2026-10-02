@@ -10,6 +10,11 @@ import { sanitizeMessageContent } from '../utils/chatSanitizer.js';
 import { hasVehicleDateConflict, VEHICLE_UNAVAILABLE_MESSAGE } from '../utils/vehicleAvailability.js';
 import { createChatMessage } from '../services/chatService.js';
 import { checkMessagingSuspension } from '../utils/messagingSuspension.js';
+import { offerExpiresAt } from '../utils/offerExpiry.js';
+import {
+  checkTravellerBookingLock,
+  travellerBookingLockMap,
+} from '../utils/travellerBookingLock.js';
 import { observeDriverSend } from '../services/abuseSignals.js';
 import { notifyUser } from '../services/expoPushService.js';
 import { mapAssetUrls, buildAssetUrl } from '../utils/assetUtils.js';
@@ -163,6 +168,7 @@ export const startConversation = async (req, res) => {
         _id: vehicleId,
         driver: driver.id,
         status: VEHICLE_STATUS.APPROVED,
+        deletedAt: null,
       }).select('id model');
 
       if (!vehicle) {
@@ -256,8 +262,21 @@ export const listConversations = async (req, res) => {
       .sort({ lastMessageAt: -1, updatedAt: -1 })
       .limit(100);
 
+    // Only a driver's own rows can be locked; a traveller's inbox is never gated.
+    const driverRows = conversations.filter(
+      (conversation) => (conversation.driver?._id || conversation.driver)?.toString() === req.user.id
+    );
+    const lockMap = await travellerBookingLockMap({
+      driverId: req.user.id,
+      conversations: driverRows.map((conversation) => ({
+        id: conversation._id,
+        traveler: conversation.traveler?._id || conversation.traveler,
+      })),
+    });
+
     const payload = conversations.map((conversation) => {
       const mapped = mapConversationResponse(conversation, req.user.id);
+      mapped.locked = lockMap.get(conversation._id.toString()) || false;
       if (conversation.lastMessage) {
         mapped.lastMessage = conversation.lastMessage.toJSON();
       }
@@ -275,6 +294,26 @@ export const listConversations = async (req, res) => {
     return res.status(500).json({ message: 'Unable to load conversations.' });
   }
 };
+
+// Read receipts. A message is "read" once the OTHER party has it in readBy —
+// readBy also contains the sender (set on create) and is topped up whenever either
+// side fetches the thread, so it can never be treated as a plain "anyone read it".
+const withReadReceipts = (messages, { viewerId, recipientId }) =>
+  messages.map(({ readBy, ...message }) => {
+    const senderId = (message.sender?._id || message.sender?.id || message.sender)?.toString();
+    const mine = senderId === viewerId;
+    return {
+      ...message,
+      id: message._id.toString(),
+      _id: undefined,
+      // Only meaningful on your OWN messages. Null on incoming ones, because
+      // readBy always contains the sender, so "the other party has it in readBy"
+      // would be trivially true there and read as a receipt that isn't one.
+      readByRecipient: mine
+        ? Array.isArray(readBy) && readBy.some((reader) => reader?.toString() === recipientId)
+        : null,
+    };
+  });
 
 // The active booking (if any) between a conversation's two parties, shaped for the chat
 // notice + the booking-details view on both ends.
@@ -368,13 +407,28 @@ export const fetchMessages = async (req, res) => {
 
     const booking = await findConversationBooking(conversation);
 
+    // Drivers only: travellers are never locked out of a thread.
+    const isDriver = conversation.driver.toString() === req.user.id;
+    const locked = isDriver
+      ? await checkTravellerBookingLock({
+          driverId: req.user.id,
+          travelerId: conversation.traveler,
+          conversationId: conversation._id,
+        })
+      : null;
+
     return res.json({
-      messages: messages.reverse().map((message) => ({
-        ...message,
-        id: message._id.toString(),
-        _id: undefined,
-      })),
+      messages: withReadReceipts(messages.reverse(), {
+        viewerId: req.user.id,
+        recipientId:
+          conversation.traveler.toString() === req.user.id
+            ? conversation.driver.toString()
+            : conversation.traveler.toString(),
+      }),
       booking,
+      locked: Boolean(locked),
+      lockReason: locked?.code || null,
+      lockMessage: locked?.message || null,
     });
   } catch (error) {
     console.error('Fetch messages error:', error);
@@ -414,6 +468,15 @@ export const sendMessage = async (req, res) => {
     if (senderRole === USER_ROLES.DRIVER) {
       const suspended = await checkMessagingSuspension(req.user.id);
       if (suspended) return res.status(suspended.status).json({ message: suspended.message });
+
+      const locked = await checkTravellerBookingLock({
+        driverId: req.user.id,
+        travelerId: conversation.traveler,
+        conversationId: conversation._id,
+      });
+      if (locked) {
+        return res.status(locked.status).json({ message: locked.message, code: locked.code });
+      }
     }
 
     const message = await createChatMessage({
@@ -444,12 +507,9 @@ export const sendMessage = async (req, res) => {
       data: { type: 'message', conversationId },
     });
 
+    // Freshly sent, so the recipient has not seen it: ticks start grey.
     return res.status(201).json({
-      message: {
-        ...response,
-        id: response._id.toString(),
-        _id: undefined,
-      },
+      message: withReadReceipts([response], { viewerId: req.user.id, recipientId })[0],
     });
   } catch (error) {
     console.error('Send message error:', error);
@@ -550,10 +610,20 @@ export const sendOffer = async (req, res) => {
     const suspended = await checkMessagingSuspension(req.user.id);
     if (suspended) return res.status(suspended.status).json({ message: suspended.message });
 
+    const locked = await checkTravellerBookingLock({
+      driverId: req.user.id,
+      travelerId: conversation.traveler,
+      conversationId: conversation._id,
+    });
+    if (locked) {
+      return res.status(locked.status).json({ message: locked.message, code: locked.code });
+    }
+
     const vehicle = await Vehicle.findOne({
       _id: vehicleId,
       driver: req.user.id,
       status: VEHICLE_STATUS.APPROVED,
+      deletedAt: null,
     }).select('id model pricePerDay availability');
 
     if (!vehicle) {
@@ -603,6 +673,7 @@ export const sendOffer = async (req, res) => {
         totalKms: normalizedTotalKms,
         pricePerExtraKm: normalizedExtraKmPrice,
         currency: 'USD',
+        expiresAt: offerExpiresAt({ startDate }),
         ...(inheritedBriefId ? { brief: inheritedBriefId } : {}),
       },
     });
@@ -629,11 +700,10 @@ export const sendOffer = async (req, res) => {
     withVehicleImageUrls(response.offer, req);
 
     return res.status(201).json({
-      message: {
-        ...response,
-        id: response._id.toString(),
-        _id: undefined,
-      },
+      message: withReadReceipts([response], {
+        viewerId: req.user.id,
+        recipientId: conversation.traveler.toString(),
+      })[0],
     });
   } catch (error) {
     console.error('Send offer error:', error);

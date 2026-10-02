@@ -16,10 +16,13 @@ import { useAuth } from '../../auth/AuthContext';
  * In-app account deletion, required by App Store Review Guideline 5.1.1(v) for any
  * app that lets people create an account.
  *
- * The wording is deliberate: personal details are erased, but past bookings are kept
- * in anonymised form because they are financial records. "Delete my account" and
- * "erase my trip history" are different asks, and a driver should not discover the
- * difference afterwards.
+ * The wording is deliberate and must stay accurate. Personal details disappear from
+ * the app and from everything travellers and other drivers can see, but two things
+ * survive: past bookings (anonymised, because they are financial records) and an
+ * admin-only record of this driver's identity, licence and trip history, retained
+ * for seven years for tax and legal reasons. See backend/services/driverArchiveService.js.
+ *
+ * A driver must be told that here, not discover it afterwards.
  */
 export default function DeleteAccount() {
   const router = useRouter();
@@ -50,7 +53,7 @@ export default function DeleteAccount() {
     }
     Alert.alert(
       'Delete your account?',
-      'This permanently removes your name, email, phone number and other personal details. It cannot be undone.',
+      'Your details are removed from the app and from everything travellers can see. A record is kept for our accounts and tax obligations for 7 years. This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Delete account', style: 'destructive', onPress: runDelete },
@@ -77,13 +80,19 @@ export default function DeleteAccount() {
               <View className="ml-2.5 flex-1">
                 <Text className="font-heavy text-[15px] text-ink">This cannot be undone</Text>
                 <Text className="mt-1 font-med text-[12.5px] leading-[18px] text-ink-soft">
-                  Deleting your account permanently removes your name, email address, phone number,
-                  address, profile photo and vehicle photos. You will be signed out immediately and
-                  will no longer receive trip requests.
+                  Your name, email address, phone number, address, profile photo and vehicle photos
+                  are removed from the app and from everything travellers and other drivers can see.
+                  You will be signed out immediately and will no longer receive trip requests.
                 </Text>
                 <Text className="mt-2 font-med text-[12px] leading-[17px] text-muted">
                   Your past bookings are kept as anonymous records, because we are required to retain
-                  payment and tax history. They will no longer be linked to you.
+                  payment and tax history. They will no longer be linked to you publicly.
+                </Text>
+                <Text className="mt-2 font-med text-[12px] leading-[17px] text-muted">
+                  Our administrators keep a private record of your name, contact details, licence and
+                  trip history for 7 years, because we are legally required to account for who drove
+                  on the platform. It is never shown to travellers or other drivers, and it is deleted
+                  automatically once those 7 years have passed.
                 </Text>
               </View>
             </View>

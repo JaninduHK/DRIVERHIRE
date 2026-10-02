@@ -4,6 +4,7 @@ import { authenticate, authorizeRoles } from '../middleware/authMiddleware.js';
 import { vehicleImageUpload, conditionalReviewImageUpload } from '../middleware/cloudinaryUpload.js';
 import {
   getDriverApplications,
+  getDriverDetails,
   updateDriverStatus,
   setDriverFeatured,
   reorderFeaturedDrivers,
@@ -14,17 +15,22 @@ import {
   listDriverCommissionBookings,
   updateDriverCommissionStatus,
   getVehicleSubmissions,
+  getVehicleDetails,
   updateVehicleStatus,
   updateVehicleDetails,
   addVehicleImages,
   removeVehicleImage,
+  deleteVehicle,
+  listDeletedDrivers,
   listVehicleAvailability,
   createVehicleAvailability,
   deleteVehicleAvailability,
   listBookings,
+  getBookingDetails,
   updateBooking,
   deleteBooking,
   listBriefs,
+  getBriefDetails,
   listAbuseSignals,
   setDriverMessagingSuspension,
   updateBrief,
@@ -73,6 +79,12 @@ router.use(authenticate);
 router.use(authorizeRoles(USER_ROLES.ADMIN));
 
 router.get('/drivers', getDriverApplications);
+
+router.get(
+  '/drivers/:id',
+  [param('id').isMongoId().withMessage('Invalid driver identifier')],
+  getDriverDetails
+);
 
 // Registered before /drivers/:id so "featured-order" isn't captured as an :id.
 router.patch(
@@ -209,6 +221,12 @@ router.patch(
 
 router.get('/vehicles', getVehicleSubmissions);
 
+router.get(
+  '/vehicles/:id',
+  [param('id').isMongoId().withMessage('Invalid vehicle identifier')],
+  getVehicleDetails
+);
+
 router.patch(
   '/vehicles/:id/status',
   [
@@ -284,6 +302,12 @@ router.delete(
     body('image').isString().trim().notEmpty().withMessage('Image path is required'),
   ],
   removeVehicleImage
+);
+
+router.delete(
+  '/vehicles/:id',
+  [param('id').isMongoId().withMessage('Invalid vehicle identifier')],
+  deleteVehicle
 );
 
 // Admin can view and edit a vehicle's driver-set availability, but not the
@@ -437,7 +461,15 @@ router.patch(
   setDriverMessagingSuspension
 );
 
+router.get('/deleted-drivers', listDeletedDrivers);
+
 router.get('/bookings', listBookings);
+
+router.get(
+  '/bookings/:id',
+  [param('id').isMongoId().withMessage('Invalid booking identifier')],
+  getBookingDetails
+);
 
 router.patch(
   '/bookings/:id',
@@ -476,11 +508,17 @@ router.delete(
 
 router.get('/briefs', listBriefs);
 
+router.get(
+  '/briefs/:id',
+  [param('id').isMongoId().withMessage('Invalid brief identifier')],
+  getBriefDetails
+);
+
 router.patch(
   '/briefs/:id',
   [
     param('id').isMongoId().withMessage('Invalid brief identifier'),
-    body('status').optional().isIn(['open', 'closed']),
+    body('status').optional().isIn(['open', 'booked', 'closed']),
     body('startDate').optional().isISO8601(),
     body('endDate').optional().isISO8601(),
     body('startLocation').optional().isString().trim().isLength({ max: 200 }),

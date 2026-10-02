@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import Booking, { BOOKING_STATUS, DEFAULT_COMMISSION_RATE } from '../models/Booking.js';
 import Review from '../models/Review.js';
 import ChatMessage from '../models/ChatMessage.js';
+import { closeBriefsForBooking, reopenBriefsForBooking } from '../utils/briefClosure.js';
 import { USER_ROLES } from '../models/User.js';
 import { sendBookingStatusUpdateEmail } from '../services/emailService.js';
 import { mapAssetUrls } from '../utils/assetUtils.js';
@@ -339,6 +340,12 @@ export const driverRespondToBooking = async (req, res) => {
       await ChatMessage.findByIdAndUpdate(booking.offerMessage, { 'offer.status': nextOfferStatus });
     }
 
+    // A direct booking only becomes confirmed here, so this is where its dates
+    // stop being available and the traveller's matching requests close.
+    if (normalizedAction === 'accept') {
+      await closeBriefsForBooking(booking);
+    }
+
     const hydrated = await fetchBookingWithDetails(id);
     const travelerRecipient = hydrated?.traveler?.email
       ? {
@@ -471,6 +478,9 @@ export const updateTravelerBooking = async (req, res) => {
 
       if (booking.status === BOOKING_STATUS.CONFIRMED) {
         booking.status = BOOKING_STATUS.PENDING;
+        // No longer a confirmed trip on those dates, so the quote requests it
+        // closed go back on the board until the driver re-accepts.
+        await reopenBriefsForBooking(booking._id);
       }
     }
 
@@ -535,6 +545,10 @@ export const cancelTravelerBooking = async (req, res) => {
     if (booking.offerMessage) {
       await ChatMessage.findByIdAndUpdate(booking.offerMessage, { 'offer.status': 'declined' });
     }
+
+    // These dates are free again, so put back the quote requests this booking
+    // closed rather than leaving the traveller to post them from scratch.
+    await reopenBriefsForBooking(booking._id);
 
     const hydrated = await fetchBookingWithDetails(id);
 

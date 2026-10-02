@@ -14,8 +14,12 @@ const CONFIRM_WORD = 'DELETE';
  *
  * `requiresPassword` is driven by authProvider: SSO travellers have no password to
  * re-enter, so possession of the signed-in session is the confirmation.
+ *
+ * `isDriver` adds the legal-retention disclosure. Drivers are archived for admin for
+ * seven years (backend/services/driverArchiveService.js); travellers are not, so
+ * showing them that paragraph would be untrue.
  */
-const DeleteAccountCard = ({ requiresPassword = false }) => {
+const DeleteAccountCard = ({ requiresPassword = false, isDriver = false }) => {
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmText, setConfirmText] = useState('');
@@ -61,13 +65,21 @@ const DeleteAccountCard = ({ requiresPassword = false }) => {
         <div className="min-w-0">
           <b className="text-[16px] text-ink">Delete account</b>
           <p className="mt-1 text-[13px] leading-relaxed text-muted">
-            This permanently removes your name, email, phone number and other personal details.
-            It cannot be undone.
+            This removes your name, email, phone number and other personal details from the site
+            and from everything other people can see. It cannot be undone.
           </p>
           <p className="mt-2 text-[12.5px] leading-relaxed text-muted-soft">
             Your past bookings are kept as anonymous records, because we are required to retain
-            payment and tax history. They will no longer be linked to you.
+            payment and tax history. They will no longer be linked to you publicly.
           </p>
+          {isDriver ? (
+            <p className="mt-2 text-[12.5px] leading-relaxed text-muted-soft">
+              Our administrators keep a private record of your name, contact details, licence and
+              trip history for 7 years, because we are legally required to account for who drove on
+              the platform. It is never shown to travellers or other drivers, and it is deleted
+              automatically once those 7 years have passed.
+            </p>
+          ) : null}
         </div>
       </div>
 

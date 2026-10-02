@@ -42,15 +42,25 @@ export const useConversations = () =>
   });
 
 export const useMessages = (conversationId: string) =>
-  useQuery<{ messages: ChatMessage[]; booking: Booking | null }>({
+  useQuery<{ messages: ChatMessage[]; booking: Booking | null; locked: boolean; lockMessage: string }>({
     queryKey: qk.messages(conversationId),
     queryFn: async () => {
       const res = (await chatApi.getMessages(conversationId)) as
-        | { messages?: ChatMessage[]; booking?: Booking | null }
+        | {
+            messages?: ChatMessage[];
+            booking?: Booking | null;
+            locked?: boolean;
+            lockMessage?: string | null;
+          }
         | ChatMessage[];
+      const envelope = Array.isArray(res) ? null : res;
       return {
         messages: asList<ChatMessage>(res, 'messages'),
-        booking: (Array.isArray(res) ? null : res?.booking) ?? null,
+        booking: envelope?.booking ?? null,
+        // Traveller booked a different driver: the server refuses our sends, so
+        // the composer is replaced with the reason rather than failing on submit.
+        locked: Boolean(envelope?.locked),
+        lockMessage: envelope?.lockMessage || '',
       };
     },
     enabled: Boolean(conversationId),

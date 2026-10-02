@@ -26,6 +26,7 @@ import {
   ShieldCheck,
   ShieldAlert,
   Star,
+  Trash2,
   Upload,
   User2,
   Users,
@@ -44,6 +45,7 @@ import {
   fetchDriverVehicles,
   createVehicle,
   updateVehicle,
+  deleteVehicle as deleteVehicleRequest,
   createVehicleAvailability,
   updateVehicleAvailability,
   deleteVehicleAvailability,
@@ -748,6 +750,18 @@ const DriverDashboard = () => {
     }
   };
 
+  const handleVehicleDelete = async (vehicleId) => {
+    try {
+      await deleteVehicleRequest(vehicleId);
+      toast.success('Vehicle deleted.');
+      await refreshVehicles();
+    } catch (error) {
+      // 409 means it still has upcoming bookings; the server explains which.
+      toast.error(error.message || 'Unable to delete vehicle.');
+      throw error;
+    }
+  };
+
   const handleAvailabilityCreate = async (vehicleId, payload) => {
     try {
       await createVehicleAvailability(vehicleId, payload);
@@ -1081,6 +1095,7 @@ const DriverDashboard = () => {
     onVehicleRefresh: refreshVehicles,
     onVehicleCreate: handleVehicleSubmit,
     onVehicleUpdate: handleVehicleUpdate,
+    onVehicleDelete: handleVehicleDelete,
     onAvailabilityCreate: handleAvailabilityCreate,
     onAvailabilityUpdate: handleAvailabilityUpdate,
     onAvailabilityDelete: handleAvailabilityDelete,
@@ -1612,17 +1627,19 @@ const OverviewPanel = ({ profile }) => (
       </p>
     </div>
 
-    <DeleteAccountCard requiresPassword={profile?.authProvider === 'local'} />
+    <DeleteAccountCard requiresPassword={profile?.authProvider === 'local'} isDriver />
   </div>
 );
 
-const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, error, onRefresh, onCreate, onUpdate }) => {
+const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, error, onRefresh, onCreate, onUpdate, onDelete }) => {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState(() => buildInitialVehicleForm());
   const [pendingFiles, setPendingFiles] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState(null);
   const [existingImages, setExistingImages] = useState([]);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deletingId, setDeletingId] = useState('');
 
   const clearPendingFiles = useCallback(() => {
     setPendingFiles((prev) => {
@@ -2096,15 +2113,27 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
                           Rejection notes: {vehicle.rejectedReason}
                         </p>
                       ) : null}
-                      <button
-                        type="button"
-                        disabled={submitting}
-                        onClick={() => handleEditVehicle(vehicle)}
-                        className="flex w-full items-center justify-center gap-1.5 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white py-[11px] text-[13.5px] font-bold text-ink transition hover:border-muted-soft disabled:opacity-50"
-                      >
-                        <Pencil className="h-[15px] w-[15px]" />
-                        Edit details
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          disabled={submitting}
+                          onClick={() => handleEditVehicle(vehicle)}
+                          className="flex flex-1 items-center justify-center gap-1.5 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white py-[11px] text-[13.5px] font-bold text-ink transition hover:border-muted-soft disabled:opacity-50"
+                        >
+                          <Pencil className="h-[15px] w-[15px]" />
+                          Edit details
+                        </button>
+                        <button
+                          type="button"
+                          disabled={submitting || deletingId === vehicle.id}
+                          onClick={() => setDeleteTarget(vehicle)}
+                          aria-label={`Delete ${vehicle.model}`}
+                          className="flex flex-shrink-0 items-center justify-center gap-1.5 rounded-[11px] border-[1.5px] border-[#ffd2da] bg-[#fff5f6] px-3.5 py-[11px] text-[13.5px] font-bold text-[#e11d48] transition hover:border-[#f43f5e] disabled:opacity-50"
+                        >
+                          <Trash2 className="h-[15px] w-[15px]" />
+                          {deletingId === vehicle.id ? 'Deleting…' : 'Delete'}
+                        </button>
+                      </div>
                     </article>
                   );
                 })}
@@ -2113,6 +2142,46 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
           </>
         )}
       </Sheet>
+
+      {deleteTarget ? (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/45 p-4 sm:items-center">
+          <div className="w-full max-w-md rounded-[18px] bg-white p-5 shadow-card">
+            <b className="text-[16px] text-ink">Delete {deleteTarget.model}?</b>
+            <p className="mt-2 text-[13px] leading-relaxed text-muted">
+              It stops appearing in search and in your vehicle list, and any offer still waiting on it
+              is withdrawn. Past bookings and reviews keep showing it. This cannot be undone.
+            </p>
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                disabled={Boolean(deletingId)}
+                onClick={() => setDeleteTarget(null)}
+                className="flex-1 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white py-[11px] text-[13.5px] font-bold text-ink disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={Boolean(deletingId)}
+                onClick={async () => {
+                  setDeletingId(deleteTarget.id);
+                  try {
+                    await onDelete(deleteTarget.id);
+                    setDeleteTarget(null);
+                  } catch {
+                    // The parent already surfaced the reason (e.g. upcoming bookings).
+                  } finally {
+                    setDeletingId('');
+                  }
+                }}
+                className="flex-1 rounded-[11px] bg-[#e11d48] py-[11px] text-[13.5px] font-bold text-white disabled:opacity-50"
+              >
+                {deletingId ? 'Deleting…' : 'Delete vehicle'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 };
@@ -2619,7 +2688,7 @@ const DriverEarningsPanel = ({ onMenu, driverName, driverImage, state, onMonthCh
             {bankDetails?.swiftCode ? (
               <DetailLine label="SWIFT / BIC" value={bankDetails.swiftCode} />
             ) : null}
-            <DetailLine label="Reference" value={bankDetails?.referenceNote || '—'} />
+            <DetailLine label="Reference" value={bankDetails?.referenceNote || '—'} fullWidth />
           </dl>
           {canUploadSlip ? (
             <>
@@ -3391,10 +3460,10 @@ const StatCard = ({ label, value, highlight = false }) => (
   </div>
 );
 
-const DetailLine = ({ label, value }) => (
-  <div>
+const DetailLine = ({ label, value, fullWidth = false }) => (
+  <div className={fullWidth ? 'col-span-2' : undefined}>
     <p className="text-[11px] font-bold uppercase tracking-wide text-muted-soft">{label}</p>
-    <p className="mt-0.5 text-[13px] font-semibold text-ink-soft">{value}</p>
+    <p className="mt-0.5 text-[13px] font-semibold leading-relaxed text-ink-soft">{value}</p>
   </div>
 );
 
@@ -3717,6 +3786,7 @@ const renderTabContent = (tabId, context) => {
     onVehicleRefresh,
     onVehicleCreate,
     onVehicleUpdate,
+    onVehicleDelete,
     onAvailabilityCreate,
     onAvailabilityUpdate,
     onAvailabilityDelete,
@@ -3747,6 +3817,7 @@ const renderTabContent = (tabId, context) => {
           onRefresh={onVehicleRefresh}
           onCreate={onVehicleCreate}
           onUpdate={onVehicleUpdate}
+          onDelete={onVehicleDelete}
         />
       );
     case 'availability':

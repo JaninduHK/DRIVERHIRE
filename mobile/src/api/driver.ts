@@ -53,6 +53,9 @@ export const getVehicleAvailability = (vehicleId: string) =>
     `/driver/vehicles/${vehicleId}/availability`
   );
 
+export const deleteVehicle = (id: string) =>
+  apiRequest(`/driver/vehicles/${id}`, { method: 'DELETE' });
+
 export const createVehicleAvailability = (
   vehicleId: string,
   payload: { startDate: string; endDate: string; status?: AvailabilityStatus; note?: string }

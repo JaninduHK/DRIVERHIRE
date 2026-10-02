@@ -144,7 +144,7 @@ const FAQS = [
   },
   {
     q: 'Are fuel and kilometres included?',
-    a: 'Nearly every listing includes fuel and insurance, and daily rates cover unlimited island-wide kilometres. Driver-guided trips typically cover 120–150 km on a touring day. Each offer spells out exactly what it includes, so check it before you accept.',
+    a: 'Nearly every listing includes fuel and insurance, and daily rates cover 120–150 km per day island-wide, which is what a driver-guided touring day usually comes to. Each offer spells out exactly what it includes, so check it before you accept.',
   },
   {
     q: 'Are the driver’s meals and accommodation included?',
@@ -341,7 +341,7 @@ const GetQuotes = () => {
               <ul className="mt-5 flex flex-col gap-[11px] lg:mt-7 lg:gap-[15px]">
                 {[
                   'Offers from tourist drivers, chauffeur guides and national guide lecturers',
-                  'Daily rates cover unlimited island-wide kilometres',
+                  'Daily rates cover 120–150 km per day island-wide',
                   'Chat with drivers before you commit — your contact details stay private',
                   'Accept an offer and that price is locked for the itinerary you agreed',
                 ].map((text) => (
@@ -650,8 +650,8 @@ const GetQuotes = () => {
                 </table>
               </div>
               <p className="mt-3 text-[14px] leading-[1.6] text-muted-soft">
-                Rates cover unlimited island-wide kilometres; driver-guided trips typically cover {KM_PER_DAY.low}–{KM_PER_DAY.high} km
-                on a touring day. Longer days and December–January peak dates sit at the upper end of each range.{' '}
+                Rates cover {KM_PER_DAY.low}–{KM_PER_DAY.high} km per day island-wide, which is what a driver-guided touring
+                day usually comes to. Longer days and December–January peak dates sit at the upper end of each range.{' '}
                 <Link to="/trip-cost-calculator" className="font-bold text-brand-dark hover:underline">
                   Estimate your own trip →
                 </Link>
@@ -686,7 +686,7 @@ const GetQuotes = () => {
                   ))}
                   <li className="flex gap-2.5 text-[14.5px] font-semibold leading-[1.5] text-ink-soft">
                     <Check className="mt-0.5 h-[17px] w-[17px] flex-shrink-0 text-brand-dark" strokeWidth={3} />
-                    Unlimited island-wide kilometres
+                    {KM_PER_DAY.low}–{KM_PER_DAY.high} km per day
                   </li>
                 </ul>
               </div>

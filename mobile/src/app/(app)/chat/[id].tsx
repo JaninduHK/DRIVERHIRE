@@ -17,7 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
-import { ChevronLeft, Send, FileText, X, CalendarCheck, ChevronRight } from 'lucide-react-native';
+import { ChevronLeft, Send, FileText, X, CalendarCheck, ChevronRight, Lock, CheckCheck, Clock } from 'lucide-react-native';
 import { Avatar } from '../../../components/Avatar';
 import { ContactWarning } from '../../../components/ContactWarning';
 import { IconButton } from '../../../components/IconButton';
@@ -30,7 +30,8 @@ import { DatePickerField } from '../../../components/DatePickerField';
 import { useMessages, useConversations, useVehicles, qk } from '../../../hooks/queries';
 import { sendMessage, sendOffer } from '../../../api/chat';
 import { useAuth } from '../../../auth/AuthContext';
-import { formatMoney, formatRate, formatDateRange } from '../../../lib/format';
+import { formatMoney, formatRate, formatDateRange, messageTime } from '../../../lib/format';
+import { offerExpiryNotice, offerExpiryColors } from '../../../lib/offerExpiry';
 import { useFontScale } from '../../../lib/fontScale';
 import { colors, headerGradient } from '../../../theme/colors';
 import type { ChatMessage } from '../../../types';
@@ -53,6 +54,11 @@ export default function Chat() {
   const { data: messagesData, isLoading } = useMessages(conversationId);
   const messages = messagesData?.messages;
   const booking = messagesData?.booking ?? null;
+  // Traveller booked another driver. The server enforces this; here it just stops
+  // the driver typing a message that would come back 403.
+  const locked = messagesData?.locked ?? false;
+  const lockMessage =
+    messagesData?.lockMessage || 'This traveller has booked another driver.';
 
   const [text, setText] = useState('');
   const [keyboardUp, setKeyboardUp] = useState(false);
@@ -155,9 +161,15 @@ export default function Chat() {
             contentContainerStyle={{ padding: 18, gap: 10 }}
             showsVerticalScrollIndicator={false}
           >
-            {(messages ?? []).map((m) => (
-              <Bubble key={m.id} message={m} mine={isMine(m, user?.id)} />
-            ))}
+            {(messages ?? []).map((m) => {
+              const mine = isMine(m, user?.id);
+              return (
+                <View key={m.id} className={mine ? 'items-end' : 'items-start'}>
+                  <Bubble message={m} mine={mine} />
+                  <MessageMeta message={m} mine={mine} />
+                </View>
+              );
+            })}
           </ScrollView>
         )}
 
@@ -166,6 +178,15 @@ export default function Chat() {
           className="border-t border-[#eef1f0] bg-white px-4 pt-3"
           style={{ paddingBottom: keyboardUp ? 8 : (insets.bottom || 12) + 4 }}
         >
+          {locked ? (
+            <View className="mb-1 flex-row gap-2 rounded-xl border border-[#f0dcae] bg-[#fdf7e8] px-3 py-2.5">
+              <Lock size={14} color="#a86a15" strokeWidth={2.2} style={{ marginTop: 2 }} />
+              <Text className="flex-1 font-semi text-[11.5px] leading-[17px] text-[#7a5410]">
+                {lockMessage}
+              </Text>
+            </View>
+          ) : (
+            <>
           {text ? <View className="mb-2"><ContactWarning value={text} /></View> : null}
           <View className="flex-row items-end gap-2">
           <Pressable
@@ -193,6 +214,8 @@ export default function Chat() {
             <Send size={17} color="#fff" fill="#fff" />
           </Pressable>
           </View>
+            </>
+          )}
         </View>
       </KeyboardAvoidingView>
 
@@ -212,6 +235,30 @@ export default function Chat() {
   );
 }
 
+/**
+ * Timestamp under every message, plus read ticks on your own outgoing ones.
+ *
+ * Sits BELOW the bubble rather than inside it: an outgoing bubble is solid brand
+ * green, where a green "read" tick would be invisible. Ticks are only shown on
+ * messages you sent — whether you read your own message tells nobody anything.
+ */
+function MessageMeta({ message, mine }: { message: ChatMessage; mine: boolean }) {
+  const time = messageTime(message.createdAt);
+  if (!time) return null;
+  return (
+    <View className="mt-1 flex-row items-center gap-1 px-1">
+      <Text className="font-med text-[10.5px] text-muted-soft">{time}</Text>
+      {mine ? (
+        <CheckCheck
+          size={13}
+          strokeWidth={2.6}
+          color={message.readByRecipient ? colors.brand : colors.mutedSoft}
+        />
+      ) : null}
+    </View>
+  );
+}
+
 function Bubble({ message, mine }: { message: ChatMessage; mine: boolean }) {
   const { scale } = useFontScale();
   if (message.type === 'brief' && message.briefRequest) {
@@ -222,6 +269,7 @@ function Bubble({ message, mine }: { message: ChatMessage; mine: boolean }) {
     const kmIncluded = o.totalKms ?? o.includedKm;
     const extraKmRate = o.pricePerExtraKm ?? o.extraKmRate;
     const dateRange = formatDateRange(o.startDate, o.endDate);
+    const expiry = offerExpiryNotice(o);
     return (
       <View className="max-w-[88%] self-end rounded-2xl border-[1.5px] border-[#cdeede] bg-white p-3.5">
         <View className="mb-2 flex-row items-center justify-between">
@@ -245,6 +293,17 @@ function Bubble({ message, mine }: { message: ChatMessage; mine: boolean }) {
           <Text className="mt-1.5 font-med text-muted-soft" style={{ fontSize: 12 * scale, lineHeight: 16 * scale }}>
             {o.note}
           </Text>
+        ) : null}
+        {expiry ? (
+          <View
+            className="mt-2 flex-row items-center gap-1 self-start rounded-lg px-2 py-1"
+            style={{ backgroundColor: offerExpiryColors(expiry.tone).bg }}
+          >
+            <Clock size={11} color={offerExpiryColors(expiry.tone).fg} strokeWidth={2.4} />
+            <Text className="font-heavy text-[11px]" style={{ color: offerExpiryColors(expiry.tone).fg }}>
+              {expiry.text}
+            </Text>
+          </View>
         ) : null}
       </View>
     );

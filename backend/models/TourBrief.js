@@ -102,6 +102,15 @@ const tourBriefSchema = new mongoose.Schema(
       default: 'open',
       index: true,
     },
+    // Which booking closed this request. Recorded so that cancelling that booking
+    // can put the request back on the board instead of stranding it as 'booked'
+    // forever. Null for requests closed any other way (admin, expiry sweep).
+    closedByBooking: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Booking',
+      default: null,
+      index: true,
+    },
     offersCount: {
       type: Number,
       default: 0,

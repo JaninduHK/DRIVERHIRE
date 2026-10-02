@@ -68,9 +68,18 @@ export default function Messages() {
                     <Avatar name={nameOf(c)} uri={c.traveler?.profilePhoto} size={44} rounded={12} />
                     <View className="min-w-0 flex-1">
                       <View className="flex-row items-center justify-between">
-                        <Text className="font-heavy text-[14.5px] text-ink" numberOfLines={1}>
-                          {nameOf(c)}
-                        </Text>
+                        <View className="min-w-0 flex-1 flex-row items-center gap-1.5">
+                          <Text className="shrink font-heavy text-[14.5px] text-ink" numberOfLines={1}>
+                            {nameOf(c)}
+                          </Text>
+                          {c.locked ? (
+                            <View className="shrink-0 rounded-md bg-[#fdf0d8] px-1.5 py-0.5">
+                              <Text className="font-heavy text-[9.5px] uppercase tracking-wide text-[#a86a15]">
+                                Booked elsewhere
+                              </Text>
+                            </View>
+                          ) : null}
+                        </View>
                         <Text className="ml-2 font-med text-[11px] text-muted-soft">
                           {relativeTime(c.updatedAt || c.lastMessage?.createdAt)}
                         </Text>

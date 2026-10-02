@@ -6,6 +6,7 @@ import Vehicle from '../models/Vehicle.js';
 import DriverCommission from '../models/DriverCommission.js';
 import RefreshToken from '../models/RefreshToken.js';
 import * as cloudinaryService from './cloudinaryService.js';
+import { archiveDriverForDeletion } from './driverArchiveService.js';
 
 // Placeholder shown wherever a deleted person used to be named. Bookings and
 // reviews keep existing (they are financial / public records), they just stop
@@ -112,6 +113,11 @@ export const anonymizeUser = async (userId, { actorId = null } = {}) => {
     throw error;
   }
 
+  // Snapshot the driver's details for the admin-only legal archive FIRST: once
+  // the scrub below runs, the name, email and contact number are gone for good.
+  // Travellers are not archived — their erasure stays complete.
+  const archived = await archiveDriverForDeletion(user, { actorId });
+
   const assetsRemoved = await purgeCloudinaryAssets(user);
 
   // Booking.traveler is a snapshot taken at booking time, so it survives any
@@ -173,6 +179,7 @@ export const anonymizeUser = async (userId, { actorId = null } = {}) => {
     vehiclesCleared: vehicleScrub.modifiedCount,
     refreshTokensRevoked: tokenScrub.deletedCount,
     assetsRemoved,
+    archivedForLegal: Boolean(archived),
   };
   console.info('Account erased:', JSON.stringify(summary));
   return summary;
