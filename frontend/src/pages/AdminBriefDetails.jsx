@@ -5,9 +5,12 @@ import {
   ArrowLeft,
   CalendarDays,
   Car,
+  ChevronDown,
+  ChevronsUpDown,
   ClipboardList,
   ExternalLink,
   FileText,
+  MessageSquare,
   Pencil,
   RefreshCw,
   Send,
@@ -84,31 +87,98 @@ const OverviewTab = ({ data, onEdit }) => {
   </div>;
 };
 
-const MessageThread = ({ conversation }) => {
-  if (!conversation) return <p className="text-sm text-muted">The linked conversation is unavailable.</p>;
+const Fact = ({ label, value }) => <div className="rounded-xl bg-canvas px-3.5 py-3"><p className="text-[10.5px] font-extrabold uppercase tracking-wide text-muted-soft">{label}</p><b className="mt-1 block break-words text-[13.5px] text-ink">{value ?? '—'}</b></div>;
+
+// Long free text (driver notes, chat bodies) is clamped so one wordy entry cannot push everything else off screen.
+const ClampText = ({ text, className = '' }) => {
+  const [expanded, setExpanded] = useState(false);
+  if (!text) return <p className={`text-muted-soft ${className}`}>{EMPTY}</p>;
+  const isLong = text.length > 260 || text.split('\n').length > 3;
   return <div>
-    <div className="grid gap-x-6 md:grid-cols-3"><dl><DetailRow label="Conversation ID" value={conversation.id} mono /><DetailRow label="Status"><span className={statusTag(conversation.status)}>{conversation.status}</span></DetailRow></dl><dl><DetailRow label="Created"><Timestamp value={conversation.createdAt} /></DetailRow><DetailRow label="Last message"><Timestamp value={conversation.lastMessageAt} /></DetailRow></dl><dl><DetailRow label="Traveller unread" value={conversation.travelerUnreadCount} /><DetailRow label="Driver unread" value={conversation.driverUnreadCount} /></dl></div>
-    {conversation.messages?.length ? <div className="mt-4 space-y-2 border-t border-hairline pt-4">{conversation.messages.map((message) => <article key={message.id} className="rounded-xl bg-canvas p-3.5"><div className="flex flex-wrap items-center justify-between gap-2"><div className="flex flex-wrap items-center gap-2"><b className="text-xs text-ink">{message.sender?.name || message.senderRole || 'Unknown sender'}</b><span className={statusTag(message.offer?.status || (message.type === 'offer' ? 'pending' : 'active'))}>{message.type}{message.offer?.status ? ` · ${message.offer.status}` : ''}</span></div><span className="text-[11px] font-semibold text-muted-soft"><Timestamp value={message.createdAt} /></span></div><p className="mt-2 whitespace-pre-wrap text-[13px] leading-relaxed text-ink">{message.body || EMPTY}</p>{message.briefRequest ? <div className="mt-3 rounded-lg border border-line bg-surface p-3 text-[11.5px] text-muted"><b className="text-ink">Brief snapshot</b><p className="mt-1">{message.briefRequest.startLocation} → {message.briefRequest.endLocation} · {message.briefRequest.adults} adults · {message.briefRequest.children} children</p><p className="mt-1 whitespace-pre-wrap">{message.briefRequest.message}</p></div> : null}{message.offer ? <div className="mt-3 flex flex-wrap gap-4 rounded-lg border border-line bg-surface px-3 py-2 text-[11.5px] font-semibold text-muted"><span>{formatCurrency(message.offer.totalPrice)}</span><span>{message.offer.totalKms ?? '—'} km</span><span>{formatDate(message.offer.startDate)} → {formatDate(message.offer.endDate)}</span></div> : null}{message.warning ? <p className="mt-2 text-xs font-bold text-rose-600">Warning: {message.warning}</p> : null}{message.violations?.length ? <p className="mt-1 text-[11px] font-semibold text-rose-600">Detected: {message.violations.join(', ')}</p> : null}</article>)}</div> : <p className="mt-4 border-t border-hairline pt-4 text-sm text-muted">No messages found in this conversation.</p>}
+    <p className={`whitespace-pre-wrap break-words ${className} ${isLong && !expanded ? 'line-clamp-3' : ''}`}>{text}</p>
+    {isLong ? <button type="button" onClick={() => setExpanded((current) => !current)} className="mt-1 text-[11.5px] font-bold text-brand-dark hover:underline">{expanded ? 'Show less' : 'Show more'}</button> : null}
   </div>;
 };
 
-const ResponsesTab = ({ responses, recordPath }) => {
-  if (!responses.length) return <EmptyState icon={Send} text="No driver has quoted on this brief yet." />;
-  return <div className="flex flex-col gap-5">{responses.map((response, index) => {
-    const { offer, driver, vehicle, booking } = response;
-    return <Panel key={response.id || index} title={`${driver?.name || 'Driver'} · ${vehicle?.model || 'Vehicle unavailable'}`} subtitle={`Response ${index + 1} · ${response.id || 'No offer ID'}`} action={<span className={statusTag(offer?.status)}>{offer?.status || 'unknown'}</span>}>
-      <div className="grid gap-5 xl:grid-cols-[.9fr_1.1fr]">
-        <div className="space-y-5">
-          <div className="grid gap-x-6 lg:grid-cols-2"><dl><DetailRow label="Offer total" value={offer ? formatCurrency(offer.totalPrice) : null} /><DetailRow label="Distance" value={offer?.totalKms != null ? `${offer.totalKms} km` : null} /><DetailRow label="Extra kilometre" value={offer?.pricePerExtraKm != null ? formatCurrency(offer.pricePerExtraKm) : null} /><DetailRow label="Offer dates">{offer ? <>{formatDate(offer.startDate)} → {formatDate(offer.endDate)}</> : null}</DetailRow><DetailRow label="Responded"><Timestamp value={response.createdAt} /></DetailRow><DetailRow label="Driver note"><span className="whitespace-pre-wrap font-normal text-muted">{response.note || EMPTY}</span></DetailRow></dl><dl><DetailRow label="Driver ID" value={driver?.id} mono /><DetailRow label="Driver email" value={driver?.email} /><DetailRow label="Driver phone" value={driver?.contactNumber} /><DetailRow label="Driver status"><span className={statusTag(driver?.driverStatus)}>{driver?.driverStatus || 'unknown'}</span></DetailRow><DetailRow label="Licence" value={[driver?.licenseType, driver?.licenseStatus].filter(Boolean).join(' · ') || null} /><DetailRow label="Member since"><Timestamp value={driver?.memberSince} /></DetailRow></dl></div>
-          {driver ? <Link to={`/admin/drivers/${driver.id}`} state={{ from: recordPath }} className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-dark hover:underline">Open full driver record <ExternalLink className="h-3.5 w-3.5" /></Link> : null}
-          <div className="rounded-xl bg-canvas p-4"><div className="flex items-center gap-3">{vehicle?.images?.[0] ? <img src={vehicle.images[0]} alt="" className="h-16 w-20 rounded-xl object-cover" /> : <div className="grid h-16 w-20 place-items-center rounded-xl bg-surface"><Car className="h-6 w-6 text-muted-soft" /></div>}<div><b className="text-sm text-ink">{vehicle?.model || 'Vehicle unavailable'}</b><p className="text-xs text-muted-soft">{vehicle?.year || '—'} · {vehicle?.seats || '—'} seats · {formatCurrency(vehicle?.pricePerDay)}/day</p></div></div>{vehicle ? <><div className="mt-3 grid gap-1.5 sm:grid-cols-2">{VEHICLE_FEATURES.map(({ key, label }) => <div key={key} className="flex items-center justify-between gap-2 rounded-lg bg-surface px-3 py-2 text-[11px] font-semibold text-ink"><span>{label}</span><span className={tagClass(vehicle[key] ? 'green' : 'grey')}>{vehicle[key] ? 'Yes' : 'No'}</span></div>)}</div><Link to={`/admin/vehicles/${vehicle.id}`} state={{ from: recordPath }} className="mt-3 inline-flex items-center gap-1.5 text-xs font-bold text-brand-dark hover:underline">Open full vehicle record <ExternalLink className="h-3.5 w-3.5" /></Link></> : null}</div>
-          {offer?.warning ? <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700">Safety warning: {offer.warning}</div> : null}
-          {booking ? <Link to={`/admin/bookings/${booking.id}`} state={{ from: recordPath }} className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800"><div><b className="text-sm">Booking created from this offer</b><p className="mt-1 text-xs">{booking.status} · {formatCurrency(booking.totalPrice)} · {formatDate(booking.startDate)} – {formatDate(booking.endDate)}</p></div><ExternalLink className="h-4 w-4 flex-shrink-0" /></Link> : null}
-        </div>
-        <div className="rounded-xl border border-hairline p-4"><h3 className="mb-4 text-[12px] font-extrabold uppercase tracking-wide text-muted-soft">Conversation and messages</h3><MessageThread conversation={response.conversation} /></div>
+const MessageThread = ({ conversation }) => {
+  if (!conversation) return <p className="text-sm text-muted">The linked conversation is unavailable.</p>;
+  return <div>
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11.5px] font-semibold text-muted-soft">
+      <span className={statusTag(conversation.status)}>{conversation.status}</span>
+      <span>Started <Timestamp value={conversation.createdAt} /></span>
+      <span>Last message <Timestamp value={conversation.lastMessageAt} /></span>
+      <span>Unread: traveller {conversation.travelerUnreadCount ?? 0} · driver {conversation.driverUnreadCount ?? 0}</span>
+      <span className="font-mono text-[10.5px]">{conversation.id}</span>
+    </div>
+    {conversation.messages?.length ? <div className="mt-3 max-h-[460px] space-y-2 overflow-y-auto pr-1">{conversation.messages.map((message) => <article key={message.id} className="rounded-xl bg-canvas p-3.5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2"><b className="text-xs text-ink">{message.sender?.name || message.senderRole || 'Unknown sender'}</b><span className={statusTag(message.offer?.status || (message.type === 'offer' ? 'pending' : 'active'))}>{message.type}{message.offer?.status ? ` · ${message.offer.status}` : ''}</span></div>
+        <span className="text-[11px] font-semibold text-muted-soft"><Timestamp value={message.createdAt} /></span>
       </div>
-    </Panel>;
-  })}</div>;
+      <div className="mt-2"><ClampText text={message.body} className="text-[13px] leading-relaxed text-ink" /></div>
+      {message.briefRequest ? <div className="mt-3 rounded-lg border border-line bg-surface p-3 text-[11.5px] text-muted"><b className="text-ink">Brief snapshot</b><p className="mt-1">{message.briefRequest.startLocation} → {message.briefRequest.endLocation} · {message.briefRequest.adults} adults · {message.briefRequest.children} children</p>{message.briefRequest.message ? <div className="mt-1"><ClampText text={message.briefRequest.message} /></div> : null}</div> : null}
+      {message.offer ? <div className="mt-3 flex flex-wrap gap-4 rounded-lg border border-line bg-surface px-3 py-2 text-[11.5px] font-semibold text-muted"><span>{formatCurrency(message.offer.totalPrice)}</span><span>{message.offer.totalKms ?? '—'} km</span><span>{formatDate(message.offer.startDate)} → {formatDate(message.offer.endDate)}</span></div> : null}
+      {message.warning ? <p className="mt-2 text-xs font-bold text-rose-600">Warning: {message.warning}</p> : null}
+      {message.violations?.length ? <p className="mt-1 text-[11px] font-semibold text-rose-600">Detected: {message.violations.join(', ')}</p> : null}
+    </article>)}</div> : <p className="mt-3 text-sm text-muted">No messages found in this conversation.</p>}
+  </div>;
+};
+
+const ResponseCard = ({ response, index, open, onToggle, recordPath }) => {
+  const { offer, driver, vehicle, booking, conversation } = response;
+  const [chatOpen, setChatOpen] = useState(false);
+  const messageCount = conversation?.messages?.length || 0;
+  const included = vehicle ? VEHICLE_FEATURES.filter(({ key }) => vehicle[key]) : [];
+  const missing = vehicle ? VEHICLE_FEATURES.filter(({ key }) => !vehicle[key]) : [];
+  return <section className="overflow-hidden rounded-[18px] bg-surface shadow-card">
+    <button type="button" onClick={onToggle} aria-expanded={open} className="flex w-full items-center gap-3.5 px-5 py-4 text-left transition hover:bg-canvas/60">
+      {vehicle?.images?.[0] ? <img src={vehicle.images[0]} alt="" className="h-11 w-14 flex-shrink-0 rounded-lg object-cover" /> : <div className="grid h-11 w-14 flex-shrink-0 place-items-center rounded-lg bg-canvas"><Car className="h-5 w-5 text-muted-soft" /></div>}
+      <div className="min-w-0 flex-1">
+        <h2 className="truncate text-[15px] font-extrabold text-ink">{driver?.name || 'Driver'} <span className="font-semibold text-muted">· {vehicle?.model || 'Vehicle unavailable'}</span></h2>
+        <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-[11.5px] font-semibold text-muted-soft"><span>Quote {index + 1}</span><span>Responded <Timestamp value={response.createdAt} /></span><span className="inline-flex items-center gap-1"><MessageSquare className="h-3 w-3" /> {messageCount}</span>{offer?.warning ? <span className="text-rose-600">Flagged</span> : null}{booking ? <span className="text-emerald-600">Booked</span> : null}</p>
+      </div>
+      <div className="hidden flex-shrink-0 text-right sm:block"><b className="block text-[15px] text-ink">{offer ? formatCurrency(offer.totalPrice) : '—'}</b><span className="text-[11.5px] font-semibold text-muted-soft">{offer?.totalKms != null ? `${offer.totalKms} km` : 'No distance'}</span></div>
+      <span className={`flex-shrink-0 ${statusTag(offer?.status)}`}>{offer?.status || 'unknown'}</span>
+      <ChevronDown className={`h-4 w-4 flex-shrink-0 text-muted-soft transition-transform ${open ? 'rotate-180' : ''}`} />
+    </button>
+    {open ? <div className="space-y-5 border-t border-hairline p-5">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Fact label="Offer total" value={offer ? formatCurrency(offer.totalPrice) : null} /><Fact label="Distance" value={offer?.totalKms != null ? `${offer.totalKms} km` : null} /><Fact label="Extra kilometre" value={offer?.pricePerExtraKm != null ? formatCurrency(offer.pricePerExtraKm) : null} /><Fact label="Offer dates" value={offer ? `${formatDate(offer.startDate)} → ${formatDate(offer.endDate)}` : null} /></div>
+      {offer?.warning ? <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700">Safety warning: {offer.warning}</div> : null}
+      {booking ? <Link to={`/admin/bookings/${booking.id}`} state={{ from: recordPath }} className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800"><div><b className="text-sm">Booking created from this offer</b><p className="mt-1 text-xs">{booking.status} · {formatCurrency(booking.totalPrice)} · {formatDate(booking.startDate)} – {formatDate(booking.endDate)}</p></div><ExternalLink className="h-4 w-4 flex-shrink-0" /></Link> : null}
+      <div><h3 className={labelCls}>Driver note</h3><div className="mt-1.5"><ClampText text={response.note} className="text-[13px] leading-relaxed text-muted" /></div></div>
+      <div className="grid gap-5 lg:grid-cols-2">
+        <div className="rounded-xl border border-hairline p-4">
+          <div className="mb-3 flex items-center justify-between gap-3"><h3 className={labelCls}>Driver</h3>{driver ? <Link to={`/admin/drivers/${driver.id}`} state={{ from: recordPath }} className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-dark hover:underline">Driver record <ExternalLink className="h-3.5 w-3.5" /></Link> : null}</div>
+          <dl><DetailRow label="Email" value={driver?.email} /><DetailRow label="Phone" value={driver?.contactNumber} /><DetailRow label="Status"><span className={statusTag(driver?.driverStatus)}>{driver?.driverStatus || 'unknown'}</span></DetailRow><DetailRow label="Licence" value={[driver?.licenseType, driver?.licenseStatus].filter(Boolean).join(' · ') || null} /><DetailRow label="Member since"><Timestamp value={driver?.memberSince} /></DetailRow><DetailRow label="Driver ID" value={driver?.id} mono /><DetailRow label="Offer ID" value={response.id} mono /></dl>
+        </div>
+        <div className="rounded-xl border border-hairline p-4">
+          <div className="mb-3 flex items-center justify-between gap-3"><h3 className={labelCls}>Vehicle</h3>{vehicle ? <Link to={`/admin/vehicles/${vehicle.id}`} state={{ from: recordPath }} className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-dark hover:underline">Vehicle record <ExternalLink className="h-3.5 w-3.5" /></Link> : null}</div>
+          <div className="flex items-center gap-3">{vehicle?.images?.[0] ? <img src={vehicle.images[0]} alt="" className="h-16 w-20 rounded-xl object-cover" /> : <div className="grid h-16 w-20 place-items-center rounded-xl bg-canvas"><Car className="h-6 w-6 text-muted-soft" /></div>}<div><b className="text-sm text-ink">{vehicle?.model || 'Vehicle unavailable'}</b><p className="text-xs text-muted-soft">{vehicle?.year || '—'} · {vehicle?.seats || '—'} seats · {formatCurrency(vehicle?.pricePerDay)}/day</p></div></div>
+          {vehicle ? <>
+            <div className="mt-4 flex flex-wrap gap-1.5">{included.length ? included.map(({ key, label }) => <span key={key} className={tagClass('green')}>{label}</span>) : <span className="text-xs text-muted-soft">No features listed.</span>}</div>
+            {missing.length ? <p className="mt-3 text-[11.5px] leading-relaxed text-muted-soft"><b className="font-bold">Not included:</b> {missing.map(({ label }) => label).join(', ')}</p> : null}
+          </> : null}
+        </div>
+      </div>
+      <div className="rounded-xl border border-hairline">
+        <button type="button" onClick={() => setChatOpen((current) => !current)} aria-expanded={chatOpen} className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"><span className="inline-flex items-center gap-2 text-[12px] font-extrabold uppercase tracking-wide text-muted-soft"><MessageSquare className="h-3.5 w-3.5" /> Conversation · {messageCount} {messageCount === 1 ? 'message' : 'messages'}</span><ChevronDown className={`h-4 w-4 text-muted-soft transition-transform ${chatOpen ? 'rotate-180' : ''}`} /></button>
+        {chatOpen ? <div className="border-t border-hairline p-4"><MessageThread conversation={conversation} /></div> : null}
+      </div>
+    </div> : null}
+  </section>;
+};
+
+const ResponsesTab = ({ responses, recordPath }) => {
+  const keys = useMemo(() => responses.map((response, index) => response.id || `response-${index}`), [responses]);
+  // Collapsed by default so quotes can be compared at a glance; a lone quote opens straight away.
+  const [openKeys, setOpenKeys] = useState(() => new Set(keys.length === 1 ? keys : []));
+  if (!responses.length) return <EmptyState icon={Send} text="No driver has quoted on this brief yet." />;
+  const allOpen = keys.every((key) => openKeys.has(key));
+  const toggle = (key) => setOpenKeys((current) => { const next = new Set(current); if (next.has(key)) next.delete(key); else next.add(key); return next; });
+  return <div className="flex flex-col gap-3">
+    <div className="flex items-center justify-between gap-3 px-1"><p className="text-[12px] font-semibold text-muted-soft">{responses.length} {responses.length === 1 ? 'quote' : 'quotes'} · select a quote to see its details and chat</p><button type="button" onClick={() => setOpenKeys(new Set(allOpen ? [] : keys))} className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs font-bold text-ink hover:bg-canvas"><ChevronsUpDown className="h-3.5 w-3.5" /> {allOpen ? 'Collapse all' : 'Expand all'}</button></div>
+    {responses.map((response, index) => <ResponseCard key={keys[index]} response={response} index={index} open={openKeys.has(keys[index])} onToggle={() => toggle(keys[index])} recordPath={recordPath} />)}
+  </div>;
 };
 
 const BookingsTab = ({ bookings, recordPath }) => {
