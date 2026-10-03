@@ -8,6 +8,30 @@ import { putStateEntry, takeStateEntry, putExchangeEntry, takeExchangeEntry } fr
 const STATE_TTL_MS = 5 * 60 * 1000;
 const EXCHANGE_TTL_MS = 60 * 1000;
 
+/**
+ * Shown to drivers wherever a traveller's name appears, so it must never be
+ * derived from their email address. The local part of an email is usually enough
+ * for a driver to guess the whole address and contact the traveller off-platform,
+ * which is exactly what the chat redaction exists to prevent.
+ *
+ * Asgardeo releases `name` only when the application is configured to share it;
+ * self-registration otherwise fills given_name/family_name, so both are tried.
+ */
+export const TRAVELLER_FALLBACK_NAME = 'Traveller';
+
+export const displayNameFromClaims = (claims = {}) => {
+  const full = typeof claims.name === 'string' ? claims.name.trim() : '';
+  if (full) return full;
+
+  const given = typeof claims.given_name === 'string' ? claims.given_name.trim() : '';
+  const family = typeof claims.family_name === 'string' ? claims.family_name.trim() : '';
+  const composed = [given, family].filter(Boolean).join(' ').trim();
+
+  // preferred_username is deliberately not used: Asgardeo commonly sets it to the
+  // email address, which would reintroduce the leak this guards against.
+  return composed;
+};
+
 const buildFrontendUrl = (path) => new URL(path, process.env.CLIENT_ORIGIN);
 
 const redirectWithError = (res, code) => {
@@ -83,7 +107,16 @@ export const ssoCallback = async (req, res) => {
       return redirectWithError(res, 'account_role_conflict');
     }
 
+    const claimedName = displayNameFromClaims(claims);
+
     if (user) {
+      // Accounts created before this guard carry the email's local part as their
+      // name, which leaks the address to drivers. Repair it the next time the
+      // traveller signs in and Asgardeo gives us something real to use.
+      if (claimedName && user.name === normalizedEmail.split('@')[0]) {
+        user.name = claimedName;
+      }
+
       // Just-in-time link: an existing local traveller's first Asgardeo
       // login attaches their Asgardeo identity instead of creating a duplicate.
       if (!user.asgardeoSub) {
@@ -94,11 +127,16 @@ export const ssoCallback = async (req, res) => {
           user.verificationToken = undefined;
           user.verificationTokenExpires = undefined;
         }
+      }
+
+      // One save covers both the link and the name repair — a returning traveller
+      // hits the repair without ever entering the branch above.
+      if (user.isModified()) {
         await user.save();
       }
     } else {
       user = await User.create({
-        name: claims.name || normalizedEmail.split('@')[0],
+        name: claimedName || TRAVELLER_FALLBACK_NAME,
         email: normalizedEmail,
         asgardeoSub: claims.sub,
         authProvider: AUTH_PROVIDERS.ASGARDEO,
