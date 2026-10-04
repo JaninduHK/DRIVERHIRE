@@ -3,6 +3,7 @@ import User from '../models/User.js';
 import { createOfferToken } from './chatService.js';
 import { sendOfferReminderEmail } from './emailService.js';
 import buildAppUrl from '../utils/url.js';
+import { buildReplyAddress } from '../utils/emailReply.js';
 
 const HOUR = 60 * 60 * 1000;
 
@@ -76,6 +77,7 @@ export const sendOfferReminderForMessage = async (message) => {
     driverName: conversation.driver?.name,
     vehicleModel: conversation.vehicle?.model,
     offerUrl: buildAppUrl(`/offer/${token}`),
+    replyTo: buildReplyAddress(conversation._id),
   });
 
   return { sent: true, messageId: message._id.toString() };

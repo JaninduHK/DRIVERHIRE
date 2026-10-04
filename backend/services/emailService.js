@@ -14,8 +14,10 @@ const paragraphStyles =
 const footerStyles =
   'margin:0 0 6px 0;color:#94a3b8;font-size:13px;line-height:1.6;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;';
 
-const getDefaultFooterLines = () => [
-  `This is an automated message — please don't reply to this email. Need help? Contact us at ${getSupportEmail()}.`,
+const getDefaultFooterLines = ({ replyable = false } = {}) => [
+  replyable
+    ? `Replies to this email are posted to your chat with the driver. Need help? Contact us at ${getSupportEmail()}.`
+    : `This is an automated message — please don't reply to this email. Need help? Contact us at ${getSupportEmail()}.`,
   `You are receiving this email because you have an active account on ${getBrandName()}.`,
   `© ${new Date().getFullYear()} ${getBrandName()}`,
 ];
@@ -127,7 +129,7 @@ const parseFromAddress = (value = '') => {
   return { email: trimmed, name: brandName };
 };
 
-const buildEmailTemplate = ({ title, preheader, bodyLines = [], action, footerLines = [] }) => `
+const buildEmailTemplate = ({ title, preheader, bodyLines = [], action, footerLines = [], replyable = false }) => `
   <div style="background-color:#e2e8f0;padding:24px;">
     <div style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:20px;padding:32px;">
       ${
@@ -148,7 +150,7 @@ const buildEmailTemplate = ({ title, preheader, bodyLines = [], action, footerLi
             </div>`
           : ''
       }
-      ${renderFooter([...footerLines, ...getDefaultFooterLines()])}
+      ${renderFooter([...footerLines, ...getDefaultFooterLines({ replyable })])}
     </div>
   </div>
 `;
@@ -204,7 +206,7 @@ const logEmailResult = ({ to, subject }, status, extra = {}) => {
   }
 };
 
-const sendEmail = async ({ to, subject, html, text }) => {
+const sendEmail = async ({ to, subject, html, text, replyTo }) => {
   const recipients = normalizeRecipients(to);
 
   if (!recipients.length) {
@@ -232,6 +234,7 @@ const sendEmail = async ({ to, subject, html, text }) => {
     const response = await client.sendTransacEmail({
       sender: { email, name: name || getBrandName() },
       to: payload.to.map((address) => ({ email: address })),
+      ...(replyTo ? { replyTo: { email: replyTo, name: name || getBrandName() } } : {}),
       subject: payload.subject,
       htmlContent: payload.html,
       textContent: payload.text,
@@ -435,6 +438,7 @@ export const sendConversationNotificationEmail = async ({
   conversationUrl,
   isOffer = false,
   vehicleModel,
+  replyTo,
 }) => {
   if (!recipient?.email) {
     return;
@@ -462,7 +466,11 @@ export const sendConversationNotificationEmail = async ({
     });
   }
 
-  lines.push('Reply from your dashboard to keep the conversation moving.');
+  lines.push(
+    replyTo
+      ? 'Just reply to this email to answer, or open the conversation from your dashboard.'
+      : 'Reply from your dashboard to keep the conversation moving.'
+  );
 
   const html = buildEmailTemplate({
     title: isOffer ? 'New trip offer' : 'New message waiting',
@@ -472,11 +480,12 @@ export const sendConversationNotificationEmail = async ({
       label: 'Open conversation',
       url: conversationUrl || (recipient?.role === 'driver' ? buildUrl('/portal/driver/messages') : buildUrl('/dashboard')),
     },
+    replyable: Boolean(replyTo),
   });
 
   const text = `Hi ${recipient.name || 'there'},\n\n${sender?.name || 'Your contact'} ${
     isOffer ? 'sent you a trip offer' : 'sent you a new message'
-  }.\n\n${messagePreview || ''}\n\nOpen your ${
+  }.\n\n${messagePreview || ''}\n\n${replyTo ? 'Reply to this email, or open' : 'Open'} your ${
     recipient?.role === 'driver' ? 'driver portal' : 'dashboard'
   } to reply.`;
 
@@ -485,10 +494,11 @@ export const sendConversationNotificationEmail = async ({
     subject,
     html,
     text,
+    replyTo,
   });
 };
 
-export const sendOfferReminderEmail = async ({ recipient, driverName, vehicleModel, offerUrl }) => {
+export const sendOfferReminderEmail = async ({ recipient, driverName, vehicleModel, offerUrl, replyTo }) => {
   if (!recipient?.email || !offerUrl) {
     return;
   }
@@ -510,6 +520,7 @@ export const sendOfferReminderEmail = async ({ recipient, driverName, vehicleMod
       label: 'View offer',
       url: offerUrl,
     },
+    replyable: Boolean(replyTo),
   });
 
   const text = `Hi ${recipient.name || 'there'},\n\nYou still have an open trip offer from ${
@@ -521,6 +532,7 @@ export const sendOfferReminderEmail = async ({ recipient, driverName, vehicleMod
     subject: `Reminder: your trip offer from ${driverName || 'your driver'} is still open`,
     html,
     text,
+    replyTo,
   });
 };
 

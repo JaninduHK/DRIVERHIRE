@@ -5,6 +5,7 @@ import { sanitizeMessageContent } from '../utils/chatSanitizer.js';
 import { fingerprintMessage } from '../utils/messageFingerprint.js';
 import { sendConversationNotificationEmail } from './emailService.js';
 import buildAppUrl from '../utils/url.js';
+import { buildReplyAddress } from '../utils/emailReply.js';
 
 const HOUR = 60 * 60 * 1000;
 
@@ -85,6 +86,8 @@ const queueConversationNotification = (conversation, senderRole, message, offerT
         isOffer,
         conversationUrl,
         vehicleModel: conversation.vehicle?.model,
+        // Travellers can answer straight from their inbox; drivers reply in the portal/app.
+        replyTo: recipient.id === traveler.id ? buildReplyAddress(conversation._id) : null,
       });
     })
     .catch((error) => {
@@ -104,6 +107,7 @@ const queueConversationNotification = (conversation, senderRole, message, offerT
  * @param {string} params.content
  * @param {'text'|'offer'} [params.type='text']
  * @param {Object|null} [params.offer=null]
+ * @param {string} [params.emailMessageId] Message-ID of the email this was posted from, if any
  * @returns {Promise<import('../models/ChatMessage.js').default>}
  */
 export const createChatMessage = async ({
@@ -113,6 +117,7 @@ export const createChatMessage = async ({
   content,
   type = 'text',
   offer = null,
+  emailMessageId,
 }) => {
   const { sanitized, violations, warning } = sanitizeMessageContent(content);
 
@@ -139,6 +144,7 @@ export const createChatMessage = async ({
     readBy: [senderId],
     offerViewTokenHash,
     offerViewTokenExpires,
+    emailMessageId,
   });
 
   await message.save();

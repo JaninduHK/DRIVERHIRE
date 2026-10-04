@@ -15,6 +15,7 @@ import publicDriverRoutes from './routes/publicDriverRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import supportRoutes from './routes/supportRoutes.js';
 import offerInviteRoutes from './routes/offerInviteRoutes.js';
+import emailInboundRoutes from './routes/emailInboundRoutes.js';
 import { startReviewRequestScheduler } from './services/reviewRequestService.js';
 import { startOfferReminderScheduler } from './services/offerReminderService.js';
 import { startOfferExpiryScheduler } from './services/offerExpiryService.js';
@@ -80,6 +81,8 @@ app.use('/api/support', supportRoutes);
 // Deliberately its own unauthenticated router — never nested under
 // /api/chat, which applies the Asgardeo-derived `authenticate` middleware.
 app.use('/api/offer-invite', offerInviteRoutes);
+// Mail-provider webhook that turns email replies into chat messages.
+app.use('/api/email-inbound', emailInboundRoutes);
 
 // Error handler for multer and other errors
 app.use((error, req, res, next) => {

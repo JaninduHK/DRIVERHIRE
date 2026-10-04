@@ -152,6 +152,13 @@ const messageSchema = new mongoose.Schema(
       type: Date,
       index: true,
     },
+    // Set only on messages posted from an email reply (see
+    // controllers/emailInboundController.js). Unique so a webhook retry of the
+    // same email cannot post the reply twice.
+    emailMessageId: {
+      type: String,
+      index: { unique: true, sparse: true },
+    },
   },
   {
     timestamps: true,
