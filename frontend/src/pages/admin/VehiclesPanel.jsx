@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ArrowRight, Car, RotateCcw, Users } from 'lucide-react';
 import { formatDateTime, tagClass } from './adminFormatters.js';
+import PanelSearch from './PanelSearch.jsx';
 
 const STATUS_TAGS = { pending: 'amber', approved: 'green', rejected: 'red' };
 const STATUS_FILTERS = [
@@ -10,7 +11,7 @@ const STATUS_FILTERS = [
   { value: 'rejected', label: 'Rejected' },
 ];
 
-const VehiclesPanel = ({ state, onRetry, onView }) => {
+const VehiclesPanel = ({ state, onRetry, onView, searchValue = '', onSearchChange }) => {
   const { items: vehicles, loading, error } = state;
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -46,10 +47,11 @@ const VehiclesPanel = ({ state, onRetry, onView }) => {
     <div className="overflow-hidden rounded-[18px] bg-surface shadow-card">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline px-5 py-4">
         <div>
-          <b className="text-[15px] text-ink">All vehicles <span className="font-semibold text-muted-soft">({vehicles.length})</span></b>
+          <b className="text-[15px] text-ink">{searchValue.trim() ? 'Matching vehicles' : 'All vehicles'} <span className="font-semibold text-muted-soft">({vehicles.length})</span></b>
           <p className="mt-1 text-[11.5px] text-muted-soft">Select a vehicle to view its complete record and activity.</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {onSearchChange ? <PanelSearch value={searchValue} onChange={onSearchChange} placeholder="Search model, driver or email…" className="w-full sm:w-[260px]" /> : null}
           {STATUS_FILTERS.map((option) => (
             <button key={option.value} type="button" onClick={() => setStatusFilter(option.value)} className={tagClass(statusFilter === option.value ? (STATUS_TAGS[option.value] || 'blue') : 'grey')}>
               {option.label} {statusCounts[option.value] || 0}

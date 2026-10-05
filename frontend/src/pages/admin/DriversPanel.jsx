@@ -3,6 +3,7 @@ import { ArrowRight, CircleUserRound, RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fetchSettings as fetchAdminSettings, updateSettings as updateAdminSettings } from '../../services/adminApi.js';
 import { formatDateTime, tagClass } from './adminFormatters.js';
+import PanelSearch from './PanelSearch.jsx';
 
 const STATUS_TAGS = { pending: 'amber', approved: 'green', rejected: 'red' };
 
@@ -68,7 +69,7 @@ export const DriverApprovalSetting = () => {
   );
 };
 
-const DriversPanel = ({ state, onRetry, onView }) => {
+const DriversPanel = ({ state, onRetry, onView, searchValue = '', onSearchChange }) => {
   const { items: drivers, loading, error } = state;
 
   if (loading) {
@@ -88,9 +89,12 @@ const DriversPanel = ({ state, onRetry, onView }) => {
 
   return (
     <div className="overflow-hidden rounded-[18px] bg-surface shadow-card">
-      <div className="flex items-center justify-between gap-2 border-b border-hairline px-5 py-4">
-        <b className="text-[15px] text-ink">All drivers <span className="font-semibold text-muted-soft">({drivers.length})</span></b>
-        <span className="text-[11.5px] font-semibold text-muted-soft">Select a driver to view the complete record</span>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline px-5 py-4">
+        <div>
+          <b className="text-[15px] text-ink">{searchValue.trim() ? 'Matching drivers' : 'All drivers'} <span className="font-semibold text-muted-soft">({drivers.length})</span></b>
+          <p className="mt-1 text-[11.5px] text-muted-soft">Select a driver to view the complete record.</p>
+        </div>
+        {onSearchChange ? <PanelSearch value={searchValue} onChange={onSearchChange} placeholder="Search name, email, phone or location…" className="w-full sm:w-[300px]" /> : null}
       </div>
 
       {drivers.length === 0 ? (

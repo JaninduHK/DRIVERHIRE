@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, CalendarDays, MessageCircle, RotateCcw, XCircle } from 'lucide-react';
 import { Avatar } from '../../components/dashboard/primitives.jsx';
 import { formatCurrency, formatDate, formatDateTime, tagClass } from './adminFormatters.js';
+import PanelSearch from './PanelSearch.jsx';
 
 const OFFER_STATUS_TAGS = { pending: 'amber', accepted: 'green', declined: 'red' };
 
@@ -17,13 +18,18 @@ const ConversationsPanel = ({ state, onReload, onStatusChange, onDelete }) => {
   const { items, loading, error, updatingId, deletingId } = state;
   const [filterValue, setFilterValue] = useState('all');
   const [selectedId, setSelectedId] = useState('');
+  const [travellerQuery, setTravellerQuery] = useState('');
 
   const flaggedCount = useMemo(() => items.filter(hasFlaggedMessage).length, [items]);
 
-  const visibleThreads = useMemo(
-    () => (filterValue === 'flagged' ? items.filter(hasFlaggedMessage) : items),
-    [items, filterValue]
-  );
+  const visibleThreads = useMemo(() => {
+    const query = travellerQuery.trim().toLowerCase();
+    return items.filter(
+      (conversation) =>
+        (filterValue !== 'flagged' || hasFlaggedMessage(conversation)) &&
+        (!query || (conversation.traveler?.name || '').toLowerCase().includes(query))
+    );
+  }, [items, filterValue, travellerQuery]);
 
   useEffect(() => {
     if (!visibleThreads.some((c) => c.id === selectedId)) {
@@ -64,6 +70,9 @@ const ConversationsPanel = ({ state, onReload, onStatusChange, onDelete }) => {
           <button type="button" onClick={() => setFilterValue('flagged')} className={tagClass(filterValue === 'flagged' ? 'green' : 'grey')}>Flagged {flaggedCount}</button>
           <button type="button" onClick={() => setFilterValue('all')} className={tagClass(filterValue === 'all' ? 'green' : 'grey')}>All {items.length}</button>
         </div>
+        <div className="border-b border-hairline p-3.5">
+          <PanelSearch value={travellerQuery} onChange={setTravellerQuery} placeholder="Filter by traveller name…" />
+        </div>
         <div className="max-h-[640px] overflow-y-auto">
           {visibleThreads.length === 0 ? (
             <p className="p-5 text-center text-[13px] text-muted-soft">No threads match this filter.</p>
@@ -84,11 +93,9 @@ const ConversationsPanel = ({ state, onReload, onStatusChange, onDelete }) => {
                 >
                   <Avatar name={conversation.traveler?.name} tone="ink" className="h-[38px] w-[38px] flex-shrink-0 text-[13px]" />
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <b className="truncate text-[13.5px] text-ink">{conversation.traveler?.name || 'Traveller'}</b>
-                      <span className="flex-shrink-0 text-[11px] font-bold text-muted-soft">{formatDateTime(conversation.lastMessageAt)}</span>
-                    </div>
+                    <b className="block truncate text-[13.5px] text-ink">{conversation.traveler?.name || 'Traveller'} ↔ {conversation.driver?.name || 'Driver'}</b>
                     <p className="truncate text-[12px] font-semibold text-muted-soft">{lastMessage?.body || 'No messages yet.'}</p>
+                    <p className="mt-0.5 text-[11px] font-bold text-muted-soft">{formatDateTime(conversation.lastMessageAt)}</p>
                   </div>
                 </button>
               );

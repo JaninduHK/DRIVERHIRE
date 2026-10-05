@@ -783,9 +783,9 @@ const AdminDashboard = () => {
     [conversationState.items, term]
   );
   const filteredUsers = useMemo(() => usersState.items.filter((u) => matches(term, [u.name, u.email, u.contactNumber])), [usersState.items, term]);
-  const filteredDrivers = useMemo(() => driverState.items.filter((d) => matches(term, [d.name, d.email, d.address])), [driverState.items, term]);
+  const filteredDrivers = useMemo(() => driverState.items.filter((d) => matches(term, [d.name, d.email, d.contactNumber, d.address])), [driverState.items, term]);
   const filteredVehicles = useMemo(
-    () => vehicleState.items.filter((v) => matches(term, [v.model, v.driver?.name, v.driver?.address])),
+    () => vehicleState.items.filter((v) => matches(term, [v.model, v.year, v.driver?.name, v.driver?.email, v.driver?.address])),
     [vehicleState.items, term]
   );
   const filteredReviews = useMemo(
@@ -936,6 +936,8 @@ const AdminDashboard = () => {
         <DriversPanel
           state={{ ...driverState, items: filteredDrivers }}
           onRetry={loadDrivers}
+          searchValue={searchTerm}
+          onSearchChange={handleSearchChange}
           onView={(driverId) => navigate(`/admin/drivers/${driverId}`, { state: { from: `/admin?${searchParams.toString()}` } })}
         />
       </div>
@@ -945,6 +947,8 @@ const AdminDashboard = () => {
       <VehiclesPanel
         state={{ ...vehicleState, items: filteredVehicles }}
         onRetry={loadVehicles}
+        searchValue={searchTerm}
+        onSearchChange={handleSearchChange}
         onView={(vehicleId) => navigate(`/admin/vehicles/${vehicleId}`, { state: { from: `/admin?${searchParams.toString()}` } })}
       />
     );
