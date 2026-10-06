@@ -376,6 +376,35 @@ const TravelerDashboard = () => {
     }
   };
 
+  // An expired offer cannot be booked, so its button asks the driver for a fresh
+  // one instead: an ordinary chat message, which the driver answers with a new offer.
+  const [requestingOfferId, setRequestingOfferId] = useState('');
+  const handleRequestNewOffer = async (message) => {
+    if (!selectedConversationId || requestingOfferId) return;
+    setRequestingOfferId(message.id);
+    try {
+      const payload = await sendChatMessage(selectedConversationId, buildNewOfferRequest(message.offer));
+      const newMessage = payload?.message;
+      if (newMessage) {
+        setMessagesState((prev) => ({ ...prev, loading: false, error: '', items: [...prev.items, newMessage] }));
+        setConversationsState((prev) => ({
+          ...prev,
+          items: prev.items.map((item) =>
+            item.id === selectedConversationId
+              ? { ...item, lastMessage: newMessage, lastMessageAt: newMessage.createdAt, unreadCount: 0 }
+              : item
+          ),
+        }));
+      }
+      toast.success('Request sent. The driver will reply with a new offer.');
+      loadConversations({ silent: true });
+    } catch (error) {
+      toast.error(error?.message || 'Unable to request a new offer.');
+    } finally {
+      setRequestingOfferId('');
+    }
+  };
+
   const handleOfferBooking = (message) => {
     const vehicleRef = message?.offer?.vehicle;
     let vehicleId = null;
@@ -473,6 +502,8 @@ const TravelerDashboard = () => {
         onSendMessage={handleSendMessage}
         sending={sendingMessage}
         onBookOffer={handleOfferBooking}
+        onRequestNewOffer={handleRequestNewOffer}
+        requestingOfferId={requestingOfferId}
         onReloadConversations={() => loadConversations({ silent: false })}
       />
     );
@@ -1412,6 +1443,8 @@ const TravelerMessages = ({
   onSendMessage,
   sending,
   onBookOffer,
+  onRequestNewOffer,
+  requestingOfferId,
   onReloadConversations,
 }) => {
   const [search, setSearch] = useState('');
@@ -1455,7 +1488,7 @@ const TravelerMessages = ({
         Send a message to introduce yourself to the driver.
       </div>
     ) : (
-      messages.map((message) => {
+      messages.map((message, index) => {
         const isTraveller = message.sender?.role === 'guest' || message.senderRole === 'guest';
         const align = isTraveller ? 'end' : 'start';
         const meta = <MessageMeta message={message} mine={isTraveller} />;
@@ -1470,7 +1503,14 @@ const TravelerMessages = ({
         if (message.type === 'offer' && message.offer) {
           return (
             <div key={message.id}>
-              <TravelerOfferBubble message={message} align={align} onBook={() => onBookOffer(message)} />
+              <TravelerOfferBubble
+                message={message}
+                align={align}
+                onBook={() => onBookOffer(message)}
+                onRequestNew={() => onRequestNewOffer?.(message)}
+                requesting={requestingOfferId === message.id}
+                followUp={offerFollowUp(messages.slice(index + 1))}
+              />
               {meta}
             </div>
           );
@@ -1742,7 +1782,21 @@ const TravelerMessages = ({
   );
 };
 
-const TravelerOfferBubble = ({ message, align, onBook }) => {
+const NEW_OFFER_REQUEST_MARKER = 'has expired. Could you please send me a new offer?';
+
+const buildNewOfferRequest = (offer) =>
+  `Hi, your offer${offer?.vehicle?.model ? ` for the ${offer.vehicle.model}` : ''} ${NEW_OFFER_REQUEST_MARKER}`;
+
+// What has happened in the chat since an (expired) offer: the driver already
+// sent a newer one, or the traveller already asked for one. Derived from the
+// messages so it survives a reload and never lets the request be sent twice.
+const offerFollowUp = (laterMessages) => {
+  if (laterMessages.some((later) => later.type === 'offer' && later.offer)) return 'newer-offer';
+  if (laterMessages.some((later) => later.type !== 'offer' && (later.body || '').includes(NEW_OFFER_REQUEST_MARKER))) return 'requested';
+  return null;
+};
+
+const TravelerOfferBubble = ({ message, align, onBook, onRequestNew, requesting = false, followUp = null }) => {
   const { offer } = message;
   const start = formatDateLabel(offer.startDate);
   const end = formatDateLabel(offer.endDate);
@@ -1751,7 +1805,7 @@ const TravelerOfferBubble = ({ message, align, onBook }) => {
   const lapsed = expiry?.tone === 'expired';
   return (
     <div className={`flex ${align === 'end' ? 'justify-end' : 'justify-start'}`}>
-      <div className={`max-w-[88%] rounded-[16px] border-[1.5px] border-[#cdeede] bg-white p-3.5 shadow-[0_4px_14px_rgba(15,31,45,0.06)] ${lapsed ? 'opacity-70' : ''}`}>
+      <div className={`max-w-[88%] rounded-[16px] border-[1.5px] border-[#cdeede] bg-white p-3.5 shadow-[0_4px_14px_rgba(15,31,45,0.06)] ${lapsed && followUp ? 'opacity-70' : ''}`}>
         <div className="mb-2 flex items-center justify-between gap-3">
           <span className="rounded-[7px] bg-brand-tint px-2 py-[3px] text-[10.5px] font-extrabold uppercase text-brand-dark">Offer received</span>
           <div className="text-right">
@@ -1786,15 +1840,25 @@ const TravelerOfferBubble = ({ message, align, onBook }) => {
         <div className="mt-3 flex gap-2">
           <button
             type="button"
-            onClick={onBook}
-            disabled={lapsed}
+            onClick={lapsed ? onRequestNew : onBook}
+            disabled={lapsed && (requesting || Boolean(followUp))}
             className="flex-1 rounded-[11px] bg-brand py-[11px] text-[13.5px] font-bold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-brand"
           >
-            {lapsed ? 'Offer expired' : 'Accept offer'}
+            {!lapsed
+              ? 'Accept offer'
+              : requesting
+                ? 'Sending…'
+                : followUp === 'newer-offer'
+                  ? 'Newer offer below'
+                  : followUp === 'requested'
+                    ? 'New offer requested'
+                    : 'Request new offer'}
           </button>
-          <button type="button" onClick={() => toast('Reply in the chat to negotiate or decline.')} className="flex-shrink-0 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white px-4 py-[11px] text-[13.5px] font-bold text-ink transition hover:border-muted-soft">
-            Decline
-          </button>
+          {lapsed ? null : (
+            <button type="button" onClick={() => toast('Reply in the chat to negotiate or decline.')} className="flex-shrink-0 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white px-4 py-[11px] text-[13.5px] font-bold text-ink transition hover:border-muted-soft">
+              Decline
+            </button>
+          )}
         </div>
       </div>
     </div>
