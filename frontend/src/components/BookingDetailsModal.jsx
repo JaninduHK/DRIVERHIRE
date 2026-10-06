@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { X, Calendar, MapPin, Plane, User2, Mail, Phone, Car } from 'lucide-react';
+import { OfferInclusionList } from './OfferInclusions.jsx';
 
 const fmtDate = (value) => {
   if (!value) return '—';
@@ -127,6 +128,12 @@ const BookingDetailsModal = ({ booking, onClose }) => {
               {booking.flightNumber ? <Row icon={Plane} label="Flight number" value={booking.flightNumber} /> : null}
               {booking.arrivalTime ? <Row icon={Plane} label="Arrival time" value={booking.arrivalTime} /> : null}
               {booking.departureTime ? <Row icon={Plane} label="Departure time" value={booking.departureTime} /> : null}
+            </Section>
+          ) : null}
+
+          {Array.isArray(booking.offerInclusions) ? (
+            <Section title="Included in the offer">
+              <OfferInclusionList inclusions={booking.offerInclusions} className="sm:grid-cols-2" />
             </Section>
           ) : null}
 

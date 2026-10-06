@@ -22,6 +22,7 @@ import { fetchCurrentUser } from '../services/profileApi.js';
 import { getStoredToken, saveReturnPath, clearStoredToken } from '../services/authToken.js';
 import { DashboardSidebar, DriverDrawer, MobileHeader, Sheet } from '../components/dashboard/mobile.jsx';
 import ContactWarning from '../components/ContactWarning.jsx';
+import { OfferInclusionPicker } from '../components/OfferInclusions.jsx';
 import { Avatar } from '../components/dashboard/primitives.jsx';
 
 const NAV_ITEMS = [
@@ -81,6 +82,7 @@ const TourBriefsBoard = () => {
     totalPrice: '',
     totalKms: '',
     pricePerExtraKm: '',
+    inclusions: [],
     note: '',
   });
   const [sendingOffer, setSendingOffer] = useState(false);
@@ -175,6 +177,7 @@ const TourBriefsBoard = () => {
       totalPrice: '',
       totalKms: '',
       pricePerExtraKm: '',
+      inclusions: [],
       note: '',
     });
     setOfferModal({ open: true, brief });
@@ -189,6 +192,7 @@ const TourBriefsBoard = () => {
       totalPrice: '',
       totalKms: '',
       pricePerExtraKm: '',
+      inclusions: [],
       note: '',
     });
     setSendingOffer(false);
@@ -235,6 +239,7 @@ const TourBriefsBoard = () => {
         totalPrice: totalPriceNumber,
         totalKms: totalKmsNumber,
         pricePerExtraKm: extraKmNumber,
+        inclusions: offerForm.inclusions,
         note: offerForm.note,
       });
       toast.success('Offer sent via chat. Continue the conversation from Driver Messages.');
@@ -531,6 +536,11 @@ const TourBriefsBoard = () => {
                     <input type="number" min="0" max="1" step="0.001" inputMode="decimal" name="pricePerExtraKm" value={offerForm.pricePerExtraKm} onChange={handleOfferFieldChange} className={`mt-1 ${inputCls}`} required />
                     <p className="mt-1 text-[11px] text-muted-soft">In USD, between $0.00 and $1.00 per km.</p>
                   </div>
+                  <OfferInclusionPicker
+                    value={offerForm.inclusions}
+                    onChange={(inclusions) => setOfferForm((prev) => ({ ...prev, inclusions }))}
+                    labelClassName={labelCls}
+                  />
                   <div>
                     <label className={labelCls}>Personal note</label>
                     <textarea name="note" rows={3} value={offerForm.note} onChange={handleOfferFieldChange} placeholder="Share what's included, vehicle perks, or daily plan highlights." className="mt-1 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 py-2.5 text-sm text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none" />

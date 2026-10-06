@@ -156,6 +156,9 @@ const shapeBooking = (booking, review, req) => {
     travelerUser: booking.travelerUser ? booking.travelerUser.toString() : null,
     offerId: booking.offerMessage?._id ? booking.offerMessage._id.toString() : null,
     offerStatus: booking.offerMessage?.offer?.status || null,
+    // Offers cannot be edited after sending, so reading through the reference
+    // is the agreed terms; null for direct bookings and pre-inclusions offers.
+    offerInclusions: booking.offerMessage?.offer?.inclusions ?? null,
     conversationId: booking.offerMessage?.conversation
       ? toId(booking.offerMessage.conversation)
       : null,

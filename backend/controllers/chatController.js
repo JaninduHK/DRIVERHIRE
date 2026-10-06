@@ -18,6 +18,7 @@ import {
 import { observeDriverSend } from '../services/abuseSignals.js';
 import { notifyUser } from '../services/expoPushService.js';
 import { mapAssetUrls, buildAssetUrl } from '../utils/assetUtils.js';
+import { normalizeOfferInclusions } from '../utils/offerInclusions.js';
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
@@ -555,8 +556,16 @@ export const markConversationRead = async (req, res) => {
 
 export const sendOffer = async (req, res) => {
   const { conversationId } = req.params;
-  const { startDate: startInput, endDate: endInput, vehicleId, totalPrice, totalKms, pricePerExtraKm, note } =
-    req.body || {};
+  const {
+    startDate: startInput,
+    endDate: endInput,
+    vehicleId,
+    totalPrice,
+    totalKms,
+    pricePerExtraKm,
+    note,
+    inclusions,
+  } = req.body || {};
 
   if (!isValidObjectId(conversationId)) {
     return res.status(400).json({ message: 'Invalid conversation identifier.' });
@@ -674,6 +683,7 @@ export const sendOffer = async (req, res) => {
         pricePerExtraKm: normalizedExtraKmPrice,
         currency: 'USD',
         expiresAt: offerExpiresAt({ startDate }),
+        inclusions: normalizeOfferInclusions(inclusions),
         ...(inheritedBriefId ? { brief: inheritedBriefId } : {}),
       },
     });
@@ -746,6 +756,7 @@ export const fetchOffer = async (req, res) => {
         totalPrice: message.offer.totalPrice,
         totalKms: message.offer.totalKms,
         pricePerExtraKm: message.offer.pricePerExtraKm,
+        inclusions: message.offer.inclusions,
         currency: message.offer.currency,
         vehicle: withVehicleImageUrls(message.offer, req).vehicle,
         // Checkout prices an offer off this, not off the vehicle's daily-rate

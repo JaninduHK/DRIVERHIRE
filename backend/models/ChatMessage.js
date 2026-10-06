@@ -45,6 +45,13 @@ const offerSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // Keys from utils/offerInclusions.js that the driver declared as included
+    // in the price. Left unset (not []) on offers sent before inclusions existed
+    // or from an older app, so those render without an inclusions list.
+    inclusions: {
+      type: [String],
+      default: undefined,
+    },
     // Only set for offers created from a tour-brief response (respondToBrief);
     // direct in-chat offers (sendOffer) leave this unset.
     brief: {

@@ -7,7 +7,21 @@ export const SETTING_KEYS = {
   REVIEW_REQUESTS_START_AT: 'reviewRequestsStartAt',
   // Admin switch for the driver-type selector on the public quote form.
   BRIEF_DRIVER_TYPE_SELECTION: 'briefDriverTypeSelection',
+  // Which approved drivers get the "new traveller brief" email (see BRIEF_ALERT_EMAIL_MODES).
+  BRIEF_ALERT_EMAILS: 'briefAlertEmails',
 };
+
+// Every new brief emails every approved driver, which is by far the largest
+// share of outgoing mail and can exhaust the mail provider's daily quota —
+// starving verification and offer emails. Push notifications are unaffected.
+export const BRIEF_ALERT_EMAIL_MODES = {
+  ALL: 'all', // every approved driver
+  WITHOUT_APP: 'without-app', // only drivers with no mobile app installed (the rest get the push)
+  OFF: 'off', // nobody
+};
+
+export const normalizeBriefAlertEmailMode = (value) =>
+  Object.values(BRIEF_ALERT_EMAIL_MODES).includes(value) ? value : BRIEF_ALERT_EMAIL_MODES.ALL;
 
 const settingSchema = new mongoose.Schema(
   {

@@ -8,6 +8,7 @@ export interface BriefResponsePayload {
   totalPrice: number;
   totalKms: number;
   pricePerExtraKm: number;
+  inclusions?: string[];
   note?: string;
   message?: string;
   startDate?: string;

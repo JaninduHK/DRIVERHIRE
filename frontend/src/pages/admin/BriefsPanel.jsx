@@ -59,6 +59,77 @@ export const BriefDriverTypeSetting = () => {
   );
 };
 
+const BRIEF_ALERT_OPTIONS = [
+  { value: 'all', label: 'All drivers' },
+  { value: 'without-app', label: 'No app only' },
+  { value: 'off', label: 'Off' },
+];
+
+// Controls who gets the "new traveller brief" email. Each brief emails every
+// approved driver, so this is the main lever on daily email volume.
+export const BriefAlertEmailSetting = () => {
+  const [mode, setMode] = useState('all');
+  const [audience, setAudience] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchAdminSettings()
+      .then((data) => {
+        if (cancelled) return;
+        setMode(data?.settings?.briefAlertEmails || 'all');
+        setAudience(data?.settings?.briefAlertAudience || null);
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleSet = async (value) => {
+    if (value === mode || saving) return;
+    const previous = mode;
+    setSaving(true);
+    setMode(value);
+    try {
+      const response = await updateAdminSettings({ briefAlertEmails: value });
+      setMode(response?.settings?.briefAlertEmails || value);
+      toast.success('Brief alert emails updated.');
+    } catch (error) {
+      setMode(previous);
+      toast.error(error.message || 'Unable to update setting.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const total = audience?.approvedDrivers;
+  const withApp = audience?.withApp;
+  const hasCounts = Number.isFinite(total) && Number.isFinite(withApp);
+  const perBrief = { all: total, 'without-app': total - withApp, off: 0 }[mode];
+  const description = {
+    all: 'Every approved driver is emailed about each new brief.',
+    'without-app': 'Only drivers without the mobile app are emailed. Drivers with the app still get the push notification.',
+    off: 'No brief emails are sent. Drivers with the app still get the push notification; others must check the briefs board.',
+  }[mode];
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] bg-surface p-5 shadow-card">
+      <div>
+        <p className="text-[11px] font-extrabold uppercase tracking-wide text-muted-soft">Email volume</p>
+        <b className="text-[15px] text-ink">New brief alert emails</b>
+        <p className="mt-1 max-w-xl text-[12.5px] text-muted">{description}</p>
+        {hasCounts ? <p className="mt-1 text-[11.5px] font-semibold text-muted-soft">{perBrief} email{perBrief === 1 ? '' : 's'} per new brief · {total} approved drivers, {withApp} with the app</p> : null}
+      </div>
+      <div className="inline-flex rounded-xl bg-canvas p-1">
+        {BRIEF_ALERT_OPTIONS.map((option) => (
+          <button key={option.value} type="button" disabled={loading || saving} onClick={() => handleSet(option.value)} className={`min-w-[92px] rounded-lg px-4 py-2 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-60 ${mode === option.value ? 'bg-surface text-ink shadow-sm' : 'text-muted-soft hover:text-muted'}`}>{option.label}</button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const BriefsPanel = ({ state, onReload, onView }) => {
   const { items: briefs, loading, error } = state;
   const [statusFilter, setStatusFilter] = useState('all');

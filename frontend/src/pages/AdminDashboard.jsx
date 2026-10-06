@@ -65,7 +65,7 @@ import AdminShell from './admin/AdminShell.jsx';
 import OverviewPanel from './admin/OverviewPanel.jsx';
 import BookingsPanel from './admin/BookingsPanel.jsx';
 import DiscountsPanel from './admin/DiscountsPanel.jsx';
-import BriefsPanel, { BriefDriverTypeSetting } from './admin/BriefsPanel.jsx';
+import BriefsPanel, { BriefAlertEmailSetting, BriefDriverTypeSetting } from './admin/BriefsPanel.jsx';
 import AbusePanel from './admin/AbusePanel.jsx';
 import DeletedDriversPanel from './admin/DeletedDriversPanel.jsx';
 import OffersPanel from './admin/OffersPanel.jsx';
@@ -905,6 +905,7 @@ const AdminDashboard = () => {
     content = (
       <div className="flex flex-col gap-4">
         <BriefDriverTypeSetting />
+        <BriefAlertEmailSetting />
         <BriefsPanel
           state={{ ...briefState, items: filteredBriefs }}
           onReload={loadBriefs}

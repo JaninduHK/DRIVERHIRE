@@ -16,6 +16,7 @@ import {
 import toast from 'react-hot-toast';
 import { fetchVehicleDetails, checkVehicleAvailability, createVehicleBooking } from '../services/vehicleCatalogApi.js';
 import { fetchOffer } from '../services/chatApi.js';
+import { OfferInclusionList } from '../components/OfferInclusions.jsx';
 
 const EXTRAS = [
   'Child seat',
@@ -552,6 +553,7 @@ const Checkout = () => {
     ? {
         totalKms: offerState.offer.totalKms,
         pricePerExtraKm: offerState.offer.pricePerExtraKm,
+        inclusions: offerState.offer.inclusions,
         currency: offerState.offer.currency,
       }
     : null;
@@ -604,6 +606,7 @@ const Checkout = () => {
 
   // ---- Trip summary breakdown (shared by mobile drawer + desktop aside) ----
   const summaryRows = (
+    <>
     <dl className="m-0 grid gap-[9px] text-[13.5px]">
       {totalPrice ? <SummaryRow label="Estimated total" value={totalPrice} /> : null}
       {discountAmount ? (
@@ -617,6 +620,13 @@ const Checkout = () => {
         <SummaryRow label="Extra kilometres" value={`${formatRate(offerExtras.pricePerExtraKm)} per km`} />
       ) : null}
     </dl>
+    {Array.isArray(offerExtras?.inclusions) ? (
+      <div className="mt-3.5 border-t border-[#eef2f0] pt-3.5">
+        <p className="mb-1.5 text-[12.5px] font-bold text-ink">Included in this offer</p>
+        <OfferInclusionList inclusions={offerExtras.inclusions} />
+      </div>
+    ) : null}
+    </>
   );
 
   return (

@@ -20,6 +20,7 @@ import { fetchCurrentUser } from '../services/profileApi.js';
 import { clearStoredToken } from '../services/authToken.js';
 import { calculateCancellationFee } from '../lib/cancellationPolicy.js';
 import { VEHICLE_FEATURES } from '../constants/vehicleFeatures.js';
+import { OfferInclusionList } from '../components/OfferInclusions.jsx';
 import AdminShell from './admin/AdminShell.jsx';
 import AdminModal from './admin/AdminModal.jsx';
 import { ADMIN_NAV_GROUPS } from './admin/adminNav.js';
@@ -156,6 +157,7 @@ const OverviewTab = ({ data, onEdit, recordPath }) => {
           <dl>
             <DetailRow label="Booking ID" value={booking.id} mono />
             <DetailRow label="Offer ID" value={booking.offerId} mono />
+            {Array.isArray(booking.offerInclusions) ? <DetailRow label="Offer inclusions"><OfferInclusionList inclusions={booking.offerInclusions} /></DetailRow> : null}
             <DetailRow label="Conversation ID" value={booking.conversationId} mono />
             <DetailRow label="Created"><Timestamp value={booking.createdAt} /></DetailRow>
             <DetailRow label="Updated"><Timestamp value={booking.updatedAt} /></DetailRow>

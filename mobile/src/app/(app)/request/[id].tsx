@@ -10,6 +10,7 @@ import { ContactWarning } from '../../../components/ContactWarning';
 import { Button } from '../../../components/Button';
 import { TextField } from '../../../components/TextField';
 import { Chip } from '../../../components/Chip';
+import { OfferInclusionPicker } from '../../../components/OfferInclusions';
 import { IconButton } from '../../../components/IconButton';
 import { useBriefs, useVehicles, qk } from '../../../hooks/queries';
 import { respondToBrief } from '../../../api/briefs';
@@ -33,6 +34,7 @@ export default function RequestDetail() {
   const [price, setPrice] = useState(brief?.budget ? String(brief.budget) : '');
   const [includedKm, setIncludedKm] = useState('300');
   const [extraKm, setExtraKm] = useState('0.30');
+  const [inclusions, setInclusions] = useState<string[]>([]);
   const [note, setNote] = useState('');
 
   const respond = useMutation({
@@ -42,6 +44,7 @@ export default function RequestDetail() {
         totalPrice: Number(price),
         totalKms: Number(includedKm),
         pricePerExtraKm: Number(extraKm),
+        inclusions,
         note: note.trim() || undefined,
         message: note.trim() || undefined,
       }),
@@ -132,6 +135,7 @@ export default function RequestDetail() {
               <Text className={`mt-1 font-med text-[11px] ${Number(extraKm) > 1 ? 'text-danger' : 'text-muted-soft'}`}>
                 In USD, between $0.00 and $1.00 per km.
               </Text>
+              <OfferInclusionPicker className="mt-3.5" value={inclusions} onChange={setInclusions} />
 
               {activeVehicles.length > 0 ? (
                 <>

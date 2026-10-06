@@ -3,6 +3,7 @@ import { AlertTriangle, CalendarDays, MessageCircle, RotateCcw, XCircle } from '
 import { Avatar } from '../../components/dashboard/primitives.jsx';
 import { formatCurrency, formatDate, formatDateTime, tagClass } from './adminFormatters.js';
 import PanelSearch from './PanelSearch.jsx';
+import { OfferInclusionList } from '../../components/OfferInclusions.jsx';
 
 const OFFER_STATUS_TAGS = { pending: 'amber', accepted: 'green', declined: 'red' };
 
@@ -194,6 +195,7 @@ const ConversationDetail = ({ conversation, isUpdating, isDeleting, onStatusChan
                       {formatDate(offer.startDate)} – {formatDate(offer.endDate)} · {offer.totalKms} km included · ${offer.pricePerExtraKm}/extra km
                     </p>
                     <p className="mt-1.5 text-[15px] font-extrabold text-brand-dark">{formatCurrency(offer.totalPrice || 0)}</p>
+                    <OfferInclusionList inclusions={offer.inclusions} className="mt-2" />
                     {message.body ? (
                       <p className="mt-2 whitespace-pre-line border-t border-hairline pt-2 text-[12px] leading-relaxed text-muted-soft">{message.body}</p>
                     ) : null}

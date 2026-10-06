@@ -5,7 +5,12 @@ import ChatMessage from '../models/ChatMessage.js';
 import Vehicle, { VEHICLE_STATUS } from '../models/Vehicle.js';
 import User from '../models/User.js';
 import { DRIVER_STATUS, USER_ROLES, LICENSE_TYPES, LICENSE_STATUS } from '../models/User.js';
-import { getSetting, SETTING_KEYS } from '../models/Setting.js';
+import {
+  getSetting,
+  SETTING_KEYS,
+  BRIEF_ALERT_EMAIL_MODES,
+  normalizeBriefAlertEmailMode,
+} from '../models/Setting.js';
 import { createChatMessage } from '../services/chatService.js';
 import { checkMessagingSuspension } from '../utils/messagingSuspension.js';
 import { observeDriverSend } from '../services/abuseSignals.js';
@@ -16,6 +21,7 @@ import { sanitizeMessageContent } from '../utils/chatSanitizer.js';
 import { offerExpiresAt } from '../utils/offerExpiry.js';
 import { hasVehicleDateConflict, VEHICLE_UNAVAILABLE_MESSAGE } from '../utils/vehicleAvailability.js';
 import { mapAssetUrls } from '../utils/assetUtils.js';
+import { normalizeOfferInclusions } from '../utils/offerInclusions.js';
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
@@ -116,7 +122,15 @@ const notifyApprovedDriversOfBrief = async (brief) => {
       return;
     }
 
-    await sendBriefAlertEmail({ drivers, brief });
+    const emailMode = normalizeBriefAlertEmailMode(await getSetting(SETTING_KEYS.BRIEF_ALERT_EMAILS));
+    const emailRecipients =
+      emailMode === BRIEF_ALERT_EMAIL_MODES.OFF
+        ? []
+        : emailMode === BRIEF_ALERT_EMAIL_MODES.WITHOUT_APP
+          ? drivers.filter((driver) => !driver.expoPushTokens?.length)
+          : drivers;
+
+    await sendBriefAlertEmail({ drivers: emailRecipients, brief });
 
     // Push to approved drivers' mobile apps (best effort).
     const tokens = drivers.flatMap((d) => d.expoPushTokens || []);
@@ -274,13 +288,23 @@ export const listOpenBriefs = async (req, res) => {
       // brief whose dates have passed never shows up in the window between sweeps.
       endDate: { $gte: expiredBefore() },
       'responses.driver': { $ne: req.user.id },
+      // A request that has collected all the quotes its traveller asked for is
+      // full: nobody new can quote, so it leaves the board for everyone. Drivers
+      // who already quoted keep their chat. Filtered in the query (not after)
+      // so full requests don't use up the page limit below.
+      $expr: {
+        $or: [
+          { $lte: [{ $ifNull: ['$maxOffers', 0] }, 0] },
+          { $lt: [{ $size: { $ifNull: ['$responses', []] } }, '$maxOffers'] },
+        ],
+      },
     })
       .populate('traveler', 'id name country')
       .sort({ createdAt: -1 })
       .limit(100);
 
-    // Restricted briefs stay on the board so the driver can see WHY they cannot
-    // quote, rather than the brief silently vanishing. Their licence is needed to
+    // Licence-restricted briefs stay on the board so the driver can see WHY they
+    // cannot quote, rather than the brief silently vanishing. Their licence is needed to
     // work that out, and is the same for every brief, so fetch it once.
     const driver = await User.findById(req.user.id).select('licenseType licenseStatus').lean();
     const viewer = {
@@ -407,6 +431,7 @@ export const respondToBrief = async (req, res) => {
     note = '',
     startDate: startInput,
     endDate: endInput,
+    inclusions,
   } = req.body || {};
 
   if (!vehicleId || !isValidObjectId(vehicleId)) {
@@ -547,6 +572,7 @@ Total: $${normalizedPrice.toFixed(0)} (includes ${normalizedKms} km)`;
         pricePerExtraKm: normalizedExtraKmPrice,
         currency: 'USD',
         expiresAt: offerExpiresAt({ startDate: offerStart }),
+        inclusions: normalizeOfferInclusions(inclusions),
         brief: brief.id,
       },
     });

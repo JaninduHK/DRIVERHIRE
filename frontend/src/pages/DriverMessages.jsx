@@ -34,6 +34,7 @@ import { Avatar } from '../components/dashboard/primitives.jsx';
 import BookingDetailsModal from '../components/BookingDetailsModal.jsx';
 import { clearStoredToken, getStoredUser } from '../services/authToken.js';
 import OfferVehicleImages from '../components/OfferVehicleImages.jsx';
+import { OfferInclusionList, OfferInclusionPicker } from '../components/OfferInclusions.jsx';
 import BriefRequestBubble from '../components/BriefRequestBubble.jsx';
 import MessageMeta from '../components/MessageMeta.jsx';
 import { offerExpiryNotice, offerExpiryClass } from '../lib/offerExpiry.js';
@@ -83,6 +84,7 @@ const DriverMessages = () => {
     totalPrice: '',
     totalKms: '',
     pricePerExtraKm: '',
+    inclusions: [],
     note: '',
   });
   const [sendingOffer, setSendingOffer] = useState(false);
@@ -332,7 +334,7 @@ const DriverMessages = () => {
       return;
     }
 
-    const { startDate, endDate, vehicleId, totalPrice, totalKms, pricePerExtraKm, note } = offerForm;
+    const { startDate, endDate, vehicleId, totalPrice, totalKms, pricePerExtraKm, inclusions, note } = offerForm;
 
     if (!startDate || !endDate || !vehicleId || !totalPrice || !totalKms) {
       toast.error('Fill in the offer details before sending.');
@@ -354,6 +356,7 @@ const DriverMessages = () => {
         totalPrice: Number(totalPrice),
         totalKms: Number(totalKms),
         pricePerExtraKm: Number(pricePerExtraKm || 0),
+        inclusions,
         note,
       });
 
@@ -380,6 +383,7 @@ const DriverMessages = () => {
         totalPrice: '',
         totalKms: '',
         pricePerExtraKm: '',
+        inclusions: [],
         note: '',
       }));
       setOfferOpen(false);
@@ -905,6 +909,11 @@ const DriverMessages = () => {
                 <input type="number" min="0" max="1" step="0.001" inputMode="decimal" value={offerForm.pricePerExtraKm} onChange={(e) => handleOfferChange('pricePerExtraKm', e.target.value)} className={`mt-1 ${inputCls}`} />
                 <p className="mt-1 text-[11px] text-muted-soft">In USD, between $0.00 and $1.00 per km.</p>
               </div>
+              <OfferInclusionPicker
+                value={offerForm.inclusions}
+                onChange={(next) => handleOfferChange('inclusions', next)}
+                labelClassName={labelCls}
+              />
               <div>
                 <label className={labelCls}>Notes to traveller (optional)</label>
                 <textarea rows={3} value={offerForm.note} onChange={(e) => handleOfferChange('note', e.target.value)} placeholder="Share highlights, inclusions, or expectations." className="mt-1 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 py-2.5 text-sm text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none" />
@@ -963,6 +972,7 @@ const OfferBubble = ({ message, align }) => {
         <div className="mt-0.5 text-[12px] text-muted-soft">
           {offer.totalKms} km included · {formatRate(offer.pricePerExtraKm)} / extra km
         </div>
+        <OfferInclusionList inclusions={offer.inclusions} className="mt-2" />
         {message.body ? (
           <div className="mt-1.5 whitespace-pre-wrap text-[12px] leading-relaxed text-muted">{message.body}</div>
         ) : null}

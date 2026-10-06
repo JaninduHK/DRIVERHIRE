@@ -52,6 +52,7 @@ import DriverProfileSheet from '../components/DriverProfileSheet.jsx';
 import { LicenseIconBadge, LicenseTypeChip } from '../components/LicenseBadge.jsx';
 import DeleteAccountCard from '../components/DeleteAccountCard.jsx';
 import OfferVehicleImages from '../components/OfferVehicleImages.jsx';
+import { OfferInclusionList } from '../components/OfferInclusions.jsx';
 import BriefRequestBubble from '../components/BriefRequestBubble.jsx';
 import MessageMeta from '../components/MessageMeta.jsx';
 import { offerExpiryNotice, offerExpiryClass } from '../lib/offerExpiry.js';
@@ -1774,6 +1775,7 @@ const TravelerOfferBubble = ({ message, align, onBook }) => {
         <div className="mt-0.5 text-[12px] text-muted-soft">
           {offer.totalKms} km included · {formatRate(offer.pricePerExtraKm)} / extra km
         </div>
+        <OfferInclusionList inclusions={offer.inclusions} className="mt-2" />
         {message.body ? <div className="mt-1.5 whitespace-pre-wrap text-[12px] leading-relaxed text-muted">{message.body}</div> : null}
         {expiry ? (
           <div className={`mt-2 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold ${offerExpiryClass(expiry.tone)}`}>

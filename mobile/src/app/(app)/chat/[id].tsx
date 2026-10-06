@@ -24,6 +24,7 @@ import { IconButton } from '../../../components/IconButton';
 import { Button } from '../../../components/Button';
 import { TextField } from '../../../components/TextField';
 import { Chip } from '../../../components/Chip';
+import { OfferInclusionList, OfferInclusionPicker } from '../../../components/OfferInclusions';
 import { Loading } from '../../../components/states';
 import { BookingDetailsSheet } from '../../../components/BookingDetailsSheet';
 import { DatePickerField } from '../../../components/DatePickerField';
@@ -289,6 +290,7 @@ function Bubble({ message, mine }: { message: ChatMessage; mine: boolean }) {
             {kmIncluded} km included{extraKmRate != null ? ` · ${formatRate(extraKmRate)} / extra km` : ''}
           </Text>
         ) : null}
+        <OfferInclusionList inclusions={o.inclusions} className="mt-2" />
         {o.note ? (
           <Text className="mt-1.5 font-med text-muted-soft" style={{ fontSize: 12 * scale, lineHeight: 16 * scale }}>
             {o.note}
@@ -432,6 +434,7 @@ function OfferModal({
   const [totalPrice, setTotalPrice] = useState('');
   const [totalKms, setTotalKms] = useState('300');
   const [extraKm, setExtraKm] = useState('0.30');
+  const [inclusions, setInclusions] = useState<string[]>([]);
   const [note, setNote] = useState('');
 
   // Keep a valid (approved) vehicle selected once the list loads.
@@ -448,6 +451,7 @@ function OfferModal({
         totalPrice: Number(totalPrice),
         totalKms: Number(totalKms),
         pricePerExtraKm: Number(extraKm),
+        inclusions,
         note: note.trim() || undefined,
       }),
     onSuccess: onSent,
@@ -527,6 +531,7 @@ function OfferModal({
             <Text className={`mt-1 font-med text-[11px] ${Number(extraKm) > 1 ? 'text-danger' : 'text-muted-soft'}`}>
               In USD, between $0.00 and $1.00 per km.
             </Text>
+            <OfferInclusionPicker className="mt-3.5" value={inclusions} onChange={setInclusions} />
 
             <TextField
               className="mt-3"

@@ -63,6 +63,7 @@ export const getOfferInvite = async (req, res) => {
         totalPrice: offer.totalPrice,
         totalKms: offer.totalKms,
         pricePerExtraKm: offer.pricePerExtraKm,
+        inclusions: offer.inclusions,
         currency: offer.currency,
         status: offer.status,
         note: message.body,

@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { CalendarDays, Car, Loader2, LogIn, Route } from 'lucide-react';
 import { fetchOfferInvite } from '../services/offerApi.js';
 import { redirectToSsoLogin } from '../services/authToken.js';
+import { OfferInclusionList } from '../components/OfferInclusions.jsx';
 
 const formatDateRange = (start, end) => {
   if (!start || !end) return '';
@@ -121,6 +122,7 @@ const OfferFromEmail = () => {
             <span>{invite.vehicleModel}</span>
           </div>
         ) : null}
+        <OfferInclusionList inclusions={invite.inclusions} className="border-t border-[#e2e8ea] pt-3" />
       </div>
 
       {price ? (

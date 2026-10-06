@@ -21,6 +21,7 @@ import { deleteBrief, fetchBriefDetails, updateBrief } from '../services/adminAp
 import { fetchCurrentUser } from '../services/profileApi.js';
 import { clearStoredToken } from '../services/authToken.js';
 import { VEHICLE_FEATURES } from '../constants/vehicleFeatures.js';
+import { OfferInclusionList } from '../components/OfferInclusions.jsx';
 import AdminShell from './admin/AdminShell.jsx';
 import AdminModal from './admin/AdminModal.jsx';
 import { ADMIN_NAV_GROUPS } from './admin/adminNav.js';
@@ -145,6 +146,7 @@ const ResponseCard = ({ response, index, open, onToggle, recordPath }) => {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><Fact label="Offer total" value={offer ? formatCurrency(offer.totalPrice) : null} /><Fact label="Distance" value={offer?.totalKms != null ? `${offer.totalKms} km` : null} /><Fact label="Extra kilometre" value={offer?.pricePerExtraKm != null ? formatCurrency(offer.pricePerExtraKm) : null} /><Fact label="Offer dates" value={offer ? `${formatDate(offer.startDate)} → ${formatDate(offer.endDate)}` : null} /></div>
       {offer?.warning ? <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700">Safety warning: {offer.warning}</div> : null}
       {booking ? <Link to={`/admin/bookings/${booking.id}`} state={{ from: recordPath }} className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800"><div><b className="text-sm">Booking created from this offer</b><p className="mt-1 text-xs">{booking.status} · {formatCurrency(booking.totalPrice)} · {formatDate(booking.startDate)} – {formatDate(booking.endDate)}</p></div><ExternalLink className="h-4 w-4 flex-shrink-0" /></Link> : null}
+      {Array.isArray(offer?.inclusions) ? <div><h3 className={labelCls}>Offer inclusions</h3><OfferInclusionList inclusions={offer.inclusions} className="mt-1.5 sm:grid-cols-2 xl:grid-cols-3" /></div> : null}
       <div><h3 className={labelCls}>Driver note</h3><div className="mt-1.5"><ClampText text={response.note} className="text-[13px] leading-relaxed text-muted" /></div></div>
       <div className="grid gap-5 lg:grid-cols-2">
         <div className="rounded-xl border border-hairline p-4">

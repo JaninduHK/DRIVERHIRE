@@ -152,6 +152,8 @@ export interface Offer {
   totalPrice?: number;
   totalKms?: number;
   pricePerExtraKm?: number;
+  /** Keys from constants/offerInclusions; absent on offers sent before inclusions existed. */
+  inclusions?: string[] | null;
   includedKm?: number; // legacy alias
   extraKmRate?: number; // legacy alias
   vehicle?: Vehicle | null;

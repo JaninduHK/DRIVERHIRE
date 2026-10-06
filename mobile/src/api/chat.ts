@@ -22,6 +22,7 @@ export interface OfferPayload {
   totalPrice: number;
   totalKms: number;
   pricePerExtraKm: number;
+  inclusions?: string[];
   note?: string;
 }
 

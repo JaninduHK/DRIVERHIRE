@@ -10,7 +10,13 @@ import ChatConversation from '../models/ChatConversation.js';
 import ChatMessage from '../models/ChatMessage.js';
 import DriverCommission, { COMMISSION_STATUS } from '../models/DriverCommission.js';
 import { OBSERVE_THRESHOLDS } from '../services/abuseSignals.js';
-import { getSetting, setSetting, SETTING_KEYS } from '../models/Setting.js';
+import {
+  getSetting,
+  setSetting,
+  SETTING_KEYS,
+  BRIEF_ALERT_EMAIL_MODES,
+  normalizeBriefAlertEmailMode,
+} from '../models/Setting.js';
 import { DEFAULT_BANK_DETAILS } from '../config/bankDetailsDefaults.js';
 import {
   sendDriverStatusEmail,
@@ -161,6 +167,7 @@ const shapeBooking = (booking, req) => {
     driver: shapeDriver(booking.driver),
     offerId: booking.offerMessage?._id ? booking.offerMessage._id.toString() : null,
     offerStatus: booking.offerMessage?.offer?.status || null,
+    offerInclusions: booking.offerMessage?.offer?.inclusions ?? null,
     conversationId: booking.offerMessage?.conversation
       ? toId(booking.offerMessage.conversation)
       : null,
@@ -227,6 +234,7 @@ const shapeOffer = (message) => ({
   totalPrice: message.offer?.totalPrice,
   totalKms: message.offer?.totalKms,
   pricePerExtraKm: message.offer?.pricePerExtraKm,
+  inclusions: message.offer?.inclusions,
   currency: message.offer?.currency,
   vehicle: message.offer?.vehicle
     ? {
@@ -297,6 +305,7 @@ const shapeMessage = (message) => ({
         totalPrice: message.offer.totalPrice,
         totalKms: message.offer.totalKms,
         pricePerExtraKm: message.offer.pricePerExtraKm,
+        inclusions: message.offer.inclusions,
         currency: message.offer.currency,
         status: message.offer.status,
       }
@@ -3026,6 +3035,24 @@ const resolveBankDetails = async () => {
   return { ...DEFAULT_BANK_DETAILS, ...(stored && typeof stored === 'object' ? stored : {}) };
 };
 
+const resolveBriefAlertEmails = async () =>
+  normalizeBriefAlertEmailMode(await getSetting(SETTING_KEYS.BRIEF_ALERT_EMAILS));
+
+// How many emails one new brief costs under each mode, so the admin can see
+// what the brief-alert setting saves before changing it.
+const countBriefAlertAudience = async () => {
+  const approved = {
+    role: USER_ROLES.DRIVER,
+    driverStatus: DRIVER_STATUS.APPROVED,
+    email: { $exists: true, $ne: '' },
+  };
+  const [approvedDrivers, withApp] = await Promise.all([
+    User.countDocuments(approved),
+    User.countDocuments({ ...approved, 'expoPushTokens.0': { $exists: true } }),
+  ]);
+  return { approvedDrivers, withApp };
+};
+
 // Read the current admin-configurable settings.
 export const getAdminSettings = async (_req, res) => {
   try {
@@ -3035,7 +3062,15 @@ export const getAdminSettings = async (_req, res) => {
     const bankDetails = await resolveBankDetails();
     const briefDriverTypeSelection =
       (await getSetting(SETTING_KEYS.BRIEF_DRIVER_TYPE_SELECTION, true)) !== false;
-    return res.json({ settings: { driverAutoApproval, bankDetails, briefDriverTypeSelection } });
+    return res.json({
+      settings: {
+        driverAutoApproval,
+        bankDetails,
+        briefDriverTypeSelection,
+        briefAlertEmails: await resolveBriefAlertEmails(),
+        briefAlertAudience: await countBriefAlertAudience(),
+      },
+    });
   } catch (error) {
     console.error('Get admin settings error:', error);
     return res.status(500).json({ message: 'Unable to load settings.' });
@@ -3046,12 +3081,18 @@ export const getAdminSettings = async (_req, res) => {
 // shown to drivers for commission payment.
 export const updateAdminSettings = async (req, res) => {
   try {
-    const { driverAutoApproval, bankDetails, briefDriverTypeSelection } = req.body || {};
+    const { driverAutoApproval, bankDetails, briefDriverTypeSelection, briefAlertEmails } = req.body || {};
     if (typeof driverAutoApproval === 'boolean') {
       await setSetting(SETTING_KEYS.DRIVER_AUTO_APPROVAL, driverAutoApproval);
     }
     if (typeof briefDriverTypeSelection === 'boolean') {
       await setSetting(SETTING_KEYS.BRIEF_DRIVER_TYPE_SELECTION, briefDriverTypeSelection);
+    }
+    if (briefAlertEmails !== undefined) {
+      if (!Object.values(BRIEF_ALERT_EMAIL_MODES).includes(briefAlertEmails)) {
+        return res.status(400).json({ message: 'Invalid brief alert email mode.' });
+      }
+      await setSetting(SETTING_KEYS.BRIEF_ALERT_EMAILS, briefAlertEmails);
     }
     if (bankDetails && typeof bankDetails === 'object' && !Array.isArray(bankDetails)) {
       const existing = await getSetting(SETTING_KEYS.PLATFORM_BANK_DETAILS, {});
@@ -3074,6 +3115,7 @@ export const updateAdminSettings = async (req, res) => {
         bankDetails: currentBankDetails,
         briefDriverTypeSelection:
           (await getSetting(SETTING_KEYS.BRIEF_DRIVER_TYPE_SELECTION, true)) !== false,
+        briefAlertEmails: await resolveBriefAlertEmails(),
       },
     });
   } catch (error) {
