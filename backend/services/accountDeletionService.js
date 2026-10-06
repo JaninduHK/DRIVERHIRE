@@ -5,6 +5,7 @@ import Review from '../models/Review.js';
 import Vehicle from '../models/Vehicle.js';
 import DriverCommission from '../models/DriverCommission.js';
 import RefreshToken from '../models/RefreshToken.js';
+import TourBrief from '../models/TourBrief.js';
 import * as cloudinaryService from './cloudinaryService.js';
 import { archiveDriverForDeletion } from './driverArchiveService.js';
 
@@ -140,6 +141,15 @@ export const anonymizeUser = async (userId, { actorId = null } = {}) => {
     { $set: { travelerName: ANONYMOUS_TRAVELLER_NAME } }
   );
 
+  // Nobody is left to read a quote or book, so the traveller's open quote
+  // requests come off the driver board. Quotes already sent stay in the drivers'
+  // chats; the hourly sweep (services/briefExpiryService.js) repeats this as a
+  // safety net.
+  const briefClose = await TourBrief.updateMany(
+    { traveler: user._id, status: 'open' },
+    { $set: { status: 'closed' } }
+  );
+
   const vehicleScrub = await Vehicle.updateMany({ driver: user._id }, { $set: { images: [] } });
 
   // Sessions have no retention value and must not outlive the account.
@@ -176,6 +186,7 @@ export const anonymizeUser = async (userId, { actorId = null } = {}) => {
     actorId: actorId ? actorId.toString() : null,
     bookingsAnonymised: bookingScrub.modifiedCount,
     reviewsAnonymised: reviewScrub.modifiedCount,
+    briefsClosed: briefClose.modifiedCount,
     vehiclesCleared: vehicleScrub.modifiedCount,
     refreshTokensRevoked: tokenScrub.deletedCount,
     assetsRemoved,

@@ -692,11 +692,13 @@ const TravelerOverview = ({
             </div>
           </div>
 
-          <div className="mt-[22px] grid grid-cols-[1.3fr_1fr] gap-5">
-            <div className="rounded-[18px] bg-white p-5 shadow-card">
-              <div className="mb-3.5 flex items-center justify-between">
+          {/* minmax(0, …): a plain fr track grows to fit its longest unwrapped line, so one
+              long message preview would push the page wider than the screen. */}
+          <div className="mt-[22px] grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-5">
+            <div className="min-w-0 rounded-[18px] bg-white p-5 shadow-card">
+              <div className="mb-3.5 flex items-center justify-between gap-3">
                 <b className="text-[16px] text-ink">Upcoming trips</b>
-                <button type="button" onClick={() => onNavigate('bookings')} className="text-[13px] font-bold text-brand-dark">
+                <button type="button" onClick={() => onNavigate('bookings')} className="flex-shrink-0 whitespace-nowrap text-[13px] font-bold text-brand-dark">
                   View all
                 </button>
               </div>
@@ -710,7 +712,7 @@ const TravelerOverview = ({
                 </div>
               )}
             </div>
-            <div className="rounded-[18px] bg-white p-5 shadow-card">
+            <div className="min-w-0 rounded-[18px] bg-white p-5 shadow-card">
               <div className="mb-3.5 flex items-center justify-between">
                 <b className="text-[16px] text-ink">Recent messages</b>
                 {unreadCount > 0 ? (

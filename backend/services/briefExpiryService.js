@@ -1,4 +1,5 @@
 import TourBrief from '../models/TourBrief.js';
+import User from '../models/User.js';
 
 const HOUR = 60 * 60 * 1000;
 const INTERVAL_MS = HOUR;
@@ -26,7 +27,23 @@ export const runBriefExpirySweep = async () => {
     if (closed > 0) {
       console.info(`Brief expiry sweep: closed ${closed} expired brief(s).`);
     }
-    return { closed };
+
+    // A deleted traveller can never read a quote or book. Account deletion
+    // closes their requests itself (services/accountDeletionService.js); this
+    // catches accounts erased before that existed, and anything it missed.
+    const deletedTravellers = await User.distinct('_id', { deletedAt: { $ne: null } });
+    let orphaned = 0;
+    if (deletedTravellers.length > 0) {
+      const orphanResult = await TourBrief.updateMany(
+        { status: 'open', traveler: { $in: deletedTravellers } },
+        { $set: { status: 'closed' } }
+      );
+      orphaned = orphanResult.modifiedCount ?? 0;
+      if (orphaned > 0) {
+        console.info(`Brief expiry sweep: closed ${orphaned} brief(s) from deleted accounts.`);
+      }
+    }
+    return { closed: closed + orphaned };
   } catch (error) {
     console.error('Brief expiry sweep error:', error);
     return { closed: 0 };
