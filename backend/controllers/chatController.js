@@ -19,6 +19,7 @@ import { observeDriverSend } from '../services/abuseSignals.js';
 import { notifyUser } from '../services/expoPushService.js';
 import { mapAssetUrls, buildAssetUrl } from '../utils/assetUtils.js';
 import { normalizeOfferInclusions } from '../utils/offerInclusions.js';
+import { travellerSnapshotFor } from '../utils/travellerContact.js';
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
@@ -318,7 +319,7 @@ const withReadReceipts = (messages, { viewerId, recipientId }) =>
 
 // The active booking (if any) between a conversation's two parties, shaped for the chat
 // notice + the booking-details view on both ends.
-const findConversationBooking = async (conversation) => {
+const findConversationBooking = async (conversation, viewer) => {
   const booking = await Booking.findOne({
     driver: conversation.driver,
     travelerUser: conversation.traveler,
@@ -337,7 +338,7 @@ const findConversationBooking = async (conversation) => {
     status: booking.status,
     startDate: booking.startDate,
     endDate: booking.endDate,
-    traveler: booking.traveler,
+    traveler: travellerSnapshotFor(booking, viewer),
     startPoint: booking.startPoint || null,
     endPoint: booking.endPoint || null,
     flightNumber: booking.flightNumber || null,
@@ -406,7 +407,7 @@ export const fetchMessages = async (req, res) => {
 
     await markConversationAsRead(conversation, req.user.id);
 
-    const booking = await findConversationBooking(conversation);
+    const booking = await findConversationBooking(conversation, req.user);
 
     // Drivers only: travellers are never locked out of a thread.
     const isDriver = conversation.driver.toString() === req.user.id;

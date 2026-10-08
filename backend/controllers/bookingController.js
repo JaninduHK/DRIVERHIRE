@@ -5,6 +5,7 @@ import ChatMessage from '../models/ChatMessage.js';
 import { closeBriefsForBooking, reopenBriefsForBooking } from '../utils/briefClosure.js';
 import { USER_ROLES } from '../models/User.js';
 import { sendBookingStatusUpdateEmail } from '../services/emailService.js';
+import { travellerSnapshotFor } from '../utils/travellerContact.js';
 import { mapAssetUrls } from '../utils/assetUtils.js';
 
 const toId = (value) => {
@@ -146,7 +147,7 @@ const shapeBooking = (booking, review, req) => {
     paymentNote: booking.paymentNote,
     vehicle: shapeVehicle(booking.vehicle, req),
     driver: shapeDriver(booking.driver),
-    traveler: booking.traveler,
+    traveler: travellerSnapshotFor(booking, req?.user),
     specialRequests: booking.specialRequests,
     startPoint: booking.startPoint,
     endPoint: booking.endPoint,

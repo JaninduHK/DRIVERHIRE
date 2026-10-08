@@ -593,17 +593,28 @@ export const sendBookingRequestConfirmationEmail = async ({
     return;
   }
 
+  // Booking through a driver's offer confirms it on the spot; a direct booking
+  // is only a request until the driver accepts.
+  const confirmed = booking?.status === 'confirmed';
+  const vehicleModel = vehicle?.model || 'a vehicle';
+
   const html = buildEmailTemplate({
-    title: 'Booking request received',
-    preheader: `We shared your request for ${vehicle?.model || 'a vehicle'}.`,
+    title: confirmed ? 'Your trip is confirmed' : 'Booking request received',
+    preheader: confirmed
+      ? `Your booking for ${escapeHtml(vehicleModel)} is confirmed.`
+      : `We shared your request for ${escapeHtml(vehicleModel)}.`,
     bodyLines: [
       `Hi ${escapeHtml(traveler.name || 'there')},`,
-      `We've sent your request for ${escapeHtml(vehicle?.model || 'a vehicle')} to the driver.`,
+      confirmed
+        ? `Your booking for ${escapeHtml(vehicleModel)} is confirmed. Your driver has been notified.`
+        : `We've sent your request for ${escapeHtml(vehicleModel)} to the driver.`,
       `<strong>Trip dates:</strong> ${formatDateRange(booking?.startDate, booking?.endDate)}`,
-      `<strong>Total estimate:</strong> ${formatCurrency(booking?.totalPrice)}`,
+      `<strong>${confirmed ? 'Total' : 'Total estimate'}:</strong> ${formatCurrency(booking?.totalPrice)}`,
       `<strong>Status:</strong> ${formatStatus(booking?.status)}`,
       paymentNote ? formatMultiline(paymentNote) : null,
-      'You will get an email when the driver accepts or updates the request.',
+      confirmed
+        ? 'You can message your driver from your dashboard to plan the trip.'
+        : 'You will get an email when the driver accepts or updates the request.',
     ],
     action: {
       label: 'View booking',
@@ -611,56 +622,76 @@ export const sendBookingRequestConfirmationEmail = async ({
     },
   });
 
-  const text = `Hi ${traveler.name || 'there'},\n\nWe sent your booking request for ${
-    vehicle?.model || 'a vehicle'
-  }.\nDates: ${formatDateRange(booking?.startDate, booking?.endDate)}\nTotal: ${formatCurrency(
+  const text = `Hi ${traveler.name || 'there'},\n\n${
+    confirmed ? `Your booking for ${vehicleModel} is confirmed.` : `We sent your booking request for ${vehicleModel}.`
+  }\nDates: ${formatDateRange(booking?.startDate, booking?.endDate)}\nTotal: ${formatCurrency(
     booking?.totalPrice
   )}\nStatus: ${formatStatus(booking?.status)}\n\nCheck your dashboard for updates.`;
 
   await sendEmail({
     to: traveler.email,
-    subject: `We received your booking request for ${vehicle?.model || 'a vehicle'}`,
+    subject: confirmed
+      ? `Your booking for ${vehicleModel} is confirmed`
+      : `We received your booking request for ${vehicleModel}`,
     html,
     text,
   });
 };
 
+// The driver's notice of a new booking. A booking made from the driver's own
+// offer arrives already confirmed, so it is announced as a booking (not a
+// request) and carries the traveller's contact details. A direct booking is
+// still a request the driver has to accept, and until they do the traveller's
+// contact details stay out of the email (see utils/travellerContact.js).
 export const sendBookingRequestAlertEmail = async ({ driver, traveler, booking, vehicle }) => {
   if (!driver?.email) {
     return;
   }
 
+  const confirmed = booking?.status === 'confirmed';
+  const travelerName = traveler?.name || 'A traveller';
+  const vehicleModel = vehicle?.model || 'your vehicle';
+  const dates = formatDateRange(booking?.startDate, booking?.endDate);
+  const total = formatCurrency(booking?.totalPrice);
+
   const html = buildEmailTemplate({
-    title: 'New booking request waiting',
-    preheader: `${escapeHtml(traveler?.name || 'A traveller')} requested ${escapeHtml(
-      vehicle?.model || 'your vehicle'
-    )}.`,
+    title: confirmed ? 'New booking received' : 'New booking request waiting',
+    preheader: confirmed
+      ? `${escapeHtml(travelerName)} booked ${escapeHtml(vehicleModel)}.`
+      : `${escapeHtml(travelerName)} requested ${escapeHtml(vehicleModel)}.`,
     bodyLines: [
       `Hi ${escapeHtml(driver.name || 'there')},`,
-      `${escapeHtml(traveler?.name || 'A traveller')} just requested ${escapeHtml(
-        vehicle?.model || 'your vehicle'
-      )}.`,
-      `<strong>Dates:</strong> ${formatDateRange(booking?.startDate, booking?.endDate)}`,
-      `<strong>Estimated total:</strong> ${formatCurrency(booking?.totalPrice)}`,
-      `<strong>Traveller email:</strong> ${escapeHtml(traveler?.email || '—')}`,
-      'Reply in your driver portal to accept, reject, or ask follow-up questions.',
+      confirmed
+        ? `${escapeHtml(travelerName)} accepted your offer and booked ${escapeHtml(vehicleModel)}. The booking is confirmed.`
+        : `${escapeHtml(travelerName)} just requested ${escapeHtml(vehicleModel)}.`,
+      `<strong>Dates:</strong> ${dates}`,
+      `<strong>${confirmed ? 'Total' : 'Estimated total'}:</strong> ${total}`,
+      confirmed && traveler?.email ? `<strong>Traveller email:</strong> ${escapeHtml(traveler.email)}` : null,
+      confirmed && traveler?.phoneNumber ? `<strong>Traveller phone:</strong> ${escapeHtml(traveler.phoneNumber)}` : null,
+      confirmed
+        ? 'Open your driver portal to see the trip details and message the traveller.'
+        : "Reply in your driver portal to accept, reject, or ask follow-up questions. The traveller's contact details are shared once the booking is confirmed.",
     ],
     action: {
-      label: 'Review booking',
+      label: confirmed ? 'View booking' : 'Review booking',
       url: buildUrl('/portal/driver/messages'),
     },
   });
 
-  const text = `Hi ${driver.name || 'there'},\n\n${
-    traveler?.name || 'A traveller'
-  } requested ${vehicle?.model || 'your vehicle'}.\nDates: ${formatDateRange(
-    booking?.startDate,
-    booking?.endDate
-  )}\nTotal: ${formatCurrency(booking?.totalPrice)}\nTraveller email: ${traveler?.email || '—'}\n\nOpen your driver portal to respond.`;
+  const contactText = confirmed
+    ? `${traveler?.email ? `\nTraveller email: ${traveler.email}` : ''}${
+        traveler?.phoneNumber ? `\nTraveller phone: ${traveler.phoneNumber}` : ''
+      }`
+    : '';
+  const text = `Hi ${driver.name || 'there'},\n\n${travelerName} ${
+    confirmed ? 'accepted your offer and booked' : 'requested'
+  } ${vehicleModel}.${confirmed ? ' The booking is confirmed.' : ''}\nDates: ${dates}\nTotal: ${total}${contactText}\n\nOpen your driver portal to ${
+    confirmed ? 'see the trip details' : 'respond'
+  }.`;
 
   await sendEmail({
     to: driver.email,
-    subject: `New booking request for ${vehicle?.model || 'your vehicle'}`,
+    subject: confirmed ? `New booking received for ${vehicleModel}` : `New booking request for ${vehicleModel}`,
     html,
     text,
   });

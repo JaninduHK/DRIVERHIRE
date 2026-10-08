@@ -822,6 +822,7 @@ export const createVehicleBooking = async (req, res) => {
     const travelerContact = {
       name: trimmedName,
       email: trimmedEmail,
+      phoneNumber: trimmedPhone,
     };
 
     sendBookingRequestConfirmationEmail({
