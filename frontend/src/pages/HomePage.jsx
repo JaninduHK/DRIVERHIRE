@@ -8,7 +8,7 @@ import { getStoredToken, redirectToSsoLogin } from '../services/authToken.js';
 import { LicenseIconBadge, LicenseTypeChip } from '../components/LicenseBadge.jsx';
 
 // Prefill stash read by the traveller "My Requests" tab to open a new quote request.
-const PENDING_BRIEF_KEY = 'carwithdriver:pending-brief';
+import { savePendingBrief } from '../lib/pendingBrief.js';
 const REQUESTS_PATH = '/dashboard?tab=requests';
 
 // ---------- helpers ----------
@@ -205,11 +205,7 @@ const HomePage = () => {
   // mini form doesn't collect everything a brief needs (e.g. country), so the traveller
   // still finishes it there rather than being auto-submitted.
   const goToRequests = (prefill = {}) => {
-    try {
-      sessionStorage.setItem(PENDING_BRIEF_KEY, JSON.stringify(prefill));
-    } catch {
-      /* ignore storage errors */
-    }
+    savePendingBrief(prefill);
     if (!getStoredToken()) {
       // Straight to Asgardeo's hosted sign-in/registration, same as /get-quotes.
       redirectToSsoLogin(REQUESTS_PATH);

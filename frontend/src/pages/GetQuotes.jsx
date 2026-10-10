@@ -2,17 +2,13 @@ import { useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLoaderData } from 'react-router';
 import toast from 'react-hot-toast';
-import { Check, ChevronDown, Loader2, Star, X } from 'lucide-react';
+import { Check, ChevronDown, Star, X } from 'lucide-react';
 import { getStoredToken, getStoredUser, redirectToSsoLogin } from '../services/authToken.js';
-import { createBrief } from '../services/briefApi.js';
+import { savePendingBrief } from '../lib/pendingBrief.js';
 import { calculateClassEstimates, calculateInclusionRates, priceFormatter } from '../lib/tripCostEstimator.js';
 import { LICENSE_BADGE_STYLES } from '../constants/driverLicense.js';
 import { LicenseIconBadge, LicenseTypeChip } from '../components/LicenseBadge.jsx';
 
-// Stashed here right before handing off to Asgardeo; AuthCallback.jsx reads
-// and submits it once sign-in completes, so the traveller never re-enters
-// what they already typed here.
-const AUTO_SUBMIT_BRIEF_KEY = 'carwithdriver:auto-submit-brief';
 const REQUESTS_PATH = '/dashboard?tab=requests';
 const MESSAGE_MAX_LENGTH = 2000; // matches TourBrief.message's maxlength in backend/models/TourBrief.js
 
@@ -175,7 +171,6 @@ const GetQuotes = () => {
   );
 
   const [form, setForm] = useState(buildForm());
-  const [submitting, setSubmitting] = useState(false);
   const [openFaq, setOpenFaq] = useState(0);
   const formRef = useRef(null);
 
@@ -278,31 +273,19 @@ const GetQuotes = () => {
       return;
     }
 
+    // Nothing is posted from this page. The request is parked and My Requests
+    // shows it back for the traveller to review, edit and post (see
+    // lib/pendingBrief.js) — the same step whether they are already signed in
+    // or come back from registering with Asgardeo.
+    savePendingBrief(payload);
+
     const token = getStoredToken();
     const user = getStoredUser();
-
-    // Already signed in as a traveller — submit right away, no detour through Asgardeo.
     if (token && user?.role === 'guest') {
-      setSubmitting(true);
-      try {
-        await createBrief(payload);
-        toast.success('Quote request sent to drivers!');
-        navigate(REQUESTS_PATH);
-      } catch (error) {
-        toast.error(error?.message || 'Unable to submit your request. Please try again.');
-      } finally {
-        setSubmitting(false);
-      }
+      navigate(REQUESTS_PATH);
       return;
     }
 
-    // Not signed in — stash the request and hand off to Asgardeo. AuthCallback.jsx
-    // submits it automatically once sign-in/sign-up completes.
-    try {
-      sessionStorage.setItem(AUTO_SUBMIT_BRIEF_KEY, JSON.stringify(payload));
-    } catch {
-      /* ignore storage errors */
-    }
     redirectToSsoLogin(REQUESTS_PATH);
   };
 
@@ -519,16 +502,9 @@ const GetQuotes = () => {
 
                   <button
                     type="submit"
-                    disabled={submitting}
                     className="mt-1 flex min-h-[52px] items-center justify-center gap-2 rounded-[13px] bg-brand px-6 text-[15.5px] font-bold text-white shadow-[0_12px_26px_-14px_rgba(16,163,90,.75)] transition hover:bg-[#0e9351] disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    {submitting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" /> Submitting…
-                      </>
-                    ) : (
-                      'Next'
-                    )}
+                    Next
                   </button>
                   <p className="text-center text-xs leading-[1.5] text-muted-soft">
                     Free to request · No booking fee · Pay the driver directly

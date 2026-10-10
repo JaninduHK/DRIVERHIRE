@@ -276,11 +276,42 @@ export const listConversations = async (req, res) => {
       })),
     });
 
+    // The most recent offer in each conversation, so the inbox can show its
+    // price without opening the thread. One query for the whole page.
+    const latestOffers = await ChatMessage.aggregate([
+      { $match: { conversation: { $in: conversations.map((conversation) => conversation._id) }, type: 'offer' } },
+      { $sort: { createdAt: -1 } },
+      { $group: { _id: '$conversation', offer: { $first: '$offer' }, sentAt: { $first: '$createdAt' } } },
+    ]);
+    const latestOfferMap = new Map(latestOffers.map((entry) => [entry._id.toString(), entry]));
+
     const payload = conversations.map((conversation) => {
       const mapped = mapConversationResponse(conversation, req.user.id);
       mapped.locked = lockMap.get(conversation._id.toString()) || false;
+      const latest = latestOfferMap.get(conversation._id.toString());
+      mapped.latestOffer = latest?.offer
+        ? {
+            totalPrice: latest.offer.totalPrice,
+            currency: latest.offer.currency,
+            status: latest.offer.status,
+            expiresAt: latest.offer.expiresAt || null,
+            sentAt: latest.sentAt,
+          }
+        : null;
       if (conversation.lastMessage) {
-        mapped.lastMessage = conversation.lastMessage.toJSON();
+        const { readBy, ...lastMessage } = conversation.lastMessage.toJSON();
+        const travelerId = (conversation.traveler?._id || conversation.traveler)?.toString();
+        const driverId = (conversation.driver?._id || conversation.driver)?.toString();
+        const recipientId = req.user.id === travelerId ? driverId : travelerId;
+        const mine = lastMessage.sender?.toString() === req.user.id;
+        // Same receipt rule as withReadReceipts: only meaningful on your own message.
+        mapped.lastMessage = {
+          ...lastMessage,
+          mine,
+          readByRecipient: mine
+            ? Array.isArray(readBy) && readBy.some((reader) => reader?.toString() === recipientId)
+            : null,
+        };
       }
       mapped.participants = {
         traveler: conversation.traveler?.toJSON?.() || null,

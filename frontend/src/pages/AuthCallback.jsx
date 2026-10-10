@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { ssoExchange } from '../services/authApi.js';
-import { createBrief } from '../services/briefApi.js';
+import { hasPendingBrief } from '../lib/pendingBrief.js';
 import { consumeAuthMessage, consumeReturnPath, persistAuthSession, SSO_LOGIN_URL } from '../services/authToken.js';
 
 // Shown when Asgardeo redirects back with ?error=<code> instead of a code to
@@ -19,32 +19,11 @@ const ERROR_MESSAGES = {
   sso_failed: 'Something went wrong signing you in. Please try again.',
 };
 
-// Stashed by GetQuotes.jsx right before the Asgardeo hand-off. Submitted here,
-// in parallel with landing on the dashboard, so the traveller's quote request
-// goes out without them having to fill the form in twice.
-const AUTO_SUBMIT_BRIEF_KEY = 'carwithdriver:auto-submit-brief';
-
-const submitPendingBrief = () => {
-  let pending = null;
-  try {
-    const raw = sessionStorage.getItem(AUTO_SUBMIT_BRIEF_KEY);
-    if (raw) {
-      pending = JSON.parse(raw);
-      sessionStorage.removeItem(AUTO_SUBMIT_BRIEF_KEY);
-    }
-  } catch {
-    pending = null;
-  }
-  if (!pending) return;
-
-  createBrief(pending)
-    .then(() => toast.success('Your quote request has been sent to drivers!'))
-    .catch((error) => {
-      toast.error(
-        error?.message || "Signed in, but we couldn't submit your quote request. Please post it again from My Requests."
-      );
-    });
-};
+// Where a traveller who typed a quote request before signing in is sent: My
+// Requests shows it back for them to review, edit and post. It used to be
+// posted automatically from here, which left new travellers unsure what had
+// just happened.
+const REQUESTS_PATH = '/dashboard?tab=requests';
 
 // Landing point after a successful Asgardeo SSO round-trip. The backend redirects
 // here with a one-time exchange code (not the JWT itself, to keep it out of
@@ -98,8 +77,7 @@ const AuthCallback = () => {
         }
 
         const savedPath = consumeReturnPath();
-        navigate(savedPath || '/dashboard', { replace: true });
-        submitPendingBrief();
+        navigate(hasPendingBrief() ? REQUESTS_PATH : savedPath || '/dashboard', { replace: true });
       } catch (err) {
         setError(err?.message || 'Unable to complete sign-in right now.');
       }
