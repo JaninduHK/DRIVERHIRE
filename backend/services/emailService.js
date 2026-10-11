@@ -27,7 +27,12 @@ const paragraphStyles = `margin:0 0 14px 0;color:#0f172a;font-size:15px;line-hei
 // Mid grey: reads as secondary but stays legible on a phone outdoors.
 const footerStyles = `margin:0 0 6px 0;color:#64748b;font-size:13px;line-height:1.6;font-family:${fontStack};`;
 
-const getLogoUrl = () => process.env.EMAIL_LOGO_URL || buildUrl('/email-logo.png');
+// Mail providers (Gmail above all) fetch an image once and then serve their own
+// cached copy for that URL, so a logo can never be changed in place: a new
+// design needs a new file name. /email-logo.png is the original white-lettered
+// logo and must stay as it is, because emails already sent with the green
+// header still point at it.
+const getLogoUrl = () => process.env.EMAIL_LOGO_URL || buildUrl('/email-logo-light.png');
 const getWhatsAppNumber = () => process.env.SUPPORT_WHATSAPP || '+94 76 3021 483';
 
 // `replyable`: true when a reply is posted into the driver chat, 'support' when
