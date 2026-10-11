@@ -11,6 +11,7 @@ import {
   updateDriverDetails,
   listLicenseSubmissions,
   updateLicenseStatus,
+  updateLicenseType,
   listDriverCommissions,
   listDriverCommissionBookings,
   updateDriverCommissionStatus,
@@ -61,7 +62,7 @@ import {
   setReviewFeatured,
   reorderFeaturedReviews,
 } from '../controllers/reviewController.js';
-import { DRIVER_STATUS, USER_ROLES, LICENSE_STATUS } from '../models/User.js';
+import { DRIVER_STATUS, USER_ROLES, LICENSE_STATUS, LICENSE_TYPES } from '../models/User.js';
 import { VEHICLE_STATUS, VEHICLE_AVAILABILITY_STATUS } from '../models/Vehicle.js';
 import { REVIEW_STATUS } from '../models/Review.js';
 import { BOOKING_STATUS } from '../models/Booking.js';
@@ -206,6 +207,17 @@ router.get(
   '/licenses',
   [query('status').optional().isIn(Object.values(LICENSE_STATUS)).withMessage('Invalid license status')],
   listLicenseSubmissions
+);
+
+router.patch(
+  '/licenses/:id/type',
+  [
+    param('id').isMongoId().withMessage('Invalid driver identifier'),
+    body('licenseType')
+      .isIn(Object.values(LICENSE_TYPES))
+      .withMessage(`License type must be one of: ${Object.values(LICENSE_TYPES).join(', ')}`),
+  ],
+  updateLicenseType
 );
 
 router.patch(

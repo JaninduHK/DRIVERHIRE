@@ -901,6 +901,43 @@ export const listLicenseSubmissions = async (req, res) => {
   }
 };
 
+/**
+ * PATCH /api/admin/licenses/:id/type  { licenseType }
+ *
+ * Corrects the licence type on a driver's verification record, for when the
+ * driver picked the wrong one or the photo shows a different licence. Only the
+ * type changes: the verification status (pending / approved / rejected) is left
+ * as it is, so an approved driver stays approved under the corrected type.
+ */
+export const updateLicenseType = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+
+  const { id } = req.params;
+  const { licenseType } = req.body;
+
+  try {
+    const driver = await User.findOne({ _id: id, role: USER_ROLES.DRIVER });
+    if (!driver || !driver.licenseStatus) {
+      return res.status(404).json({ message: 'License submission not found' });
+    }
+
+    driver.licenseType = licenseType;
+    driver.licenseReviewedAt = new Date();
+    driver.licenseReviewedBy = req.user.id;
+
+    await driver.save({ validateBeforeSave: false });
+    await driver.populate({ path: 'licenseReviewedBy', select: 'name' });
+
+    return res.json({ message: `License type changed to ${licenseType}.`, driver: driver.toJSON() });
+  } catch (error) {
+    console.error('Update license type error:', error);
+    return res.status(500).json({ message: 'Unable to update license type.' });
+  }
+};
+
 export const updateLicenseStatus = async (req, res) => {
   const validationError = handleValidation(req, res);
   if (validationError) {

@@ -1,5 +1,8 @@
 import { BadgeCheck, Crown } from 'lucide-react';
 
+// Must match LICENSE_TYPES in backend/models/User.js exactly.
+export const LICENSE_TYPE_OPTIONS = ['Tourist Driver', 'Chauffeur Guide Lecturer', 'National Guide Lecturer'];
+
 export const LICENSE_BADGE_STYLES = {
   'Tourist Driver': {
     icon: BadgeCheck,

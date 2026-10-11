@@ -22,6 +22,7 @@ import {
   fetchDriverApplications,
   fetchLicenseSubmissions,
   updateLicenseStatus as updateLicenseStatusRequest,
+  updateLicenseType as updateLicenseTypeRequest,
   fetchVehicleSubmissions,
   fetchReviews,
   createReview as createAdminReview,
@@ -634,6 +635,18 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleLicenseTypeChange = async (driverId, licenseType) => {
+    setLicenseState((prev) => ({ ...prev, updatingId: driverId }));
+    try {
+      await updateLicenseTypeRequest(driverId, licenseType);
+      toast.success(`License type changed to ${licenseType}.`);
+      await loadLicenses(licenseFilter);
+    } catch (err) {
+      toast.error(err.message || 'Unable to change the license type.');
+      setLicenseState((prev) => ({ ...prev, updatingId: null }));
+    }
+  };
+
   const handleReviewCreate = useCallback(async (payload) => {
     setReviewState((prev) => ({ ...prev, creating: true }));
     try {
@@ -997,6 +1010,7 @@ const AdminDashboard = () => {
         onFilterChange={setLicenseFilter}
         onRetry={() => loadLicenses(licenseFilter)}
         onStatusChange={handleLicenseStatusChange}
+        onTypeChange={handleLicenseTypeChange}
       />
     );
   } else if (activeSection === 'reports') {

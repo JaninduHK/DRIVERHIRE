@@ -94,6 +94,14 @@ export const setDriverPassword = (driverId, password) =>
 export const fetchLicenseSubmissions = (filters = {}) =>
   request(`/licenses${buildQueryString(filters)}`, { method: 'GET' });
 
+// Correct the licence type on a driver's verification record. The verification
+// status is not changed.
+export const updateLicenseType = (driverId, licenseType) =>
+  request(`/licenses/${driverId}/type`, {
+    method: 'PATCH',
+    body: JSON.stringify({ licenseType }),
+  });
+
 export const updateLicenseStatus = (driverId, payload) =>
   request(`/licenses/${driverId}/status`, {
     method: 'PATCH',

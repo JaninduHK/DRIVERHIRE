@@ -27,6 +27,7 @@ import {
   setDriverPassword,
   updateDriverDetails,
   updateDriverStatus,
+  updateLicenseType,
 } from '../services/adminApi.js';
 import { fetchCurrentUser } from '../services/profileApi.js';
 import { clearStoredToken } from '../services/authToken.js';
@@ -34,7 +35,7 @@ import AdminShell from './admin/AdminShell.jsx';
 import AdminModal from './admin/AdminModal.jsx';
 import { ADMIN_NAV_GROUPS } from './admin/adminNav.js';
 import { formatCurrency, formatDateInput, formatDateTime, tagClass } from './admin/adminFormatters.js';
-import { getLicenseBadge } from '../constants/driverLicense.js';
+import { LICENSE_TYPE_OPTIONS, getLicenseBadge } from '../constants/driverLicense.js';
 
 const DRIVER_STATUS = { PENDING: 'pending', APPROVED: 'approved', REJECTED: 'rejected' };
 const STATUS_COLORS = { pending: 'amber', submitted: 'amber', approved: 'green', confirmed: 'green', active: 'green', accepted: 'green', rejected: 'red', cancelled: 'red', declined: 'red', closed: 'grey' };
@@ -84,7 +85,7 @@ const Stat = ({ value, label }) => (
 
 const Timestamp = ({ value }) => <span title={value || ''}>{formatDateTime(value)}</span>;
 
-const DriverOverview = ({ data, onEdit, onVerification }) => {
+const DriverOverview = ({ data, onEdit, onVerification, onChangeLicenseType }) => {
   const { driver } = data;
   const licenseBadge = getLicenseBadge(driver.licenseType);
   const LicenseIcon = licenseBadge?.icon;
@@ -111,7 +112,7 @@ const DriverOverview = ({ data, onEdit, onVerification }) => {
           </dl>
         </Panel>
 
-        <Panel title="License verification" subtitle="SLTDA license information and the latest review decision." action={<button type="button" onClick={onVerification} className="text-xs font-bold text-brand-dark hover:underline">Open verification</button>}>
+        <Panel title="License verification" subtitle="SLTDA license information and the latest review decision." action={<div className="flex flex-wrap items-center gap-3">{driver.licenseStatus ? <button type="button" onClick={onChangeLicenseType} className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs font-bold text-ink hover:bg-canvas">Change type</button> : null}<button type="button" onClick={onVerification} className="text-xs font-bold text-brand-dark hover:underline">Open verification</button></div>}>
           <div className="grid gap-5 md:grid-cols-[180px_1fr]">
             {driver.licenseImage ? (
               <a href={driver.licenseImage} target="_blank" rel="noreferrer" className="block">
@@ -346,6 +347,7 @@ const AdminDriverDetails = () => {
   const [emailForm, setEmailForm] = useState({ subject: '', message: '' });
   const [passwordForm, setPasswordForm] = useState({ password: '', confirm: '' });
   const [formError, setFormError] = useState('');
+  const [licenseTypeChoice, setLicenseTypeChoice] = useState('');
 
   const loadDetails = useCallback(async () => {
     setLoading(true);
@@ -497,7 +499,7 @@ const AdminDriverDetails = () => {
 
       <nav className="flex gap-1 overflow-x-auto rounded-[16px] bg-surface p-1.5 shadow-card">{tabs.map(([id, label, count]) => <button key={id} type="button" onClick={() => setActiveTab(id)} className={`whitespace-nowrap rounded-xl px-3.5 py-2.5 text-xs font-extrabold transition ${activeTab === id ? 'bg-brand text-white' : 'text-muted hover:bg-canvas hover:text-ink'}`}>{label}{count != null ? ` (${count})` : ''}</button>)}</nav>
 
-      {activeTab === 'overview' ? <DriverOverview data={data} onEdit={openEdit} onVerification={() => navigate(`/admin?section=verification&search=${encodeURIComponent(driver.email)}`)} /> : null}
+      {activeTab === 'overview' ? <DriverOverview data={data} onEdit={openEdit} onChangeLicenseType={() => { setLicenseTypeChoice(driver.licenseType || ''); setFormError(''); setModal('license-type'); }} onVerification={() => navigate(`/admin?section=verification&search=${encodeURIComponent(driver.email)}`)} /> : null}
       {activeTab === 'vehicles' ? <VehiclesTab vehicles={data.vehicles} /> : null}
       {activeTab === 'bookings' ? <BookingsTab bookings={data.bookings} /> : null}
       {activeTab === 'offers' ? <OffersChatsTab offers={data.offers} conversations={data.conversations} /> : null}
@@ -513,6 +515,9 @@ const AdminDriverDetails = () => {
         <form onSubmit={submitEmail} className="space-y-4"><label className={labelCls}>Subject<input value={emailForm.subject} onChange={(event) => setEmailForm((current) => ({ ...current, subject: event.target.value }))} className={inputCls} /></label><label className={labelCls}>Message<textarea rows={7} value={emailForm.message} onChange={(event) => setEmailForm((current) => ({ ...current, message: event.target.value }))} className={inputCls} /></label>{formError ? <p className="text-sm font-semibold text-rose-600">{formError}</p> : null}<button type="submit" disabled={Boolean(actionLoading)} className="inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60"><Mail className="h-4 w-4" /> {actionLoading === 'email' ? 'Sending…' : 'Send email'}</button></form>
       </AdminModal>
 
+      <AdminModal open={modal === 'license-type'} onClose={closeModal} title="Change license type" subtitle="Corrects the type on this driver's verification record. The verification status stays as it is.">
+        <div className="space-y-4"><label className={labelCls}>License type<select value={licenseTypeChoice} onChange={(event) => setLicenseTypeChoice(event.target.value)} className={inputCls}>{!driver.licenseType ? <option value="">Not set</option> : null}{LICENSE_TYPE_OPTIONS.map((type) => <option key={type} value={type}>{type}</option>)}</select></label>{formError ? <p className="text-sm font-semibold text-rose-600">{formError}</p> : null}<div className="flex justify-end gap-2"><button type="button" onClick={closeModal} className="rounded-xl border border-line px-4 py-2 text-sm font-bold text-ink">Cancel</button><button type="button" disabled={Boolean(actionLoading) || !licenseTypeChoice || licenseTypeChoice === driver.licenseType} onClick={() => runAction('license-type', () => updateLicenseType(driver.id, licenseTypeChoice), `License type changed to ${licenseTypeChoice}.`)} className="rounded-xl bg-brand px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60">{actionLoading === 'license-type' ? 'Saving…' : 'Save type'}</button></div></div>
+      </AdminModal>
       <AdminModal open={modal === 'password'} onClose={closeModal} title="Set driver password" subtitle="The driver will receive an email notifying them of the change.">
         <form onSubmit={submitPassword} className="space-y-4"><div className="grid gap-3 sm:grid-cols-2"><label className={labelCls}>New password<input type="password" autoComplete="new-password" value={passwordForm.password} onChange={(event) => setPasswordForm((current) => ({ ...current, password: event.target.value }))} className={inputCls} /></label><label className={labelCls}>Confirm password<input type="password" autoComplete="new-password" value={passwordForm.confirm} onChange={(event) => setPasswordForm((current) => ({ ...current, confirm: event.target.value }))} className={inputCls} /></label></div><p className="text-xs text-muted">At least 8 characters with uppercase, lowercase and a number.</p>{formError ? <p className="text-sm font-semibold text-rose-600">{formError}</p> : null}<button type="submit" disabled={Boolean(actionLoading)} className="inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60"><KeyRound className="h-4 w-4" /> {actionLoading === 'password' ? 'Saving…' : 'Set password'}</button></form>
       </AdminModal>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CheckCircle2, ChevronDown, CircleUserRound, Loader2, RotateCcw, ShieldCheck, XCircle } from 'lucide-react';
 import ImageLightbox from '../../components/ImageLightbox.jsx';
 import { formatDate, tagClass } from './adminFormatters.js';
+import { LICENSE_TYPE_OPTIONS } from '../../constants/driverLicense.js';
 
 const getLicenseStatusLabel = (status) => {
   switch (status) {
@@ -17,7 +18,40 @@ const getLicenseStatusLabel = (status) => {
 
 const STATUS_TAGS = { pending: 'amber', approved: 'green', rejected: 'red' };
 
-const VerificationPanel = ({ state, filter, onFilterChange, onRetry, onStatusChange }) => {
+// Lets an admin correct the licence type a driver chose. Its own component so
+// each row keeps its own unsaved selection.
+const LicenseTypeEditor = ({ license, disabled, onSave }) => {
+  const [value, setValue] = useState(license.licenseType || '');
+  const changed = Boolean(value) && value !== license.licenseType;
+  return (
+    <div className="mt-4 rounded-lg border border-hairline bg-canvas p-3">
+      <label htmlFor={`license-type-${license.driverId}`} className="block text-[11px] font-extrabold uppercase tracking-wide text-muted-soft">License type</label>
+      <div className="mt-1.5 flex flex-wrap items-center gap-2">
+        <select
+          id={`license-type-${license.driverId}`}
+          value={value}
+          disabled={disabled}
+          onChange={(event) => setValue(event.target.value)}
+          className="min-w-[220px] rounded-lg border border-line bg-surface px-3 py-2 text-xs font-bold text-ink focus:border-ink focus:outline-none disabled:opacity-60"
+        >
+          {!license.licenseType ? <option value="">Not set</option> : null}
+          {LICENSE_TYPE_OPTIONS.map((type) => <option key={type} value={type}>{type}</option>)}
+        </select>
+        <button
+          type="button"
+          disabled={disabled || !changed}
+          onClick={() => onSave?.(license.driverId, value)}
+          className="rounded-lg bg-brand px-3 py-2 text-xs font-bold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Save type
+        </button>
+      </div>
+      <p className="mt-1.5 text-[11.5px] text-muted-soft">Changes the type only. The verification status stays as it is.</p>
+    </div>
+  );
+};
+
+const VerificationPanel = ({ state, filter, onFilterChange, onRetry, onStatusChange, onTypeChange }) => {
   const { items: filtered, meta, loading, error, updatingId } = state;
 
   const filters = [
@@ -159,6 +193,7 @@ const VerificationPanel = ({ state, filter, onFilterChange, onRetry, onStatusCha
                         <p>{license.adminNote}</p>
                       </div>
                     ) : null}
+                    <LicenseTypeEditor key={`${license.driverId}-${license.licenseType}`} license={license} disabled={isUpdating} onSave={onTypeChange} />
                     {license.status === 'pending' ? (
                       <div className="mt-4 flex flex-wrap gap-2">
                         <button type="button" onClick={() => onStatusChange?.(license.driverId, 'approved')} disabled={isUpdating} className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 dark:border-emerald-400/30 bg-emerald-50 dark:bg-emerald-400/10 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 transition hover:bg-emerald-100 dark:hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-60">
