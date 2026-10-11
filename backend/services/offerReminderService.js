@@ -1,5 +1,7 @@
 import ChatMessage from '../models/ChatMessage.js';
 import User from '../models/User.js';
+import Booking, { BOOKING_STATUS } from '../models/Booking.js';
+import TourBrief from '../models/TourBrief.js';
 import { createOfferToken } from './chatService.js';
 import { sendOfferReminderEmail } from './emailService.js';
 import buildAppUrl from '../utils/url.js';
@@ -53,6 +55,26 @@ export const sendOfferReminderForMessage = async (message) => {
   // the traveller to readBy, so either path correctly suppresses the reminder.
   if (message.readBy.some((id) => id.equals(traveler._id))) {
     return { skipped: 'already-read' };
+  }
+
+  // The traveller has since sorted this trip out some other way. Booking an
+  // offer only resolves that offer and its siblings on the same request; an
+  // offer sent directly in chat, or on another of their requests for the same
+  // dates, stays 'pending' and would otherwise still be chased. Left unclaimed
+  // on purpose: if the booking is cancelled the reminder becomes relevant again.
+  const offer = message.offer;
+  if (offer?.startDate && offer?.endDate) {
+    const booked = await Booking.exists({
+      travelerUser: traveler._id,
+      status: { $in: [BOOKING_STATUS.PENDING, BOOKING_STATUS.CONFIRMED] },
+      startDate: { $lte: offer.endDate },
+      endDate: { $gte: offer.startDate },
+    });
+    if (booked) return { skipped: 'traveller-booked' };
+  }
+  if (offer?.brief) {
+    const brief = await TourBrief.findById(offer.brief).select('status').lean();
+    if (brief && brief.status !== 'open') return { skipped: 'request-closed' };
   }
 
   // Claim BEFORE sending — if the send then fails we would rather miss one
