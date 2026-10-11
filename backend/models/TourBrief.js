@@ -115,6 +115,39 @@ const tourBriefSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    // Reminder emails sent to the traveller about this request's offers (see
+    // services/quoteFollowUpService.js). Each step is sent at most once, except
+    // 'update', which can repeat (at most daily);
+    // optedOutAt is set when the traveller uses an email's stop link.
+    followUp: {
+      steps: {
+        type: [
+          new mongoose.Schema(
+            {
+              step: {
+                type: String,
+                enum: ['digest1', 'update', 'digest2', 'approaching30', 'approaching14', 'expiring', 'expired', 'noOffers'],
+                required: true,
+              },
+              sentAt: { type: Date, required: true },
+              offerCount: { type: Number, default: 0 },
+            },
+            { _id: false }
+          ),
+        ],
+        default: [],
+      },
+      optedOutAt: { type: Date, default: null },
+      // Reminders are held until this date ("I haven't fixed my dates").
+      pausedUntil: { type: Date, default: null },
+      // The traveller's answer to "What's holding you back?" in the follow-up email.
+      feedback: {
+        reason: { type: String, enum: ['price', 'dates', 'choice', 'booked', null], default: null },
+        at: { type: Date, default: null },
+      },
+      // The request created by "Post this request again" on the offers-expired email.
+      repostedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'TourBrief', default: null },
+    },
     lastResponseAt: {
       type: Date,
       default: null,

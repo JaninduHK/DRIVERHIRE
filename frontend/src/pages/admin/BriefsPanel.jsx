@@ -130,6 +130,59 @@ export const BriefAlertEmailSetting = () => {
   );
 };
 
+// Master switch for the reminder emails travellers get about offers they have
+// not booked (the offers list, "expiring soon" and "offers expired" emails).
+export const QuoteFollowUpSetting = () => {
+  const [enabled, setEnabled] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchAdminSettings()
+      .then((data) => { if (!cancelled) setEnabled(data?.settings?.quoteFollowUps !== false); })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleSet = async (value) => {
+    if (value === enabled || saving) return;
+    const previous = enabled;
+    setSaving(true);
+    setEnabled(value);
+    try {
+      const response = await updateAdminSettings({ quoteFollowUps: value });
+      setEnabled(response?.settings?.quoteFollowUps !== false);
+      toast.success(value ? 'Traveller follow-up emails are on.' : 'Traveller follow-up emails are off.');
+    } catch (error) {
+      setEnabled(previous);
+      toast.error(error.message || 'Unable to update setting.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] bg-surface p-5 shadow-card">
+      <div>
+        <p className="text-[11px] font-extrabold uppercase tracking-wide text-muted-soft">Traveller reminders</p>
+        <b className="text-[15px] text-ink">Follow-up emails for unbooked offers</b>
+        <p className="mt-1 max-w-xl text-[12.5px] text-muted">
+          {enabled
+            ? 'After the first offer, travellers get summaries instead of one email per offer: our top picks, new offers (at most once a day), a "still planning?" check-in, trip-date and expiry notices. Travellers who have booked get none.'
+            : 'No summaries or reminders are sent. Travellers still get their first offer, driver messages and booking emails, but later offers are not emailed at all.'}
+        </p>
+      </div>
+      <div className="inline-flex rounded-xl bg-canvas p-1">
+        {[{ value: true, label: 'On' }, { value: false, label: 'Off' }].map((option) => (
+          <button key={option.label} type="button" disabled={loading || saving} onClick={() => handleSet(option.value)} className={`min-w-[92px] rounded-lg px-4 py-2 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-60 ${enabled === option.value ? 'bg-surface text-ink shadow-sm' : 'text-muted-soft hover:text-muted'}`}>{option.label}</button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const BriefsPanel = ({ state, onReload, onView }) => {
   const { items: briefs, loading, error } = state;
   const [statusFilter, setStatusFilter] = useState('all');

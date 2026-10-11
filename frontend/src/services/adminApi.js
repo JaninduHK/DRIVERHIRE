@@ -366,6 +366,11 @@ export const deleteUserAccount = (userId) =>
     method: 'DELETE',
   });
 
+export const fetchQuoteFunnel = (days = 30) =>
+  request(`/reports/quote-funnel?days=${encodeURIComponent(days)}`, {
+    method: 'GET',
+  });
+
 export const fetchSettings = () =>
   request('/settings', {
     method: 'GET',

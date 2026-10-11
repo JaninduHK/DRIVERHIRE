@@ -16,8 +16,12 @@ import reviewRoutes from './routes/reviewRoutes.js';
 import supportRoutes from './routes/supportRoutes.js';
 import offerInviteRoutes from './routes/offerInviteRoutes.js';
 import emailInboundRoutes from './routes/emailInboundRoutes.js';
+import quoteFollowUpRoutes from './routes/quoteFollowUpRoutes.js';
 import { startReviewRequestScheduler } from './services/reviewRequestService.js';
 import { startOfferReminderScheduler } from './services/offerReminderService.js';
+import { startQuoteFollowUpScheduler } from './services/quoteFollowUpService.js';
+import { startTripReminderScheduler } from './services/tripReminderService.js';
+import emailPreferencesRoutes from './routes/emailPreferencesRoutes.js';
 import { startOfferExpiryScheduler } from './services/offerExpiryService.js';
 import { startRetentionScheduler } from './services/retentionSweepService.js';
 import { startBriefExpiryScheduler } from './services/briefExpiryService.js';
@@ -83,6 +87,11 @@ app.use('/api/support', supportRoutes);
 app.use('/api/offer-invite', offerInviteRoutes);
 // Mail-provider webhook that turns email replies into chat messages.
 app.use('/api/email-inbound', emailInboundRoutes);
+// Links in quote follow-up emails: "what's holding you back?" answers and
+// "post this request again" (unauthenticated, signed token).
+app.use('/api/quote-follow-up', quoteFollowUpRoutes);
+// The "Email me less often" page linked from traveller emails.
+app.use('/api/email-preferences', emailPreferencesRoutes);
 
 // Error handler for multer and other errors
 app.use((error, req, res, next) => {
@@ -149,6 +158,12 @@ const startServer = async () => {
 
     // Hourly unread-offer reminder emails.
     startOfferReminderScheduler();
+
+    // Hourly follow-up emails to travellers with unbooked offers on a quote request.
+    startQuoteFollowUpScheduler();
+
+    // Hourly "your trip starts in 3 days" emails for confirmed bookings.
+    startTripReminderScheduler();
 
     // Hourly sweep closing tour briefs whose travel dates have passed unbooked.
     startBriefExpiryScheduler();

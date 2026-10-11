@@ -9,6 +9,9 @@ export const SETTING_KEYS = {
   BRIEF_DRIVER_TYPE_SELECTION: 'briefDriverTypeSelection',
   // Which approved drivers get the "new traveller brief" email (see BRIEF_ALERT_EMAIL_MODES).
   BRIEF_ALERT_EMAILS: 'briefAlertEmails',
+  // Master switch for traveller follow-up emails about unbooked quote requests
+  // (services/quoteFollowUpService.js). On unless explicitly set to false.
+  QUOTE_FOLLOW_UPS: 'quoteFollowUps',
 };
 
 // Every new brief emails every approved driver, which is by far the largest

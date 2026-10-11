@@ -830,6 +830,14 @@ export const createVehicleBooking = async (req, res) => {
       booking,
       vehicle: { model: vehicle.model },
       paymentNote: booking.paymentNote,
+      // Used only when the booking is already confirmed (booked through an
+      // offer): the driver's contact details are not shared before that.
+      driver: {
+        name: vehicle.driver?.name,
+        contactNumber: vehicle.driver?.contactNumber,
+        profilePhoto: /^https?:\/\//i.test(vehicle.driver?.profilePhoto || '') ? vehicle.driver.profilePhoto : '',
+      },
+      inclusions: offerMessage?.offer?.inclusions,
     }).catch((error) => console.warn('Booking confirmation email failed:', error));
 
     if (vehicle.driver?.email) {

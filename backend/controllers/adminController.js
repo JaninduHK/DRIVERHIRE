@@ -221,6 +221,13 @@ const shapeBrief = (brief) => ({
     note: response.note,
     createdAt: response.createdAt,
   })),
+  followUp: {
+    steps: (brief.followUp?.steps || []).map((entry) => ({ step: entry.step, sentAt: entry.sentAt })),
+    optedOutAt: brief.followUp?.optedOutAt || null,
+    pausedUntil: brief.followUp?.pausedUntil || null,
+    feedbackReason: brief.followUp?.feedback?.reason || null,
+    feedbackAt: brief.followUp?.feedback?.at || null,
+  },
   createdAt: brief.createdAt,
   updatedAt: brief.updatedAt,
   lastResponseAt: brief.lastResponseAt,
@@ -3035,6 +3042,10 @@ const resolveBankDetails = async () => {
   return { ...DEFAULT_BANK_DETAILS, ...(stored && typeof stored === 'object' ? stored : {}) };
 };
 
+// On unless an admin has switched it off (see services/quoteFollowUpService.js).
+const resolveQuoteFollowUps = async () =>
+  (await getSetting(SETTING_KEYS.QUOTE_FOLLOW_UPS, true)) !== false;
+
 const resolveBriefAlertEmails = async () =>
   normalizeBriefAlertEmailMode(await getSetting(SETTING_KEYS.BRIEF_ALERT_EMAILS));
 
@@ -3069,6 +3080,7 @@ export const getAdminSettings = async (_req, res) => {
         briefDriverTypeSelection,
         briefAlertEmails: await resolveBriefAlertEmails(),
         briefAlertAudience: await countBriefAlertAudience(),
+        quoteFollowUps: await resolveQuoteFollowUps(),
       },
     });
   } catch (error) {
@@ -3081,12 +3093,15 @@ export const getAdminSettings = async (_req, res) => {
 // shown to drivers for commission payment.
 export const updateAdminSettings = async (req, res) => {
   try {
-    const { driverAutoApproval, bankDetails, briefDriverTypeSelection, briefAlertEmails } = req.body || {};
+    const { driverAutoApproval, bankDetails, briefDriverTypeSelection, briefAlertEmails, quoteFollowUps } = req.body || {};
     if (typeof driverAutoApproval === 'boolean') {
       await setSetting(SETTING_KEYS.DRIVER_AUTO_APPROVAL, driverAutoApproval);
     }
     if (typeof briefDriverTypeSelection === 'boolean') {
       await setSetting(SETTING_KEYS.BRIEF_DRIVER_TYPE_SELECTION, briefDriverTypeSelection);
+    }
+    if (typeof quoteFollowUps === 'boolean') {
+      await setSetting(SETTING_KEYS.QUOTE_FOLLOW_UPS, quoteFollowUps);
     }
     if (briefAlertEmails !== undefined) {
       if (!Object.values(BRIEF_ALERT_EMAIL_MODES).includes(briefAlertEmails)) {
@@ -3116,6 +3131,7 @@ export const updateAdminSettings = async (req, res) => {
         briefDriverTypeSelection:
           (await getSetting(SETTING_KEYS.BRIEF_DRIVER_TYPE_SELECTION, true)) !== false,
         briefAlertEmails: await resolveBriefAlertEmails(),
+        quoteFollowUps: await resolveQuoteFollowUps(),
       },
     });
   } catch (error) {

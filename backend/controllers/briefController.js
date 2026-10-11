@@ -14,7 +14,8 @@ import {
 import { createChatMessage } from '../services/chatService.js';
 import { checkMessagingSuspension } from '../utils/messagingSuspension.js';
 import { observeDriverSend } from '../services/abuseSignals.js';
-import { sendBriefAlertEmail } from '../services/emailService.js';
+import { sendBriefAlertEmail, sendQuoteRequestReceivedEmail } from '../services/emailService.js';
+import { buildEmailPreferencesUrl, sendOfferArrivalEmail } from '../services/quoteFollowUpService.js';
 import { sendExpoPushNotifications } from '../services/expoPushService.js';
 import { expiredBefore } from '../services/briefExpiryService.js';
 import { sanitizeMessageContent } from '../utils/chatSanitizer.js';
@@ -241,6 +242,22 @@ export const createBrief = async (req, res) => {
     // that the open-briefs board itself already hides.
     notifyApprovedDriversOfBrief(toPlainBrief(brief, null));
 
+    // Tell the traveller their request is out and what to expect, so the first
+    // email they get from us is not an offer from a driver they have never heard of.
+    User.findById(req.user.id)
+      .select('name email')
+      .lean()
+      .then((traveler) =>
+        traveler?.email
+          ? sendQuoteRequestReceivedEmail({
+              traveler: { name: traveler.name, email: traveler.email },
+              brief: plainBrief,
+              preferencesUrl: buildEmailPreferencesUrl(traveler._id),
+            })
+          : null
+      )
+      .catch((error) => console.warn('Quote request confirmation email failed:', error));
+
     return res.status(201).json({ brief: plainBrief });
   } catch (error) {
     console.error('Create brief error:', error);
@@ -253,6 +270,55 @@ export const createBrief = async (req, res) => {
     }
     return res.status(500).json({ message: 'Unable to save your tour brief right now.' });
   }
+};
+
+/**
+ * "Post this request again" from the offers-expired email: the same trip goes
+ * back to drivers as a fresh request, and the old one is closed so the traveller
+ * is not left with two. Returns the new request, or throws an Error with a
+ * `code` the caller can show (PAST_DATES, ALREADY_REPOSTED, NOT_OPEN).
+ */
+export const repostBrief = async (briefId) => {
+  const original = await TourBrief.findById(briefId);
+  if (!original) {
+    throw Object.assign(new Error('Request not found.'), { code: 'NOT_FOUND' });
+  }
+  if (original.followUp?.repostedTo) {
+    throw Object.assign(new Error('This request was already posted again.'), { code: 'ALREADY_REPOSTED' });
+  }
+  if (original.status === 'booked') {
+    throw Object.assign(new Error('This request already has a booking.'), { code: 'NOT_OPEN' });
+  }
+  const todayUtc = new Date();
+  todayUtc.setUTCHours(0, 0, 0, 0);
+  if (original.startDate < todayUtc) {
+    throw Object.assign(new Error('The start date of this request has passed.'), { code: 'PAST_DATES' });
+  }
+
+  const brief = new TourBrief({
+    traveler: original.traveler,
+    startDate: original.startDate,
+    endDate: original.endDate,
+    startLocation: original.startLocation,
+    endLocation: original.endLocation,
+    adults: original.adults,
+    children: original.children,
+    message: original.message,
+    country: original.country,
+    maxOffers: original.maxOffers,
+    // Same rule as a new request: a restriction the admin has since switched off is dropped.
+    requiredLicenseType: (await isDriverTypeSelectionEnabled()) ? original.requiredLicenseType : null,
+    status: 'open',
+  });
+  await brief.save();
+
+  original.status = 'closed';
+  original.set('followUp.repostedTo', brief._id);
+  await original.save();
+
+  await brief.populate('traveler', 'id name country');
+  notifyApprovedDriversOfBrief(toPlainBrief(brief, null));
+  return brief;
 };
 
 export const listTravelerBriefs = async (req, res) => {
@@ -563,6 +629,9 @@ Total: $${normalizedPrice.toFixed(0)} (includes ${normalizedKms} km)`;
       senderRole: USER_ROLES.DRIVER,
       content: summary,
       type: 'offer',
+      // The traveller's email for this offer is decided once the response is
+      // recorded below (first offer on the request, or part of a later summary).
+      skipNotification: true,
       offer: {
         startDate: offerStart,
         endDate: offerEnd,
@@ -616,6 +685,8 @@ Total: $${normalizedPrice.toFixed(0)} (includes ${normalizedKms} km)`;
     brief.offersCount = brief.responses.length;
     brief.lastResponseAt = new Date();
     await brief.save();
+
+    sendOfferArrivalEmail({ brief, messageId: message._id, conversationId: conversation._id, note: storedNote });
 
     // Observation only — brief responses are the one way a driver reaches a new
     // traveller, so this is the blast vector worth measuring.

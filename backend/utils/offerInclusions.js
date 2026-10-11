@@ -11,6 +11,16 @@ export const OFFER_INCLUSION_KEYS = [
   'allTaxes',
 ];
 
+// Wording for server-rendered emails; the clients keep their own copies.
+export const OFFER_INCLUSION_LABELS = {
+  englishSpeakingDriver: 'English-speaking driver',
+  fuelAndInsurance: 'Fuel and insurance',
+  parkingFeesAndTolls: 'All parking charges and tolls',
+  meetAndGreetAtAirport: 'Airport meet & greet',
+  driverMealsAndAccommodation: "Driver's meals & accommodation",
+  allTaxes: 'All taxes',
+};
+
 /**
  * Cleans the `inclusions` field of an offer request.
  *

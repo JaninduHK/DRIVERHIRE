@@ -1,7 +1,7 @@
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** How long a traveller has to book an offer before it lapses. */
-export const OFFER_EXPIRY_DAYS = 3;
+export const OFFER_EXPIRY_DAYS = 7;
 
 export const OFFER_EXPIRED_MESSAGE =
   'This offer has expired. Ask the driver to send an updated one.';
@@ -22,7 +22,7 @@ const endOfStartDay = (startDate) => {
 };
 
 /**
- * When an offer stops being bookable: three days on, or the end of the trip's
+ * When an offer stops being bookable: OFFER_EXPIRY_DAYS on, or the end of the trip's
  * first day, whichever comes first. Without the cap an offer for a trip starting
  * tomorrow would still be bookable two days after the trip had begun.
  *
@@ -34,10 +34,10 @@ export const offerExpiresAt = ({ from = new Date(), startDate } = {}) => {
   const base = new Date(from);
   if (Number.isNaN(base.getTime())) return null;
 
-  const threeDays = new Date(base.getTime() + OFFER_EXPIRY_DAYS * DAY_MS);
+  const fullWindow = new Date(base.getTime() + OFFER_EXPIRY_DAYS * DAY_MS);
   const tripCap = startDate ? endOfStartDay(startDate) : null;
 
-  return tripCap && tripCap < threeDays ? tripCap : threeDays;
+  return tripCap && tripCap < fullWindow ? tripCap : fullWindow;
 };
 
 /**

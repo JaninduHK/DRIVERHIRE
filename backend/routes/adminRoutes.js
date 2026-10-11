@@ -73,6 +73,7 @@ import {
   deleteCommissionDiscount,
 } from '../controllers/commissionDiscountController.js';
 
+import { getQuoteFunnel } from '../controllers/adminQuoteFunnelController.js';
 const router = express.Router();
 
 router.use(authenticate);
@@ -638,6 +639,8 @@ router.delete(
   [param('id').isMongoId().withMessage('Invalid user identifier')],
   deleteUserAccount
 );
+
+router.get('/reports/quote-funnel', getQuoteFunnel);
 
 router.get('/settings', getAdminSettings);
 router.patch(

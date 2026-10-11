@@ -4,7 +4,7 @@ import ChatMessage from '../models/ChatMessage.js';
 import User, { USER_ROLES } from '../models/User.js';
 import { createChatMessage } from '../services/chatService.js';
 import { notifyUser } from '../services/expoPushService.js';
-import { extractReplyText, parseReplyAddress } from '../utils/emailReply.js';
+import { extractReplyFromInboundItem, parseReplyAddress } from '../utils/emailReply.js';
 
 const getWebhookSecret = () => process.env.EMAIL_INBOUND_WEBHOOK_SECRET || '';
 
@@ -61,8 +61,7 @@ const processInboundEmail = async (item) => {
   const emailMessageId = typeof item.MessageId === 'string' ? item.MessageId.trim().slice(0, 500) : '';
   if (emailMessageId && (await ChatMessage.exists({ emailMessageId }))) return 'duplicate';
 
-  const content =
-    extractReplyText(item.ExtractedMarkdownMessage) || extractReplyText(item.RawTextBody);
+  const content = extractReplyFromInboundItem(item);
   if (!content) return 'empty';
 
   const conversation = await ChatConversation.findById(conversationId);
@@ -91,7 +90,12 @@ const processInboundEmail = async (item) => {
     data: { type: 'message', conversationId },
   });
 
-  return 'posted';
+  // Sizes only, never the text: enough to see afterwards whether a reply was
+  // posted whole or cut short, and which part of the email it came from.
+  const size = (value) => (typeof value === 'string' ? value.length : 0);
+  return `posted ${content.length} chars (text part ${size(item.RawTextBody)}, html part ${size(
+    item.RawHtmlBody
+  )}, provider extract ${size(item.ExtractedMarkdownMessage)})`;
 };
 
 /**

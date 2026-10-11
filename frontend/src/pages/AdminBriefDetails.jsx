@@ -35,6 +35,9 @@ const BRIEF_STATUSES = ['open', 'booked', 'closed'];
 const inputCls = 'mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/10';
 const labelCls = 'block text-[11px] font-extrabold uppercase tracking-wide text-muted-soft';
 const EMPTY = 'Not provided';
+// Mirrors FOLLOW_UP_STEPS in backend/services/quoteFollowUpService.js.
+const FOLLOW_UP_LABELS = { noOffers: 'No offers yet', digest1: 'Top picks', update: 'New offers', digest2: 'Still planning?', approaching30: 'Trip in 30 days', approaching14: 'Trip in 14 days', expiring: 'Expiring soon', expired: 'Offers expired' };
+const FOLLOW_UP_REASONS = { price: 'Prices too high', dates: 'Dates not fixed', choice: "Can't choose", booked: 'Booked elsewhere' };
 const statusTag = (status) => tagClass(STATUS_COLORS[status] || 'grey');
 
 const Panel = ({ title, subtitle, action, children, className = '' }) => (
@@ -82,7 +85,7 @@ const OverviewTab = ({ data, onEdit }) => {
         <dl><DetailRow label="Account ID" value={traveler?.id || brief.traveler?.id} mono /><DetailRow label="Name" value={traveler?.name || brief.traveler?.name} /><DetailRow label="Email" value={traveler?.email || brief.traveler?.email} /><DetailRow label="Phone" value={traveler?.contactNumber} /><DetailRow label="Sign-in provider" value={traveler?.authProvider} /><DetailRow label="Verified" value={traveler ? (traveler.isVerified ? 'Yes' : 'No') : null} /><DetailRow label="Registered"><Timestamp value={traveler?.createdAt} /></DetailRow>{traveler?.deletedAt ? <DetailRow label="Deleted"><Timestamp value={traveler.deletedAt} /></DetailRow> : null}</dl>
       </Panel>
       <Panel title="Record timestamps" subtitle="Exact timestamps and identifiers stored for this request.">
-        <dl><DetailRow label="Brief ID" value={brief.id} mono /><DetailRow label="Created"><Timestamp value={brief.createdAt} /></DetailRow><DetailRow label="Updated"><Timestamp value={brief.updatedAt} /></DetailRow><DetailRow label="Latest response"><Timestamp value={brief.lastResponseAt} /></DetailRow><DetailRow label="Stored offer count" value={brief.offersCount} /><DetailRow label="Response records" value={brief.responses?.length || 0} /></dl>
+        <dl><DetailRow label="Brief ID" value={brief.id} mono /><DetailRow label="Created"><Timestamp value={brief.createdAt} /></DetailRow><DetailRow label="Updated"><Timestamp value={brief.updatedAt} /></DetailRow><DetailRow label="Latest response"><Timestamp value={brief.lastResponseAt} /></DetailRow><DetailRow label="Stored offer count" value={brief.offersCount} /><DetailRow label="Response records" value={brief.responses?.length || 0} /><DetailRow label="Reminder emails">{brief.followUp?.steps?.length ? <span className="block space-y-0.5 font-normal">{brief.followUp.steps.map((entry) => <span key={entry.step} className="block">{FOLLOW_UP_LABELS[entry.step] || entry.step} · <Timestamp value={entry.sentAt} /></span>)}</span> : <span className="font-normal text-muted-soft">None sent</span>}</DetailRow>{brief.followUp?.feedbackReason ? <DetailRow label="Traveller's answer">{FOLLOW_UP_REASONS[brief.followUp.feedbackReason] || brief.followUp.feedbackReason} · <Timestamp value={brief.followUp.feedbackAt} /></DetailRow> : null}{brief.followUp?.pausedUntil ? <DetailRow label="Reminders paused until"><Timestamp value={brief.followUp.pausedUntil} /></DetailRow> : null}{brief.followUp?.optedOutAt ? <DetailRow label="Reminders stopped"><Timestamp value={brief.followUp.optedOutAt} /></DetailRow> : null}</dl>
       </Panel>
     </div>
   </div>;

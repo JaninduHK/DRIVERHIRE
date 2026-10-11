@@ -48,6 +48,12 @@ const driverLocationSchema = new mongoose.Schema(
   { _id: false }
 );
 
+export const EMAIL_PREFERENCES = {
+  ALL: 'all', // every offer as it arrives, plus summaries
+  SUMMARY: 'summary', // the first offer, then summaries at most once a day (default)
+  ESSENTIAL: 'essential', // only driver messages and bookings
+};
+
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -214,6 +220,21 @@ const userSchema = new mongoose.Schema(
     deletedAt: {
       type: Date,
       index: true,
+    },
+    // How much a traveller wants to hear about offers by email (see
+    // EMAIL_PREFERENCES). Driver messages and booking emails ignore this: they
+    // are service emails the traveller needs whatever they chose.
+    emailPreference: {
+      type: String,
+      enum: ['all', 'summary', 'essential'],
+      default: 'summary',
+    },
+    // When we last sent this traveller a reminder-type email (offer summaries,
+    // "still planning", expiry notices…). Keeps those to one a day across all
+    // of their requests.
+    lastReminderEmailAt: {
+      type: Date,
+      default: null,
     },
   },
   {

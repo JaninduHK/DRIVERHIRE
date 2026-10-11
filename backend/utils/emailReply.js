@@ -67,33 +67,90 @@ const QUOTE_MARKERS = [
   /^--\s?$/,
 ];
 
-const isQuoteStart = (line, nextLine) =>
+// Our own sending address appears in every client's "On <date>, <sender> wrote:"
+// line whatever language the client writes it in ("Le … a écrit :", "Am …
+// schrieb …:"), so it marks the start of the quoted original even where the
+// English patterns above do not. Apple's Hide My Email relay rewrites it to
+// hello_at_example_com_…@icloud.com, hence the second form.
+const getOwnAddressMarkers = () => {
+  const match = (process.env.EMAIL_FROM || 'hello@carwithdriver.lk').match(/([^\s<>"]+)@([^\s<>"]+)/);
+  if (!match) return [];
+  const [address, local, domain] = match;
+  return [address.toLowerCase(), `${local}_at_${domain.replace(/\./g, '_')}`.toLowerCase()];
+};
+
+const isQuoteStart = (line, nextLine, ownAddresses) =>
   QUOTE_MARKERS.some((marker) => marker.test(line)) ||
   // Gmail wraps a long attribution: "On Mon, 4 Oct 2026 at 10:12, Name" / "<a@b.c> wrote:"
-  (/^On .+/i.test(line) && /wrote:\s*$/i.test(nextLine));
+  (/^On .+/i.test(line) && /wrote:\s*$/i.test(nextLine)) ||
+  ownAddresses.some((address) => line.toLowerCase().includes(address));
 
 /**
- * Reduces an inbound email body to just the new text the sender typed.
+ * Reduces an inbound email body to just the new text the sender typed: every
+ * line, up to where the quoted original or the mail client's boilerplate begins.
  * Returns '' when nothing is left (e.g. a reply that only quotes the original).
+ *
+ * `markdown` is for the provider's pre-extracted body, which escapes punctuation.
  */
-export const extractReplyText = (body = '') => {
+export const extractReplyText = (body = '', { markdown = false } = {}) => {
   if (typeof body !== 'string') {
     return '';
   }
+  const ownAddresses = getOwnAddressMarkers();
   const lines = body.replace(/\r\n?/g, '\n').split('\n');
   const kept = [];
   for (let index = 0; index < lines.length; index += 1) {
-    if (isQuoteStart(lines[index].trim(), (lines[index + 1] || '').trim())) {
+    if (isQuoteStart(lines[index].trim(), (lines[index + 1] || '').trim(), ownAddresses)) {
       break;
     }
     kept.push(lines[index]);
   }
-  return kept
-    .join('\n')
-    .replace(/\\([\\`*_{}[\]()#+\-.!>])/g, '$1') // markdown escapes left by the provider's extractor
+  // A wrapped attribution leaves its first half behind: "On Mon, 4 Oct 2026, Car With Driver <"
+  while (kept.length > 0 && /<\s*$/.test(kept[kept.length - 1])) {
+    kept.pop();
+  }
+  const text = kept.join('\n');
+  return (markdown ? text.replace(/\\([\\`*_{}[\]()#+\-.!>])/g, '$1') : text)
     .replace(/\n{3,}/g, '\n\n')
     .trim()
     .slice(0, MAX_REPLY_LENGTH);
 };
 
-export default { isEmailReplyEnabled, buildReplyAddress, parseReplyAddress, extractReplyText };
+/** Plain text of an HTML-only email body, keeping its line breaks. */
+export const htmlBodyToText = (html = '') =>
+  typeof html !== 'string'
+    ? ''
+    : html
+        .replace(/<(style|script|head)[\s\S]*?<\/\1>/gi, '')
+        .replace(/<blockquote[\s\S]*$/i, '') // the quoted original, in every mainstream client
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/(p|div|li|tr|h[1-6])>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&quot;/gi, '"')
+        .replace(/&#39;/gi, "'");
+
+/**
+ * The traveller's reply out of an inbound-parse item, in order of trust:
+ *
+ * 1. The plain-text part, with our own quote stripping. It is the whole message.
+ * 2. The HTML part, for the rare client that sends no plain-text alternative.
+ * 3. The provider's pre-extracted body, last. Its signature detection is
+ *    aggressive: on a multi-paragraph reply it files everything after the first
+ *    line as "signature", which silently dropped most of what travellers wrote.
+ */
+export const extractReplyFromInboundItem = (item = {}) =>
+  extractReplyText(item.RawTextBody) ||
+  extractReplyText(htmlBodyToText(item.RawHtmlBody)) ||
+  extractReplyText(item.ExtractedMarkdownMessage, { markdown: true });
+
+export default {
+  isEmailReplyEnabled,
+  buildReplyAddress,
+  parseReplyAddress,
+  extractReplyText,
+  extractReplyFromInboundItem,
+};

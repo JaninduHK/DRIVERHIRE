@@ -208,6 +208,11 @@ const bookingSchema = new mongoose.Schema(
       ref: 'ChatMessage',
       default: null,
     },
+    // Set when the "your trip starts in 3 days" email goes out (services/tripReminderService.js).
+    preTripReminderSentAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

@@ -1,16 +1,30 @@
 import ChatMessage from '../models/ChatMessage.js';
 import { hashOfferToken } from '../services/chatService.js';
+import { LINK_PURPOSES, verifyLinkToken } from '../utils/signedLinks.js';
+
+const conversationFields = {
+  path: 'conversation',
+  populate: [
+    { path: 'driver', select: 'name' },
+    { path: 'vehicle', select: 'model' },
+  ],
+};
 
 const loadOfferByToken = async (token) => {
   if (typeof token !== 'string' || token.length < 32) return { error: 'INVALID' };
 
-  const message = await ChatMessage.findOne({ offerViewTokenHash: hashOfferToken(token) }).populate({
-    path: 'conversation',
-    populate: [
-      { path: 'driver', select: 'name' },
-      { path: 'vehicle', select: 'model' },
-    ],
-  });
+  // Signed links (quote follow-up emails) name the offer themselves and are
+  // never stored, so sending another email cannot invalidate an earlier link.
+  // They have no expiry of their own: the page only shows the offer, and
+  // whether it can still be booked is decided by the offer's own status.
+  const signedId = verifyLinkToken(LINK_PURPOSES.OFFER_VIEW, token);
+  if (signedId) {
+    const signed = await ChatMessage.findById(signedId).populate(conversationFields);
+    if (!signed || signed.type !== 'offer' || !signed.conversation) return { error: 'INVALID' };
+    return { message: signed };
+  }
+
+  const message = await ChatMessage.findOne({ offerViewTokenHash: hashOfferToken(token) }).populate(conversationFields);
 
   if (!message || message.type !== 'offer' || !message.conversation) return { error: 'INVALID' };
   if (message.offerViewTokenExpires && message.offerViewTokenExpires < new Date()) {
