@@ -20,8 +20,9 @@ export const getSupportReplyAddress = () => {
 // pass a font down from a parent, and an unstyled button label falls back to
 // Times New Roman.
 const fontStack = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
-// Brand green, darkened so white text on it clears 4.5:1 contrast.
-const brandColor = '#0f7a45';
+// The site's brand green. White text on it is about 3.3:1, so it is used for
+// buttons and bold labels (large, heavy text), never for small body copy.
+const brandColor = '#0fa35a';
 
 const paragraphStyles = `margin:0 0 14px 0;color:#0f172a;font-size:15px;line-height:1.6;font-family:${fontStack};`;
 // Mid grey: reads as secondary but stays legible on a phone outdoors.

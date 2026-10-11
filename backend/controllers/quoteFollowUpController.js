@@ -19,7 +19,7 @@ import buildAppUrl from '../utils/url.js';
 
 const DAY = 24 * 60 * 60 * 1000;
 const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
-const BRAND = '#0f7a45';
+const BRAND = '#0fa35a';
 
 const escapeHtml = (value = '') =>
   String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
