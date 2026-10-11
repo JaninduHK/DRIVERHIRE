@@ -501,8 +501,9 @@ Phone numbers, email addresses and links in messages are replaced with
 Used by every email the platform sends, drivers' and admins' included:
 
 - The preview line is hidden in the email and shows only in the inbox list.
-- A green band at the top with the logo (`/email-logo.png`, white on green, so
-  it reads the same in light and dark mode; the alt text is the brand name).
+- A white header with the logo (`/email-logo.png`, dark lettering on its own
+  white background, so it stays readable when a mail client darkens the email;
+  the alt text is the brand name).
 - White card, 600px at most, built with tables and inline styles.
 - One main button in brand green (`#0f7a45`, white text, 5.4:1 contrast), at
   least 44px tall, with the font set on the link itself.

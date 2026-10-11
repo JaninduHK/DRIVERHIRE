@@ -168,8 +168,9 @@ const renderButton = ({ label, url }) => `
 
 // Table layout with inline styles throughout: Outlook ignores <style> blocks
 // and flexbox. The preheader is the inbox preview line and must stay hidden in
-// the email itself. The logo sits on a brand-coloured band so it reads the same
-// in light and dark mode.
+// the email itself. The logo file has its own white background baked in (no
+// transparency), so its dark lettering stays readable when a mail client
+// darkens the header in dark mode.
 const buildEmailTemplate = ({
   title,
   preheader,
@@ -190,8 +191,8 @@ const buildEmailTemplate = ({
         <td align="center">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:20px;overflow:hidden;">
             <tr>
-              <td bgcolor="${brandColor}" style="padding:16px 28px;">
-                <img src="${getLogoUrl()}" alt="${escapeHtml(getBrandName())}" height="40" style="display:block;border:0;outline:none;height:40px;width:auto;font-family:${fontStack};font-size:18px;font-weight:700;color:#ffffff;" />
+              <td bgcolor="#ffffff" style="padding:18px 28px 14px 28px;border-bottom:1px solid #e2e8f0;">
+                <img src="${getLogoUrl()}" alt="${escapeHtml(getBrandName())}" height="44" style="display:block;border:0;outline:none;height:44px;width:auto;font-family:${fontStack};font-size:18px;font-weight:700;color:#0f172a;" />
               </td>
             </tr>
             <tr>
