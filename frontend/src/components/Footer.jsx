@@ -5,28 +5,28 @@ const columns = [
   {
     title: 'Travellers',
     links: [
-      { label: 'Browse vehicles', to: '/vehicles' },
-      { label: 'Featured drivers', to: '/drivers' },
-      { label: 'My quote requests', to: '/dashboard?tab=requests' },
-      { label: 'Chat messages', to: '/dashboard' },
+      { label: 'Browse Vehicles', to: '/vehicles' },
+      { label: 'Featured Drivers', to: '/drivers' },
+      { label: 'My Quote Requests', to: '/dashboard?tab=requests' },
+      { label: 'Chat Messages', to: '/dashboard' },
     ],
   },
   {
     title: 'Drivers',
     links: [
-      { label: 'Apply as a driver', to: '/register/driver' },
-      { label: 'Driver guide', to: '/driver-guide' },
-      { label: 'Driver terms', to: '/driver-terms' },
-      { label: 'Driver portal', to: '/portal/driver' },
+      { label: 'Apply as a Driver', to: '/register/driver' },
+      { label: 'Driver Guide', to: '/driver-guide' },
+      { label: 'Driver Terms', to: '/driver-terms' },
+      { label: 'Driver Portal', to: '/portal/driver' },
     ],
   },
   {
     title: 'Help',
     links: [
-      { label: 'Contact support', to: '/contact' },
-      { label: 'Safety promise', to: '/about' },
-      { label: 'Privacy policy', to: '/privacy-policy' },
-      { label: 'Terms & conditions', to: '/terms' },
+      { label: 'Contact Support', to: '/contact' },
+      { label: 'Safety Promise', to: '/about' },
+      { label: 'Privacy Policy', to: '/privacy-policy' },
+      { label: 'Terms & Conditions', to: '/terms' },
     ],
   },
 ];
@@ -79,7 +79,7 @@ const Footer = () => {
 
         {/* Bottom bar */}
         <div className="mt-[clamp(28px,3vw,44px)] flex flex-wrap items-center justify-between gap-3.5 border-t border-white/[0.12] pt-[22px]">
-          <p className="text-[12.5px] text-white/50">© {year} Car With Driver LK. All rights reserved.</p>
+          <p className="text-[12.5px] text-white/50">© {year} Car With Driver (PVT) Ltd - PV00378014. All rights reserved.</p>
           <div className="flex gap-[18px]">
             <Link to="/about" className="text-[12.5px] text-white/60 transition hover:text-white">About</Link>
             <Link to="/blog" className="text-[12.5px] text-white/60 transition hover:text-white">Blog</Link>
