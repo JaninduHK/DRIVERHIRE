@@ -1651,6 +1651,97 @@ export const sendVehicleStatusEmail = async ({ driver, vehicle, status, note }) 
 
 // Sent once a month to drivers who actually owe commission for the month just
 // ended. Drivers with nothing due are never contacted.
+const INSURANCE_EMAILS = {
+  // An admin asked the driver to verify the vehicle's insurance again.
+  requested: {
+    subject: (model) => `Action needed: verify the insurance for your ${model}`,
+    title: 'Please verify your vehicle insurance',
+    lines: (model) => [
+      `We need to verify the insurance for your <strong>${model}</strong>. Until that is done the vehicle is not shown to travellers.`,
+      'To put it back on the marketplace, open the vehicle in your driver portal or app and resubmit it with:',
+      { list: ['A clear photo of your current passenger insurance document', 'The cover start and end dates', '5 photos of the vehicle'] },
+    ],
+  },
+  // A week before the cover period ends.
+  expiring: {
+    subject: (model, date) => `Your ${model} insurance expires on ${date}`,
+    title: 'Your vehicle insurance expires soon',
+    lines: (model, date) => [
+      `The insurance on file for your <strong>${model}</strong> ends on <strong>${date}</strong>.`,
+      'Once you have renewed it, open the vehicle in your driver portal or app and upload the new passenger insurance document with its cover dates.',
+      'If the cover runs out before you update it, the vehicle is taken off the marketplace until you do.',
+    ],
+  },
+  // The cover period has ended and the vehicle was taken off the marketplace.
+  expired: {
+    subject: (model) => `Your ${model} is off the marketplace: insurance expired`,
+    title: 'Your vehicle insurance has expired',
+    lines: (model, date) => [
+      `The insurance on file for your <strong>${model}</strong> ended on <strong>${date}</strong>, so the vehicle is no longer shown to travellers.`,
+      'To put it back, open the vehicle in your driver portal or app and upload your new passenger insurance document with its cover dates. We will review it as soon as we can.',
+      'Bookings you have already confirmed are not affected.',
+    ],
+  },
+  // An admin could not accept the insurance that was submitted.
+  rejected: {
+    subject: (model) => `We could not verify the insurance for your ${model}`,
+    title: 'Your insurance could not be verified',
+    lines: (model) => [
+      `We were not able to verify the insurance you submitted for your <strong>${model}</strong>, so the vehicle is not shown to travellers for now.`,
+      'Please upload a clear photo of your current passenger insurance document, with the correct cover dates, from your driver portal or app.',
+    ],
+  },
+};
+
+/**
+ * Notices to a driver about a vehicle's insurance.
+ * `kind`: requested | expiring | expired | rejected. `note` is the admin's
+ * message (requested, rejected); `endDate` the cover end date (expiring, expired).
+ */
+export const sendVehicleInsuranceEmail = async ({ driver, vehicle, kind, note, endDate }) => {
+  const copy = INSURANCE_EMAILS[kind];
+  if (!driver?.email || !copy) {
+    return;
+  }
+
+  const plainModel = vehicle?.model || 'vehicle';
+  const model = escapeHtml(plainModel);
+  const date = endDate ? formatDate(endDate) : '';
+  const portalUrl = buildUrl('/portal/driver');
+  const lines = copy.lines(model, date);
+
+  const html = buildEmailTemplate({
+    title: copy.title,
+    preheader: escapeHtml(copy.subject(plainModel, date)),
+    bodyLines: [
+      `Hi ${escapeHtml(driver.name || 'there')},`,
+      ...lines.map((line) =>
+        typeof line === 'string'
+          ? line
+          : {
+              raw: `<ul style="margin:0 0 14px 20px;padding:0;color:#0f172a;font-size:15px;line-height:1.6;font-family:${fontStack};">${line.list
+                .map((item) => `<li style="margin-bottom:4px;font-family:${fontStack};">${item}</li>`)
+                .join('')}</ul>`,
+            }
+      ),
+      note ? `<strong>Note from our team:</strong> ${formatMultiline(note)}` : null,
+    ],
+    action: { label: 'Open my vehicles', url: portalUrl },
+  });
+
+  const text = `Hi ${driver.name || 'there'},\n\n${lines
+    .map((line) => (typeof line === 'string' ? line.replace(/<[^>]+>/g, '') : line.list.map((item) => `- ${item}`).join('\n')))
+    .join('\n\n')}${note ? `\n\nNote from our team: ${note}` : ''}\n\nOpen your vehicles: ${portalUrl}`;
+
+  await sendEmail({
+    to: driver.email,
+    subject: copy.subject(plainModel, date),
+    html,
+    text,
+    tags: [`driver-insurance-${kind}`],
+  });
+};
+
 export const sendCommissionDueEmail = async ({
   to,
   driverName,

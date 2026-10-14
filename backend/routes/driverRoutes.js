@@ -1,7 +1,7 @@
 import express from 'express';
 import { body, param } from 'express-validator';
 import { authenticate, ensureApprovedDriver } from '../middleware/authMiddleware.js';
-import { vehicleImageUpload, commissionSlipUpload, conditionalLicenseUpload } from '../middleware/cloudinaryUpload.js';
+import { vehicleSubmissionUpload, commissionSlipUpload, conditionalLicenseUpload } from '../middleware/cloudinaryUpload.js';
 import {
   getDriverOverview,
   updateDriverLicense,
@@ -55,7 +55,7 @@ router.delete(
 router.get('/vehicles', getDriverVehicles);
 router.post(
   '/vehicles',
-  vehicleImageUpload.array('images', 5),
+  vehicleSubmissionUpload,
   [
     body('model').trim().notEmpty().withMessage('Vehicle model is required'),
     body('year')
@@ -98,7 +98,7 @@ router.post(
 
 router.patch(
   '/vehicles/:id',
-  vehicleImageUpload.array('images', 5),
+  vehicleSubmissionUpload,
   [
     param('id').isMongoId().withMessage('Invalid vehicle identifier'),
     body('model').trim().notEmpty().withMessage('Vehicle model is required'),

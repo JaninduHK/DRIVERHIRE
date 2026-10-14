@@ -75,6 +75,10 @@ import {
 } from '../controllers/commissionDiscountController.js';
 
 import { getQuoteFunnel } from '../controllers/adminQuoteFunnelController.js';
+import {
+  requestInsuranceVerification,
+  reviewVehicleInsurance,
+} from '../controllers/adminVehicleInsuranceController.js';
 const router = express.Router();
 
 router.use(authenticate);
@@ -233,6 +237,25 @@ router.patch(
 );
 
 router.get('/vehicles', getVehicleSubmissions);
+
+// Insurance: ask the driver to verify it again, or record the verdict on what they sent.
+router.post(
+  '/vehicles/:id/insurance/request',
+  [
+    param('id').isMongoId().withMessage('Invalid vehicle identifier'),
+    body('note').optional().isString().trim().isLength({ max: 500 }),
+  ],
+  requestInsuranceVerification
+);
+router.patch(
+  '/vehicles/:id/insurance',
+  [
+    param('id').isMongoId().withMessage('Invalid vehicle identifier'),
+    body('status').isIn(['verified', 'rejected']).withMessage('Status must be verified or rejected'),
+    body('reason').optional().isString().trim().isLength({ max: 500 }),
+  ],
+  reviewVehicleInsurance
+);
 
 router.get(
   '/vehicles/:id',

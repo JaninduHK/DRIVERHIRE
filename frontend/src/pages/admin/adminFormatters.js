@@ -70,6 +70,25 @@ export const formatDateTime = (value) => {
 // Shared status-tag color system (mirrors the mock's amber/blue/green/red/grey tags),
 // mapped onto standard Tailwind palette classes already used elsewhere in this codebase.
 // `dark:` variants key off AdminShell's `.admin-dark` toggle (see tailwind.config.js).
+// Vehicle insurance, by the `insurance.state` the server reports; mirrors
+// INSURANCE_STATE in backend/utils/vehicleInsurance.js.
+export const INSURANCE_STATE_LABELS = {
+  missing: 'No insurance',
+  pending: 'Insurance to verify',
+  verified: 'Insurance verified',
+  expiring: 'Insurance expiring',
+  expired: 'Insurance expired',
+  rejected: 'Insurance rejected',
+};
+export const INSURANCE_STATE_COLORS = {
+  missing: 'grey',
+  pending: 'blue',
+  verified: 'green',
+  expiring: 'amber',
+  expired: 'red',
+  rejected: 'red',
+};
+
 export const TAG_STYLES = {
   green: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-300',
   amber: 'bg-amber-50 text-amber-700 dark:bg-amber-400/15 dark:text-amber-300',

@@ -12,6 +12,7 @@ import {
   MessageCircle,
   Pencil,
   RefreshCw,
+  ShieldCheck,
   Star,
   Trash2,
   Upload,
@@ -22,6 +23,8 @@ import {
   deleteVehicle,
   fetchVehicleDetails,
   removeVehicleImage,
+  requestVehicleInsuranceVerification,
+  reviewVehicleInsurance,
   updateVehicleDetails,
   updateVehicleStatus,
 } from '../services/adminApi.js';
@@ -32,7 +35,7 @@ import AdminShell from './admin/AdminShell.jsx';
 import AdminModal from './admin/AdminModal.jsx';
 import VehicleAvailabilitySection from './admin/VehicleAvailabilitySection.jsx';
 import { ADMIN_NAV_GROUPS } from './admin/adminNav.js';
-import { formatCurrency, formatDateTime, tagClass } from './admin/adminFormatters.js';
+import { INSURANCE_STATE_COLORS, INSURANCE_STATE_LABELS, formatCurrency, formatDate, formatDateTime, tagClass } from './admin/adminFormatters.js';
 
 const STATUS_COLORS = { pending: 'amber', approved: 'green', confirmed: 'green', active: 'green', accepted: 'green', available: 'green', rejected: 'red', cancelled: 'red', declined: 'red', unavailable: 'red', closed: 'grey' };
 const inputCls = 'mt-1 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/10';
@@ -70,12 +73,60 @@ const Stat = ({ value, label }) => (
 
 const Timestamp = ({ value }) => <span title={value || ''}>{formatDateTime(value)}</span>;
 
-const VehicleOverview = ({ vehicle, onEdit, onUpload, onRemoveImage, busy }) => (
+// Insurance the driver submitted, and the three things an admin can do about it.
+const InsurancePanel = ({ vehicle, busy, onVerify, onReject, onRequest }) => {
+  const insurance = vehicle.insurance || { state: 'missing', cardImages: [] };
+  const onFile = insurance.state !== 'missing';
+  return (
+    <Panel
+      title="Passenger insurance"
+      subtitle="The document showing passenger insurance, and the cover period, as submitted by the driver. Only admins and the driver can see these."
+      action={<span className={tagClass(INSURANCE_STATE_COLORS[insurance.state] || 'grey')}>{INSURANCE_STATE_LABELS[insurance.state] || insurance.state}</span>}
+    >
+      {insurance.requestedAt ? (
+        <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-200">
+          Verification requested on {formatDateTime(insurance.requestedAt)}. Waiting for the driver to resubmit.{insurance.requestNote ? ` Your note: ${insurance.requestNote}` : ''}
+        </p>
+      ) : null}
+      {insurance.cardImages?.length ? (
+        <div className="mb-4 grid grid-cols-2 gap-3">
+          {insurance.cardImages.map((image, index) => (
+            <a key={image} href={image} target="_blank" rel="noreferrer" className="overflow-hidden rounded-xl border border-hairline">
+              <img src={image} alt={`Passenger insurance document ${index + 1}`} className="h-36 w-full object-cover" />
+            </a>
+          ))}
+        </div>
+      ) : (
+        <div className="mb-4 grid min-h-[120px] place-items-center rounded-xl bg-canvas text-center text-muted-soft"><div><ShieldCheck className="mx-auto h-8 w-8" /><p className="mt-2 text-sm">No passenger insurance document uploaded.</p></div></div>
+      )}
+      <dl>
+        <DetailRow label="Cover starts" value={insurance.startDate ? formatDate(insurance.startDate) : null} />
+        <DetailRow label="Cover ends" value={insurance.endDate ? formatDate(insurance.endDate) : null} />
+        <DetailRow label="Submitted"><Timestamp value={insurance.submittedAt} /></DetailRow>
+        <DetailRow label="Reviewed"><Timestamp value={insurance.reviewedAt} /></DetailRow>
+        {insurance.rejectedReason ? <DetailRow label="Rejection reason" value={insurance.rejectedReason} /> : null}
+        {insurance.expiredAt ? <DetailRow label="Taken down for expiry"><Timestamp value={insurance.expiredAt} /></DetailRow> : null}
+      </dl>
+      <div className="mt-4 flex flex-wrap gap-2">
+        {onFile && insurance.state !== 'expired' && insurance.status !== 'verified' ? (
+          <button type="button" disabled={busy} onClick={onVerify} className="inline-flex items-center gap-1.5 rounded-xl bg-brand px-3.5 py-2 text-xs font-bold text-white disabled:opacity-60"><CheckCircle2 className="h-4 w-4" /> Verify insurance</button>
+        ) : null}
+        {onFile && insurance.status !== 'rejected' ? (
+          <button type="button" disabled={busy} onClick={onReject} className="inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2 text-xs font-bold text-rose-600 disabled:opacity-60"><XCircle className="h-4 w-4" /> Reject insurance</button>
+        ) : null}
+        <button type="button" disabled={busy} onClick={onRequest} className="inline-flex items-center gap-1.5 rounded-xl border border-line px-3.5 py-2 text-xs font-bold text-ink hover:bg-canvas disabled:opacity-60"><ShieldCheck className="h-4 w-4" /> Request verification</button>
+      </div>
+      <p className="mt-3 text-[11.5px] leading-relaxed text-muted-soft">Requesting verification sets the vehicle to pending and emails the driver. They must resubmit with a new passenger insurance document, cover dates and 5 photos before it can be approved again.</p>
+    </Panel>
+  );
+};
+
+const VehicleOverview = ({ vehicle, onEdit, onUpload, onRemoveImage, busy, insuranceActions }) => (
   <div className="grid gap-5 xl:grid-cols-[1.15fr_.85fr]">
     <div className="flex flex-col gap-5">
       <Panel
         title="Vehicle images"
-        subtitle={`${vehicle.images?.length || 0} of 5 images uploaded.`}
+        subtitle={`${vehicle.images?.length || 0} of 5 images uploaded. Drivers must provide all 5.`}
         action={
           <label className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs font-bold text-ink hover:bg-canvas ${busy ? 'pointer-events-none opacity-60' : ''}`}>
             <Upload className="h-3.5 w-3.5" /> Add images
@@ -101,6 +152,7 @@ const VehicleOverview = ({ vehicle, onEdit, onUpload, onRemoveImage, busy }) => 
         <dl>
           <DetailRow label="Vehicle ID" value={vehicle.id} mono />
           <DetailRow label="Model" value={vehicle.model} />
+          <DetailRow label="Registration number" value={vehicle.registrationNumber} mono />
           <DetailRow label="Year" value={vehicle.year} />
           <DetailRow label="Price per day" value={formatCurrency(vehicle.pricePerDay)} />
           <DetailRow label="Seats" value={vehicle.seats} />
@@ -121,6 +173,8 @@ const VehicleOverview = ({ vehicle, onEdit, onUpload, onRemoveImage, busy }) => 
       <Panel title="Approval and moderation" subtitle="Current listing state and its latest administrator review.">
         <dl><DetailRow label="Status"><span className={statusTag(vehicle.status)}>{vehicle.status}</span></DetailRow><DetailRow label="Rejection reason" value={vehicle.rejectedReason} /><DetailRow label="Reviewed"><Timestamp value={vehicle.reviewedAt} /></DetailRow><DetailRow label="Reviewed by" value={vehicle.reviewedBy?.name} /><DetailRow label="Reviewer email" value={vehicle.reviewedBy?.email} /></dl>
       </Panel>
+
+      <InsurancePanel vehicle={vehicle} busy={busy} {...insuranceActions} />
 
       <Panel title="Availability summary" subtitle="Driver-created date ranges stored on this vehicle.">
         <div className="grid grid-cols-2 gap-3"><Stat value={vehicle.availability?.length || 0} label="Total entries" /><Stat value={vehicle.availability?.filter((entry) => entry.status === 'unavailable').length || 0} label="Blocked ranges" /></div>
@@ -186,6 +240,7 @@ const AdminVehicleDetails = () => {
   const [modal, setModal] = useState(null);
   const [formError, setFormError] = useState('');
   const [rejectReason, setRejectReason] = useState('');
+  const [insuranceNote, setInsuranceNote] = useState('');
   const [editForm, setEditForm] = useState({});
 
   const loadDetails = useCallback(async () => {
@@ -208,9 +263,16 @@ const AdminVehicleDetails = () => {
   };
 
   const changeStatus = (status, rejectedReason) => runAction(`status-${status}`, () => updateVehicleStatus(vehicleId, { status, ...(status === 'rejected' && rejectedReason ? { rejectedReason } : {}) }), status === 'approved' ? 'Vehicle approved.' : 'Vehicle rejected and the driver was notified.');
+  const insuranceActions = {
+    onVerify: () => runAction('insurance-verify', () => reviewVehicleInsurance(vehicleId, { status: 'verified' }), 'Insurance verified.'),
+    onReject: () => { setInsuranceNote(''); setFormError(''); setModal('insurance-reject'); },
+    onRequest: () => { setInsuranceNote(''); setFormError(''); setModal('insurance-request'); },
+  };
+  const submitInsuranceReject = () => runAction('insurance-reject', () => reviewVehicleInsurance(vehicleId, { status: 'rejected', ...(insuranceNote.trim() ? { reason: insuranceNote.trim() } : {}) }), 'Insurance rejected and the driver was notified.');
+  const submitInsuranceRequest = () => runAction('insurance-request', () => requestVehicleInsuranceVerification(vehicleId, insuranceNote.trim()), 'Verification requested. The vehicle is now pending and the driver was notified.');
   const openEdit = () => {
     const vehicle = data.vehicle;
-    setEditForm({ model: vehicle.model || '', year: vehicle.year || '', pricePerDay: vehicle.pricePerDay || '', seats: vehicle.seats || '', description: vehicle.description || '', ...Object.fromEntries(VEHICLE_FEATURES.map(({ key }) => [key, Boolean(vehicle[key])])) });
+    setEditForm({ model: vehicle.model || '', registrationNumber: vehicle.registrationNumber || '', year: vehicle.year || '', pricePerDay: vehicle.pricePerDay || '', seats: vehicle.seats || '', description: vehicle.description || '', ...Object.fromEntries(VEHICLE_FEATURES.map(({ key }) => [key, Boolean(vehicle[key])])) });
     setFormError(''); setModal('edit');
   };
   const submitEdit = (event) => {
@@ -268,15 +330,17 @@ const AdminVehicleDetails = () => {
       <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6"><Stat value={summary.completedTrips} label="Completed trips" /><Stat value={summary.upcomingTrips} label="Upcoming" /><Stat value={summary.offerCount} label="Offers" /><Stat value={summary.averageRating ? `${summary.averageRating}/5` : '—'} label={`${summary.reviewCount} reviews`} /><Stat value={formatCurrency(summary.totalGross)} label="Booking value" /><Stat value={formatCurrency(summary.driverEarnings)} label="Driver earnings" /></div>
     </section>
     <nav className="flex gap-1 overflow-x-auto rounded-[16px] bg-surface p-1.5 shadow-card">{tabs.map(([id, label, count]) => <button key={id} type="button" onClick={() => setActiveTab(id)} className={`whitespace-nowrap rounded-xl px-3.5 py-2.5 text-xs font-extrabold transition ${activeTab === id ? 'bg-brand text-white' : 'text-muted hover:bg-canvas hover:text-ink'}`}>{label}{count != null ? ` (${count})` : ''}</button>)}</nav>
-    {activeTab === 'overview' ? <VehicleOverview vehicle={vehicle} onEdit={openEdit} onUpload={uploadImages} onRemoveImage={removeImage} busy={Boolean(busy)} /> : null}
+    {activeTab === 'overview' ? <VehicleOverview vehicle={vehicle} onEdit={openEdit} onUpload={uploadImages} onRemoveImage={removeImage} busy={Boolean(busy)} insuranceActions={insuranceActions} /> : null}
     {activeTab === 'availability' ? <Panel title="Availability management" subtitle="Driver-created ranges are editable; dates blocked by bookings are read-only."><VehicleAvailabilitySection vehicleId={vehicle.id} /></Panel> : null}
     {activeTab === 'bookings' ? <BookingsTab bookings={data.bookings} /> : null}
     {activeTab === 'reviews' ? <ReviewsTab reviews={data.reviews} /> : null}
     {activeTab === 'conversations' ? <ConversationsTab offers={data.offers} conversations={data.conversations} /> : null}
     {activeTab === 'activity' ? <ActivityTab activity={data.activity} /> : null}
 
-    <AdminModal open={modal === 'edit'} onClose={closeModal} title="Edit vehicle details" subtitle="Update the information shown throughout the marketplace."><form onSubmit={submitEdit} className="space-y-4"><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><label className={labelCls}>Model<input value={editForm.model || ''} onChange={(event) => setEditForm((current) => ({ ...current, model: event.target.value }))} className={inputCls} /></label><label className={labelCls}>Year<input type="number" min="1990" max={new Date().getFullYear() + 1} value={editForm.year || ''} onChange={(event) => setEditForm((current) => ({ ...current, year: event.target.value }))} className={inputCls} /></label><label className={labelCls}>Price per day<input type="number" min="35" max="250" value={editForm.pricePerDay || ''} onChange={(event) => setEditForm((current) => ({ ...current, pricePerDay: event.target.value }))} className={inputCls} /></label><label className={labelCls}>Seats<input type="number" min="1" value={editForm.seats || ''} onChange={(event) => setEditForm((current) => ({ ...current, seats: event.target.value }))} className={inputCls} /></label></div><label className={labelCls}>Description<textarea rows={4} value={editForm.description || ''} onChange={(event) => setEditForm((current) => ({ ...current, description: event.target.value }))} className={inputCls} /></label><fieldset className="rounded-xl border border-line p-3"><legend className="px-1 text-[11px] font-extrabold uppercase tracking-wide text-muted-soft">Included services</legend><div className="mt-2 grid gap-2 sm:grid-cols-2">{VEHICLE_FEATURES.map(({ key, label }) => <label key={key} className="flex items-center gap-2 text-[12.5px] font-semibold text-ink"><input type="checkbox" checked={Boolean(editForm[key])} onChange={(event) => setEditForm((current) => ({ ...current, [key]: event.target.checked }))} className="h-4 w-4 rounded border-line text-brand focus:ring-brand" />{label}</label>)}</div></fieldset>{formError ? <p className="text-sm font-semibold text-rose-600">{formError}</p> : null}<button type="submit" disabled={Boolean(busy)} className="rounded-xl bg-brand px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60">{busy === 'edit' ? 'Saving…' : 'Save changes'}</button></form></AdminModal>
+    <AdminModal open={modal === 'edit'} onClose={closeModal} title="Edit vehicle details" subtitle="Update the information shown throughout the marketplace."><form onSubmit={submitEdit} className="space-y-4"><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><label className={labelCls}>Model<input value={editForm.model || ''} onChange={(event) => setEditForm((current) => ({ ...current, model: event.target.value }))} className={inputCls} /></label><label className={labelCls}>Year<input type="number" min="1990" max={new Date().getFullYear() + 1} value={editForm.year || ''} onChange={(event) => setEditForm((current) => ({ ...current, year: event.target.value }))} className={inputCls} /></label><label className={labelCls}>Price per day<input type="number" min="35" max="250" value={editForm.pricePerDay || ''} onChange={(event) => setEditForm((current) => ({ ...current, pricePerDay: event.target.value }))} className={inputCls} /></label><label className={labelCls}>Seats<input type="number" min="1" value={editForm.seats || ''} onChange={(event) => setEditForm((current) => ({ ...current, seats: event.target.value }))} className={inputCls} /></label></div><label className={labelCls}>Registration number<input maxLength={20} value={editForm.registrationNumber || ''} onChange={(event) => setEditForm((current) => ({ ...current, registrationNumber: event.target.value }))} className={`${inputCls} uppercase`} placeholder="CAB-1234" /></label><label className={labelCls}>Description<textarea rows={4} value={editForm.description || ''} onChange={(event) => setEditForm((current) => ({ ...current, description: event.target.value }))} className={inputCls} /></label><fieldset className="rounded-xl border border-line p-3"><legend className="px-1 text-[11px] font-extrabold uppercase tracking-wide text-muted-soft">Included services</legend><div className="mt-2 grid gap-2 sm:grid-cols-2">{VEHICLE_FEATURES.map(({ key, label }) => <label key={key} className="flex items-center gap-2 text-[12.5px] font-semibold text-ink"><input type="checkbox" checked={Boolean(editForm[key])} onChange={(event) => setEditForm((current) => ({ ...current, [key]: event.target.checked }))} className="h-4 w-4 rounded border-line text-brand focus:ring-brand" />{label}</label>)}</div></fieldset>{formError ? <p className="text-sm font-semibold text-rose-600">{formError}</p> : null}<button type="submit" disabled={Boolean(busy)} className="rounded-xl bg-brand px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60">{busy === 'edit' ? 'Saving…' : 'Save changes'}</button></form></AdminModal>
     <AdminModal open={modal === 'delete'} onClose={closeModal} title="Delete this vehicle?" subtitle="It is removed from search, the driver's list and any new offers. Past bookings, reviews and chat history keep showing it."><div className="space-y-4"><p className="text-sm text-muted">Any offer still waiting on this vehicle is withdrawn. This cannot be undone from the dashboard.</p>{formError ? <p className="text-sm font-semibold text-rose-600">{formError}</p> : null}<div className="flex justify-end gap-2"><button type="button" onClick={closeModal} className="rounded-xl border border-line px-4 py-2 text-sm font-bold text-ink">Cancel</button><button type="button" disabled={Boolean(busy)} onClick={deleteThisVehicle} className="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-60"><Trash2 className="h-4 w-4" /> {busy === 'delete' ? 'Deleting…' : 'Delete vehicle'}</button></div></div></AdminModal>
+    <AdminModal open={modal === 'insurance-request'} onClose={closeModal} title="Request insurance verification" subtitle="The vehicle goes to pending and leaves the marketplace until the driver resubmits it."><div className="space-y-4"><p className="text-sm leading-relaxed text-muted">The driver is emailed and asked to resubmit this vehicle with a new photo of the document showing passenger insurance, the cover dates and 5 photos.</p><label className={labelCls}>Note to the driver (optional)<textarea rows={4} maxLength={500} value={insuranceNote} onChange={(event) => setInsuranceNote(event.target.value)} className={inputCls} placeholder="For example: the photo does not show passenger cover." /></label>{formError ? <p className="text-sm font-semibold text-rose-600">{formError}</p> : null}<div className="flex justify-end gap-2"><button type="button" onClick={closeModal} className="rounded-xl border border-line px-4 py-2 text-sm font-bold text-ink">Cancel</button><button type="button" disabled={Boolean(busy)} onClick={submitInsuranceRequest} className="inline-flex items-center gap-2 rounded-xl bg-brand px-4 py-2 text-sm font-bold text-white disabled:opacity-60"><ShieldCheck className="h-4 w-4" /> {busy === 'insurance-request' ? 'Requesting…' : 'Request verification'}</button></div></div></AdminModal>
+    <AdminModal open={modal === 'insurance-reject'} onClose={closeModal} title="Reject insurance" subtitle="An approved vehicle goes to pending. The reason is included in the email sent to the driver."><div className="space-y-4"><label className={labelCls}>Reason (optional)<textarea rows={4} maxLength={500} value={insuranceNote} onChange={(event) => setInsuranceNote(event.target.value)} className={inputCls} placeholder="Explain what is wrong with the document or dates." /></label>{formError ? <p className="text-sm font-semibold text-rose-600">{formError}</p> : null}<div className="flex justify-end gap-2"><button type="button" onClick={closeModal} className="rounded-xl border border-line px-4 py-2 text-sm font-bold text-ink">Cancel</button><button type="button" disabled={Boolean(busy)} onClick={submitInsuranceReject} className="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-60"><XCircle className="h-4 w-4" /> {busy === 'insurance-reject' ? 'Rejecting…' : 'Reject insurance'}</button></div></div></AdminModal>
     <AdminModal open={modal === 'reject'} onClose={closeModal} title="Reject vehicle" subtitle="The reason is included in the email sent to the driver."><div className="space-y-4"><label className={labelCls}>Reason (optional)<textarea rows={5} maxLength={500} value={rejectReason} onChange={(event) => setRejectReason(event.target.value)} className={inputCls} placeholder="Explain what the driver should correct." /></label>{formError ? <p className="text-sm font-semibold text-rose-600">{formError}</p> : null}<div className="flex justify-end gap-2"><button type="button" onClick={closeModal} className="rounded-xl border border-line px-4 py-2 text-sm font-bold text-ink">Cancel</button><button type="button" disabled={Boolean(busy)} onClick={() => changeStatus('rejected', rejectReason.trim())} className="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-60"><XCircle className="h-4 w-4" /> {busy ? 'Rejecting…' : 'Reject vehicle'}</button></div></div></AdminModal>
   </>, vehicle.model);
 };

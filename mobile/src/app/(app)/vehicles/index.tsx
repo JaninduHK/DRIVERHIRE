@@ -64,9 +64,28 @@ export default function Vehicles() {
   );
 }
 
+// What a driver needs to do about a vehicle's insurance, by the state the server
+// reports. States with nothing to do (in review, verified) show no notice.
+const INSURANCE_NOTICES: Record<string, string> = {
+  missing: 'Add your passenger insurance document and cover dates. Tap Edit details to upload them.',
+  expiring: 'Your insurance expires soon. Upload your renewed passenger insurance document before the cover ends, or this vehicle leaves the marketplace.',
+  expired: 'Insurance expired. This vehicle is off the marketplace until you upload your new passenger insurance document.',
+  rejected: 'We could not verify the insurance you sent. Upload a clear photo of your current passenger insurance document.',
+};
+
 function VehicleCard({ vehicle, onEdit }: { vehicle: Vehicle; onEdit: () => void }) {
   const status = (vehicle.status ?? 'approved').toLowerCase();
   const pending = status === 'pending';
+  const insurance = vehicle.insurance;
+  const insuranceNotice = insurance?.requestedAt
+    ? `We asked you to verify this vehicle's insurance. Resubmit it with a new photo of your passenger insurance document and 5 photos.${
+        insurance.requestNote ? ` Note from our team: ${insurance.requestNote}` : ''
+      }`
+    : insurance
+      ? INSURANCE_NOTICES[insurance.state]
+      : undefined;
+  // "Waiting on admin approval" would be wrong while the next step is the driver's.
+  const waitingOnDriver = Boolean(insurance?.requestedAt) || insurance?.state === 'expired' || insurance?.state === 'rejected';
   const features = FEATURES.filter((f) => vehicle[f.key]);
 
   return (
@@ -78,6 +97,7 @@ function VehicleCard({ vehicle, onEdit }: { vehicle: Vehicle; onEdit: () => void
             <Chip label={status.toUpperCase()} tone={pending ? 'warn' : 'brand'} />
           </View>
           <Text className="mt-0.5 font-med text-[12.5px] text-muted-soft">
+            {vehicle.registrationNumber ? `${vehicle.registrationNumber}, ` : ''}
             {vehicle.year}
             {vehicle.createdAt ? `, added ${formatDate(vehicle.createdAt)}` : ''}
           </Text>
@@ -100,7 +120,13 @@ function VehicleCard({ vehicle, onEdit }: { vehicle: Vehicle; onEdit: () => void
         </View>
       ) : null}
 
-      {pending ? (
+      {insuranceNotice ? (
+        <View className="mb-3 rounded-[11px] border border-[#f4e2c2] bg-[#fff8ec] px-3 py-2.5">
+          <Text className="font-semi text-[12.5px] leading-5 text-[#7a5a15]">{insuranceNotice}</Text>
+        </View>
+      ) : null}
+
+      {pending && !waitingOnDriver ? (
         <View className="mb-3 rounded-[11px] border border-[#f4e2c2] bg-[#fff8ec] px-3 py-2.5">
           <Text className="font-semi text-[12.5px] leading-5 text-[#7a5a15]">
             Waiting on admin approval, usually one working day.

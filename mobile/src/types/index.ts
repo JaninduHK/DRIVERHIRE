@@ -62,6 +62,21 @@ export interface VehicleImage {
   publicId?: string;
 }
 
+/** Mirrors INSURANCE_STATE in backend/utils/vehicleInsurance.js. */
+export type InsuranceState = 'missing' | 'pending' | 'verified' | 'expiring' | 'expired' | 'rejected';
+
+export interface VehicleInsurance {
+  state: InsuranceState;
+  status?: 'pending' | 'verified' | 'rejected' | null;
+  cardImages?: string[];
+  startDate?: string | null;
+  endDate?: string | null;
+  rejectedReason?: string | null;
+  /** Set when an admin asked for the insurance to be verified again. */
+  requestedAt?: string | null;
+  requestNote?: string | null;
+}
+
 export interface Vehicle {
   id: string;
   model: string;
@@ -77,6 +92,10 @@ export interface Vehicle {
   driverMealsAndAccommodation?: boolean;
   parkingFeesAndTolls?: boolean;
   allTaxes?: boolean;
+  /** Absent on responses from a backend that predates insurance. */
+  insurance?: VehicleInsurance;
+  /** The plate number; only ever sent to the vehicle's own driver. */
+  registrationNumber?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }

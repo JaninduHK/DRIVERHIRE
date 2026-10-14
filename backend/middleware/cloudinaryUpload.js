@@ -27,7 +27,8 @@ const isImageUpload = (file) => {
 
 /**
  * Vehicle Image Upload Middleware
- * - Accepts up to 5 image files
+ * - Accepts up to 5 vehicle photos, plus 2 insurance card photos on the
+ *   driver's submission form (see vehicleSubmissionUpload below)
  * - Maximum file size: 10MB per file
  * - Only image files allowed
  * - Stores files in memory (req.files[].buffer)
@@ -36,7 +37,7 @@ export const vehicleImageUpload = multer({
   storage: memoryStorage,
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB per file
-    files: 5, // Maximum 5 files
+    files: 7, // 5 vehicle photos + 2 insurance card photos
   },
   fileFilter: (_req, file, cb) => {
     if (!isImageUpload(file)) {
@@ -45,6 +46,14 @@ export const vehicleImageUpload = multer({
     return cb(null, true);
   },
 });
+
+// The driver's vehicle form: vehicle photos in `images`, insurance card photos
+// in `insuranceImages`. With .fields() multer puts them on req.files as
+// { images: [...], insuranceImages: [...] } (an object, not an array).
+export const vehicleSubmissionUpload = vehicleImageUpload.fields([
+  { name: 'images', maxCount: 5 },
+  { name: 'insuranceImages', maxCount: 2 },
+]);
 
 /**
  * Profile Photo Upload Middleware

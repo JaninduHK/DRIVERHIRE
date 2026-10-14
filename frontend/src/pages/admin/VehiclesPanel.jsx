@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ArrowRight, Car, RotateCcw, Users } from 'lucide-react';
-import { formatDateTime, tagClass } from './adminFormatters.js';
+import { INSURANCE_STATE_COLORS, INSURANCE_STATE_LABELS, formatDateTime, tagClass } from './adminFormatters.js';
 import PanelSearch from './PanelSearch.jsx';
 
 const STATUS_TAGS = { pending: 'amber', approved: 'green', rejected: 'red' };
@@ -11,9 +11,26 @@ const STATUS_FILTERS = [
   { value: 'rejected', label: 'Rejected' },
 ];
 
+// Narrow the list to vehicles whose insurance needs attention.
+const INSURANCE_FILTERS = [
+  { value: 'missing', label: 'No insurance' },
+  { value: 'pending', label: 'Insurance to verify' },
+  { value: 'expiring', label: 'Expiring soon' },
+  { value: 'expired', label: 'Expired' },
+];
+
 const VehiclesPanel = ({ state, onRetry, onView, searchValue = '', onSearchChange }) => {
   const { items: vehicles, loading, error } = state;
   const [statusFilter, setStatusFilter] = useState('all');
+  const [insuranceFilter, setInsuranceFilter] = useState('');
+  const insuranceCounts = useMemo(() => {
+    const counts = {};
+    vehicles.forEach((vehicle) => {
+      const key = vehicle.insurance?.state || 'missing';
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    return counts;
+  }, [vehicles]);
 
   const statusCounts = useMemo(() => {
     const counts = { all: vehicles.length, pending: 0, approved: 0, rejected: 0 };
@@ -24,8 +41,13 @@ const VehiclesPanel = ({ state, onRetry, onView, searchValue = '', onSearchChang
   }, [vehicles]);
 
   const visibleVehicles = useMemo(
-    () => (statusFilter === 'all' ? vehicles : vehicles.filter((vehicle) => vehicle.status === statusFilter)),
-    [statusFilter, vehicles]
+    () =>
+      vehicles.filter(
+        (vehicle) =>
+          (statusFilter === 'all' || vehicle.status === statusFilter) &&
+          (!insuranceFilter || (vehicle.insurance?.state || 'missing') === insuranceFilter)
+      ),
+    [statusFilter, insuranceFilter, vehicles]
   );
 
   if (loading) {
@@ -60,6 +82,20 @@ const VehiclesPanel = ({ state, onRetry, onView, searchValue = '', onSearchChang
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2 border-b border-hairline px-5 py-3">
+        <span className="text-[11px] font-extrabold uppercase tracking-wide text-muted-soft">Insurance</span>
+        {INSURANCE_FILTERS.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => setInsuranceFilter((current) => (current === option.value ? '' : option.value))}
+            className={tagClass(insuranceFilter === option.value ? INSURANCE_STATE_COLORS[option.value] : 'grey')}
+          >
+            {option.label} {insuranceCounts[option.value] || 0}
+          </button>
+        ))}
+      </div>
+
       {visibleVehicles.length === 0 ? (
         <div className="flex min-h-[220px] flex-col items-center justify-center gap-2 text-center text-sm text-muted">
           <Car className="h-9 w-9 text-muted-soft" />
@@ -80,8 +116,8 @@ const VehiclesPanel = ({ state, onRetry, onView, searchValue = '', onSearchChang
                   {thumbnail ? <img src={thumbnail} alt="" className="h-full w-full object-cover" /> : <Car className="h-5 w-5 text-muted-soft" />}
                 </div>
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2"><b className="truncate text-[13.5px] text-ink">{vehicle.model}</b><span className={tagClass(STATUS_TAGS[vehicle.status] || 'amber')}>{vehicle.status}</span></div>
-                  <p className="mt-0.5 text-[11.5px] font-semibold text-muted-soft">{vehicle.year}</p>
+                  <div className="flex flex-wrap items-center gap-2"><b className="truncate text-[13.5px] text-ink">{vehicle.model}</b><span className={tagClass(STATUS_TAGS[vehicle.status] || 'amber')}>{vehicle.status}</span>{vehicle.insurance?.state && vehicle.insurance.state !== 'verified' ? <span className={tagClass(INSURANCE_STATE_COLORS[vehicle.insurance.state] || 'grey')}>{INSURANCE_STATE_LABELS[vehicle.insurance.state]}</span> : null}</div>
+                  <p className="mt-0.5 text-[11.5px] font-semibold text-muted-soft">{vehicle.registrationNumber ? `${vehicle.registrationNumber} · ` : ''}{vehicle.year}</p>
                 </div>
                 <div className="min-w-0"><p className="truncate text-[12.5px] font-semibold text-muted">{vehicle.driver?.name || 'Unknown driver'}</p><p className="truncate text-[11.5px] text-muted-soft">{vehicle.driver?.email || 'No email'}</p></div>
                 <div className="text-[13px] font-extrabold text-brand-dark">${Number(vehicle.pricePerDay || 0).toLocaleString()}/day</div>

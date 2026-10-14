@@ -106,6 +106,37 @@ const licenseStatusLabel = (status) => {
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
 const MAX_VEHICLE_UPLOAD_BYTES = MAX_IMAGE_SIZE_BYTES * 5;
+// Vehicle photo and insurance rules; mirror backend/utils/vehicleInsurance.js.
+// A vehicle is listed with exactly five photos, so the minimum and maximum match.
+const MIN_VEHICLE_IMAGES = 5;
+const MAX_VEHICLE_IMAGES = 5;
+const MAX_INSURANCE_IMAGES = 2;
+// Up to 7 files go up in one request, so each is brought down to about 2MB
+// first (the server keeps at most 1920px anyway) to stay well inside the limit.
+const VEHICLE_IMAGE_TARGET_MB = 2;
+
+const toDateInputValue = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '' : date.toISOString().slice(0, 10);
+};
+
+const VEHICLE_PHOTO_RULES = [
+  `Upload ${MIN_VEHICLE_IMAGES} clear, good-quality photos.`,
+  'Show the outside and the inside.',
+  'The number plate must be visible.',
+  'No people in the photos.',
+];
+
+// How a vehicle's insurance is shown to its driver, by the state the server reports.
+const INSURANCE_NOTICES = {
+  missing: { chip: 'No insurance', tone: 'bg-[#fdf0d8] text-[#a86a15]', text: 'Add your passenger insurance document and cover dates. Edit this vehicle to upload them.' },
+  pending: { chip: 'Insurance in review', tone: 'bg-[#e6f0fb] text-[#1d5fa8]', text: '' },
+  verified: { chip: 'Insurance verified', tone: 'bg-brand-tint text-brand-dark', text: '' },
+  expiring: { chip: 'Insurance expires soon', tone: 'bg-[#fdf0d8] text-[#a86a15]', text: 'Upload your renewed passenger insurance document before the cover ends, or this vehicle leaves the marketplace.' },
+  expired: { chip: 'Insurance expired', tone: 'bg-[#ffe4e9] text-[#e11d48]', text: 'This vehicle is off the marketplace. Edit it and upload your new passenger insurance document to put it back.' },
+  rejected: { chip: 'Insurance not accepted', tone: 'bg-[#ffe4e9] text-[#e11d48]', text: 'We could not verify the insurance you sent. Edit this vehicle and upload a clear photo of your current passenger insurance document.' },
+};
 
 // Compress image if it exceeds the size limit (common on mobile phones)
 // Ensures mobile formats (HEIC, HEIF, WebP) are converted to JPEG for compatibility
@@ -165,6 +196,7 @@ const buildAvailabilityForm = () => ({
 
 const buildInitialVehicleForm = () => ({
   model: '',
+  registrationNumber: '',
   year: new Date().getFullYear().toString(),
   pricePerDay: '',
   seats: '',
@@ -179,6 +211,7 @@ const buildInitialVehicleForm = () => ({
 
 const buildVehicleFormFromData = (vehicle) => ({
   model: vehicle?.model ?? '',
+  registrationNumber: vehicle?.registrationNumber ?? '',
   year: vehicle?.year ? String(vehicle.year) : new Date().getFullYear().toString(),
   pricePerDay: vehicle?.pricePerDay ? String(vehicle.pricePerDay) : '',
   seats: vehicle?.seats ? String(vehicle.seats) : '',
@@ -1638,6 +1671,9 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
   const [submitting, setSubmitting] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState(null);
   const [existingImages, setExistingImages] = useState([]);
+  const [insuranceFiles, setInsuranceFiles] = useState([]);
+  const [insuranceDates, setInsuranceDates] = useState({ startDate: '', endDate: '' });
+  const insuranceInputRef = useRef(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deletingId, setDeletingId] = useState('');
 
@@ -1646,21 +1682,49 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
       prev.forEach((file) => file.preview && URL.revokeObjectURL(file.preview));
       return [];
     });
+    setInsuranceFiles((prev) => {
+      prev.forEach((file) => file.preview && URL.revokeObjectURL(file.preview));
+      return [];
+    });
   }, []);
+
+  const handleInsuranceFiles = async (event) => {
+    const picked = Array.from(event.target.files || []);
+    event.target.value = '';
+    if (picked.length === 0) return;
+    try {
+      const processed = await Promise.all(picked.map((file) => compressImageIfNeeded(file, VEHICLE_IMAGE_TARGET_MB)));
+      setInsuranceFiles((prev) => {
+        const combined = [...prev, ...processed.map((file) => Object.assign(file, { preview: URL.createObjectURL(file) }))];
+        combined.slice(MAX_INSURANCE_IMAGES).forEach((file) => file.preview && URL.revokeObjectURL(file.preview));
+        if (combined.length > MAX_INSURANCE_IMAGES) toast.error(`You can upload up to ${MAX_INSURANCE_IMAGES} passenger insurance photos.`);
+        return combined.slice(0, MAX_INSURANCE_IMAGES);
+      });
+    } catch (error) {
+      toast.error(error?.message || 'Unable to add that photo. Please try another one.');
+    }
+  };
+
+  const removeInsuranceFile = (target) => {
+    setInsuranceFiles((prev) => {
+      if (target.preview) URL.revokeObjectURL(target.preview);
+      return prev.filter((file) => file !== target);
+    });
+  };
 
   const onDrop = useCallback(async (acceptedFiles) => {
     if (acceptedFiles.length === 0) return;
 
     // Compress all images proactively for mobile compatibility
     // Mobile photos are often 5-20MB even if they look small
-    const needsCompression = acceptedFiles.some((file) => file.size > 2 * 1024 * 1024);
+    const needsCompression = acceptedFiles.some((file) => file.size > VEHICLE_IMAGE_TARGET_MB * 1024 * 1024);
     let processedFiles = acceptedFiles;
 
     if (needsCompression) {
       try {
         toast.loading('Optimizing images for upload...', { id: 'compress-vehicle' });
         processedFiles = await Promise.all(
-          acceptedFiles.map((file) => compressImageIfNeeded(file))
+          acceptedFiles.map((file) => compressImageIfNeeded(file, VEHICLE_IMAGE_TARGET_MB))
         );
         toast.success('Images optimized successfully', { id: 'compress-vehicle' });
       } catch (error) {
@@ -1682,16 +1746,16 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
         Object.assign(file, { preview: URL.createObjectURL(file) })
       );
       const combined = [...prev, ...mapped];
-      const limited = combined.slice(0, 5);
-      const dropped = combined.slice(5);
+      const limited = combined.slice(0, MAX_VEHICLE_IMAGES);
+      const dropped = combined.slice(MAX_VEHICLE_IMAGES);
       dropped.forEach((file) => file.preview && URL.revokeObjectURL(file.preview));
-      if (prev.length + processedFiles.length > 5) {
-        toast.error('You can upload up to 5 images.');
+      if (prev.length + processedFiles.length > MAX_VEHICLE_IMAGES) {
+        toast.error(`A vehicle has ${MAX_VEHICLE_IMAGES} photos. Remove one to add another.`);
       }
       const totalBytes = limited.reduce((sum, file) => sum + (file.size || 0), 0);
       if (totalBytes > MAX_VEHICLE_UPLOAD_BYTES) {
         mapped.forEach((file) => file.preview && URL.revokeObjectURL(file.preview));
-        toast.error('Total upload size must stay under 50MB (max 5 images under 10MB each).');
+        toast.error('Total upload size must stay under 50MB. Try adding fewer photos at once.');
         return prev;
       }
       return limited;
@@ -1703,7 +1767,7 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
     fileRejections.forEach(({ errors }) => {
       errors.forEach((error) => {
         if (error.code === 'too-many-files') {
-          messages.add('You can upload up to 5 images.');
+          messages.add(`A vehicle has ${MAX_VEHICLE_IMAGES} photos. Add up to ${MAX_VEHICLE_IMAGES} at a time.`);
         } else if (error.code === 'file-invalid-type') {
           messages.add('Only image files are allowed.');
         } else {
@@ -1716,7 +1780,7 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: { 'image/*': [] },
-    maxFiles: 5,
+    maxFiles: MAX_VEHICLE_IMAGES,
     onDrop,
     onDropRejected,
   });
@@ -1763,6 +1827,7 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
     clearPendingFiles();
     setEditingVehicle(null);
     setFormData(buildInitialVehicleForm());
+    setInsuranceDates({ startDate: '', endDate: '' });
     setShowForm(true);
   };
 
@@ -1770,6 +1835,10 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
     clearPendingFiles();
     setFormData(buildVehicleFormFromData(vehicle));
     setExistingImages(Array.isArray(vehicle.images) ? [...vehicle.images] : []);
+    setInsuranceDates({
+      startDate: toDateInputValue(vehicle.insurance?.startDate),
+      endDate: toDateInputValue(vehicle.insurance?.endDate),
+    });
     setEditingVehicle(vehicle);
     setShowForm(true);
   };
@@ -1789,6 +1858,14 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
       return;
     }
 
+    // Checked against every other listing on the server, which refuses a
+    // registration that is already published (one listing per vehicle).
+    const registrationNumber = formData.registrationNumber.trim();
+    if (!registrationNumber) {
+      toast.error('Enter the vehicle registration number.');
+      return;
+    }
+
     const parsedPrice = Number(formData.pricePerDay);
     if (Number.isNaN(parsedPrice) || parsedPrice < 35 || parsedPrice > 250) {
       toast.error('Set a price between $35 and $250 per day.');
@@ -1801,8 +1878,40 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
       return;
     }
 
+    // Photos and insurance are checked here so the driver hears about a problem
+    // before anything uploads; the server applies the same rules.
+    const keptPhotoCount = editingVehicle ? existingImages.length : 0;
+    if (keptPhotoCount + pendingFiles.length < MIN_VEHICLE_IMAGES) {
+      toast.error(`Add ${MIN_VEHICLE_IMAGES} photos of the vehicle. You have ${keptPhotoCount + pendingFiles.length}.`);
+      return;
+    }
+    const insuranceOnFile = editingVehicle?.insurance;
+    // Missing, expired or rejected insurance cannot carry a save, and neither can
+    // the old document once we have asked for it to be verified again.
+    const needsNewCard =
+      !insuranceOnFile ||
+      ['missing', 'expired', 'rejected'].includes(insuranceOnFile.state) ||
+      Boolean(insuranceOnFile.requestedAt);
+    if (needsNewCard && insuranceFiles.length === 0) {
+      toast.error('Upload a photo of your current passenger insurance document.');
+      return;
+    }
+    if (!insuranceDates.startDate || !insuranceDates.endDate) {
+      toast.error('Enter the start and end date of your insurance cover.');
+      return;
+    }
+    if (insuranceDates.endDate <= insuranceDates.startDate) {
+      toast.error('The insurance end date must be after the start date.');
+      return;
+    }
+    if (insuranceDates.endDate < new Date().toISOString().slice(0, 10)) {
+      toast.error('This insurance cover has already expired. Upload your current passenger insurance document.');
+      return;
+    }
+
     const payload = new FormData();
     payload.append('model', sanitizedModel);
+    payload.append('registrationNumber', registrationNumber);
     payload.append('year', String(parsedYear));
     payload.append('pricePerDay', String(parsedPrice));
     if (parsedSeats) payload.append('seats', String(parsedSeats));
@@ -1813,7 +1922,13 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
       payload.append('existingImages', JSON.stringify(existingImages));
     }
 
-    pendingFiles.slice(0, 5).forEach((file) => payload.append('images', file));
+    pendingFiles
+      .slice(0, Math.max(MAX_VEHICLE_IMAGES - keptPhotoCount, 0))
+      .forEach((file) => payload.append('images', file));
+
+    payload.append('insuranceStartDate', insuranceDates.startDate);
+    payload.append('insuranceEndDate', insuranceDates.endDate);
+    insuranceFiles.forEach((file) => payload.append('insuranceImages', file));
 
     VEHICLE_FEATURES.forEach(({ key }) => {
       if (formData[key]) {
@@ -1831,6 +1946,7 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
       setFormData(buildInitialVehicleForm());
       clearPendingFiles();
       setExistingImages([]);
+      setInsuranceDates({ startDate: '', endDate: '' });
       setEditingVehicle(null);
       setShowForm(false);
     } catch (error) {
@@ -1839,6 +1955,8 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
       setSubmitting(false);
     }
   };
+
+  const photoCount = (editingVehicle ? existingImages.length : 0) + pendingFiles.length;
 
   const head = showForm ? (
     <MobileHeader
@@ -1917,6 +2035,15 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
                   />
                 </div>
               </div>
+              <div className="mt-3.5">
+                <label htmlFor="registrationNumber" className="text-[12.5px] font-bold text-ink-soft">Registration number</label>
+                <input
+                  id="registrationNumber" name="registrationNumber" type="text" required maxLength={20}
+                  value={formData.registrationNumber} onChange={handleChange} placeholder="CAB-1234" autoCapitalize="characters"
+                  className="mt-1.5 h-11 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 text-sm font-semibold uppercase text-ink placeholder:font-normal placeholder:normal-case placeholder:text-[#adb8c0] focus:border-brand focus:outline-none"
+                />
+                <p className="mt-1 text-[11.5px] text-muted-soft">As shown on the number plate. Only you and our team can see it.</p>
+              </div>
               <div className="mt-3.5 flex gap-2.5">
                 <div className="min-w-0 flex-1">
                   <label htmlFor="pricePerDay" className="text-[12.5px] font-bold text-ink-soft">Price / day (USD)</label>
@@ -1973,17 +2100,33 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
               </div>
             </div>
 
-            <div
-              {...getRootProps({
-                className: `rounded-2xl border-[1.8px] border-dashed px-6 py-6 text-center transition ${
-                  isDragActive ? 'border-brand bg-[#f3fbf6]' : 'border-[#cbd5db] bg-white'
-                }`,
-              })}
-            >
-              <input {...getInputProps()} />
-              <Camera className="mx-auto h-7 w-7 text-brand" strokeWidth={1.6} />
-              <div className="mt-2 text-[13.5px] font-extrabold text-ink">Drag &amp; drop, or tap to upload</div>
-              <div className="mt-0.5 text-[12px] text-muted-soft">Up to 5 images · under 10MB each</div>
+            <div className="rounded-[18px] bg-white p-4 shadow-card">
+              <div className="flex items-baseline justify-between gap-3">
+                <b className="text-[14px] text-ink">Vehicle photos</b>
+                <span className={`text-[12px] font-bold ${photoCount >= MIN_VEHICLE_IMAGES ? 'text-brand-dark' : 'text-[#a86a15]'}`}>
+                  {photoCount} of {MIN_VEHICLE_IMAGES}
+                </span>
+              </div>
+              <ul className="mb-3 mt-2 list-none space-y-1 rounded-xl bg-[#f4f9f6] p-3 text-[12.5px] leading-snug text-ink-soft">
+                {VEHICLE_PHOTO_RULES.map((rule) => (
+                  <li key={rule} className="flex items-start gap-2">
+                    <CheckCircle2 className="mt-[1px] h-3.5 w-3.5 flex-shrink-0 text-brand" />
+                    <span>{rule}</span>
+                  </li>
+                ))}
+              </ul>
+              <div
+                {...getRootProps({
+                  className: `rounded-2xl border-[1.8px] border-dashed px-6 py-6 text-center transition ${
+                    isDragActive ? 'border-brand bg-[#f3fbf6]' : 'border-[#cbd5db] bg-white'
+                  }`,
+                })}
+              >
+                <input {...getInputProps()} />
+                <Camera className="mx-auto h-7 w-7 text-brand" strokeWidth={1.6} />
+                <div className="mt-2 text-[13.5px] font-extrabold text-ink">Drag &amp; drop, or tap to upload</div>
+                <div className="mt-0.5 text-[12px] text-muted-soft">{MIN_VEHICLE_IMAGES} photos · under 10MB each</div>
+              </div>
             </div>
 
             {editingVehicle && existingImages.length > 0 && (
@@ -2006,7 +2149,7 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
                   ))}
                 </div>
                 <div className="mt-1.5 text-[12px] text-muted-soft">
-                  Remove any you don&apos;t want, then add new ones below (up to 5 total).
+                  Remove any you don&apos;t want, then add new ones above ({MIN_VEHICLE_IMAGES} in total).
                 </div>
               </div>
             )}
@@ -2029,6 +2172,78 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
                 </div>
               </div>
             )}
+
+            <div className="rounded-[18px] bg-white p-4 shadow-card">
+              <b className="text-[14px] text-ink">Passenger insurance</b>
+              <p className="mb-3 mt-0.5 text-[12.5px] text-muted-soft">
+                Upload a clear photo of the document that shows this vehicle&apos;s passenger insurance, and enter its cover period. Only you and our team can see it.
+              </p>
+              {editingVehicle?.insurance?.requestedAt ? (
+                <p className="mb-3 rounded-xl bg-[#fdf0d8] px-3 py-2 text-[12.5px] font-semibold text-[#a86a15]">
+                  We asked you to verify this vehicle&apos;s insurance. Upload a new photo of your current passenger insurance document.
+                  {editingVehicle.insurance.requestNote ? ` Note from our team: ${editingVehicle.insurance.requestNote}` : ''}
+                </p>
+              ) : null}
+              <div className="flex gap-2.5">
+                <div className="min-w-0 flex-1">
+                  <label htmlFor="insuranceStartDate" className="text-[12.5px] font-bold text-ink-soft">Cover starts</label>
+                  <input
+                    id="insuranceStartDate" type="date" required value={insuranceDates.startDate}
+                    onChange={(event) => setInsuranceDates((prev) => ({ ...prev, startDate: event.target.value }))}
+                    className="mt-1.5 h-11 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 text-sm font-semibold text-ink focus:border-brand focus:outline-none"
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <label htmlFor="insuranceEndDate" className="text-[12.5px] font-bold text-ink-soft">Cover ends</label>
+                  <input
+                    id="insuranceEndDate" type="date" required value={insuranceDates.endDate}
+                    min={new Date().toISOString().slice(0, 10)}
+                    onChange={(event) => setInsuranceDates((prev) => ({ ...prev, endDate: event.target.value }))}
+                    className="mt-1.5 h-11 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 text-sm font-semibold text-ink focus:border-brand focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {insuranceFiles.length === 0 && editingVehicle?.insurance?.cardImages?.length > 0 ? (
+                <div className="mt-3.5">
+                  <div className="mb-2 text-[12.5px] font-bold text-ink-soft">Document on file</div>
+                  <div className="grid grid-cols-3 gap-2.5">
+                    {editingVehicle.insurance.cardImages.map((url, index) => (
+                      <img key={url || index} src={url} alt={`Passenger insurance document ${index + 1}`} className="h-20 w-full rounded-xl border border-[#e2e8ea] object-cover" />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              {insuranceFiles.length > 0 ? (
+                <div className="mt-3.5">
+                  <div className="mb-2 text-[12.5px] font-bold text-ink-soft">New photo{insuranceFiles.length === 1 ? '' : 's'}</div>
+                  <div className="grid grid-cols-3 gap-2.5">
+                    {insuranceFiles.map((file) => (
+                      <div key={file.preview} className="relative overflow-hidden rounded-xl border border-[#e2e8ea]">
+                        <img src={file.preview} alt={file.name} className="h-20 w-full object-cover" />
+                        <button
+                          type="button" onClick={() => removeInsuranceFile(file)}
+                          className="absolute right-1.5 top-1.5 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-bold text-[#e11d48] shadow"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              <input ref={insuranceInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleInsuranceFiles} />
+              <button
+                type="button"
+                onClick={() => insuranceInputRef.current?.click()}
+                className="mt-3.5 flex w-full items-center justify-center gap-2 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white py-[11px] text-[13.5px] font-bold text-ink transition hover:border-muted-soft"
+              >
+                <ShieldCheck className="h-[15px] w-[15px]" />
+                {editingVehicle?.insurance?.cardImages?.length > 0 || insuranceFiles.length > 0 ? 'Replace passenger insurance photo' : 'Upload passenger insurance photo'}
+              </button>
+              <p className="mt-1.5 text-[12px] text-muted-soft">1 photo required, 2 allowed if the cover runs over two pages.</p>
+            </div>
 
             <button
               type="submit"
@@ -2067,6 +2282,7 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
                     ? { chip: 'bg-[#fdf0d8] text-[#a86a15]', border: '#f0b429' }
                     : { chip: 'bg-brand-tint text-brand-dark', border: null };
                   const included = getVehicleFeatureLabels(vehicle);
+                  const insuranceNotice = INSURANCE_NOTICES[vehicle.insurance?.state] || null;
                   return (
                     <article
                       key={vehicle.id}
@@ -2082,7 +2298,7 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
                             </span>
                           </div>
                           <div className="mt-0.5 text-[12.5px] text-muted-soft">
-                            {vehicle.year} · {isPending ? 'submitted' : 'added'} {formatDate(vehicle.createdAt)}
+                            {vehicle.registrationNumber ? `${vehicle.registrationNumber} · ` : ''}{vehicle.year} · {isPending ? 'submitted' : 'added'} {formatDate(vehicle.createdAt)}
                           </div>
                         </div>
                         <div className="grid h-[50px] w-[50px] flex-shrink-0 place-items-center rounded-[13px] bg-[#eef1f0]">
@@ -2106,6 +2322,25 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
                               {label}
                             </span>
                           ))}
+                        </div>
+                      ) : null}
+                      {insuranceNotice ? (
+                        <div className="mb-3">
+                          <span className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-[5px] text-[11.5px] font-bold ${insuranceNotice.tone}`}>
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                            {insuranceNotice.chip}
+                            {vehicle.insurance?.endDate && ['verified', 'expiring', 'pending'].includes(vehicle.insurance.state)
+                              ? ` · until ${formatDate(vehicle.insurance.endDate)}`
+                              : ''}
+                          </span>
+                          {vehicle.insurance?.requestedAt ? (
+                            <p className="mt-2 rounded-xl bg-[#fdf0d8] px-3 py-2 text-[12.5px] text-[#a86a15]">
+                              We asked you to verify this vehicle&apos;s insurance. Edit it and resubmit with a new photo of your passenger insurance document and {MIN_VEHICLE_IMAGES} photos.
+                              {vehicle.insurance.requestNote ? ` Note from our team: ${vehicle.insurance.requestNote}` : ''}
+                            </p>
+                          ) : insuranceNotice.text ? (
+                            <p className="mt-2 text-[12.5px] leading-snug text-muted">{insuranceNotice.text}</p>
+                          ) : null}
                         </div>
                       ) : null}
                       {isRejected && vehicle.rejectedReason ? (

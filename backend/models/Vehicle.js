@@ -41,6 +41,34 @@ const availabilitySchema = new mongoose.Schema(
   }
 );
 
+// Proof of passenger insurance for the vehicle: photos of the document that
+// shows the cover, and its period. They are private documents, so
+// the whole block is excluded from queries by default (`select: false` below):
+// public listings, chat offer cards and booking lookups can never leak it.
+// Code that needs it asks for it explicitly with `.select('+insurance')`.
+const insuranceSchema = new mongoose.Schema(
+  {
+    cardImages: { type: [String], default: [] },
+    startDate: Date,
+    endDate: Date,
+    status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+    submittedAt: Date,
+    reviewedAt: Date,
+    reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    rejectedReason: { type: String, trim: true },
+    // Set when an admin asks the driver to verify the insurance again; cleared
+    // when the driver resubmits.
+    requestedAt: Date,
+    requestNote: { type: String, trim: true },
+    // Housekeeping for services/vehicleInsuranceService.js: the "expires in a
+    // week" notice goes out once per cover period, and expiredAt records when
+    // the vehicle was taken off the marketplace for lapsed cover.
+    expiryReminderSentAt: Date,
+    expiredAt: Date,
+  },
+  { _id: false }
+);
+
 const vehicleSchema = new mongoose.Schema(
   {
     driver: {
@@ -128,17 +156,44 @@ const vehicleSchema = new mongoose.Schema(
       type: [availabilitySchema],
       default: [],
     },
+    insurance: {
+      type: insuranceSchema,
+      select: false,
+    },
+    // The number on the plate. Private like insurance (not shown to travellers;
+    // the photos carry the plate anyway), so excluded from queries by default.
+    // `key` is the normalised form duplicates are checked on; see
+    // utils/vehicleRegistration.js.
+    registration: {
+      type: new mongoose.Schema(
+        {
+          number: { type: String, trim: true },
+          key: { type: String },
+        },
+        { _id: false }
+      ),
+      select: false,
+    },
   },
   {
     timestamps: true,
   }
 );
 
+// The hourly insurance checks look vehicles up by cover end date.
+vehicleSchema.index({ 'insurance.endDate': 1 });
+// Duplicate-listing check on registration number.
+vehicleSchema.index({ 'registration.key': 1 });
+
 vehicleSchema.set('toJSON', {
   transform: (doc, ret) => {
     ret.id = ret._id.toString();
     delete ret._id;
     delete ret.__v;
+    // Never serialised raw, even when it was selected: the driver and admin
+    // endpoints add their own shaped copy (utils/vehicleInsurance.js).
+    delete ret.insurance;
+    delete ret.registration;
     if (Array.isArray(ret.availability)) {
       ret.availability = ret.availability
         .map((entry) => ({

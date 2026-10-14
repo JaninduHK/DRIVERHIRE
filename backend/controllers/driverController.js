@@ -11,6 +11,20 @@ import Booking, { BOOKING_STATUS } from '../models/Booking.js';
 import Review, { REVIEW_STATUS } from '../models/Review.js';
 import { mapAssetUrls, buildAssetUrl } from '../utils/assetUtils.js';
 import * as cloudinaryService from '../services/cloudinaryService.js';
+import {
+  INSURANCE_STATUS,
+  MAX_INSURANCE_IMAGES,
+  MAX_VEHICLE_IMAGES,
+  MIN_VEHICLE_IMAGES,
+  isInsuranceUsable,
+  parseCoverPeriod,
+  serializeInsurance,
+} from '../utils/vehicleInsurance.js';
+import {
+  DUPLICATE_REGISTRATION_MESSAGE,
+  findRegistrationConflict,
+  parseRegistrationNumber,
+} from '../utils/vehicleRegistration.js';
 
 const handleValidation = (req, res) => {
   const errors = validationResult(req);
@@ -67,8 +81,50 @@ const serializeDriverVehicle = (vehicle, req) => {
   }
   const payload = typeof vehicle.toJSON === 'function' ? vehicle.toJSON() : vehicle;
   payload.images = mapAssetUrls(payload.images, req);
+  // The driver's own copy of their insurance record (toJSON never includes it).
+  payload.insurance = serializeInsurance(vehicle.insurance, (url) => buildAssetUrl(url, req));
+  payload.registrationNumber = vehicle.registration?.number || null;
   return payload;
 };
+
+const PHOTO_RULES_MESSAGE = `Add ${MIN_VEHICLE_IMAGES} photos of the vehicle: clear, good quality, showing the outside and the inside, with the number plate visible and no people in them.`;
+// Shown when a save has no usable insurance to go with it. The app release
+// that predates insurance cannot send any, hence the second sentence.
+const INSURANCE_REQUIRED_MESSAGE =
+  'Add a photo of your passenger insurance document and the cover start and end dates. If you do not see a passenger insurance section, update the app or use carwithdriver.lk.';
+
+// The app release that predates registration numbers cannot send one.
+const OLD_APP_HINT = 'If you do not see this field, update the app or use carwithdriver.lk.';
+
+// multer's .fields() puts uploads on req.files as { images, insuranceImages }.
+const uploadedFiles = (req, field) => (req.files && !Array.isArray(req.files) ? req.files[field] || [] : []);
+
+// Uploads every file or none: on a failure whatever already went up is removed.
+const uploadAll = async (files, folder, prefix) => {
+  const urls = [];
+  try {
+    for (const file of files) {
+      const filename = cloudinaryService.generateUniqueFilename(prefix);
+      urls.push(await cloudinaryService.uploadImage(file.buffer, folder, filename));
+    }
+    return urls;
+  } catch (error) {
+    if (urls.length > 0) {
+      await cloudinaryService.deleteMultipleAssets(urls, 'image').catch(() => {});
+    }
+    throw Object.assign(new Error(`Failed to upload image: ${error.message}`), { uploadFailed: true });
+  }
+};
+
+const removeAssets = (urls) => {
+  const removable = (urls || []).filter((url) => cloudinaryService.isCloudinaryUrl(url));
+  if (removable.length === 0) return Promise.resolve();
+  return cloudinaryService
+    .deleteMultipleAssets(removable, 'image')
+    .catch((cleanupError) => console.warn('Vehicle image cleanup failed:', cleanupError?.message));
+};
+
+const sameDay = (a, b) => Boolean(a && b) && new Date(a).toISOString().slice(0, 10) === new Date(b).toISOString().slice(0, 10);
 
 export const getDriverOverview = async (req, res) => {
   try {
@@ -202,7 +258,9 @@ export const updateDriverLicense = async (req, res) => {
 
 export const getDriverVehicles = async (req, res) => {
   try {
-    const vehicles = await Vehicle.find({ driver: req.user.id, deletedAt: null }).sort({ createdAt: -1 });
+    const vehicles = await Vehicle.find({ driver: req.user.id, deletedAt: null })
+      .select('+insurance +registration')
+      .sort({ createdAt: -1 });
 
     return res.json({
       vehicles: vehicles.map((vehicle) => serializeDriverVehicle(vehicle, req)),
@@ -442,29 +500,36 @@ export const createDriverVehicle = async (req, res) => {
       return res.status(400).json({ message: 'Seats must be at least 1' });
     }
 
-    // Upload images to Cloudinary
-    if (Array.isArray(req.files) && req.files.length > 0) {
-      for (const file of req.files) {
-        try {
-          const filename = cloudinaryService.generateUniqueFilename('vehicle');
-          const cloudinaryUrl = await cloudinaryService.uploadImage(
-            file.buffer,
-            'vehicles',
-            filename
-          );
-          uploadedUrls.push(cloudinaryUrl);
-        } catch (uploadError) {
-          console.error('Cloudinary upload error:', uploadError);
-          // Clean up already uploaded images
-          if (uploadedUrls.length > 0) {
-            await cloudinaryService.deleteMultipleAssets(uploadedUrls, 'image');
-          }
-          return res.status(500).json({
-            message: `Failed to upload image: ${uploadError.message}`,
-          });
-        }
-      }
+    const registration = parseRegistrationNumber(req.body.registrationNumber);
+    if (registration.error) {
+      return res.status(400).json({ message: `${registration.error} ${OLD_APP_HINT}` });
     }
+    if (await findRegistrationConflict(registration.key)) {
+      return res.status(409).json({ message: DUPLICATE_REGISTRATION_MESSAGE, code: 'DUPLICATE_REGISTRATION' });
+    }
+
+    const imageFiles = uploadedFiles(req, 'images').slice(0, MAX_VEHICLE_IMAGES);
+    const insuranceFiles = uploadedFiles(req, 'insuranceImages').slice(0, MAX_INSURANCE_IMAGES);
+
+    // Everything is checked before anything is uploaded.
+    if (imageFiles.length < MIN_VEHICLE_IMAGES) {
+      return res.status(400).json({ message: PHOTO_RULES_MESSAGE });
+    }
+    if (insuranceFiles.length === 0) {
+      return res.status(400).json({ message: INSURANCE_REQUIRED_MESSAGE });
+    }
+    const coverPeriod = parseCoverPeriod({
+      startDate: req.body.insuranceStartDate,
+      endDate: req.body.insuranceEndDate,
+    });
+    if (coverPeriod.error) {
+      return res.status(400).json({ message: coverPeriod.error });
+    }
+
+    uploadedUrls.push(...(await uploadAll(imageFiles, 'vehicles', 'vehicle')));
+    const insuranceUrls = await uploadAll(insuranceFiles, 'insurance', 'insurance');
+    uploadedUrls.push(...insuranceUrls);
+    const vehicleImageUrls = uploadedUrls.slice(0, imageFiles.length);
 
     const vehicle = new Vehicle({
       driver: req.user.id,
@@ -474,7 +539,15 @@ export const createDriverVehicle = async (req, res) => {
       pricePerDay: normalizedPrice,
       seats: normalizedSeats,
       status: VEHICLE_STATUS.PENDING,
-      images: uploadedUrls,
+      images: vehicleImageUrls,
+      registration: { number: registration.number, key: registration.key },
+      insurance: {
+        cardImages: insuranceUrls,
+        startDate: coverPeriod.startDate,
+        endDate: coverPeriod.endDate,
+        status: INSURANCE_STATUS.PENDING,
+        submittedAt: new Date(),
+      },
       englishSpeakingDriver: parseBoolean(englishSpeakingDriver),
       meetAndGreetAtAirport: parseBoolean(meetAndGreetAtAirport),
       fuelAndInsurance: parseBoolean(fuelAndInsurance),
@@ -490,9 +563,9 @@ export const createDriverVehicle = async (req, res) => {
     console.error('Create driver vehicle error:', error);
     // Clean up uploaded images if vehicle creation failed
     if (uploadedUrls.length > 0) {
-      await cloudinaryService.deleteMultipleAssets(uploadedUrls, 'image');
+      await cloudinaryService.deleteMultipleAssets(uploadedUrls, 'image').catch(() => {});
     }
-    return res.status(500).json({ message: 'Unable to submit vehicle' });
+    return res.status(500).json({ message: error.uploadFailed ? error.message : 'Unable to submit vehicle' });
   }
 };
 
@@ -511,7 +584,7 @@ export const updateDriverVehicle = async (req, res) => {
   const uploadedUrls = [];
 
   try {
-    const vehicle = await Vehicle.findOne({ _id: id, driver: req.user.id, deletedAt: null });
+    const vehicle = await Vehicle.findOne({ _id: id, driver: req.user.id, deletedAt: null }).select('+insurance +registration');
 
     if (!vehicle) {
       return res.status(404).json({ message: 'Vehicle not found' });
@@ -557,45 +630,19 @@ export const updateDriverVehicle = async (req, res) => {
       return res.status(400).json({ message: 'Seats must be at least 1' });
     }
 
-    // Upload new images to Cloudinary
-    if (Array.isArray(req.files) && req.files.length > 0) {
-      for (const file of req.files) {
-        try {
-          const filename = cloudinaryService.generateUniqueFilename(`vehicle-${id}`);
-          const cloudinaryUrl = await cloudinaryService.uploadImage(
-            file.buffer,
-            'vehicles',
-            filename
-          );
-          uploadedUrls.push(cloudinaryUrl);
-        } catch (uploadError) {
-          console.error('Cloudinary upload error:', uploadError);
-          // Clean up already uploaded images
-          if (uploadedUrls.length > 0) {
-            await cloudinaryService.deleteMultipleAssets(uploadedUrls, 'image');
-          }
-          return res.status(500).json({
-            message: `Failed to upload image: ${uploadError.message}`,
-          });
-        }
-      }
+    const registration = parseRegistrationNumber(req.body.registrationNumber);
+    if (registration.error) {
+      return res.status(400).json({ message: `${registration.error} ${OLD_APP_HINT}` });
+    }
+    if (await findRegistrationConflict(registration.key, { excludeVehicleId: vehicle._id })) {
+      return res.status(409).json({ message: DUPLICATE_REGISTRATION_MESSAGE, code: 'DUPLICATE_REGISTRATION' });
     }
 
-    vehicle.model = model.trim();
-    vehicle.year = normalizedYear;
-    vehicle.description = description?.trim();
-    vehicle.pricePerDay = normalizedPrice;
-    vehicle.seats = normalizedSeats;
-    vehicle.englishSpeakingDriver = parseBoolean(englishSpeakingDriver);
-    vehicle.meetAndGreetAtAirport = parseBoolean(meetAndGreetAtAirport);
-    vehicle.fuelAndInsurance = parseBoolean(fuelAndInsurance);
-    vehicle.driverMealsAndAccommodation = parseBoolean(driverMealsAndAccommodation);
-    vehicle.parkingFeesAndTolls = parseBoolean(parkingFeesAndTolls);
-    vehicle.allTaxes = parseBoolean(allTaxes);
+    const imageFiles = uploadedFiles(req, 'images');
+    const insuranceFiles = uploadedFiles(req, 'insuranceImages').slice(0, MAX_INSURANCE_IMAGES);
 
-    // Determine which existing images to keep. When the edit form sends an
-    // `existingImages` list (URLs to retain), remove the rest and delete them
-    // from Cloudinary. Falls back to keeping all when the field is absent.
+    // Which existing photos to keep. When the edit form sends an `existingImages`
+    // list (URLs to retain) the rest are removed; when the field is absent, all stay.
     let keptImages = vehicle.images;
     if (req.body.existingImages !== undefined) {
       let keepUrls = [];
@@ -610,31 +657,115 @@ export const updateDriverVehicle = async (req, res) => {
       keptImages = vehicle.images.filter(
         (stored) => keepSet.has(buildAssetUrl(stored, req)) || keepSet.has(stored)
       );
-      const removedImages = vehicle.images.filter((stored) => !keptImages.includes(stored));
-      const cloudinaryRemovals = removedImages.filter((url) =>
-        cloudinaryService.isCloudinaryUrl(url)
-      );
-      if (cloudinaryRemovals.length > 0) {
-        await cloudinaryService
-          .deleteMultipleAssets(cloudinaryRemovals, 'image')
-          .catch((cleanupError) => console.warn('Vehicle image cleanup failed:', cleanupError?.message));
-      }
+    }
+    const removedImages = vehicle.images.filter((stored) => !keptImages.includes(stored));
+    const newImageFiles = imageFiles.slice(0, Math.max(MAX_VEHICLE_IMAGES - keptImages.length, 0));
+
+    // Every save is checked against the photo and insurance rules before anything
+    // is uploaded or removed, so a refused save changes nothing.
+    if (keptImages.length + newImageFiles.length < MIN_VEHICLE_IMAGES) {
+      return res.status(400).json({ message: PHOTO_RULES_MESSAGE });
     }
 
-    // Combine kept images with new Cloudinary URLs (max 5 total).
-    vehicle.images = [...keptImages, ...uploadedUrls].slice(0, 5);
+    const current = vehicle.insurance;
+    const verificationRequested = Boolean(current?.requestedAt);
+    const sentCoverDates = Boolean(req.body.insuranceStartDate || req.body.insuranceEndDate);
+    let coverPeriod = null;
+    let insuranceChanged = false;
 
-    vehicle.status = VEHICLE_STATUS.PENDING;
-    vehicle.rejectedReason = undefined;
-    vehicle.reviewedAt = undefined;
-    vehicle.reviewedBy = undefined;
+    if (insuranceFiles.length > 0 || sentCoverDates) {
+      coverPeriod = parseCoverPeriod({
+        startDate: req.body.insuranceStartDate,
+        endDate: req.body.insuranceEndDate,
+      });
+      if (coverPeriod.error) {
+        return res.status(400).json({ message: coverPeriod.error });
+      }
+      if (insuranceFiles.length === 0 && !(current?.cardImages?.length > 0)) {
+        return res.status(400).json({ message: INSURANCE_REQUIRED_MESSAGE });
+      }
+      insuranceChanged =
+        insuranceFiles.length > 0 ||
+        !sameDay(current?.startDate, coverPeriod.startDate) ||
+        !sameDay(current?.endDate, coverPeriod.endDate);
+    }
+    // Nothing new was sent, so what is on file has to carry the save: missing,
+    // expired or rejected insurance cannot.
+    if (!insuranceChanged && !isInsuranceUsable(current)) {
+      return res.status(400).json({ message: INSURANCE_REQUIRED_MESSAGE });
+    }
+    // An admin asked for the insurance to be verified again: the answer has to be
+    // a fresh photo of the document, not the one already on file.
+    if (verificationRequested && insuranceFiles.length === 0) {
+      return res.status(400).json({
+        message: 'We asked you to verify this vehicle\'s insurance. Upload a new photo of your current passenger insurance document.',
+      });
+    }
+
+    const nextDetails = {
+      model: model.trim(),
+      year: normalizedYear,
+      description: description?.trim(),
+      pricePerDay: normalizedPrice,
+      seats: normalizedSeats,
+      englishSpeakingDriver: parseBoolean(englishSpeakingDriver),
+      meetAndGreetAtAirport: parseBoolean(meetAndGreetAtAirport),
+      fuelAndInsurance: parseBoolean(fuelAndInsurance),
+      driverMealsAndAccommodation: parseBoolean(driverMealsAndAccommodation),
+      parkingFeesAndTolls: parseBoolean(parkingFeesAndTolls),
+      allTaxes: parseBoolean(allTaxes),
+    };
+    const detailsChanged =
+      vehicle.registration?.key !== registration.key ||
+      removedImages.length > 0 ||
+      newImageFiles.length > 0 ||
+      Object.entries(nextDetails).some(([key, value]) => (vehicle[key] ?? '') !== (value ?? ''));
+
+    uploadedUrls.push(...(await uploadAll(newImageFiles, 'vehicles', `vehicle-${id}`)));
+    const newVehicleImageUrls = [...uploadedUrls];
+    const insuranceUrls = await uploadAll(insuranceFiles, 'insurance', `insurance-${id}`);
+    uploadedUrls.push(...insuranceUrls);
+
+    Object.assign(vehicle, nextDetails);
+    vehicle.registration = { number: registration.number, key: registration.key };
+    vehicle.images = [...keptImages, ...newVehicleImageUrls];
+
+    const replacedCardImages = insuranceUrls.length > 0 ? current?.cardImages || [] : [];
+    if (insuranceChanged) {
+      // A new submission: it waits for an admin to check it, and every flag that
+      // belonged to the previous cover period is cleared.
+      vehicle.insurance = {
+        cardImages: insuranceUrls.length > 0 ? insuranceUrls : current.cardImages,
+        startDate: coverPeriod.startDate,
+        endDate: coverPeriod.endDate,
+        status: INSURANCE_STATUS.PENDING,
+        submittedAt: new Date(),
+      };
+    }
+
+    // Adding or renewing insurance on an approved vehicle must not take it off
+    // the marketplace: the vehicle itself has not changed, only its paperwork,
+    // which an admin verifies separately. Anything else goes back for review, as
+    // does the reply to an admin's verification request.
+    const staysApproved =
+      vehicle.status === VEHICLE_STATUS.APPROVED && !detailsChanged && !verificationRequested;
+    if (!staysApproved) {
+      vehicle.status = VEHICLE_STATUS.PENDING;
+      vehicle.rejectedReason = undefined;
+      vehicle.reviewedAt = undefined;
+      vehicle.reviewedBy = undefined;
+    }
 
     await vehicle.save();
+    await removeAssets([...removedImages, ...replacedCardImages]);
 
     return res.json({ vehicle: serializeDriverVehicle(vehicle, req) });
   } catch (error) {
     console.error('Update driver vehicle error:', error);
-    return res.status(500).json({ message: 'Unable to update vehicle' });
+    if (uploadedUrls.length > 0) {
+      await cloudinaryService.deleteMultipleAssets(uploadedUrls, 'image').catch(() => {});
+    }
+    return res.status(500).json({ message: error.uploadFailed ? error.message : 'Unable to update vehicle' });
   }
 };
 

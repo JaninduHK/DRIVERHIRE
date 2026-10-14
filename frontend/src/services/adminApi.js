@@ -125,6 +125,21 @@ export const updateVehicleStatus = (vehicleId, payload) =>
     body: JSON.stringify(payload),
   });
 
+// Ask the driver to verify this vehicle's insurance again. Takes the vehicle off
+// the marketplace until they resubmit it and it is approved.
+export const requestVehicleInsuranceVerification = (vehicleId, note) =>
+  request(`/vehicles/${vehicleId}/insurance/request`, {
+    method: 'POST',
+    body: JSON.stringify(note ? { note } : {}),
+  });
+
+// The verdict on insurance a driver submitted: { status: 'verified' | 'rejected', reason? }.
+export const reviewVehicleInsurance = (vehicleId, payload) =>
+  request(`/vehicles/${vehicleId}/insurance`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+
 export const updateVehicleDetails = (vehicleId, payload) =>
   request(`/vehicles/${vehicleId}`, {
     method: 'PATCH',

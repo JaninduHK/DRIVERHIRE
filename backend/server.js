@@ -21,6 +21,7 @@ import { startReviewRequestScheduler } from './services/reviewRequestService.js'
 import { startOfferReminderScheduler } from './services/offerReminderService.js';
 import { startQuoteFollowUpScheduler } from './services/quoteFollowUpService.js';
 import { startTripReminderScheduler } from './services/tripReminderService.js';
+import { startVehicleInsuranceScheduler } from './services/vehicleInsuranceService.js';
 import emailPreferencesRoutes from './routes/emailPreferencesRoutes.js';
 import { startOfferExpiryScheduler } from './services/offerExpiryService.js';
 import { startRetentionScheduler } from './services/retentionSweepService.js';
@@ -105,7 +106,7 @@ app.use((error, req, res, next) => {
   }
   if (error.code === 'LIMIT_FILE_COUNT') {
     return res.status(400).json({
-      message: 'Too many files selected. You can upload up to 5 images at once.'
+      message: 'Too many files selected. You can upload up to 5 vehicle photos and 2 insurance card photos.'
     });
   }
   if (error.code === 'LIMIT_UNEXPECTED_FILE') {
@@ -164,6 +165,10 @@ const startServer = async () => {
 
     // Hourly "your trip starts in 3 days" emails for confirmed bookings.
     startTripReminderScheduler();
+
+    // Hourly vehicle insurance checks: remind a week before cover ends, and
+    // take vehicles off the marketplace once it has.
+    startVehicleInsuranceScheduler();
 
     // Hourly sweep closing tour briefs whose travel dates have passed unbooked.
     startBriefExpiryScheduler();

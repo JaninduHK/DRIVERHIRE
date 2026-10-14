@@ -799,7 +799,7 @@ const AdminDashboard = () => {
   const filteredUsers = useMemo(() => usersState.items.filter((u) => matches(term, [u.name, u.email, u.contactNumber])), [usersState.items, term]);
   const filteredDrivers = useMemo(() => driverState.items.filter((d) => matches(term, [d.name, d.email, d.contactNumber, d.address])), [driverState.items, term]);
   const filteredVehicles = useMemo(
-    () => vehicleState.items.filter((v) => matches(term, [v.model, v.year, v.driver?.name, v.driver?.email, v.driver?.address])),
+    () => vehicleState.items.filter((v) => matches(term, [v.model, v.year, v.registrationNumber, v.registrationNumber?.replace(/[^A-Za-z0-9]/g, ''), v.driver?.name, v.driver?.email, v.driver?.address])),
     [vehicleState.items, term]
   );
   const filteredReviews = useMemo(

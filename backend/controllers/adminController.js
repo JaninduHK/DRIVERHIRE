@@ -37,6 +37,19 @@ import {
   softDeleteVehicle,
 } from '../services/vehicleDeletionService.js';
 import * as cloudinaryService from '../services/cloudinaryService.js';
+import {
+  INSURANCE_STATE,
+  INSURANCE_STATUS,
+  MAX_VEHICLE_IMAGES,
+  MIN_VEHICLE_IMAGES,
+  insuranceState,
+  serializeInsurance,
+} from '../utils/vehicleInsurance.js';
+import {
+  DUPLICATE_REGISTRATION_MESSAGE,
+  findRegistrationConflict,
+  parseRegistrationNumber,
+} from '../utils/vehicleRegistration.js';
 
 const handleValidation = (req, res) => {
   const errors = validationResult(req);
@@ -76,6 +89,15 @@ const toVehicleResponse = (vehicle, req) => {
   if (!vehicle) return null;
   const payload = typeof vehicle.toJSON === 'function' ? vehicle.toJSON() : vehicle;
   payload.images = mapAssetUrls(payload.images, req);
+  // Insurance is excluded from queries unless asked for (.select('+insurance +registration')),
+  // and toJSON never includes it. Add the shaped copy only where it was loaded,
+  // so "not loaded" is never mistaken for "no insurance".
+  if (typeof vehicle.isSelected === 'function' && vehicle.isSelected('insurance')) {
+    payload.insurance = serializeInsurance(vehicle.insurance, (url) => buildAssetUrl(url, req));
+  }
+  if (typeof vehicle.isSelected === 'function' && vehicle.isSelected('registration')) {
+    payload.registrationNumber = vehicle.registration?.number || null;
+  }
   return payload;
 };
 
@@ -467,7 +489,7 @@ export const getDriverDetails = async (req, res) => {
     }
 
     const [vehicles, bookings, conversations, offers, reviews, commissions] = await Promise.all([
-      Vehicle.find({ driver: id, deletedAt: null }).sort({ createdAt: -1 }),
+      Vehicle.find({ driver: id, deletedAt: null }).select('+insurance +registration').sort({ createdAt: -1 }),
       Booking.find({ driver: id })
         .sort({ createdAt: -1 })
         .populate('vehicle', 'model year pricePerDay images')
@@ -1419,10 +1441,9 @@ export const updateDriverCommissionStatus = async (req, res) => {
 
 export const getVehicleSubmissions = async (req, res) => {
   try {
-    const vehicles = await Vehicle.find({ deletedAt: null }).populate(
-      'driver',
-      'name email contactNumber address'
-    );
+    const vehicles = await Vehicle.find({ deletedAt: null })
+      .select('+insurance +registration')
+      .populate('driver', 'name email contactNumber address');
 
     return res.json({
       vehicles: vehicles.map((vehicle) => toVehicleResponse(vehicle, req)),
@@ -1446,6 +1467,7 @@ export const getVehicleDetails = async (req, res) => {
 
   try {
     const vehicle = await Vehicle.findById(id)
+      .select('+insurance +registration')
       .populate('driver', 'name email contactNumber address profilePhoto driverStatus licenseType licenseStatus createdAt memberSince')
       .populate('reviewedBy', 'name email');
 
@@ -1660,10 +1682,9 @@ export const updateVehicleStatus = async (req, res) => {
   const { status, rejectedReason } = req.body;
 
   try {
-    const vehicle = await Vehicle.findById(id).populate(
-      'driver',
-      'name email contactNumber address'
-    );
+    const vehicle = await Vehicle.findById(id)
+      .select('+insurance +registration')
+      .populate('driver', 'name email contactNumber address');
 
     if (!vehicle) {
       return res.status(404).json({ message: 'Vehicle submission not found' });
@@ -1671,6 +1692,44 @@ export const updateVehicleStatus = async (req, res) => {
 
     if (!Object.values(VEHICLE_STATUS).includes(status)) {
       return res.status(400).json({ message: 'Invalid vehicle status' });
+    }
+
+    if (status === VEHICLE_STATUS.APPROVED) {
+      // One listing per vehicle: never publish a second listing of a registration
+      // that is already live or waiting for approval elsewhere.
+      if (
+        vehicle.registration?.key &&
+        (await findRegistrationConflict(vehicle.registration.key, { excludeVehicleId: vehicle._id }))
+      ) {
+        return res.status(409).json({
+          message: `Another listing already uses registration ${vehicle.registration.number}. ${DUPLICATE_REGISTRATION_MESSAGE.split('.')[0]}.`,
+        });
+      }
+      const state = insuranceState(vehicle.insurance);
+      // Vehicles approved before insurance was collected have none on file and
+      // can still be approved. What cannot go live is a vehicle whose insurance
+      // we asked about and have not had an answer on, or whose cover has lapsed
+      // or was rejected.
+      if (vehicle.insurance?.requestedAt) {
+        return res.status(400).json({
+          message: 'Insurance verification was requested for this vehicle and the driver has not resubmitted it yet.',
+        });
+      }
+      if (state === INSURANCE_STATE.EXPIRED || state === INSURANCE_STATE.REJECTED) {
+        return res.status(400).json({
+          message: `This vehicle's insurance is ${state}. The driver needs to upload valid insurance before it can be approved.`,
+        });
+      }
+      if (state !== INSURANCE_STATE.MISSING && (vehicle.images || []).length < MIN_VEHICLE_IMAGES) {
+        return res.status(400).json({ message: `This vehicle needs ${MIN_VEHICLE_IMAGES} photos before it can be approved.` });
+      }
+      // Approving the vehicle is approving what was submitted with it.
+      if (state === INSURANCE_STATE.PENDING) {
+        vehicle.insurance.status = INSURANCE_STATUS.VERIFIED;
+        vehicle.insurance.reviewedAt = new Date();
+        vehicle.insurance.reviewedBy = req.user.id;
+        vehicle.insurance.rejectedReason = undefined;
+      }
     }
 
     vehicle.status = status;
@@ -1717,13 +1776,28 @@ export const updateVehicleDetails = async (req, res) => {
     driverMealsAndAccommodation,
     parkingFeesAndTolls,
     allTaxes,
+    registrationNumber,
   } = req.body;
 
   try {
-    const vehicle = await Vehicle.findById(id);
+    const vehicle = await Vehicle.findById(id).select('+insurance +registration');
 
     if (!vehicle) {
       return res.status(404).json({ message: 'Vehicle submission not found' });
+    }
+
+    // Admins can add or correct the registration number (older listings have
+    // none). Left untouched when the field is not sent; the same one-listing-
+    // per-vehicle rule applies as for drivers.
+    if (registrationNumber !== undefined && String(registrationNumber).trim() !== '') {
+      const registration = parseRegistrationNumber(registrationNumber);
+      if (registration.error) {
+        return res.status(400).json({ message: registration.error });
+      }
+      if (await findRegistrationConflict(registration.key, { excludeVehicleId: vehicle._id })) {
+        return res.status(409).json({ message: 'Another listing already uses this registration number.' });
+      }
+      vehicle.registration = { number: registration.number, key: registration.key };
     }
 
     vehicle.model = model.trim();
@@ -1799,7 +1873,7 @@ export const addVehicleImages = async (req, res) => {
 
     // Update vehicle with new Cloudinary URLs
     const existing = Array.isArray(vehicle.images) ? vehicle.images : [];
-    const combined = [...existing, ...uploadedUrls].slice(0, 5);
+    const combined = [...existing, ...uploadedUrls].slice(0, MAX_VEHICLE_IMAGES);
     vehicle.images = combined;
     vehicle.reviewedAt = new Date();
     vehicle.reviewedBy = req.user.id;
