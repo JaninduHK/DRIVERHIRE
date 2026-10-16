@@ -179,6 +179,13 @@ const userSchema = new mongoose.Schema(
       default: false,
       index: true,
     },
+    // Set by an admin for drivers who asked to keep getting "new traveller
+    // brief" emails although they have the app. Only matters while the brief
+    // alert email setting is "No app only" (see briefController.js).
+    briefAlertEmailOptIn: {
+      type: Boolean,
+      default: false,
+    },
     // Lower sorts first. Only meaningful while featured is true.
     featuredOrder: {
       type: Number,

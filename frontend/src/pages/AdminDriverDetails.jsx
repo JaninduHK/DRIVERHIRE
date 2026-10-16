@@ -23,6 +23,7 @@ import {
   fetchDriverDetails,
   sendDriverEmail,
   setDriverFeatured,
+  setDriverBriefAlertEmail,
   setDriverMessagingSuspension,
   setDriverPassword,
   updateDriverDetails,
@@ -148,6 +149,7 @@ const DriverOverview = ({ data, onEdit, onVerification, onChangeLicenseType }) =
             <DetailRow label="Approved"><Timestamp value={driver.driverApprovedAt} /></DetailRow>
             <DetailRow label="Onboarding complete"><Timestamp value={driver.driverProfileTourCompletedAt} /></DetailRow>
             <DetailRow label="Homepage">{driver.featured ? <span className={tagClass('amber')}>Featured #{Number(driver.featuredOrder ?? 0) + 1}</span> : <span className={tagClass('grey')}>Not featured</span>}</DetailRow>
+            <DetailRow label="Brief emails">{driver.briefAlertEmailOptIn ? <span className={tagClass('green')}>Always emailed</span> : <span className={tagClass('grey')}>Default</span>}<span className="mt-1 block text-[11.5px] font-normal text-muted-soft">{driver.briefAlertEmailOptIn ? 'Gets "new traveller brief" emails even with the app installed.' : 'Follows the brief alert email setting in the Briefs tab.'}</span></DetailRow>
             <DetailRow label="Messaging">{driver.messagingSuspendedUntil && new Date(driver.messagingSuspendedUntil) > new Date() ? <span className={tagClass('red')}>Suspended until {formatDateTime(driver.messagingSuspendedUntil)}</span> : <span className={tagClass('green')}>Active</span>}</DetailRow>
             <DetailRow label="Suspension reason" value={driver.suspensionReason} />
           </dl>
@@ -423,6 +425,7 @@ const AdminDriverDetails = () => {
     return runAction('password', () => setDriverPassword(driverId, passwordForm.password), 'Driver password updated.');
   };
 
+  const toggleBriefEmails = () => runAction('brief-emails', () => setDriverBriefAlertEmail(driverId, !data.driver.briefAlertEmailOptIn), data.driver.briefAlertEmailOptIn ? 'Brief emails back to the default for this driver.' : 'This driver will now get brief emails.');
   const toggleFeatured = () => runAction('featured', () => setDriverFeatured(driverId, !data.driver.featured), data.driver.featured ? 'Driver removed from the homepage.' : 'Driver added to the homepage.');
 
   const toggleSuspension = async () => {
@@ -491,6 +494,7 @@ const AdminDriverDetails = () => {
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6"><Stat value={summary.completedTrips} label="Completed trips" /><Stat value={summary.upcomingTrips} label="Upcoming" /><Stat value={summary.offerCount} label="Offers" /><Stat value={summary.averageRating ? `${summary.averageRating}/5` : '—'} label={`${summary.reviewCount} reviews`} /><Stat value={formatCurrency(summary.totalGross)} label="Booking value" /><Stat value={formatCurrency(summary.totalEarnings)} label="Driver earnings" /></div>
         <div className="mt-4 flex flex-wrap gap-2 border-t border-hairline pt-4">
+          <button type="button" disabled={Boolean(actionLoading)} onClick={toggleBriefEmails} className="inline-flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-xs font-bold text-ink hover:bg-canvas disabled:opacity-60"><Mail className="h-4 w-4" /> {driver.briefAlertEmailOptIn ? 'Stop brief emails' : 'Send brief emails'}</button>
           <button type="button" disabled={Boolean(actionLoading)} onClick={toggleFeatured} className="inline-flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-xs font-bold text-ink hover:bg-canvas disabled:opacity-60"><Star className={`h-4 w-4 ${driver.featured ? 'fill-amber-400 text-amber-500' : ''}`} /> {driver.featured ? 'Remove from homepage' : 'Feature on homepage'}</button>
           <button type="button" disabled={Boolean(actionLoading)} onClick={toggleSuspension} className="inline-flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-xs font-bold text-ink hover:bg-canvas disabled:opacity-60">{paused ? <Undo2 className="h-4 w-4" /> : <Ban className="h-4 w-4" />} {paused ? 'Resume messaging' : 'Pause messaging'}</button>
           <button type="button" onClick={() => { setPasswordForm({ password: '', confirm: '' }); setFormError(''); setModal('password'); }} className="inline-flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-xs font-bold text-ink hover:bg-canvas"><KeyRound className="h-4 w-4" /> Set password</button>

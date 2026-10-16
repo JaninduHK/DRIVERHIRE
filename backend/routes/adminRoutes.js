@@ -7,6 +7,7 @@ import {
   getDriverDetails,
   updateDriverStatus,
   setDriverFeatured,
+  setDriverBriefAlertEmail,
   reorderFeaturedDrivers,
   updateDriverDetails,
   listLicenseSubmissions,
@@ -97,6 +98,15 @@ router.patch(
   '/drivers/featured-order',
   [body('orderedIds').isArray({ min: 1 }).withMessage('orderedIds must be a non-empty array')],
   reorderFeaturedDrivers
+);
+
+router.patch(
+  '/drivers/:id/brief-alert-email',
+  [
+    param('id').isMongoId().withMessage('Invalid driver identifier'),
+    body('enabled').isBoolean().withMessage('enabled must be true or false'),
+  ],
+  setDriverBriefAlertEmail
 );
 
 router.patch(

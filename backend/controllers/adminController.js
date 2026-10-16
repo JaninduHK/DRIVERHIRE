@@ -700,6 +700,7 @@ export const getDriverDetails = async (req, res) => {
       driverProfileTourCompletedAt: driver.driverProfileTourCompletedAt,
       featured: Boolean(driver.featured),
       featuredOrder: driver.featuredOrder,
+      briefAlertEmailOptIn: Boolean(driver.briefAlertEmailOptIn),
       shareLiveLocation: driver.shareLiveLocation !== false,
       driverLocation: driver.driverLocation || null,
       messagingSuspendedUntil: driver.messagingSuspendedUntil,
@@ -749,6 +750,33 @@ export const getDriverDetails = async (req, res) => {
 
 // Admin picks which drivers front the homepage strip. Mirrors setReviewFeatured:
 // featuring appends to the end of the running order so existing picks keep theirs.
+/**
+ * PATCH /api/admin/drivers/:id/brief-alert-email  { enabled }
+ *
+ * Opts a driver in (or back out) of "new traveller brief" emails although they
+ * have the app, for drivers who asked to keep getting them. Takes effect while
+ * the brief alert email setting is "No app only".
+ */
+export const setDriverBriefAlertEmail = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+
+  try {
+    const driver = await User.findOne({ _id: req.params.id, role: USER_ROLES.DRIVER });
+    if (!driver) {
+      return res.status(404).json({ message: 'Driver not found.' });
+    }
+    driver.briefAlertEmailOptIn = Boolean(req.body.enabled);
+    await driver.save({ validateBeforeSave: false });
+    return res.json({ driver: driver.toJSON() });
+  } catch (error) {
+    console.error('Set driver brief alert email error:', error);
+    return res.status(500).json({ message: 'Unable to update brief emails for this driver.' });
+  }
+};
+
 export const setDriverFeatured = async (req, res) => {
   const validationError = handleValidation(req, res);
   if (validationError) {
@@ -3168,11 +3196,13 @@ const countBriefAlertAudience = async () => {
     driverStatus: DRIVER_STATUS.APPROVED,
     email: { $exists: true, $ne: '' },
   };
-  const [approvedDrivers, withApp] = await Promise.all([
+  const withAppQuery = { ...approved, 'expoPushTokens.0': { $exists: true } };
+  const [approvedDrivers, withApp, withAppOptedIn] = await Promise.all([
     User.countDocuments(approved),
-    User.countDocuments({ ...approved, 'expoPushTokens.0': { $exists: true } }),
+    User.countDocuments(withAppQuery),
+    User.countDocuments({ ...withAppQuery, briefAlertEmailOptIn: true }),
   ]);
-  return { approvedDrivers, withApp };
+  return { approvedDrivers, withApp, withAppOptedIn };
 };
 
 // Read the current admin-configurable settings.

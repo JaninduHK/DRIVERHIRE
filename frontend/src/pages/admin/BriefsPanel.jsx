@@ -106,10 +106,11 @@ export const BriefAlertEmailSetting = () => {
   const total = audience?.approvedDrivers;
   const withApp = audience?.withApp;
   const hasCounts = Number.isFinite(total) && Number.isFinite(withApp);
-  const perBrief = { all: total, 'without-app': total - withApp, off: 0 }[mode];
+  const optedIn = Number(audience?.withAppOptedIn) || 0;
+  const perBrief = { all: total, 'without-app': total - withApp + optedIn, off: 0 }[mode];
   const description = {
     all: 'Every approved driver is emailed about each new brief.',
-    'without-app': 'Only drivers without the mobile app are emailed. Drivers with the app still get the push notification.',
+    'without-app': 'Only drivers without the mobile app are emailed, plus drivers you have set to always get brief emails on their driver page. Drivers with the app still get the push notification.',
     off: 'No brief emails are sent. Drivers with the app still get the push notification; others must check the briefs board.',
   }[mode];
 
@@ -119,7 +120,7 @@ export const BriefAlertEmailSetting = () => {
         <p className="text-[11px] font-extrabold uppercase tracking-wide text-muted-soft">Email volume</p>
         <b className="text-[15px] text-ink">New brief alert emails</b>
         <p className="mt-1 max-w-xl text-[12.5px] text-muted">{description}</p>
-        {hasCounts ? <p className="mt-1 text-[11.5px] font-semibold text-muted-soft">{perBrief} email{perBrief === 1 ? '' : 's'} per new brief · {total} approved drivers, {withApp} with the app</p> : null}
+        {hasCounts ? <p className="mt-1 text-[11.5px] font-semibold text-muted-soft">{perBrief} email{perBrief === 1 ? '' : 's'} per new brief · {total} approved drivers, {withApp} with the app{optedIn ? ` (${optedIn} of them set to always get emails)` : ''}</p> : null}
       </div>
       <div className="inline-flex rounded-xl bg-canvas p-1">
         {BRIEF_ALERT_OPTIONS.map((option) => (

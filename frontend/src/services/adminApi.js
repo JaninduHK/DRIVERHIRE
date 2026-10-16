@@ -230,6 +230,13 @@ export const setDriverMessagingSuspension = (driverId, { hours, reason } = {}) =
     body: JSON.stringify({ hours, reason }),
   });
 
+// Keep emailing "new traveller brief" alerts to this driver although they have the app.
+export const setDriverBriefAlertEmail = (driverId, enabled) =>
+  request(`/drivers/${driverId}/brief-alert-email`, {
+    method: 'PATCH',
+    body: JSON.stringify({ enabled }),
+  });
+
 export const setDriverFeatured = (driverId, featured) =>
   request(`/drivers/${driverId}/featured`, {
     method: 'PATCH',

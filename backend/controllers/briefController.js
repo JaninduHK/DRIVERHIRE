@@ -117,7 +117,7 @@ const notifyApprovedDriversOfBrief = async (brief) => {
       role: USER_ROLES.DRIVER,
       driverStatus: DRIVER_STATUS.APPROVED,
       email: { $exists: true, $ne: '' },
-    }).select('name email role driverStatus expoPushTokens');
+    }).select('name email role driverStatus expoPushTokens briefAlertEmailOptIn');
 
     if (!drivers.length) {
       return;
@@ -128,7 +128,9 @@ const notifyApprovedDriversOfBrief = async (brief) => {
       emailMode === BRIEF_ALERT_EMAIL_MODES.OFF
         ? []
         : emailMode === BRIEF_ALERT_EMAIL_MODES.WITHOUT_APP
-          ? drivers.filter((driver) => !driver.expoPushTokens?.length)
+          ? // Drivers with the app get the push instead, unless an admin has
+            // opted them back in to the email.
+            drivers.filter((driver) => !driver.expoPushTokens?.length || driver.briefAlertEmailOptIn)
           : drivers;
 
     await sendBriefAlertEmail({ drivers: emailRecipients, brief });
