@@ -62,7 +62,10 @@ services:
       args:
         # VITE_* values are baked into the CLIENT bundle at build time.
         VITE_API_URL: ${VITE_API_URL:-/api}
-        VITE_GA_MEASUREMENT_ID: ${VITE_GA_MEASUREMENT_ID:-}
+        # Falls back to the live property's ID so a server .env without it can never
+        # ship the site without Analytics again (it is public: it appears in the page
+        # source anyway). Set VITE_GA_MEASUREMENT_ID in .env only to override it.
+        VITE_GA_MEASUREMENT_ID: ${VITE_GA_MEASUREMENT_ID:-G-YY53YRDVFV}
         VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY:-}
     restart: unless-stopped
     environment:
