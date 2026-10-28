@@ -41,7 +41,6 @@ import {
   INSURANCE_STATE,
   INSURANCE_STATUS,
   MAX_VEHICLE_IMAGES,
-  MIN_VEHICLE_IMAGES,
   insuranceState,
   serializeInsurance,
 } from '../utils/vehicleInsurance.js';
@@ -1747,9 +1746,6 @@ export const updateVehicleStatus = async (req, res) => {
         return res.status(400).json({
           message: `This vehicle's insurance is ${state}. The driver needs to upload valid insurance before it can be approved.`,
         });
-      }
-      if (state !== INSURANCE_STATE.MISSING && (vehicle.images || []).length < MIN_VEHICLE_IMAGES) {
-        return res.status(400).json({ message: `This vehicle needs ${MIN_VEHICLE_IMAGES} photos before it can be approved.` });
       }
       // Approving the vehicle is approving what was submitted with it.
       if (state === INSURANCE_STATE.PENDING) {
