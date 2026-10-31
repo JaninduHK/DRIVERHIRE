@@ -98,5 +98,9 @@
     "driverMealsAndAccommodation": "Meals & accommodation covered",
     "parkingFeesAndTolls": "Parking & tolls covered",
     "allTaxes": "All taxes included"
+  },
+  "date": {
+    "select": "Select date",
+    "selectTime": "Select time"
   }
 }

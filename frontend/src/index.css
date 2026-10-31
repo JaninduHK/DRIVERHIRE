@@ -78,3 +78,54 @@
   overflow: hidden;
   min-height: 6rem;
 }
+
+/* Date and time inputs. Safari on iPhone gives them a fixed native width that
+   ignores the column they sit in (two side by side overlap) and collapses an
+   empty one; these rules make them behave like any other input. Scoped to iOS
+   so desktop browsers keep their calendar icon. */
+input[type='date'],
+input[type='time'],
+input[type='datetime-local'] {
+  min-width: 0;
+  max-width: 100%;
+}
+@supports (-webkit-touch-callout: none) {
+  input[type='date'],
+  input[type='time'],
+  input[type='datetime-local'] {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    width: 100%;
+  }
+}
+input[type='date']::-webkit-date-and-time-value,
+input[type='time']::-webkit-date-and-time-value,
+input[type='datetime-local']::-webkit-date-and-time-value {
+  min-height: 1.5em;
+  text-align: left;
+}
+
+/* DateField: while empty and not being edited, hide the browser's own
+   "mm/dd/yyyy" (or blank) and show the "Select date" hint instead. */
+.date-field[data-empty='true']:not(:focus) {
+  color: transparent;
+}
+.date-field[data-empty='true']:not(:focus)::-webkit-datetime-edit {
+  color: transparent;
+}
+.date-field:focus + .date-field-hint {
+  display: none;
+}
+
+/* Safari on iPhone/iPad zooms the whole page into any field whose text is
+   smaller than 16px when it is tapped, and leaves it zoomed. 16px there stops
+   that; other devices keep the designed sizes. */
+@supports (-webkit-touch-callout: none) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select,
+  textarea,
+  .date-field-hint {
+    font-size: 16px !important;
+  }
+}

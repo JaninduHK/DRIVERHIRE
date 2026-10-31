@@ -1,4 +1,5 @@
 import { localizeServerMessage } from '../i18n/serverMessages.js';
+import DateField from '../components/DateField.jsx';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from '../i18n/router.jsx';
 import { Trans, useI18n } from '../i18n/I18nProvider.jsx';
@@ -1353,11 +1354,11 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
             <div className="flex gap-2.5">
               <div className="min-w-0 flex-1">
                 <label className={labelCls}>{t('dash.form.startDate')}</label>
-                <input type="date" value={editForm.startDate} disabled={Boolean(editingBooking.offerId)} onChange={(e) => handleEditFieldChange('startDate', e.target.value)} className={`mt-1 ${inputCls} disabled:bg-[#eef1f0]`} required={!editingBooking.offerId} />
+                <DateField value={editForm.startDate} disabled={Boolean(editingBooking.offerId)} onChange={(e) => handleEditFieldChange('startDate', e.target.value)} className={`mt-1 ${inputCls} disabled:bg-[#eef1f0]`} required={!editingBooking.offerId} />
               </div>
               <div className="min-w-0 flex-1">
                 <label className={labelCls}>{t('dash.form.endDate')}</label>
-                <input type="date" value={editForm.endDate} disabled={Boolean(editingBooking.offerId)} onChange={(e) => handleEditFieldChange('endDate', e.target.value)} className={`mt-1 ${inputCls} disabled:bg-[#eef1f0]`} required={!editingBooking.offerId} />
+                <DateField value={editForm.endDate} disabled={Boolean(editingBooking.offerId)} onChange={(e) => handleEditFieldChange('endDate', e.target.value)} className={`mt-1 ${inputCls} disabled:bg-[#eef1f0]`} required={!editingBooking.offerId} />
               </div>
             </div>
             <div className="flex gap-2.5">
@@ -2391,11 +2392,11 @@ const TravelerRequests = ({ onMenu, travelerName, briefsState, onReload, onCreat
             <div className="flex gap-2.5">
               <div className="min-w-0 flex-1">
                 <label className={labelCls}>{t('dash.form.startDate')}</label>
-                <input type="date" name="startDate" value={formState.startDate} onChange={handleFieldChange} className={`mt-1 ${inputCls}`} required />
+                <DateField name="startDate" value={formState.startDate} onChange={handleFieldChange} className={`mt-1 ${inputCls}`} required />
               </div>
               <div className="min-w-0 flex-1">
                 <label className={labelCls}>{t('dash.form.endDate')}</label>
-                <input type="date" name="endDate" value={formState.endDate} onChange={handleFieldChange} className={`mt-1 ${inputCls}`} required />
+                <DateField name="endDate" value={formState.endDate} onChange={handleFieldChange} className={`mt-1 ${inputCls}`} required />
               </div>
             </div>
             <div className="flex gap-2.5">

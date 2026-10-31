@@ -98,5 +98,9 @@
     "driverMealsAndAccommodation": "食事・宿泊費込み",
     "parkingFeesAndTolls": "駐車料金・通行料込み",
     "allTaxes": "税金込み"
+  },
+  "date": {
+    "select": "日付を選択",
+    "selectTime": "時刻を選択"
   }
 }

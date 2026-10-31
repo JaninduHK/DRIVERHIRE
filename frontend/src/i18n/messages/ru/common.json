@@ -98,5 +98,9 @@
     "driverMealsAndAccommodation": "Питание и проживание оплачены",
     "parkingFeesAndTolls": "Парковка и платные дороги оплачены",
     "allTaxes": "Все налоги включены"
+  },
+  "date": {
+    "select": "Выберите дату",
+    "selectTime": "Выберите время"
   }
 }

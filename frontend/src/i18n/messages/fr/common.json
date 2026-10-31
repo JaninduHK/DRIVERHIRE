@@ -98,5 +98,9 @@
     "driverMealsAndAccommodation": "Repas et hébergement couverts",
     "parkingFeesAndTolls": "Parking et péages couverts",
     "allTaxes": "Toutes taxes comprises"
+  },
+  "date": {
+    "select": "Choisir une date",
+    "selectTime": "Choisir une heure"
   }
 }

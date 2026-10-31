@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import DateField from '../../components/DateField.jsx';
 import {
   ArrowDown,
   ArrowUp,
@@ -301,7 +302,7 @@ const ReviewForm = ({
         </div>
         <div>
           <label className={labelCls}>Review date (optional)</label>
-          <input type="date" value={formState.reviewDate} onChange={(event) => handleFormFieldChange('reviewDate', event.target.value)} className={inputCls} />
+          <DateField value={formState.reviewDate} onChange={(event) => handleFormFieldChange('reviewDate', event.target.value)} className={inputCls} />
         </div>
       </div>
       <div>

@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
+import DateField from '../components/DateField.jsx';
 import { Link, useNavigate } from '../i18n/router.jsx';
 import { Trans, useI18n } from '../i18n/I18nProvider.jsx';
 import { translateLicenseType } from '../i18n/labels.js';
@@ -263,8 +264,7 @@ const GetQuotes = () => {
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <label className="block">
                       <span className={labelCls}>{t('getQuotes.form.startDate')}</span>
-                      <input
-                        type="date"
+                      <DateField
                         required
                         value={form.startDate}
                         min={todayDate}
@@ -274,8 +274,7 @@ const GetQuotes = () => {
                     </label>
                     <label className="block">
                       <span className={labelCls}>{t('getQuotes.form.endDate')}</span>
-                      <input
-                        type="date"
+                      <DateField
                         required
                         value={form.endDate}
                         min={form.startDate || todayDate}
@@ -742,9 +741,17 @@ const GetQuotes = () => {
   );
 };
 
+// Three stats share one row even on the smallest phones. A long value (Russian
+// "БЕСПЛАТНО") shrinks with the screen so it never runs past its column.
 const Stat = ({ value, label }) => (
-  <div>
-    <div className="text-[clamp(20px,2.2vw,26px)] font-extrabold tracking-[-.02em] text-ink">{value}</div>
+  <div className="min-w-0">
+    <div
+      className={`font-extrabold tracking-[-.02em] text-ink ${
+        String(value).length > 7 ? 'text-[min(4.4vw,clamp(20px,2.2vw,26px))]' : 'text-[clamp(20px,2.2vw,26px)]'
+      }`}
+    >
+      {value}
+    </div>
     <div className="mt-0.5 text-[11.5px] font-bold leading-tight text-muted-soft sm:text-[12.5px]">{label}</div>
   </div>
 );

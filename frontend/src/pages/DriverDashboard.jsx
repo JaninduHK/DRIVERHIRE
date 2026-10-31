@@ -1,5 +1,6 @@
 // /src/pages/DriverDashboard.jsx
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import DateField from '../components/DateField.jsx';
 import { useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useDropzone } from 'react-dropzone';
@@ -2187,16 +2188,16 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
               <div className="flex gap-2.5">
                 <div className="min-w-0 flex-1">
                   <label htmlFor="insuranceStartDate" className="text-[12.5px] font-bold text-ink-soft">Cover starts</label>
-                  <input
-                    id="insuranceStartDate" type="date" required value={insuranceDates.startDate}
+                  <DateField
+                    id="insuranceStartDate" required value={insuranceDates.startDate}
                     onChange={(event) => setInsuranceDates((prev) => ({ ...prev, startDate: event.target.value }))}
                     className="mt-1.5 h-11 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 text-sm font-semibold text-ink focus:border-brand focus:outline-none"
                   />
                 </div>
                 <div className="min-w-0 flex-1">
                   <label htmlFor="insuranceEndDate" className="text-[12.5px] font-bold text-ink-soft">Cover ends</label>
-                  <input
-                    id="insuranceEndDate" type="date" required value={insuranceDates.endDate}
+                  <DateField
+                    id="insuranceEndDate" required value={insuranceDates.endDate}
                     min={new Date().toISOString().slice(0, 10)}
                     onChange={(event) => setInsuranceDates((prev) => ({ ...prev, endDate: event.target.value }))}
                     className="mt-1.5 h-11 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 text-sm font-semibold text-ink focus:border-brand focus:outline-none"
@@ -3897,16 +3898,16 @@ const AvailabilityPanel = ({
                   <div className="flex gap-2.5">
                     <div className="min-w-0 flex-1">
                       <label className="text-[11.5px] font-bold text-muted-soft">Start</label>
-                      <input
-                        type="date" value={form.startDate} required
+                      <DateField
+                        value={form.startDate} required
                         onChange={(e) => handleInputChange(vehicle.id, 'startDate', e.target.value)}
                         className="mt-1 h-10 w-full min-w-0 rounded-lg border-[1.5px] border-[#e2e8ea] bg-white px-2.5 text-[13px] font-semibold text-ink focus:border-brand focus:outline-none"
                       />
                     </div>
                     <div className="min-w-0 flex-1">
                       <label className="text-[11.5px] font-bold text-muted-soft">End</label>
-                      <input
-                        type="date" value={form.endDate} required
+                      <DateField
+                        value={form.endDate} required
                         onChange={(e) => handleInputChange(vehicle.id, 'endDate', e.target.value)}
                         className="mt-1 h-10 w-full min-w-0 rounded-lg border-[1.5px] border-[#e2e8ea] bg-white px-2.5 text-[13px] font-semibold text-ink focus:border-brand focus:outline-none"
                       />

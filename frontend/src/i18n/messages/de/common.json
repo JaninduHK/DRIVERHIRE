@@ -98,5 +98,9 @@
     "driverMealsAndAccommodation": "Verpflegung & Unterkunft abgedeckt",
     "parkingFeesAndTolls": "Park- & Mautgebühren abgedeckt",
     "allTaxes": "Alle Steuern inbegriffen"
+  },
+  "date": {
+    "select": "Datum wählen",
+    "selectTime": "Uhrzeit wählen"
   }
 }

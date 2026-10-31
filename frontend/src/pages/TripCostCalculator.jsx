@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import DateField from '../components/DateField.jsx';
 import { Link } from '../i18n/router.jsx';
 import { Trans, useI18n } from '../i18n/I18nProvider.jsx';
 import { useLoaderData } from 'react-router';
@@ -250,8 +251,7 @@ const TripCostCalculator = () => {
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="flex flex-col gap-1.5 text-[13px] font-bold text-ink-soft">
                 {t('tripCost.who.startDate')}
-                <input
-                  type="date"
+                <DateField
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                   className="rounded-xl border-[1.5px] border-[#dde4e1] bg-white px-4 py-2.5 text-sm font-medium text-ink focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"

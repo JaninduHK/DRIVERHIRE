@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import DateField from '../components/DateField.jsx';
 import { Link, useNavigate } from '../i18n/router.jsx';
 import { Trans, useI18n } from '../i18n/I18nProvider.jsx';
 import { translateFeature } from '../i18n/labels.js';
@@ -257,11 +258,11 @@ const HomePage = () => {
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <label className="block">
                   <span className={labelCls}>{t('home.form.startDate')}</span>
-                  <input type="date" value={form.startDate} onChange={setField('startDate')} className={inputCls} />
+                  <DateField value={form.startDate} onChange={setField('startDate')} className={inputCls} />
                 </label>
                 <label className="block">
                   <span className={labelCls}>{t('home.form.endDate')}</span>
-                  <input type="date" value={form.endDate} min={form.startDate || undefined} onChange={setField('endDate')} className={inputCls} />
+                  <DateField value={form.endDate} min={form.startDate || undefined} onChange={setField('endDate')} className={inputCls} />
                 </label>
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

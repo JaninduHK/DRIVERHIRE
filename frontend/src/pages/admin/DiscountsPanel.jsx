@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import DateField from '../../components/DateField.jsx';
 import { Loader2, Percent, Plus, RotateCcw, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AdminModal from './AdminModal.jsx';
@@ -192,11 +193,11 @@ const DiscountsPanel = ({ state, onReload, onCreate, onUpdate, onDelete }) => {
           <div className="grid gap-3 md:grid-cols-2">
             <div>
               <label className={labelCls}>Start date</label>
-              <input type="date" name="startDate" value={formState.startDate} onChange={handleFieldChange} className={inputCls} required />
+              <DateField name="startDate" value={formState.startDate} onChange={handleFieldChange} className={inputCls} required />
             </div>
             <div>
               <label className={labelCls}>End date</label>
-              <input type="date" name="endDate" value={formState.endDate} onChange={handleFieldChange} className={inputCls} required />
+              <DateField name="endDate" value={formState.endDate} onChange={handleFieldChange} className={inputCls} required />
             </div>
           </div>
           <div>

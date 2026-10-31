@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import DateField from '../../components/DateField.jsx';
 import { CalendarClock, Lock, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -188,11 +189,11 @@ const VehicleAvailabilitySection = ({ vehicleId }) => {
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
               <div>
                 <label className={labelCls}>From</label>
-                <input name="startDate" type="date" value={form.startDate} onChange={handleFieldChange} className={inputCls} />
+                <DateField name="startDate" value={form.startDate} onChange={handleFieldChange} className={inputCls} />
               </div>
               <div>
                 <label className={labelCls}>To</label>
-                <input name="endDate" type="date" min={form.startDate || undefined} value={form.endDate} onChange={handleFieldChange} className={inputCls} />
+                <DateField name="endDate" min={form.startDate || undefined} value={form.endDate} onChange={handleFieldChange} className={inputCls} />
               </div>
               <div>
                 <label className={labelCls}>Status</label>

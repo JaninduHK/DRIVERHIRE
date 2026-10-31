@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import DateField from '../components/DateField.jsx';
 import { Link, useNavigate, useParams } from '../i18n/router.jsx';
 import { useI18n } from '../i18n/I18nProvider.jsx';
 import { translateFeature, translateLicenseType } from '../i18n/labels.js';
@@ -558,11 +559,11 @@ const BookingPanel = ({
         <div className="grid grid-cols-2 gap-2.5">
           <label className="block">
             <span className="mb-1 block text-[11px] font-extrabold uppercase tracking-wide text-muted-soft">{t('vehicle.booking.start')}</span>
-            <input type="date" value={dateForm.start} min={todayDate} onChange={(e) => handleDateChange('start', e.target.value)} className={inputCls} required />
+            <DateField value={dateForm.start} min={todayDate} onChange={(e) => handleDateChange('start', e.target.value)} className={inputCls} required />
           </label>
           <label className="block">
             <span className="mb-1 block text-[11px] font-extrabold uppercase tracking-wide text-muted-soft">{t('vehicle.booking.end')}</span>
-            <input type="date" value={dateForm.end} min={dateForm.start || todayDate} onChange={(e) => handleDateChange('end', e.target.value)} className={inputCls} required />
+            <DateField value={dateForm.end} min={dateForm.start || todayDate} onChange={(e) => handleDateChange('end', e.target.value)} className={inputCls} required />
           </label>
         </div>
         <div className="flex items-center justify-between rounded-[12px] border border-[#e2e8ea] px-3 py-2">

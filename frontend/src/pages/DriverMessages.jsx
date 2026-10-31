@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import DateField from '../components/DateField.jsx';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
@@ -876,11 +877,11 @@ const DriverMessages = () => {
               <div className="flex gap-2.5">
                 <div className="min-w-0 flex-1">
                   <label className={labelCls}>Start date</label>
-                  <input type="date" value={offerForm.startDate} onChange={(e) => handleOfferChange('startDate', e.target.value)} className={`mt-1 ${inputCls}`} required />
+                  <DateField value={offerForm.startDate} onChange={(e) => handleOfferChange('startDate', e.target.value)} className={`mt-1 ${inputCls}`} required />
                 </div>
                 <div className="min-w-0 flex-1">
                   <label className={labelCls}>End date</label>
-                  <input type="date" value={offerForm.endDate} onChange={(e) => handleOfferChange('endDate', e.target.value)} className={`mt-1 ${inputCls}`} required />
+                  <DateField value={offerForm.endDate} onChange={(e) => handleOfferChange('endDate', e.target.value)} className={`mt-1 ${inputCls}`} required />
                 </div>
               </div>
               <div>

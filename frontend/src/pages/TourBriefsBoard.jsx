@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import DateField from '../components/DateField.jsx';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
@@ -511,11 +512,11 @@ const TourBriefsBoard = () => {
                   <div className="flex gap-2.5">
                     <div className="min-w-0 flex-1">
                       <label className={labelCls}>Start date</label>
-                      <input type="date" name="startDate" value={offerForm.startDate} onChange={handleOfferFieldChange} className={`mt-1 ${inputCls}`} required />
+                      <DateField name="startDate" value={offerForm.startDate} onChange={handleOfferFieldChange} className={`mt-1 ${inputCls}`} required />
                     </div>
                     <div className="min-w-0 flex-1">
                       <label className={labelCls}>End date</label>
-                      <input type="date" name="endDate" value={offerForm.endDate} onChange={handleOfferFieldChange} className={`mt-1 ${inputCls}`} required />
+                      <DateField name="endDate" value={offerForm.endDate} onChange={handleOfferFieldChange} className={`mt-1 ${inputCls}`} required />
                     </div>
                   </div>
                   <div>

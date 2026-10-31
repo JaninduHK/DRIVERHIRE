@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import DateField from '../components/DateField.jsx';
 import { Link, useLocation, useNavigate } from '../i18n/router.jsx';
 import { useI18n } from '../i18n/I18nProvider.jsx';
 import { translateFeature } from '../i18n/labels.js';
@@ -408,11 +409,11 @@ const VehicleFilterSheet = ({ draft, setDraft, count, onApply, onReset, onClose 
             <div className="mt-2.5 flex gap-2.5">
               <div className="min-w-0 flex-1">
                 <label className="text-[10.5px] font-bold text-muted-soft">{t('vehicles.filters.start')}</label>
-                <input type="date" value={draft.startDate} onChange={(e) => set({ startDate: e.target.value })} className="mt-1 h-11 w-full min-w-0 rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-2.5 text-[13px] font-semibold text-ink focus:border-brand focus:outline-none" />
+                <DateField value={draft.startDate} onChange={(e) => set({ startDate: e.target.value })} className="mt-1 h-11 w-full min-w-0 rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-2.5 text-[13px] font-semibold text-ink focus:border-brand focus:outline-none" />
               </div>
               <div className="min-w-0 flex-1">
                 <label className="text-[10.5px] font-bold text-muted-soft">{t('vehicles.filters.end')}</label>
-                <input type="date" value={draft.endDate} onChange={(e) => set({ endDate: e.target.value })} className="mt-1 h-11 w-full min-w-0 rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-2.5 text-[13px] font-semibold text-ink focus:border-brand focus:outline-none" />
+                <DateField value={draft.endDate} onChange={(e) => set({ endDate: e.target.value })} className="mt-1 h-11 w-full min-w-0 rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-2.5 text-[13px] font-semibold text-ink focus:border-brand focus:outline-none" />
               </div>
             </div>
           </SheetSection>
