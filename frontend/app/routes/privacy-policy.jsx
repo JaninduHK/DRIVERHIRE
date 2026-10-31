@@ -1,11 +1,12 @@
-import { buildMeta } from '../lib/seo.js';
+import { buildMeta, metaLocale } from '../lib/seo.js';
 
-export function meta() {
+export function meta({ location }) {
+  const { locale, t } = metaLocale(location);
   return buildMeta({
-    title: "Privacy Policy | Car with Driver LK",
-    description:
-      "How Car with Driver LK collects, uses and protects your personal information.",
-    path: "/privacy-policy",
+    title: t('meta.privacy.title'),
+    description: t('meta.privacy.description'),
+    path: '/privacy-policy',
+    locale,
   });
 }
 

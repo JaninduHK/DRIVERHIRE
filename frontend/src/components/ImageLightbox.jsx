@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useI18n } from '../i18n/I18nProvider.jsx';
 
 /**
  * Full-screen image viewer overlay.
@@ -10,6 +11,7 @@ import { useEffect } from 'react';
  * Controlled: the parent owns `index` and clears it to close.
  */
 const ImageLightbox = ({ images, index, onIndexChange, onClose, alt = 'Photo' }) => {
+  const { t } = useI18n();
   const list = Array.isArray(images) ? images.filter(Boolean) : [];
   const isOpen = index !== null && index !== undefined && list.length > 0;
 
@@ -50,7 +52,7 @@ const ImageLightbox = ({ images, index, onIndexChange, onClose, alt = 'Photo' })
         type="button"
         onClick={onClose}
         className="absolute right-4 top-4 rounded-full bg-white/15 px-3 py-1 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/25"
-        aria-label="Close"
+        aria-label={t('common.photos.close')}
       >
         Close
       </button>
@@ -63,7 +65,7 @@ const ImageLightbox = ({ images, index, onIndexChange, onClose, alt = 'Photo' })
               onIndexChange((safeIndex - 1 + list.length) % list.length);
             }}
             className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/15 px-3 py-2 text-lg text-white backdrop-blur transition hover:bg-white/25"
-            aria-label="Previous photo"
+            aria-label={t('common.photos.previous')}
           >
             ‹
           </button>
@@ -74,7 +76,7 @@ const ImageLightbox = ({ images, index, onIndexChange, onClose, alt = 'Photo' })
               onIndexChange((safeIndex + 1) % list.length);
             }}
             className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/15 px-3 py-2 text-lg text-white backdrop-blur transition hover:bg-white/25"
-            aria-label="Next photo"
+            aria-label={t('common.photos.next')}
           >
             ›
           </button>

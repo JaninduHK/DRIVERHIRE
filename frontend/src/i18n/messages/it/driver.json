@@ -1,0 +1,69 @@
+{
+  "missingId": "Identificativo dell'autista mancante.",
+  "loadError": "Impossibile caricare il profilo dell'autista in questo momento.",
+  "reviewsAll": "Tutte",
+  "thisDriver": "questo autista",
+  "loading": "Caricamento del profilo dell'autista…",
+  "unavailable": "Autista non disponibile",
+  "notFound": "Impossibile trovare questo profilo.",
+  "retry": "Riprova",
+  "allDrivers": "Tutti gli autisti",
+  "sriLanka": "Sri Lanka",
+  "missingInfo": "Mancano le informazioni sull'autista.",
+  "chatReady": "La conversazione è pronta nella tua casella dei messaggi.",
+  "chatError": "Impossibile avviare una conversazione in questo momento.",
+  "back": "Indietro",
+  "save": "Salva",
+  "share": "Condividi",
+  "noReviews": "Ancora nessuna recensione",
+  "years": {
+    "one": "{count} anno",
+    "other": "{count} anni"
+  },
+  "new": "Nuovo",
+  "stats": {
+    "guiding": "Esperienza",
+    "rating": "Valutazione",
+    "vehicles": {
+      "one": "Veicolo",
+      "other": "Veicoli"
+    },
+    "guidingExperience": "Esperienza come guida",
+    "travellerRating": "Valutazione dei viaggiatori",
+    "availableVehicles": "Veicoli disponibili"
+  },
+  "tabs": {
+    "about": "Info",
+    "vehicles": "Veicoli",
+    "reviews": "Recensioni"
+  },
+  "noBio": "Questo autista non ha ancora aggiunto una presentazione.",
+  "everyTripIncludes": "Ogni viaggio include",
+  "vehiclesHeading": {
+    "one": "Veicolo",
+    "other": "Veicoli"
+  },
+  "seats": {
+    "one": "{count} posto",
+    "other": "{count} posti"
+  },
+  "perDay": "/ giorno",
+  "perDayShort": "/giorno",
+  "from": "da",
+  "message": "Messaggio",
+  "requestBooking": "Richiedi la prenotazione",
+  "backToDrivers": "Torna agli autisti",
+  "reviewCount": {
+    "one": "{count} recensione",
+    "other": "{count} recensioni"
+  },
+  "view": "Vedi",
+  "perDayAllIn": "/ giorno, tutto incluso",
+  "noBookingFee": "Nessun costo di prenotazione · paghi l'autista all'arrivo",
+  "starting": "Avvio…",
+  "messageName": "Scrivi a {name}",
+  "licenseVerified": "{license} verificato",
+  "identityVerified": "Identità e licenza verificate",
+  "repliesWithinDay": "Di solito risponde entro un giorno",
+  "freeCancellation": "Cancellazione gratuita fino a 2 giorni prima del viaggio"
+}

@@ -1,0 +1,51 @@
+{
+  "newGuide": "Nuova guida",
+  "years": {
+    "one": "{count} anno",
+    "other": "{count} anni"
+  },
+  "filters": {
+    "all": "Tutti gli autisti",
+    "available": "Disponibili ora",
+    "group": "6+ posti",
+    "top": "I più votati"
+  },
+  "chatReady": "La conversazione è pronta nella tua casella dei messaggi.",
+  "chatError": "Impossibile avviare una conversazione in questo momento.",
+  "online": "LIVE · {count} AUTISTI ONLINE",
+  "title": "Autisti vicino a te, adesso",
+  "lead": "Tocca un segnaposto sulla mappa o una scheda qui sotto per vedere il veicolo, le lingue e la tariffa giornaliera dell'autista, poi avvia una chat.",
+  "mapLabel": "Mappa degli autisti",
+  "listLabel": "Autisti consigliati",
+  "recommended": "Consigliati per te",
+  "ofTotal": "{shown} di {total}",
+  "emptyTitle": "Nessun autista corrisponde a questo filtro",
+  "emptyBody": "Prova «Tutti gli autisti» per vedere tutti sulla mappa.",
+  "sriLanka": "Sri Lanka",
+  "quote": "Su preventivo",
+  "multidayTours": "Tour di più giorni",
+  "seats": {
+    "one": "{count} posto",
+    "other": "{count} posti"
+  },
+  "perDay": "al giorno",
+  "reviews": {
+    "one": "{count} recensione",
+    "other": "{count} recensioni"
+  },
+  "sheet": {
+    "label": "Dettagli dell'autista",
+    "close": "Chiudi",
+    "basedIn": "BASE",
+    "experience": "ESPERIENZA",
+    "reviews": "RECENSIONI",
+    "vehicles": "VEICOLI",
+    "vehicle": "VEICOLO",
+    "seatsVary": "Posti variabili",
+    "goodToKnow": "BUONO A SAPERSI",
+    "perDay": "/ giorno",
+    "viewProfile": "Vedi il profilo",
+    "opening": "Apertura della chat…",
+    "chatWith": "Chatta con {name}"
+  }
+}

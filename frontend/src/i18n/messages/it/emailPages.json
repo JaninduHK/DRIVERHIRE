@@ -1,0 +1,46 @@
+{
+  "linkError": "Non è stato possibile aprire questo link.",
+  "goHome": "Vai alla home",
+  "backHome": "Torna alla home",
+  "offer": {
+    "opening": "Apertura della tua offerta…",
+    "errorTitle": "Non siamo riusciti ad aprire questa offerta",
+    "status": {
+      "accepted": "Hai già accettato questa offerta – apri la tua dashboard per vedere la prenotazione.",
+      "declined": "Questa offerta non è più disponibile."
+    },
+    "title": "Offerta di viaggio da {name}",
+    "kms": "{km} km inclusi",
+    "login": "Accedi per rispondere",
+    "loginHelp": "Dopo l'accesso arriverai direttamente a questa conversazione."
+  },
+  "review": {
+    "opening": "Apertura della tua recensione…",
+    "errorTitle": "Non siamo riusciti ad aprire questa recensione",
+    "errors": {
+      "rating": "Scegli una valutazione in stelle.",
+      "tooShort": "Aggiungi qualche dettaglio in più (almeno 10 caratteri).",
+      "submit": "Al momento non è possibile inviare la tua recensione."
+    },
+    "thanksTitle": "Grazie per la tua recensione",
+    "thanksBody": "Apparirà sul sito dopo l'approvazione del nostro team.",
+    "title": "Com'è andato il tuo viaggio con {name}?",
+    "yourTrip": "Il tuo viaggio",
+    "rating": "La tua valutazione",
+    "stars": {
+      "one": "{count} stella",
+      "other": "{count} stelle"
+    },
+    "titleLabel": "Titolo",
+    "optional": "(facoltativo)",
+    "titlePlaceholder": "es. Autista eccellente, molto puntuale",
+    "comment": "La tua recensione",
+    "commentPlaceholder": "Cosa ti ha colpito dell'autista, del veicolo e del viaggio?",
+    "photos": "Foto",
+    "removePhoto": "Rimuovi foto",
+    "photosHelp": "Aggiungi fino a {count} foto del tuo viaggio.",
+    "submitting": "Invio…",
+    "submit": "Invia recensione",
+    "checked": "La tua recensione viene controllata dal nostro team prima di apparire sul sito."
+  }
+}

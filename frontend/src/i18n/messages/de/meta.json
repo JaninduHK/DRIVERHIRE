@@ -1,0 +1,81 @@
+{
+  "home": {
+    "title": "Privatfahrer mit Auto in Sri Lanka mieten | Car with Driver LK",
+    "description": "Buchen Sie in Sri Lanka einen bei der SLTDA registrierten Privatfahrer mit Auto. Vergleichen Sie englischsprachige Chauffeur-Guides, transparente Tagespreise und inselweite Touren – mit kostenlosen Angeboten in wenigen Minuten."
+  },
+  "vehicles": {
+    "title": "Autos mit Fahrer für Reisen auf ganz Sri Lanka | Car with Driver LK",
+    "description": "Entdecken Sie Autos mit englischsprachigem Privatfahrer in Sri Lanka – Limousinen, Vans und SUVs mit transparenten Tagespreisen, Kraftstoff und Versicherung inklusive. Holen Sie kostenlose Angebote ein."
+  },
+  "vehicle": {
+    "notFoundTitle": "Fahrzeug nicht gefunden | Car with Driver LK",
+    "notFoundDescription": "Dieses Fahrzeug wurde nicht gefunden.",
+    "title": "{model} mit Privatfahrer in Sri Lanka | Car with Driver LK",
+    "description": "Mieten Sie einen {model} mit englischsprachigem Privatfahrer in Sri Lanka. {seats} Sitzplätze, Kraftstoff und Versicherung inklusive, ab ${price}/Tag."
+  },
+  "drivers": {
+    "title": "Bei der SLTDA registrierte Privatfahrer in Sri Lanka | Car with Driver LK",
+    "description": "Entdecken Sie verifizierte private Chauffeur-Guides für Reisen auf ganz Sri Lanka. Vergleichen Sie Erfahrung, Sprachen, Fahrzeuge und Tagespreise und buchen Sie dann direkt, ohne Vermittler."
+  },
+  "driver": {
+    "notFoundTitle": "Fahrer nicht gefunden | Car with Driver LK",
+    "notFoundDescription": "Dieses Fahrerprofil wurde nicht gefunden.",
+    "title": "{name} – Privater Chauffeur in Sri Lanka | Car with Driver LK",
+    "intro": "Buchen Sie {name}, einen bei der SLTDA registrierten Privatfahrer in Sri Lanka.",
+    "introBased": "Buchen Sie {name}, einen bei der SLTDA registrierten Privatfahrer in Sri Lanka mit Standort {location}.",
+    "experience": {
+      "one": "{count}+ Jahr Erfahrung",
+      "other": "{count}+ Jahre Erfahrung"
+    },
+    "reviews": {
+      "one": "{count} Bewertung von Reisenden",
+      "other": "{count} Bewertungen von Reisenden"
+    },
+    "fromPrice": "Autos mit Fahrer ab ${price}/Tag",
+    "separator": ", ",
+    "bookDirect": "Direkt buchen, ohne Vermittler."
+  },
+  "liveMap": {
+    "title": "Live-Fahrerkarte | Fahrer in Ihrer Nähe in Sri Lanka | Car with Driver LK",
+    "description": "Sehen Sie Privatfahrer in Ihrer Nähe auf einer Live-Karte von Sri Lanka. Vergleichen Sie Fahrzeuge, Bewertungen und Tagespreise und starten Sie dann einen Chat – ohne Vermittler, ohne Buchungsgebühren."
+  },
+  "about": {
+    "title": "Über Car with Driver LK | Privatfahrer in Sri Lanka",
+    "description": "Car with Driver LK bringt Reisende mit bei der SLTDA registrierten Privatfahrern in ganz Sri Lanka zusammen – transparente Preise, verifizierte Chauffeur-Guides und direkte Buchung."
+  },
+  "getQuotes": {
+    "title": "Angebote für Auto mit Fahrer in Sri Lanka – kostenlos vergleichen | Car with Driver LK",
+    "description": "Nennen Sie Reisedaten und Route und erhalten Sie kostenlose Angebote von geprüften Fahrern und SLTDA-Chauffeur-Guides aus Sri Lanka. Angebote vergleichen, direkt chatten, den Fahrer bezahlen – keine Buchungsgebühr."
+  },
+  "blog": {
+    "title": "Sri-Lanka-Reiseratgeber von einheimischen Fahrern | Car with Driver LK",
+    "description": "Reiseratgeber für Sri Lanka von den Fahrern, die die Routen wirklich fahren – Reisekosten, Reiserouten, Straßenverhältnisse und Tipps von vor Ort von carwithdriver.lk."
+  },
+  "article": {
+    "notFoundTitle": "Artikel nicht gefunden | Car with Driver LK",
+    "notFoundDescription": "Dieser Artikel wurde nicht gefunden.",
+    "title": "{title} | Car with Driver LK"
+  },
+  "contact": {
+    "title": "Kontakt zu Car with Driver LK",
+    "description": "Kontaktieren Sie Car with Driver LK für Hilfe bei der Buchung eines Privatfahrers in Sri Lanka, für Partnerschaftsanfragen oder für Unterstützung bei Ihrer Reise."
+  },
+  "tripCost": {
+    "title": "Reisekostenrechner für Sri Lanka | Reiseroute planen | Car with Driver LK",
+    "description": "Stellen Sie eine Sri-Lanka-Reiseroute Tag für Tag zusammen und erhalten Sie eine echte Kostenschätzung auf Basis aktueller Fahrerpreise – Entfernungen, Fahrzeit und Preise je Fahrzeugklasse für genau Ihre Route."
+  },
+  "privacy": {
+    "title": "Datenschutzerklärung | Car with Driver LK",
+    "description": "Wie Car with Driver LK Ihre personenbezogenen Daten erhebt, verwendet und schützt."
+  },
+  "terms": {
+    "title": "Allgemeine Geschäftsbedingungen | Car with Driver LK",
+    "description": "Die Allgemeinen Geschäftsbedingungen für die Nutzung von Car with Driver LK zur Buchung von Privatfahrern in Sri Lanka."
+  },
+  "private": {
+    "dashboard": "Ihr Dashboard | Car with Driver LK",
+    "checkout": "Buchung abschließen | Car with Driver LK",
+    "offer": "Ihr Reiseangebot | Car with Driver LK",
+    "review": "Bewertung schreiben | Car with Driver LK"
+  }
+}

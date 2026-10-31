@@ -43,6 +43,14 @@ const redirectWithError = (res, code) => {
   return res.redirect(url.href);
 };
 
+const SSO_UI_LOCALES = {
+  de: 'de-DE de',
+  fr: 'fr-FR fr',
+  it: 'it-IT it',
+  ru: 'ru-RU ru',
+  ja: 'ja-JP ja',
+};
+
 export const ssoLogin = async (req, res) => {
   try {
     const config = await getAsgardeoConfig();
@@ -51,7 +59,12 @@ export const ssoLogin = async (req, res) => {
     const codeChallenge = await client.calculatePKCECodeChallenge(codeVerifier);
     const state = client.randomState();
 
-    putStateEntry(state, { codeVerifier }, STATE_TTL_MS);
+    // Remember the page language (?lang=de) so a new traveller's emails start in it.
+    putStateEntry(state, { codeVerifier, lang: SSO_UI_LOCALES[req.query?.lang] ? req.query.lang : null }, STATE_TTL_MS);
+
+    // ?lang=de from a translated page: ask Asgardeo for its sign-in pages in that
+    // language (it falls back to English for any it does not support).
+    const uiLocale = SSO_UI_LOCALES[req.query?.lang];
 
     const authorizationUrl = client.buildAuthorizationUrl(config, {
       redirect_uri: process.env.ASGARDEO_REDIRECT_URI,
@@ -59,6 +72,7 @@ export const ssoLogin = async (req, res) => {
       code_challenge: codeChallenge,
       code_challenge_method: 'S256',
       state,
+      ...(uiLocale ? { ui_locales: uiLocale } : {}),
     });
 
     return res.redirect(authorizationUrl.href);
@@ -142,6 +156,7 @@ export const ssoCallback = async (req, res) => {
         authProvider: AUTH_PROVIDERS.ASGARDEO,
         role: USER_ROLES.GUEST,
         isVerified: true,
+        language: stored.lang || null,
       });
     }
 

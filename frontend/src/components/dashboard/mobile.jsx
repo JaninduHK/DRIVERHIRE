@@ -3,7 +3,8 @@
 // - Sheet: rounded content sheet that overlaps the header bottom
 // - DriverDrawer: slide-in navigation drawer
 import { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '../../i18n/router.jsx';
+import { useI18n } from '../../i18n/I18nProvider.jsx';
 import { Bell, ChevronLeft, LogOut, Menu, X } from 'lucide-react';
 import { Avatar } from './primitives.jsx';
 import logoOnLight from '../../assets/Logo White.png';
@@ -22,14 +23,17 @@ export const HeaderIconButton = ({ onClick, label, children }) => (
   </button>
 );
 
-export const NotificationBell = ({ onClick, hasUnread }) => (
-  <HeaderIconButton onClick={onClick} label="Notifications">
+export const NotificationBell = ({ onClick, hasUnread }) => {
+  const { t } = useI18n();
+  return (
+  <HeaderIconButton onClick={onClick} label={t('dash.shell.notifications')}>
     <Bell className="h-[17px] w-[17px]" strokeWidth={1.8} />
     {hasUnread ? (
       <span className="absolute right-2 top-2 h-2 w-2 rounded-full border-2 border-[#12924f] bg-[#ffd23f]" />
     ) : null}
   </HeaderIconButton>
-);
+  );
+};
 
 // Green gradient screen header. Provide either eyebrow/title/subtitle or children.
 export const MobileHeader = ({
@@ -42,7 +46,9 @@ export const MobileHeader = ({
   subtitle,
   children,
   pb = 'pb-14',
-}) => (
+}) => {
+  const { t } = useI18n();
+  return (
   <div
     className="text-white lg:mx-8 lg:mt-8 lg:overflow-hidden lg:rounded-[20px]"
     style={{ background: HEADER_GRADIENT }}
@@ -53,7 +59,7 @@ export const MobileHeader = ({
           <button
             type="button"
             onClick={onBack}
-            aria-label="Back"
+            aria-label={t('dash.back')}
             className={`flex h-10 items-center gap-1.5 rounded-xl bg-white/[0.18] text-white transition hover:bg-white/25 ${
               cancelLabel ? 'px-3.5 text-[13.5px] font-bold' : 'w-10 justify-center'
             }`}
@@ -62,7 +68,7 @@ export const MobileHeader = ({
             {cancelLabel ? cancelLabel : null}
           </button>
         ) : (
-          <HeaderIconButton onClick={onMenu} label="Open menu">
+          <HeaderIconButton onClick={onMenu} label={t('dash.shell.openMenu')}>
             <Menu className="h-[18px] w-[18px]" strokeWidth={2} />
           </HeaderIconButton>
         )}
@@ -81,7 +87,8 @@ export const MobileHeader = ({
       )}
     </div>
   </div>
-);
+  );
+};
 
 // Content sheet that overlaps the header bottom on mobile (design uses -40px).
 // On desktop it becomes a plain wide content area beside the persistent sidebar.
@@ -94,10 +101,12 @@ export const Sheet = ({ children, className = '', pull = '-mt-10' }) => (
 );
 
 // Persistent desktop sidebar (navy) — hidden on mobile where the drawer is used.
-export const DashboardSidebar = ({ navItems = [], onSelect, user, onLogout }) => (
+export const DashboardSidebar = ({ navItems = [], onSelect, user, onLogout }) => {
+  const { t } = useI18n();
+  return (
   <aside className="sticky top-0 hidden h-screen w-[240px] flex-shrink-0 flex-col bg-ink p-4 lg:flex">
     <div className="px-2 pb-5 pt-2">
-      <Link to="/" aria-label="Go to home" className="inline-flex">
+      <Link to="/" aria-label={t('dash.shell.home')} className="inline-flex">
         <img src={logoOnDark} alt="carwithdriver.lk" className="h-9 w-auto" />
       </Link>
     </div>
@@ -128,15 +137,16 @@ export const DashboardSidebar = ({ navItems = [], onSelect, user, onLogout }) =>
     <div className="flex items-center gap-2.5 rounded-xl bg-white/[0.06] p-2.5">
       <Avatar name={user?.name} image={user?.image} className="h-8 w-8 rounded-[9px] text-[13px]" />
       <div className="min-w-0 flex-1">
-        <div className="truncate text-[13px] font-bold text-white">{user?.name || 'User'}</div>
+        <div className="truncate text-[13px] font-bold text-white">{user?.name || t('dash.shell.user')}</div>
         {user?.roleLabel ? <div className="text-[11px] text-white/50">{user.roleLabel}</div> : null}
       </div>
-      <button type="button" onClick={onLogout} aria-label="Logout" className="text-white/55 transition hover:text-white">
+      <button type="button" onClick={onLogout} aria-label={t('dash.shell.logout')} className="text-white/55 transition hover:text-white">
         <LogOut className="h-[15px] w-[15px]" />
       </button>
     </div>
   </aside>
-);
+  );
+};
 
 const DrawerNav = ({ items, onSelect, onClose }) => (
   <nav className="flex flex-col gap-0.5">
@@ -173,6 +183,7 @@ const DrawerNav = ({ items, onSelect, onClose }) => (
 );
 
 export const DriverDrawer = ({ open, onClose, navItems = [], onSelect, user, onLogout }) => {
+  const { t } = useI18n();
   useEffect(() => {
     if (!open) return undefined;
     const onKey = (event) => event.key === 'Escape' && onClose?.();
@@ -192,14 +203,14 @@ export const DriverDrawer = ({ open, onClose, navItems = [], onSelect, user, onL
       <div className="absolute inset-0 bg-ink/45" onClick={onClose} aria-hidden="true" />
       <div className="absolute left-0 top-0 flex h-full w-[290px] flex-col rounded-r-[28px] bg-white p-5 shadow-drawer">
         <div className="mb-3 flex items-center justify-between">
-          <Link to="/" onClick={onClose} className="flex items-center" aria-label="Go to home">
+          <Link to="/" onClick={onClose} className="flex items-center" aria-label={t('dash.shell.home')}>
             <img src={logoOnLight} alt="carwithdriver.lk" className="h-12 w-auto" />
           </Link>
           <button
             type="button"
             onClick={onClose}
             className="grid h-9 w-9 place-items-center rounded-xl bg-canvas"
-            aria-label="Close menu"
+            aria-label={t('dash.shell.closeMenu')}
           >
             <X className="h-4 w-4 text-ink" />
           </button>
@@ -207,7 +218,7 @@ export const DriverDrawer = ({ open, onClose, navItems = [], onSelect, user, onL
         <div className="mb-1 flex items-center gap-3 rounded-2xl bg-canvas p-3">
           <Avatar name={user?.name} image={user?.image} className="h-11 w-11 text-[17px]" />
           <div className="min-w-0">
-            <div className="truncate font-bold text-ink">{user?.name || 'Driver'}</div>
+            <div className="truncate font-bold text-ink">{user?.name || t('dash.driver')}</div>
             {user?.roleLabel ? (
               <div className="text-xs font-bold text-brand">{user.roleLabel}</div>
             ) : null}
@@ -222,7 +233,7 @@ export const DriverDrawer = ({ open, onClose, navItems = [], onSelect, user, onL
           className="flex items-center gap-2.5 rounded-xl border border-[#e2e8ea] bg-white px-3 py-3 text-sm font-bold text-[#f43f5e] transition hover:border-[#ffd3d9]"
         >
           <LogOut className="h-[17px] w-[17px]" />
-          Logout
+          {t('dash.shell.logout')}
         </button>
       </div>
     </div>

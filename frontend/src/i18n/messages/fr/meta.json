@@ -1,0 +1,81 @@
+{
+  "home": {
+    "title": "Louer un chauffeur privé avec voiture au Sri Lanka | Car with Driver LK",
+    "description": "Réservez au Sri Lanka un chauffeur privé enregistré auprès de la SLTDA, avec sa voiture. Comparez des chauffeurs-guides anglophones, des tarifs journaliers transparents et des circuits dans toute l'île, avec des devis gratuits en quelques minutes."
+  },
+  "vehicles": {
+    "title": "Voitures avec chauffeur pour voyager dans tout le Sri Lanka | Car with Driver LK",
+    "description": "Découvrez des voitures avec chauffeur privé anglophone au Sri Lanka : berlines, vans et SUV à tarifs journaliers transparents, carburant et assurance inclus. Obtenez des devis gratuits."
+  },
+  "vehicle": {
+    "notFoundTitle": "Véhicule introuvable | Car with Driver LK",
+    "notFoundDescription": "Ce véhicule est introuvable.",
+    "title": "{model} avec chauffeur privé au Sri Lanka | Car with Driver LK",
+    "description": "Louez un véhicule {model} avec un chauffeur privé anglophone au Sri Lanka. {seats} places, carburant et assurance inclus, à partir de ${price}/jour."
+  },
+  "drivers": {
+    "title": "Chauffeurs privés enregistrés SLTDA au Sri Lanka | Car with Driver LK",
+    "description": "Découvrez des chauffeurs-guides privés vérifiés pour voyager dans tout le Sri Lanka. Comparez l'expérience, les langues, les véhicules et les tarifs journaliers, puis réservez en direct, sans intermédiaire."
+  },
+  "driver": {
+    "notFoundTitle": "Chauffeur introuvable | Car with Driver LK",
+    "notFoundDescription": "Ce profil de chauffeur est introuvable.",
+    "title": "{name} – Chauffeur privé au Sri Lanka | Car with Driver LK",
+    "intro": "Réservez {name}, chauffeur privé enregistré auprès de la SLTDA au Sri Lanka.",
+    "introBased": "Réservez {name}, chauffeur privé enregistré auprès de la SLTDA au Sri Lanka, basé à {location}.",
+    "experience": {
+      "one": "{count}+ an d'expérience",
+      "other": "{count}+ ans d'expérience"
+    },
+    "reviews": {
+      "one": "{count} avis de voyageur",
+      "other": "{count} avis de voyageurs"
+    },
+    "fromPrice": "voitures avec chauffeur à partir de ${price}/jour",
+    "separator": ", ",
+    "bookDirect": "Réservez en direct, sans intermédiaire."
+  },
+  "liveMap": {
+    "title": "Carte des chauffeurs en direct | Chauffeurs près de vous au Sri Lanka | Car with Driver LK",
+    "description": "Voyez les chauffeurs privés près de vous sur une carte du Sri Lanka en direct. Comparez véhicules, notes et tarifs journaliers, puis lancez une discussion : sans intermédiaire, sans frais de réservation."
+  },
+  "about": {
+    "title": "À propos de Car with Driver LK | Chauffeurs privés au Sri Lanka",
+    "description": "Car with Driver LK met en relation les voyageurs avec des chauffeurs privés enregistrés auprès de la SLTDA dans tout le Sri Lanka : prix transparents, chauffeurs-guides vérifiés et réservation directe."
+  },
+  "getQuotes": {
+    "title": "Devis voiture avec chauffeur au Sri Lanka – comparez gratuitement | Car with Driver LK",
+    "description": "Indiquez vos dates et votre itinéraire et recevez des devis gratuits de chauffeurs sri-lankais contrôlés et de chauffeurs-guides SLTDA. Comparez les offres, discutez en direct, payez votre chauffeur : aucuns frais de réservation."
+  },
+  "blog": {
+    "title": "Guides de voyage au Sri Lanka écrits par des chauffeurs locaux | Car with Driver LK",
+    "description": "Des guides de voyage au Sri Lanka rédigés par les chauffeurs qui parcourent vraiment ces routes : coûts du voyage, itinéraires, état des routes et conseils locaux de carwithdriver.lk."
+  },
+  "article": {
+    "notFoundTitle": "Article introuvable | Car with Driver LK",
+    "notFoundDescription": "Cet article est introuvable.",
+    "title": "{title} | Car with Driver LK"
+  },
+  "contact": {
+    "title": "Contacter Car with Driver LK",
+    "description": "Contactez Car with Driver LK pour obtenir de l'aide afin de réserver un chauffeur privé au Sri Lanka, pour une demande de partenariat ou pour une assistance pendant votre voyage."
+  },
+  "tripCost": {
+    "title": "Calculateur de coût de voyage au Sri Lanka | Planifiez votre itinéraire | Car with Driver LK",
+    "description": "Construisez jour par jour un itinéraire au Sri Lanka et obtenez une estimation réelle à partir des tarifs actuels des chauffeurs : distances, temps de route et prix par catégorie de véhicule pour votre itinéraire exact."
+  },
+  "privacy": {
+    "title": "Politique de confidentialité | Car with Driver LK",
+    "description": "Comment Car with Driver LK collecte, utilise et protège vos informations personnelles."
+  },
+  "terms": {
+    "title": "Conditions générales | Car with Driver LK",
+    "description": "Les conditions générales d'utilisation de Car with Driver LK pour réserver des chauffeurs privés au Sri Lanka."
+  },
+  "private": {
+    "dashboard": "Votre tableau de bord | Car with Driver LK",
+    "checkout": "Réservation | Car with Driver LK",
+    "offer": "Votre offre de voyage | Car with Driver LK",
+    "review": "Laisser un avis | Car with Driver LK"
+  }
+}

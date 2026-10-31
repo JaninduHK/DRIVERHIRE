@@ -1,0 +1,69 @@
+{
+  "missingId": "Fahrerkennung fehlt.",
+  "loadError": "Das Fahrerprofil kann gerade nicht geladen werden.",
+  "reviewsAll": "Alle",
+  "thisDriver": "diesem Fahrer",
+  "loading": "Fahrerprofil wird geladen…",
+  "unavailable": "Fahrer nicht verfügbar",
+  "notFound": "Dieses Profil wurde nicht gefunden.",
+  "retry": "Erneut versuchen",
+  "allDrivers": "Alle Fahrer",
+  "sriLanka": "Sri Lanka",
+  "missingInfo": "Fahrerinformationen fehlen.",
+  "chatReady": "Die Unterhaltung ist in Ihrem Posteingang bereit.",
+  "chatError": "Eine Unterhaltung kann gerade nicht gestartet werden.",
+  "back": "Zurück",
+  "save": "Merken",
+  "share": "Teilen",
+  "noReviews": "Noch keine Bewertungen",
+  "years": {
+    "one": "{count} Jahr",
+    "other": "{count} Jahre"
+  },
+  "new": "Neu",
+  "stats": {
+    "guiding": "Erfahrung",
+    "rating": "Bewertung",
+    "vehicles": {
+      "one": "Fahrzeug",
+      "other": "Fahrzeuge"
+    },
+    "guidingExperience": "Erfahrung als Guide",
+    "travellerRating": "Bewertung durch Reisende",
+    "availableVehicles": "Verfügbare Fahrzeuge"
+  },
+  "tabs": {
+    "about": "Über",
+    "vehicles": "Fahrzeuge",
+    "reviews": "Bewertungen"
+  },
+  "noBio": "Dieser Fahrer hat noch keine Beschreibung hinzugefügt.",
+  "everyTripIncludes": "In jeder Reise enthalten",
+  "vehiclesHeading": {
+    "one": "Fahrzeug",
+    "other": "Fahrzeuge"
+  },
+  "seats": {
+    "one": "{count} Sitzplatz",
+    "other": "{count} Sitzplätze"
+  },
+  "perDay": "/ Tag",
+  "perDayShort": "/Tag",
+  "from": "ab",
+  "message": "Nachricht",
+  "requestBooking": "Buchung anfragen",
+  "backToDrivers": "Zurück zu den Fahrern",
+  "reviewCount": {
+    "one": "{count} Bewertung",
+    "other": "{count} Bewertungen"
+  },
+  "view": "Ansehen",
+  "perDayAllIn": "/ Tag, alles inklusive",
+  "noBookingFee": "Keine Buchungsgebühr · Bezahlung an den Fahrer bei Ankunft",
+  "starting": "Wird gestartet…",
+  "messageName": "{name} schreiben",
+  "licenseVerified": "{license} verifiziert",
+  "identityVerified": "Identität & Lizenz verifiziert",
+  "repliesWithinDay": "Antwortet meist innerhalb eines Tages",
+  "freeCancellation": "Kostenlose Stornierung bis 2 Tage vor Ihrer Reise"
+}

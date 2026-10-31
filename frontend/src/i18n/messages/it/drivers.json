@@ -1,0 +1,76 @@
+{
+  "eyebrow": "Elenco degli autisti",
+  "title": "Trova l'autista perfetto per te",
+  "searchPlaceholder": "Nome, servizio o destinazione",
+  "loadError": "Impossibile caricare gli autisti in questo momento.",
+  "loading": "Caricamento…",
+  "loadingDrivers": "Caricamento degli autisti…",
+  "count": {
+    "one": "{count} autista approvato",
+    "other": "{count} autisti approvati"
+  },
+  "clearFilters": "Cancella filtri",
+  "clear": "Rimuovi",
+  "tryAgain": "Riprova",
+  "empty": "Nessun autista corrisponde alla tua ricerca. Prova con un'altra parola chiave o cancella i filtri.",
+  "perks": {
+    "englishSpeaking": "Parla inglese",
+    "airportMeetGreet": "Accoglienza in aeroporto",
+    "fuelIncluded": "Carburante incluso",
+    "mealsCovered": "Pasti coperti",
+    "largeLuggage": "Bagagli voluminosi"
+  },
+  "options": {
+    "any": "Qualsiasi",
+    "under50": "Meno di $50",
+    "years5": "5+ anni",
+    "years10": "10+ anni",
+    "chauffeurGuide": "Autista-guida",
+    "recommended": "Consigliati",
+    "highestRated": "I più votati",
+    "mostExperienced": "I più esperti"
+  },
+  "chips": {
+    "perks": "Servizi",
+    "perksCount": {
+      "one": "{count} servizio",
+      "other": "{count} servizi"
+    },
+    "price": "Prezzo",
+    "reviews": "Recensioni"
+  },
+  "card": {
+    "newGuide": "Nuova guida",
+    "years": {
+      "one": "{count} anno",
+      "other": "{count} anni"
+    },
+    "sriLanka": "Sri Lanka",
+    "quote": "Su preventivo",
+    "multidayTours": "Tour di più giorni",
+    "reviews": {
+      "one": "{count} recensione",
+      "other": "{count} recensioni"
+    },
+    "noReviews": "Ancora nessuna recensione",
+    "fallback": "Un autista di fiducia per tour su misura in tutto lo Sri Lanka.",
+    "avgDailyRate": "TARIFFA GIORNALIERA MEDIA",
+    "perDay": "/giorno",
+    "viewDriver": "Vedi l'autista"
+  },
+  "filters": {
+    "title": "Filtri",
+    "clearAll": "Cancella tutto",
+    "whatMatters": "Cosa conta per te",
+    "verifiedLicence": "Licenza verificata",
+    "avgPrice": "Prezzo medio al giorno",
+    "minRating": "Valutazione minima",
+    "experience": "Esperienza",
+    "sortBy": "Ordina per",
+    "reset": "Reimposta",
+    "show": {
+      "one": "Mostra {count} autista",
+      "other": "Mostra {count} autisti"
+    }
+  }
+}

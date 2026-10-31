@@ -1,0 +1,59 @@
+{
+  "errors": {
+    "missing": "Bitte geben Sie Ihren Namen, Ihre E-Mail-Adresse und Ihre Nachricht an.",
+    "send": "Ihre Anfrage konnte nicht gesendet werden."
+  },
+  "sent": "Ihre Anfrage wurde an unser Support-Postfach gesendet.",
+  "badge": "TOUR-SUPPORT RUND UM DIE UHR",
+  "title1": "Brauchen Sie Hilfe mit Ihrem",
+  "title2": "Fahrer oder Ihrer Tourbuchung?",
+  "lead": "Unser Team ist für Touristen da, die vor, während oder nach ihrer Reise in Sri Lanka Unterstützung brauchen – bei Änderungen, Fragen, Problemen oder einer neuen Buchung.",
+  "helpWith": "Wir helfen bei",
+  "helpItems": [
+    "Änderung von Abholzeit oder Abholort",
+    "Anpassung Ihrer Reiseroute oder Stationen",
+    "Fragen zu Preisen oder Fahrzeugen"
+  ],
+  "responseTime": "Durchschnittliche Antwortzeit",
+  "responseValue": "Unter 3 Std.",
+  "responseNote": "Vorrang haben Reisende, die bereits in Sri Lanka sind, und Ankünfte am Flughafen.",
+  "quick": "Schneller Kontakt für Touristen",
+  "callNow": "Jetzt Support anrufen / per WhatsApp",
+  "emailNow": "Buchungsdetails per E-Mail an den Support",
+  "tip": "Tipp: Wenn Sie uns kontaktieren, nennen Sie Ihre Buchungsnummer (falls vorhanden), Ihre Reisedaten und den Namen, auf den die Buchung läuft. So können wir Ihnen schneller helfen.",
+  "form": {
+    "title": "Sagen Sie uns, wobei Sie Hilfe brauchen",
+    "lead": "Nutzen Sie dieses Formular, wenn Sie Support per E-Mail bevorzugen. Wir antworten mit klaren nächsten Schritten und Optionen für Ihren Fahrer oder Ihre Tour.",
+    "noFees": "Keine\nBuchungs-\ngebühren",
+    "category": "Wobei brauchen Sie Hilfe?",
+    "select": "Option auswählen",
+    "name": "Vollständiger Name",
+    "namePlaceholder": "Name auf Ihrer Buchung",
+    "email": "E-Mail-Adresse",
+    "bookingId": "Buchungsnummer (falls vorhanden)",
+    "bookingIdPlaceholder": "#DRIVER12345 oder Referenz der Plattform",
+    "message": "Schildern Sie Ihre Situation",
+    "messagePlaceholder": "Nennen Sie uns Ihre Reisedaten, wo Sie gerade sind (oder landen), was schiefgelaufen ist oder was Sie ändern möchten. Geben Sie wenn möglich den Namen des Fahrers oder den Fahrzeugtyp an.",
+    "sending": "Wird gesendet...",
+    "submit": "Support-Anfrage senden",
+    "note": "Wir antworten allen Touristen persönlich – keine Bots. Bei dringenden Anliegen am selben Tag empfehlen wir, zuerst anzurufen oder WhatsApp zu nutzen und dann dieses Formular mit den Details zu senden."
+  },
+  "categories": {
+    "change": "Eine bestehende Buchung ändern oder stornieren",
+    "question": "Frage zu meiner bevorstehenden Buchung",
+    "problem": "Problem während meiner Reise (Fahrer / Fahrzeug)",
+    "urgent": "Dringende Abholung am Flughafen heute / morgen",
+    "quote": "Neues Angebot für Tour / Fahrer",
+    "other": "Etwas anderes"
+  },
+  "info": {
+    "phone": {
+      "label": "Anruf / WhatsApp",
+      "hint": "Am besten für dringende Abholungen am Flughafen & Touren am selben Tag"
+    },
+    "email": {
+      "label": "Support-E-Mail",
+      "hint": "Senden Sie Buchungsdetails oder Screenshots für schnellere Hilfe"
+    }
+  }
+}

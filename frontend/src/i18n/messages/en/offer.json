@@ -1,0 +1,15 @@
+{
+  "expiry": {
+    "expired": "This offer has expired",
+    "days": "Expires in {count} days",
+    "tomorrow": "Expires tomorrow",
+    "hours": {
+      "one": "Expires in {count} hour",
+      "other": "Expires in {count} hours"
+    },
+    "minutes": {
+      "one": "Expires in {count} minute",
+      "other": "Expires in {count} minutes"
+    }
+  }
+}

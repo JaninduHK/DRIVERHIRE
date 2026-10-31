@@ -1,0 +1,61 @@
+{
+  "eyebrow": "ドライバー一覧",
+  "title": "ぴったりのドライバーを見つける",
+  "searchPlaceholder": "名前、サービス、または目的地",
+  "loadError": "現在ドライバーを読み込めません。",
+  "loading": "読み込み中…",
+  "loadingDrivers": "ドライバーを読み込み中…",
+  "count": "承認済みドライバー{count}名",
+  "clearFilters": "絞り込みを解除",
+  "clear": "解除",
+  "tryAgain": "再試行",
+  "empty": "検索に一致するドライバーがいません。別のキーワードを試すか、絞り込みを解除してください。",
+  "perks": {
+    "englishSpeaking": "英語対応",
+    "airportMeetGreet": "空港でのお出迎え",
+    "fuelIncluded": "燃料費込み",
+    "mealsCovered": "食事代込み",
+    "largeLuggage": "大きな荷物"
+  },
+  "options": {
+    "any": "指定なし",
+    "under50": "$50未満",
+    "years5": "5年以上",
+    "years10": "10年以上",
+    "chauffeurGuide": "ショーファーガイド",
+    "recommended": "おすすめ順",
+    "highestRated": "評価の高い順",
+    "mostExperienced": "経験の長い順"
+  },
+  "chips": {
+    "perks": "サービス",
+    "perksCount": "サービス{count}件",
+    "price": "料金",
+    "reviews": "レビュー"
+  },
+  "card": {
+    "newGuide": "新人ガイド",
+    "years": "経験{count}年",
+    "sriLanka": "スリランカ",
+    "quote": "要見積もり",
+    "multidayTours": "複数日のツアー",
+    "reviews": "レビュー{count}件",
+    "noReviews": "まだレビューはありません",
+    "fallback": "スリランカ全土でのオーダーメイドツアーを任せられる信頼のドライバー。",
+    "avgDailyRate": "1日あたりの平均料金",
+    "perDay": "/日",
+    "viewDriver": "ドライバーを見る"
+  },
+  "filters": {
+    "title": "絞り込み",
+    "clearAll": "すべて解除",
+    "whatMatters": "重視すること",
+    "verifiedLicence": "認証済みライセンス",
+    "avgPrice": "1日あたりの平均料金",
+    "minRating": "最低評価",
+    "experience": "経験",
+    "sortBy": "並べ替え",
+    "reset": "リセット",
+    "show": "{count}名を表示"
+  }
+}

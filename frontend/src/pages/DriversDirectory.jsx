@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '../i18n/router.jsx';
+import { useI18n } from '../i18n/I18nProvider.jsx';
+import { translateLicenseType } from '../i18n/labels.js';
 import { useLoaderData } from 'react-router';
 import { Car, Check, ChevronDown, Loader2, Search, SlidersHorizontal, Star, X } from 'lucide-react';
 import { fetchDriverDirectory } from '../services/driverDirectoryApi.js';
@@ -8,40 +10,53 @@ import { LicenseIconBadge, LicenseTypeChip } from '../components/LicenseBadge.js
 import { getLicenseBadge } from '../constants/driverLicense.js';
 
 const formatCurrency = (value) => (!Number.isFinite(value) ? '$0' : `$${value.toLocaleString('en-US')}`);
-const yearsLabel = (years) => {
+const yearsLabel = (years, t) => {
   const value = Number(years);
-  if (!Number.isFinite(value) || value <= 0) return 'New guide';
-  return `${Math.round(value)} yrs`;
+  if (!Number.isFinite(value) || value <= 0) return t('drivers.card.newGuide');
+  return t('drivers.card.years', { count: Math.round(value) });
 };
 
+// Perk values are matched against the drivers' English badges, so they stay in
+// English; drivers.perks.<key> is what the visitor sees.
 const PERKS = ['English speaking', 'Airport meet & greet', 'Fuel included', 'Meals covered', 'Large luggage'];
+const PERK_KEYS = {
+  'English speaking': 'englishSpeaking',
+  'Airport meet & greet': 'airportMeetGreet',
+  'Fuel included': 'fuelIncluded',
+  'Meals covered': 'mealsCovered',
+  'Large luggage': 'largeLuggage',
+};
+const perkLabel = (perk, t) => (PERK_KEYS[perk] ? t(`drivers.perks.${PERK_KEYS[perk]}`) : perk);
+// Option labels that are translation keys; numeric ones ('$80+', '4.0★ +') are shown as-is.
+const KEYED_LABELS = ['any', 'under50', 'years5', 'years10', 'chauffeurGuide', 'recommended', 'highestRated', 'mostExperienced'];
+const optionLabel = (label, t) => (KEYED_LABELS.includes(label) ? t(`drivers.options.${label}`) : label);
 const PRICE_PRESETS = [
-  { label: 'Any', min: '', max: '' },
-  { label: 'Under $50', min: '', max: '50' },
+  { label: 'any', min: '', max: '' },
+  { label: 'under50', min: '', max: '50' },
   { label: '$50 – $80', min: '50', max: '80' },
   { label: '$80+', min: '80', max: '' },
 ];
 const RATING_OPTIONS = [
-  { value: '', label: 'Any' },
+  { value: '', label: 'any' },
   { value: '4', label: '4.0★ +' },
   { value: '4.5', label: '4.5★ +' },
 ];
 const EXPERIENCE_OPTIONS = [
-  { value: '', label: 'Any' },
-  { value: '5', label: '5+ yrs' },
-  { value: '10', label: '10+ yrs' },
+  { value: '', label: 'any' },
+  { value: '5', label: 'years5' },
+  { value: '10', label: 'years10' },
 ];
 // Values must match User.licenseType exactly; the API only exposes licenseType
 // once the licence has been approved, so these filter on verified badges only.
 const LICENSE_OPTIONS = [
   { value: 'Tourist Driver', label: 'Tourist Driver' },
-  { value: 'Chauffeur Guide Lecturer', label: 'Chauffeur Guide' },
+  { value: 'Chauffeur Guide Lecturer', label: 'chauffeurGuide' },
 ];
 
 const SORT_OPTIONS = [
-  { value: 'recommended', label: 'Recommended' },
-  { value: 'reviews_desc', label: 'Highest rated' },
-  { value: 'experience_desc', label: 'Most experienced' },
+  { value: 'recommended', label: 'recommended' },
+  { value: 'reviews_desc', label: 'highestRated' },
+  { value: 'experience_desc', label: 'mostExperienced' },
 ];
 
 const defaultFilters = {
@@ -65,7 +80,12 @@ const perkMatch = (driver, perk) => {
   return badges.includes(kw);
 };
 
+// 'Tourist Driver' is the licence name itself, translated like everywhere else.
+const licenseOptionLabel = (option, t) =>
+  option.label === 'Tourist Driver' ? translateLicenseType(option.value, t) : optionLabel(option.label, t);
+
 const DriversDirectory = () => {
+  const { t } = useI18n();
   // Seeded by the server loader so the full list is in the SSR HTML (crawlable).
   const loaderData = useLoaderData();
   const seededDrivers = loaderData?.drivers || [];
@@ -82,7 +102,7 @@ const DriversDirectory = () => {
     } catch (error) {
       setState((prev) => ({
         loading: false,
-        error: prev.drivers.length ? '' : error?.message || 'Unable to load drivers right now.',
+        error: prev.drivers.length ? '' : error?.message || t('drivers.loadError'),
         drivers: prev.drivers,
       }));
     }
@@ -149,22 +169,22 @@ const DriversDirectory = () => {
     <div className="min-h-screen bg-canvas font-sans text-ink">
       <div className="sticky top-0 z-20 border-b border-hairline bg-white">
         <div className="mx-auto max-w-6xl px-4 pb-2.5 pt-3 sm:px-6">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.06em] text-brand-dark">Driver directory</p>
-          <h1 className="mb-2.5 mt-1 text-[21px] font-extrabold tracking-tight text-ink lg:text-[26px]">Find your perfect driver</h1>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.06em] text-brand-dark">{t('drivers.eyebrow')}</p>
+          <h1 className="mb-2.5 mt-1 text-[21px] font-extrabold tracking-tight text-ink lg:text-[26px]">{t('drivers.title')}</h1>
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-soft" />
               <input
                 value={filters.search}
                 onChange={(e) => set({ search: e.target.value })}
-                placeholder="Name, perk or destination"
+                placeholder={t('drivers.searchPlaceholder')}
                 className="h-[46px] w-full min-w-0 rounded-[14px] border-[1.5px] border-[#e2e8ea] bg-white pl-10 pr-3 text-[13.5px] text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none"
               />
             </div>
             <button
               type="button"
               onClick={() => setSheetOpen(true)}
-              aria-label="Filters"
+              aria-label={t('drivers.filters.title')}
               className="relative grid h-[46px] w-[46px] flex-shrink-0 place-items-center rounded-[14px] bg-ink text-white"
             >
               <SlidersHorizontal className="h-[18px] w-[18px]" strokeWidth={1.8} />
@@ -185,7 +205,7 @@ const DriversDirectory = () => {
                 englishOn ? 'bg-brand py-[9px] text-white' : 'border-[1.5px] border-[#e2e8ea] bg-white py-2 font-semibold text-ink-soft'
               }`}
             >
-              English speaking
+              {perkLabel('English speaking', t)}
               {englishOn ? <X className="h-[11px] w-[11px]" strokeWidth={2.5} /> : null}
             </button>
             {LICENSE_OPTIONS.map((o) => {
@@ -202,29 +222,29 @@ const DriversDirectory = () => {
                   }`}
                 >
                   {Icon ? <Icon className={`h-[13px] w-[13px] ${on ? 'text-white' : badge.iconClass}`} strokeWidth={2.4} /> : null}
-                  {o.label}
+                  {licenseOptionLabel(o, t)}
                   {on ? <X className="h-[11px] w-[11px]" strokeWidth={2.5} /> : null}
                 </button>
               );
             })}
             {otherPerks.length ? (
               <ActiveChip onClear={() => set({ perks: englishOn ? ['English speaking'] : [] })}>
-                {otherPerks.length === 1 ? otherPerks[0] : `${otherPerks.length} perks`}
+                {otherPerks.length === 1 ? perkLabel(otherPerks[0], t) : t('drivers.chips.perksCount', { count: otherPerks.length })}
               </ActiveChip>
             ) : (
-              <ChevronChip onClick={() => setSheetOpen(true)}>Perks</ChevronChip>
+              <ChevronChip onClick={() => setSheetOpen(true)}>{t('drivers.chips.perks')}</ChevronChip>
             )}
             {priceActive ? (
               <ActiveChip onClear={() => set({ minPrice: '', maxPrice: '' })}>
                 ${filters.minPrice || '0'}{filters.maxPrice ? `–$${filters.maxPrice}` : '+'}
               </ActiveChip>
             ) : (
-              <ChevronChip onClick={() => setSheetOpen(true)}>Price</ChevronChip>
+              <ChevronChip onClick={() => setSheetOpen(true)}>{t('drivers.chips.price')}</ChevronChip>
             )}
             {filters.minReview ? (
               <ActiveChip onClear={() => set({ minReview: '' })}>{filters.minReview}★ +</ActiveChip>
             ) : (
-              <ChevronChip onClick={() => setSheetOpen(true)}>Reviews</ChevronChip>
+              <ChevronChip onClick={() => setSheetOpen(true)}>{t('drivers.chips.reviews')}</ChevronChip>
             )}
           </div>
         </div>
@@ -233,30 +253,30 @@ const DriversDirectory = () => {
       <div className="mx-auto max-w-6xl px-4 pb-20 pt-4 sm:px-6">
         <div className="mb-3 flex items-center justify-between">
           <span className="text-[12px] font-extrabold uppercase tracking-[0.05em] text-muted-soft">
-            {state.loading ? 'Loading…' : `${filteredDrivers.length} approved driver${filteredDrivers.length === 1 ? '' : 's'}`}
+            {state.loading ? t('drivers.loading') : t('drivers.count', { count: filteredDrivers.length })}
           </span>
           {hasAnyFilter ? (
             <button type="button" onClick={() => setFilters(defaultFilters)} className="text-[12.5px] font-bold text-brand-dark">
-              Clear filters
+              {t('drivers.clearFilters')}
             </button>
           ) : null}
         </div>
 
         {state.loading ? (
           <div className="flex min-h-[40vh] items-center justify-center gap-2 text-sm text-muted">
-            <Loader2 className="h-5 w-5 animate-spin text-brand" /> Loading drivers…
+            <Loader2 className="h-5 w-5 animate-spin text-brand" /> {t('drivers.loadingDrivers')}
           </div>
         ) : state.error ? (
           <div className="rounded-[18px] bg-white p-6 text-center text-sm shadow-card">
             <p className="text-[#e11d48]">{state.error}</p>
             <button type="button" onClick={loadDrivers} className="mt-3 rounded-full border border-[#e2e8ea] px-4 py-2 text-xs font-bold text-ink transition hover:border-muted-soft">
-              Try again
+              {t('drivers.tryAgain')}
             </button>
           </div>
         ) : filteredDrivers.length === 0 ? (
           <div className="rounded-[18px] bg-white p-10 text-center text-sm text-muted shadow-card">
             <Car className="mx-auto mb-3 h-9 w-9 text-muted-soft" />
-            No drivers match your search. Try a different keyword or clear filters.
+            {t('drivers.empty')}
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -280,14 +300,17 @@ const DriversDirectory = () => {
   );
 };
 
-const ActiveChip = ({ children, onClear }) => (
+const ActiveChip = ({ children, onClear }) => {
+  const { t } = useI18n();
+  return (
   <span className="flex flex-shrink-0 items-center gap-1.5 rounded-full bg-brand px-[13px] py-[9px] text-[13px] font-bold text-white">
     {children}
-    <button type="button" onClick={onClear} aria-label="Clear" className="grid place-items-center">
+    <button type="button" onClick={onClear} aria-label={t('drivers.clear')} className="grid place-items-center">
       <X className="h-[11px] w-[11px]" strokeWidth={2.5} />
     </button>
   </span>
-);
+  );
+};
 
 const ChevronChip = ({ children, onClick }) => (
   <button
@@ -301,12 +324,13 @@ const ChevronChip = ({ children, onClick }) => (
 );
 
 const DriverCard = ({ driver, tone }) => {
-  const cityLabel = driver.location?.label || driver.address || 'Sri Lanka';
+  const { t } = useI18n();
+  const cityLabel = driver.location?.label || driver.address || t('drivers.card.sriLanka');
   const rating = Number(driver.reviewScore) > 0 ? Number(driver.reviewScore).toFixed(1) : '—';
   const reviews = driver.reviewCount ?? 0;
   const averagePrice = Number(driver.averagePricePerDay);
-  const rate = Number.isFinite(averagePrice) && averagePrice > 0 ? formatCurrency(averagePrice) : 'Quote';
-  const chips = [driver.featuredVehicle?.model || 'Multiday tours', cityLabel].filter(Boolean);
+  const rate = Number.isFinite(averagePrice) && averagePrice > 0 ? formatCurrency(averagePrice) : t('drivers.card.quote');
+  const chips = [driver.featuredVehicle?.model || t('drivers.card.multidayTours'), cityLabel].filter(Boolean);
 
   return (
     <article className="flex flex-col rounded-[20px] border border-[#e9edeb] bg-white p-5 shadow-card transition hover:-translate-y-0.5 hover:shadow-lg">
@@ -335,14 +359,14 @@ const DriverCard = ({ driver, tone }) => {
           <>
             <Star className="h-[15px] w-[15px] fill-[#f5b400] text-[#f5b400]" />
             {rating}
-            <span className="font-semibold text-muted-soft">· {reviews} reviews · {yearsLabel(driver.experienceYears)}</span>
+            <span className="font-semibold text-muted-soft">· {t('drivers.card.reviews', { count: reviews })} · {yearsLabel(driver.experienceYears, t)}</span>
           </>
         ) : (
-          <span className="font-semibold text-muted-soft">No reviews yet · {yearsLabel(driver.experienceYears)}</span>
+          <span className="font-semibold text-muted-soft">{t('drivers.card.noReviews')} · {yearsLabel(driver.experienceYears, t)}</span>
         )}
       </div>
       <p className="mt-[11px] flex-1 text-[14px] leading-[1.6] text-muted line-clamp-3">
-        {driver.description || 'Trusted chauffeur for bespoke Sri Lanka tours across the island.'}
+        {driver.description || t('drivers.card.fallback')}
       </p>
       <div className="mt-3.5 flex flex-wrap gap-[7px]">
         {chips.map((chip) => (
@@ -353,11 +377,11 @@ const DriverCard = ({ driver, tone }) => {
       </div>
       <div className="mt-4 flex items-center justify-between gap-2.5 border-t border-[#f0f3f2] pt-3.5">
         <div>
-          <div className="text-[11px] font-bold tracking-[.04em] text-muted-soft">AVG. DAILY RATE</div>
-          <div className="text-[17px] font-extrabold">{rate}<span className="text-[12.5px] font-semibold text-muted-soft">/day</span></div>
+          <div className="text-[11px] font-bold tracking-[.04em] text-muted-soft">{t('drivers.card.avgDailyRate')}</div>
+          <div className="text-[17px] font-extrabold">{rate}<span className="text-[12.5px] font-semibold text-muted-soft">{t('drivers.card.perDay')}</span></div>
         </div>
         <Link to={`/drivers/${driver.id}`} className="inline-flex min-h-[44px] items-center rounded-[11px] bg-[#e9f8ef] px-4 text-[13.5px] font-bold text-brand-dark">
-          View driver
+          {t('drivers.card.viewDriver')}
         </Link>
       </div>
     </article>
@@ -372,6 +396,7 @@ const Section = ({ label, children }) => (
 );
 
 const DriverFilterSheet = ({ filters, set, count, onReset, onClose }) => {
+  const { t } = useI18n();
   const togglePerk = (perk) =>
     set({ perks: filters.perks.includes(perk) ? filters.perks.filter((p) => p !== perk) : [...filters.perks, perk] });
   const toggleLicense = (value) => set({ licenseTypes: withLicenseToggled(filters.licenseTypes, value) });
@@ -385,11 +410,11 @@ const DriverFilterSheet = ({ filters, set, count, onReset, onClose }) => {
           <div className="h-1.5 w-11 rounded-full bg-[#e2e8ea]" />
         </div>
         <div className="flex items-center justify-between px-[18px] py-3">
-          <b className="text-[18px] text-ink">Filters</b>
-          <button type="button" onClick={onReset} className="text-[13px] font-bold text-brand-dark">Clear all</button>
+          <b className="text-[18px] text-ink">{t('drivers.filters.title')}</b>
+          <button type="button" onClick={onReset} className="text-[13px] font-bold text-brand-dark">{t('drivers.filters.clearAll')}</button>
         </div>
         <div className="flex-1 space-y-5 overflow-y-auto px-[18px] pb-3.5">
-          <Section label="What matters to you">
+          <Section label={t('drivers.filters.whatMatters')}>
             <div className="mt-2.5 flex flex-wrap gap-2">
               {PERKS.map((perk) => {
                 const on = filters.perks.includes(perk);
@@ -400,14 +425,14 @@ const DriverFilterSheet = ({ filters, set, count, onReset, onClose }) => {
                     onClick={() => togglePerk(perk)}
                     className={`rounded-full px-[15px] py-2.5 text-[13px] font-bold transition ${on ? 'border-[1.5px] border-brand bg-brand-tint text-brand-dark' : 'bg-[#f2f4f3] text-muted'}`}
                   >
-                    {perk}
+                    {perkLabel(perk, t)}
                   </button>
                 );
               })}
             </div>
           </Section>
 
-          <Section label="Verified licence">
+          <Section label={t('drivers.filters.verifiedLicence')}>
             <div className="mt-2.5 flex flex-col gap-2">
               {LICENSE_OPTIONS.map((o) => {
                 const on = filters.licenseTypes.includes(o.value);
@@ -425,14 +450,14 @@ const DriverFilterSheet = ({ filters, set, count, onReset, onClose }) => {
                         <Icon className={`h-3.5 w-3.5 ${on ? 'text-white' : badge.iconClass}`} strokeWidth={2.4} />
                       </span>
                     ) : null}
-                    {o.label}
+                    {licenseOptionLabel(o, t)}
                   </button>
                 );
               })}
             </div>
           </Section>
 
-          <Section label="Avg. price per day">
+          <Section label={t('drivers.filters.avgPrice')}>
             <div className="mt-2.5 flex flex-wrap gap-2">
               {PRICE_PRESETS.map((b) => {
                 const on = priceActive(b.min, b.max);
@@ -443,40 +468,40 @@ const DriverFilterSheet = ({ filters, set, count, onReset, onClose }) => {
                     onClick={() => set({ minPrice: b.min, maxPrice: b.max })}
                     className={`rounded-full px-[15px] py-2.5 text-[13px] font-bold transition ${on ? 'border-[1.5px] border-brand bg-brand-tint text-brand-dark' : 'bg-[#f2f4f3] text-muted'}`}
                   >
-                    {b.label}
+                    {optionLabel(b.label, t)}
                   </button>
                 );
               })}
             </div>
           </Section>
 
-          <Section label="Minimum rating">
+          <Section label={t('drivers.filters.minRating')}>
             <div className="mt-2.5 flex gap-2">
               {RATING_OPTIONS.map((o) => {
                 const on = (filters.minReview || '') === o.value;
                 return (
                   <button key={o.label} type="button" onClick={() => set({ minReview: o.value })} className={`flex-1 rounded-xl py-2.5 text-[13px] font-bold transition ${on ? 'bg-brand text-white' : 'bg-[#f2f4f3] text-muted'}`}>
-                    {o.label}
+                    {optionLabel(o.label, t)}
                   </button>
                 );
               })}
             </div>
           </Section>
 
-          <Section label="Experience">
+          <Section label={t('drivers.filters.experience')}>
             <div className="mt-2.5 flex gap-2">
               {EXPERIENCE_OPTIONS.map((o) => {
                 const on = (filters.minExperience || '') === o.value;
                 return (
                   <button key={o.label} type="button" onClick={() => set({ minExperience: o.value })} className={`flex-1 rounded-xl py-2.5 text-[13px] font-bold transition ${on ? 'bg-brand text-white' : 'bg-[#f2f4f3] text-muted'}`}>
-                    {o.label}
+                    {optionLabel(o.label, t)}
                   </button>
                 );
               })}
             </div>
           </Section>
 
-          <Section label="Sort by">
+          <Section label={t('drivers.filters.sortBy')}>
             <div className="mt-1 flex flex-col">
               {SORT_OPTIONS.map((o, i) => {
                 const on = (filters.sort || 'recommended') === o.value;
@@ -487,7 +512,7 @@ const DriverFilterSheet = ({ filters, set, count, onReset, onClose }) => {
                     onClick={() => set({ sort: o.value })}
                     className={`flex items-center justify-between py-[13px] text-left ${i < SORT_OPTIONS.length - 1 ? 'border-b border-hairline' : ''}`}
                   >
-                    <span className={`text-[14px] ${on ? 'font-bold text-ink' : 'font-semibold text-ink-soft'}`}>{o.label}</span>
+                    <span className={`text-[14px] ${on ? 'font-bold text-ink' : 'font-semibold text-ink-soft'}`}>{optionLabel(o.label, t)}</span>
                     {on ? (
                       <span className="grid h-[22px] w-[22px] place-items-center rounded-full bg-brand">
                         <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />
@@ -501,10 +526,10 @@ const DriverFilterSheet = ({ filters, set, count, onReset, onClose }) => {
         </div>
         <div className="flex gap-2.5 border-t border-hairline px-[18px] pb-6 pt-3.5">
           <button type="button" onClick={onReset} className="flex-shrink-0 rounded-[14px] border-[1.5px] border-[#e2e8ea] px-5 py-[14px] text-[14px] font-bold text-ink">
-            Reset
+            {t('drivers.filters.reset')}
           </button>
           <button type="button" onClick={onClose} className="flex-1 rounded-[14px] bg-brand py-[14px] text-[15px] font-extrabold text-white transition hover:bg-brand-dark">
-            Show {count} driver{count === 1 ? '' : 's'}
+            {t('drivers.filters.show', { count })}
           </button>
         </div>
       </div>

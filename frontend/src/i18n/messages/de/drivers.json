@@ -1,0 +1,73 @@
+{
+  "eyebrow": "Fahrerverzeichnis",
+  "title": "Finden Sie Ihren idealen Fahrer",
+  "searchPlaceholder": "Name, Leistung oder Reiseziel",
+  "loadError": "Fahrer können gerade nicht geladen werden.",
+  "loading": "Wird geladen…",
+  "loadingDrivers": "Fahrer werden geladen…",
+  "count": {
+    "one": "{count} freigegebener Fahrer",
+    "other": "{count} freigegebene Fahrer"
+  },
+  "clearFilters": "Filter zurücksetzen",
+  "clear": "Entfernen",
+  "tryAgain": "Erneut versuchen",
+  "empty": "Keine Fahrer entsprechen Ihrer Suche. Versuchen Sie ein anderes Stichwort oder setzen Sie die Filter zurück.",
+  "perks": {
+    "englishSpeaking": "Englischsprachig",
+    "airportMeetGreet": "Empfang am Flughafen",
+    "fuelIncluded": "Kraftstoff inklusive",
+    "mealsCovered": "Verpflegung abgedeckt",
+    "largeLuggage": "Großes Gepäck"
+  },
+  "options": {
+    "any": "Beliebig",
+    "under50": "Unter $50",
+    "years5": "5+ Jahre",
+    "years10": "10+ Jahre",
+    "chauffeurGuide": "Chauffeur-Guide",
+    "recommended": "Empfohlen",
+    "highestRated": "Bestbewertet",
+    "mostExperienced": "Erfahrenste"
+  },
+  "chips": {
+    "perks": "Leistungen",
+    "perksCount": "{count} Leistungen",
+    "price": "Preis",
+    "reviews": "Bewertungen"
+  },
+  "card": {
+    "newGuide": "Neuer Guide",
+    "years": {
+      "one": "{count} Jahr",
+      "other": "{count} Jahre"
+    },
+    "sriLanka": "Sri Lanka",
+    "quote": "Auf Anfrage",
+    "multidayTours": "Mehrtägige Touren",
+    "reviews": {
+      "one": "{count} Bewertung",
+      "other": "{count} Bewertungen"
+    },
+    "noReviews": "Noch keine Bewertungen",
+    "fallback": "Vertrauenswürdiger Chauffeur für individuelle Rundreisen auf ganz Sri Lanka.",
+    "avgDailyRate": "DURCHSCHN. TAGESPREIS",
+    "perDay": "/Tag",
+    "viewDriver": "Fahrer ansehen"
+  },
+  "filters": {
+    "title": "Filter",
+    "clearAll": "Alle entfernen",
+    "whatMatters": "Was Ihnen wichtig ist",
+    "verifiedLicence": "Verifizierte Lizenz",
+    "avgPrice": "Durchschn. Preis pro Tag",
+    "minRating": "Mindestbewertung",
+    "experience": "Erfahrung",
+    "sortBy": "Sortieren nach",
+    "reset": "Zurücksetzen",
+    "show": {
+      "one": "{count} Fahrer anzeigen",
+      "other": "{count} Fahrer anzeigen"
+    }
+  }
+}

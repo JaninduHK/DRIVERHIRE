@@ -1,6 +1,6 @@
 import { fetchDriverProfile } from '../../src/services/driverDirectoryApi.js';
 import { fetchVehicleReviews } from '../../src/services/vehicleCatalogApi.js';
-import { buildMeta, isDriverIndexable } from '../lib/seo.js';
+import { buildMeta, isDriverIndexable, metaLocale } from '../lib/seo.js';
 
 const emptyMeta = { total: 0, averageRating: null, counts: [0, 0, 0, 0, 0] };
 
@@ -58,26 +58,32 @@ export async function loader({ params }) {
   };
 }
 
-export function meta({ data }) {
+export function meta({ data, location }) {
+  const { locale, t } = metaLocale(location);
   const driver = data?.driver;
   if (!driver) {
     return buildMeta({
-      title: 'Driver not found | Car with Driver LK',
-      description: 'This driver profile could not be found.',
+      title: t('meta.driver.notFoundTitle'),
+      description: t('meta.driver.notFoundDescription'),
       path: '/drivers',
       noindex: true,
+      locale,
     });
   }
   const bits = [];
-  if (driver.experienceYears) bits.push(`${Math.round(driver.experienceYears)}+ years' experience`);
-  if (driver.reviewCount) bits.push(`${driver.reviewCount} traveller reviews`);
-  if (driver.averagePricePerDay) bits.push(`cars with driver from $${driver.averagePricePerDay}/day`);
-  const description = `Hire ${driver.name}, an SLTDA-registered private driver in Sri Lanka${
-    driver.location ? ` based in ${driver.location}` : ''
-  }.${bits.length ? ` ${bits.join(', ')}.` : ''} Book direct with no middleman.`;
+  if (driver.experienceYears) bits.push(t('meta.driver.experience', { count: Math.round(driver.experienceYears) }));
+  if (driver.reviewCount) bits.push(t('meta.driver.reviews', { count: driver.reviewCount }));
+  if (driver.averagePricePerDay) bits.push(t('meta.driver.fromPrice', { price: driver.averagePricePerDay }));
+  // The profile API sends location as { label, … }; older payloads used a string.
+  const place = typeof driver.location === 'string' ? driver.location : driver.location?.label;
+  const intro = place
+    ? t('meta.driver.introBased', { name: driver.name, location: place })
+    : t('meta.driver.intro', { name: driver.name });
+  const description = `${intro}${bits.length ? ` ${bits.join(t('meta.driver.separator'))}.` : ''} ${t('meta.driver.bookDirect')}`;
   return buildMeta({
-    title: `${driver.name} — Private Chauffeur in Sri Lanka | Car with Driver LK`,
+    title: t('meta.driver.title', { name: driver.name }),
     description,
+    locale,
     path: `/drivers/${driver.id}`,
     image: driver.profilePhoto,
     type: 'profile',

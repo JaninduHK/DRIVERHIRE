@@ -1,5 +1,37 @@
 import { index, route } from '@react-router/dev/routes';
 
+// Translated public pages are served again under each language prefix
+// (/de/vehicles, /ja/get-quotes). English keeps the plain paths. Keep this list
+// in step with LOCALIZED_PATTERNS in src/i18n/locales.js.
+const TRANSLATED_LOCALES = ['de', 'fr', 'it', 'ru', 'ja'];
+const translatedPages = [
+  ['', 'routes/home.jsx'],
+  ['vehicles', 'routes/vehicles.jsx'],
+  ['vehicles/:vehicleId', 'routes/vehicles.$vehicleId.jsx'],
+  ['drivers', 'routes/drivers.jsx'],
+  ['drivers/:id', 'routes/drivers.$id.jsx'],
+  ['live-map', 'routes/live-map.jsx'],
+  ['about', 'routes/about.jsx'],
+  ['get-quotes', 'routes/get-quotes.jsx'],
+  ['blog', 'routes/blog.jsx'],
+  ['blog/:slug', 'routes/blog.$slug.jsx'],
+  ['contact', 'routes/contact.jsx'],
+  ['trip-cost-calculator', 'routes/trip-cost-calculator.jsx'],
+  ['privacy-policy', 'routes/privacy-policy.jsx'],
+  ['terms', 'routes/terms.jsx'],
+  // Traveller pages behind sign-in (and the links in traveller emails). Not in
+  // the sitemap and noindex, but they keep the traveller in their language.
+  ['dashboard', 'routes/dashboard.jsx'],
+  ['checkout/:vehicleId', 'routes/checkout.$vehicleId.jsx'],
+  ['offer/:token', 'routes/offer.$token.jsx'],
+  ['review/:token', 'routes/review.$token.jsx'],
+];
+const localizedRoutes = TRANSLATED_LOCALES.flatMap((locale) =>
+  translatedPages.map(([path, file]) =>
+    route(path ? `${locale}/${path}` : locale, file, { id: `${locale}:${path || 'home'}` })
+  )
+);
+
 /**
  * Route table — mirrors the old <Routes> in src/App.jsx.
  * Public marketplace/marketing routes are server-rendered (real HTML for crawlers).
@@ -56,6 +88,8 @@ export default [
   route('trip-cost-calculator', 'routes/trip-cost-calculator.jsx'),
   route('privacy-policy', 'routes/privacy-policy.jsx'),
   route('terms', 'routes/terms.jsx'),
+
+  ...localizedRoutes,
 
   // DB-driven sitemap (resource route, returns XML)
   route('sitemap.xml', 'routes/sitemap.jsx'),

@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from '../i18n/router.jsx';
+import { useI18n } from '../i18n/I18nProvider.jsx';
 import { CheckCircle2, Loader2, PlusCircle, Star, X } from 'lucide-react';
 import { fetchReviewInvite, submitReviewFromToken } from '../services/reviewApi.js';
 
 const MAX_REVIEW_PHOTOS = 2;
 
-const formatDateRange = (start, end) => {
+// English pages always showed British-style dates here ("5 Jan 2027").
+const formatDateRange = (start, end, intl = 'en-GB') => {
   if (!start || !end) return '';
   const opts = { day: 'numeric', month: 'short', year: 'numeric' };
   try {
-    const from = new Date(start).toLocaleDateString('en-GB', opts);
-    const to = new Date(end).toLocaleDateString('en-GB', opts);
+    const from = new Date(start).toLocaleDateString(intl, opts);
+    const to = new Date(end).toLocaleDateString(intl, opts);
     return from === to ? from : `${from} – ${to}`;
   } catch {
     return '';
@@ -26,6 +28,7 @@ const Panel = ({ children }) => (
 );
 
 const ReviewFromEmail = () => {
+  const { t, locale, intl, lp } = useI18n();
   const { token } = useParams();
   const [state, setState] = useState({ loading: true, invite: null, error: '' });
   const [rating, setRating] = useState(0);
@@ -52,9 +55,9 @@ const ReviewFromEmail = () => {
       const invite = await fetchReviewInvite(token);
       setState({ loading: false, invite, error: '' });
     } catch (error) {
-      setState({ loading: false, invite: null, error: error.message || 'This link could not be opened.' });
+      setState({ loading: false, invite: null, error: error.message || t('emailPages.linkError') });
     }
-  }, [token]);
+  }, [token, t]);
 
   useEffect(() => {
     load();
@@ -64,11 +67,11 @@ const ReviewFromEmail = () => {
     event.preventDefault();
     setFormError('');
     if (rating < 1) {
-      setFormError('Please choose a star rating.');
+      setFormError(t('emailPages.review.errors.rating'));
       return;
     }
     if (comment.trim().length < 10) {
-      setFormError('Please share a little more detail (at least 10 characters).');
+      setFormError(t('emailPages.review.errors.tooShort'));
       return;
     }
     setSubmitting(true);
@@ -76,7 +79,7 @@ const ReviewFromEmail = () => {
       await submitReviewFromToken(token, { rating, title: title.trim(), comment: comment.trim(), images });
       setDone(true);
     } catch (error) {
-      setFormError(error.message || 'Unable to submit your review right now.');
+      setFormError(error.message || t('emailPages.review.errors.submit'));
     } finally {
       setSubmitting(false);
     }
@@ -86,7 +89,7 @@ const ReviewFromEmail = () => {
     return (
       <Panel>
         <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted">
-          <Loader2 className="h-4 w-4 animate-spin text-brand" /> Opening your review…
+          <Loader2 className="h-4 w-4 animate-spin text-brand" /> {t('emailPages.review.opening')}
         </div>
       </Panel>
     );
@@ -95,10 +98,10 @@ const ReviewFromEmail = () => {
   if (state.error) {
     return (
       <Panel>
-        <h1 className="text-[20px] font-extrabold text-ink">We couldn&apos;t open this review</h1>
+        <h1 className="text-[20px] font-extrabold text-ink">{t('emailPages.review.errorTitle')}</h1>
         <p className="mt-2 text-[14px] leading-relaxed text-muted">{state.error}</p>
-        <a href="/" className="mt-5 inline-flex rounded-xl bg-brand px-5 py-3 text-[14px] font-bold text-white transition hover:bg-brand-dark">
-          Go to homepage
+        <a href={lp('/')} className="mt-5 inline-flex rounded-xl bg-brand px-5 py-3 text-[14px] font-bold text-white transition hover:bg-brand-dark">
+          {t('emailPages.goHome')}
         </a>
       </Panel>
     );
@@ -109,12 +112,12 @@ const ReviewFromEmail = () => {
       <Panel>
         <div className="flex flex-col items-center text-center">
           <CheckCircle2 className="h-12 w-12 text-brand" />
-          <h1 className="mt-3 text-[20px] font-extrabold text-ink">Thank you for your review</h1>
+          <h1 className="mt-3 text-[20px] font-extrabold text-ink">{t('emailPages.review.thanksTitle')}</h1>
           <p className="mt-2 text-[14px] leading-relaxed text-muted">
-            It will appear on the site once our team has approved it.
+            {t('emailPages.review.thanksBody')}
           </p>
-          <a href="/" className="mt-5 inline-flex rounded-xl bg-brand px-5 py-3 text-[14px] font-bold text-white transition hover:bg-brand-dark">
-            Back to homepage
+          <a href={lp('/')} className="mt-5 inline-flex rounded-xl bg-brand px-5 py-3 text-[14px] font-bold text-white transition hover:bg-brand-dark">
+            {t('emailPages.backHome')}
           </a>
         </div>
       </Panel>
@@ -122,21 +125,21 @@ const ReviewFromEmail = () => {
   }
 
   const { invite } = state;
-  const dates = formatDateRange(invite.startDate, invite.endDate);
+  const dates = formatDateRange(invite.startDate, invite.endDate, locale === 'en' ? 'en-GB' : intl);
 
   return (
     <Panel>
       <h1 className="text-[22px] font-extrabold leading-tight text-ink">
-        How was your trip with {invite.driverName}?
+        {t('emailPages.review.title', { name: invite.driverName })}
       </h1>
       <p className="mt-1.5 text-[13.5px] text-muted-soft">
-        {invite.vehicleModel ? `${invite.vehicleModel}` : 'Your trip'}
+        {invite.vehicleModel ? `${invite.vehicleModel}` : t('emailPages.review.yourTrip')}
         {dates ? ` · ${dates}` : ''}
       </p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-5">
         <div>
-          <span className="block text-[12px] font-extrabold uppercase tracking-wide text-muted-soft">Your rating</span>
+          <span className="block text-[12px] font-extrabold uppercase tracking-wide text-muted-soft">{t('emailPages.review.rating')}</span>
           <div className="mt-2 flex gap-1.5" onMouseLeave={() => setHovered(0)}>
             {[1, 2, 3, 4, 5].map((value) => {
               const active = (hovered || rating) >= value;
@@ -144,7 +147,7 @@ const ReviewFromEmail = () => {
                 <button
                   key={value}
                   type="button"
-                  aria-label={`${value} star${value === 1 ? '' : 's'}`}
+                  aria-label={t('emailPages.review.stars', { count: value })}
                   onMouseEnter={() => setHovered(value)}
                   onClick={() => setRating(value)}
                   className="rounded-lg p-1 transition hover:scale-110"
@@ -158,7 +161,7 @@ const ReviewFromEmail = () => {
 
         <div>
           <label htmlFor="review-title" className="block text-[12px] font-extrabold uppercase tracking-wide text-muted-soft">
-            Title <span className="font-semibold normal-case text-muted-soft">(optional)</span>
+            {t('emailPages.review.titleLabel')} <span className="font-semibold normal-case text-muted-soft">{t('emailPages.review.optional')}</span>
           </label>
           <input
             id="review-title"
@@ -166,14 +169,14 @@ const ReviewFromEmail = () => {
             maxLength={120}
             value={title}
             onChange={(event) => setTitle(event.target.value)}
-            placeholder="e.g. Excellent driver, very punctual"
+            placeholder={t('emailPages.review.titlePlaceholder')}
             className="mt-1.5 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3.5 py-3 text-[14px] text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none"
           />
         </div>
 
         <div>
           <label htmlFor="review-comment" className="block text-[12px] font-extrabold uppercase tracking-wide text-muted-soft">
-            Your review
+            {t('emailPages.review.comment')}
           </label>
           <textarea
             id="review-comment"
@@ -181,7 +184,7 @@ const ReviewFromEmail = () => {
             maxLength={1200}
             value={comment}
             onChange={(event) => setComment(event.target.value)}
-            placeholder="What stood out about the driver, the vehicle and the trip?"
+            placeholder={t('emailPages.review.commentPlaceholder')}
             className="mt-1.5 w-full resize-y rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3.5 py-3 text-[14px] leading-relaxed text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none"
           />
           <p className="mt-1 text-right text-[11.5px] text-muted-soft">{comment.length}/1200</p>
@@ -189,7 +192,7 @@ const ReviewFromEmail = () => {
 
         <div>
           <span className="block text-[12px] font-extrabold uppercase tracking-wide text-muted-soft">
-            Photos <span className="font-semibold normal-case text-muted-soft">(optional)</span>
+            {t('emailPages.review.photos')} <span className="font-semibold normal-case text-muted-soft">{t('emailPages.review.optional')}</span>
           </span>
           <div className="mt-1.5 flex flex-wrap gap-2">
             {images.map((file, index) => (
@@ -198,7 +201,7 @@ const ReviewFromEmail = () => {
                 <button
                   type="button"
                   onClick={() => removeImage(index)}
-                  aria-label="Remove photo"
+                  aria-label={t('emailPages.review.removePhoto')}
                   className="absolute right-0.5 top-0.5 grid h-5 w-5 place-items-center rounded-full bg-ink/70 text-white"
                 >
                   <X className="h-3 w-3" />
@@ -212,7 +215,7 @@ const ReviewFromEmail = () => {
               </label>
             ) : null}
           </div>
-          <p className="mt-1 text-[11.5px] text-muted-soft">Add up to {MAX_REVIEW_PHOTOS} photos from your trip.</p>
+          <p className="mt-1 text-[11.5px] text-muted-soft">{t('emailPages.review.photosHelp', { count: MAX_REVIEW_PHOTOS })}</p>
         </div>
 
         {formError ? <p className="text-[13px] font-semibold text-[#e11d48]">{formError}</p> : null}
@@ -222,10 +225,10 @@ const ReviewFromEmail = () => {
           disabled={submitting}
           className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand py-3.5 text-[15px] font-bold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {submitting ? (<><Loader2 className="h-4 w-4 animate-spin" /> Submitting…</>) : 'Submit review'}
+          {submitting ? (<><Loader2 className="h-4 w-4 animate-spin" /> {t('emailPages.review.submitting')}</>) : t('emailPages.review.submit')}
         </button>
         <p className="text-center text-[12px] text-muted-soft">
-          Your review is checked by our team before it appears on the site.
+          {t('emailPages.review.checked')}
         </p>
       </form>
     </Panel>

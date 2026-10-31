@@ -1,0 +1,385 @@
+{
+  "common": {
+    "hi": "Ciao {name},",
+    "there": "a te",
+    "driver": "Autista",
+    "aDriver": "Un autista",
+    "yourDriver": "il tuo autista",
+    "YourDriver": "Il tuo autista",
+    "yourTrip": "il tuo viaggio",
+    "tbd": "Da definire",
+    "dateRange": "{start} – {end}",
+    "adults": {
+      "one": "{count} adulto",
+      "other": "{count} adulti"
+    },
+    "days": {
+      "one": "{count} giorno",
+      "other": "{count} giorni"
+    },
+    "reviews": {
+      "one": "{count} recensione",
+      "other": "{count} recensioni"
+    },
+    "offers": {
+      "one": "{count} offerta",
+      "other": "{count} offerte"
+    },
+    "newOffers": {
+      "one": "{count} nuova offerta",
+      "other": "{count} nuove offerte"
+    },
+    "drivers": {
+      "one": "{count} autista",
+      "other": "{count} autisti"
+    },
+    "viewOfferAndChat": "Vedi l'offerta e chatta",
+    "viewMyRequest": "Vedi la mia richiesta",
+    "viewBooking": "Vedi la prenotazione",
+    "status": {
+      "pending": "In attesa",
+      "confirmed": "Confermata",
+      "cancelled": "Annullata",
+      "rejected": "Rifiutata",
+      "completed": "Completata"
+    }
+  },
+  "footer": {
+    "support": "Rispondi a questa email e il nostro team in Sri Lanka ti ricontatterà.",
+    "replyable": "Le risposte a questa email vengono pubblicate nella tua chat con l'autista.",
+    "noReply": "Questo è un messaggio automatico – non rispondere a questa email.",
+    "questions": "Domande? Scrivici su WhatsApp al {whatsapp} o via email a {email}.",
+    "lessOften": "Ricevi troppe email? <link>Ricevi meno email</link>.",
+    "reason": "Ricevi questa email perché hai un account attivo su {brand}.",
+    "textFooter": "Nessun costo di prenotazione. Nessun acconto. Cancellazione gratuita fino a 2 giorni prima del viaggio.",
+    "textLessOften": "Ricevi meno email: {url}"
+  },
+  "reassurance": {
+    "title": "Prenotare è senza rischi.",
+    "points": [
+      "Nessun costo di prenotazione",
+      "Nessun acconto",
+      "Paghi l'autista il primo giorno",
+      "Cancellazione gratuita fino a 2 giorni prima del viaggio"
+    ],
+    "locked": "Il prezzo è bloccato quando accetti un'offerta."
+  },
+  "card": {
+    "newOnPlatform": "Nuovo sulla piattaforma",
+    "experience": {
+      "one": "{count} anno di esperienza",
+      "other": "{count} anni di esperienza"
+    },
+    "seats": "{count} posti",
+    "kms": "{km} km inclusi",
+    "kmsThen": "{km} km inclusi, poi {rate} al km",
+    "total": " in totale",
+    "perDay": "{amount} / giorno",
+    "labels": {
+      "Best value": "Miglior rapporto qualità-prezzo",
+      "Top rated": "Il più votato",
+      "Best match": "La scelta migliore"
+    },
+    "inclusions": {
+      "englishSpeakingDriver": "Autista che parla inglese",
+      "fuelAndInsurance": "Carburante e assicurazione",
+      "parkingFeesAndTolls": "Tutti i costi di parcheggio e i pedaggi",
+      "meetAndGreetAtAirport": "Accoglienza in aeroporto",
+      "driverMealsAndAccommodation": "Pasti e alloggio dell'autista",
+      "allTaxes": "Tutte le tasse"
+    }
+  },
+  "message": {
+    "subjectOfferPrice": "{sender}: offerta da {price} per il tuo viaggio",
+    "subjectOffer": "{sender} ti ha inviato un'offerta di viaggio",
+    "subjectSnippet": "{sender}: «{snippet}»",
+    "subjectMessage": "Nuovo messaggio da {sender}",
+    "sentOffer": "ti ha inviato un'offerta di viaggio",
+    "sentMany": "ti ha inviato {count} nuovi messaggi",
+    "sentOne": "ti ha inviato un nuovo messaggio",
+    "about": " per {model}",
+    "on": "{sender} {action}{about} su {brand}.",
+    "replyDirect": "Rispondi a questa email per rispondere direttamente a {sender}. La tua risposta arriva subito nella chat.",
+    "replyDashboard": "Rispondi dalla tua dashboard per continuare la conversazione.",
+    "titleOffer": "Nuova offerta di viaggio",
+    "titleMany": "Nuovi messaggi in attesa",
+    "titleOne": "Un nuovo messaggio ti aspetta",
+    "preheaderReply": "Rispondi a questa email per rispondere direttamente a {sender}.",
+    "preheaderOffer": "{sender} ti ha inviato un'offerta di viaggio su {brand}",
+    "preheaderMessage": "{sender} ti ha inviato un messaggio su {brand}",
+    "actionOffer": "Vedi l'offerta e chatta",
+    "actionReply": "Rispondi in chat",
+    "textBody": "{sender} {action}.",
+    "textReplyOrOpen": "Rispondi a questa email, oppure apri la tua dashboard per rispondere.",
+    "textOpen": "Apri la tua dashboard per rispondere.",
+    "senderVia": "{sender} tramite {brand}",
+    "yourContact": "Il tuo contatto"
+  },
+  "received": {
+    "title": "La tua richiesta di viaggio è online",
+    "preheader": "Stiamo avvisando gli autisti. Ecco cosa succede ora.",
+    "body": "La tua richiesta per <strong>{route}</strong> ({dates}, {adults}) è stata inviata ad autisti approvati in tutto lo Sri Lanka.",
+    "nextTitle": "<strong>Cosa succede ora</strong>",
+    "steps": [
+      "Gli autisti ti inviano le loro offerte, spesso già nella prima ora.",
+      "Ti mandiamo subito la prima via email, poi un riepilogo, così la tua casella resta in ordine.",
+      "Chatta con qualsiasi autista, confronta e prenota quello che preferisci."
+    ],
+    "favour": "<strong>Un piccolo favore:</strong> aggiungi {email} ai tuoi contatti, o sposta questa email nella posta in arrivo principale, così le offerte ti arrivano.",
+    "subject": "La tua richiesta di viaggio in Sri Lanka è online",
+    "text": "La tua richiesta per {route} ({dates}) è stata inviata ad autisti approvati in tutto lo Sri Lanka.\n\nCosa succede ora:\n1. Gli autisti ti inviano le loro offerte, spesso già nella prima ora.\n2. Ti mandiamo subito la prima via email, poi un riepilogo.\n3. Chatta con qualsiasi autista, confronta e prenota quello che preferisci.\n\nVedi la tua richiesta: {url}"
+  },
+  "first": {
+    "title": "È arrivata la tua prima offerta",
+    "ratingFrom": "★ {rating} su {reviews}",
+    "more": "Altri autisti stanno rispondendo.",
+    "body": "{driver} ha inviato la prima offerta per il tuo viaggio <strong>{route}</strong>. Di solito altri autisti rispondono nelle ore successive, e ti invieremo un riepilogo così la tua casella non si riempie.",
+    "replyAsk": "Rispondi a questa email per fare una domanda a {driver}. La tua risposta arriva subito nella chat.",
+    "text": "{driver} ha inviato la prima offerta per il tuo viaggio {route}: {details}.",
+    "viewOffer": "Vedi l'offerta: {url}",
+    "subject": "{driver}: {price} per il tuo viaggio {route}"
+  },
+  "digest": {
+    "digest1": {
+      "subjectTop": "Hanno risposto {total} autisti – le nostre {shown} migliori scelte per {route}",
+      "subjectAll": "{drivers} hanno risposto alla tua richiesta {route}",
+      "titleOne": "Un autista vuole farti scoprire lo Sri Lanka",
+      "titleMany": "{total} autisti vogliono farti scoprire lo Sri Lanka",
+      "introTop": "{total} autisti si sono offerti di accompagnarti nel tuo viaggio <strong>{route}</strong> ({dates}). Per risparmiarti il confronto di tutti, ecco le {shown} che guarderemmo per prime.",
+      "introOne": "Un autista si è offerto di accompagnarti nel tuo viaggio <strong>{route}</strong> ({dates}).",
+      "introMany": "{total} autisti si sono offerti di accompagnarti nel tuo viaggio <strong>{route}</strong> ({dates}).",
+      "outro": "Non sai quale scegliere? Rispondi a questa email con le tue domande e il nostro team in Sri Lanka ti aiuterà a decidere."
+    },
+    "update": {
+      "subject": "{fresh} per il tuo viaggio {route}",
+      "title": "{fresh} dalla nostra ultima email",
+      "introOne": "Un altro autista ha inviato un'offerta per il tuo viaggio <strong>{route}</strong>. Ora hai {total} da poter prenotare.",
+      "introMany": "Altri {count} autisti hanno inviato un'offerta per il tuo viaggio <strong>{route}</strong>. Ora hai {total} da poter prenotare.",
+      "outro": "Non sai quale scegliere? Rispondi a questa email con le tue domande e il nostro team in Sri Lanka ti aiuterà a decidere."
+    },
+    "digest2": {
+      "subject": "Stai ancora organizzando il tuo viaggio {route}?",
+      "title": "Stai ancora organizzando il tuo viaggio?",
+      "intro": "La tua richiesta per <strong>{route}</strong> ha {total} che puoi ancora prenotare. Se qualcosa ti blocca, dicci cosa, così non dobbiamo tirare a indovinare.",
+      "outro": "Hai domande prima di decidere? Rispondi a questa email e il nostro team in Sri Lanka ti aiuterà."
+    },
+    "approaching": {
+      "subject": "Il tuo viaggio è tra {days} giorni – non hai ancora prenotato l'autista",
+      "title": "Mancano {days} giorni e nessun autista prenotato",
+      "intro": "Il tuo viaggio <strong>{route}</strong> inizia il {start}. Hai {total} in attesa, e prenotarne una richiede un minuto.",
+      "outro": "Hai domande prima di decidere? Rispondi a questa email e il nostro team in Sri Lanka ti aiuterà."
+    },
+    "expiring": {
+      "subject": "L'offerta di {driver} da {price} scade domani",
+      "title": "Un'offerta scade domani",
+      "intro": "L'offerta di {driver} da {price} per il tuo viaggio <strong>{route}</strong> scade entro un giorno. Dopo, l'autista dovrebbe inviarne una nuova, e il prezzo potrebbe cambiare.",
+      "outro": "Hai domande prima di decidere? Rispondi a questa email e il nostro team in Sri Lanka ti aiuterà."
+    },
+    "preheaderFrom": "Da {price}. ",
+    "preheader": "Nessun costo di prenotazione, paghi l'autista il primo giorno.",
+    "peak": "Le tue date cadono in alta stagione, quando gli autisti riempiono presto il calendario.",
+    "seeAll": "Vedi tutte le {total} offerte",
+    "compareAll": "Confronta tutte le {total} offerte",
+    "openOffer": "Apri la tua offerta",
+    "text": "Confronta e prenota dalla tua dashboard: {url}",
+    "why": {
+      "title": "Cosa ti trattiene?",
+      "price": "I prezzi sono più alti del previsto",
+      "dates": "Non ho ancora fissato le date",
+      "choice": "Non riesco a scegliere un autista",
+      "booked": "Ho prenotato altro"
+    }
+  },
+  "expired": {
+    "title": "Le tue offerte sono scadute",
+    "preheader": "Ricevi prezzi aggiornati per {route} in un solo passaggio.",
+    "body": "Le offerte che gli autisti hanno inviato per il tuo viaggio <strong>{route}</strong> ({dates}) sono scadute e non possono più essere prenotate così come sono.",
+    "repost": "Stai ancora organizzando questo viaggio? Pubblica di nuovo la stessa richiesta e gli autisti ti invieranno prezzi aggiornati. Non devi compilare nulla.",
+    "noRepost": "Stai ancora organizzando questo viaggio? Apri la conversazione con uno degli autisti qui sotto e tocca <strong>Richiedi una nuova offerta</strong>.",
+    "preferDriver": "Preferisci uno degli autisti qui sotto? Apri i tuoi <link>messaggi</link> e tocca <strong>Richiedi una nuova offerta</strong> nella sua chat.",
+    "actionRepost": "Pubblica di nuovo questa richiesta",
+    "actionNew": "Richiedi nuove offerte",
+    "text": "Le offerte per il tuo viaggio {route} sono scadute.",
+    "textRepost": "Pubblica di nuovo la stessa richiesta: {url}",
+    "textAsk": "Oppure chiedi una nuova offerta a un autista nei tuoi messaggi: {url}",
+    "subject": "Le tue offerte per {route} sono scadute"
+  },
+  "noOffers": {
+    "title": "Sei ancora in attesa della prima offerta",
+    "preheader": "Alcuni percorsi e alcune date richiedono più tempo. Ecco cosa può aiutare.",
+    "body": "Nessun autista ha ancora inviato un'offerta per il tuo viaggio <strong>{route}</strong> ({dates}). Alcuni percorsi e alcune date richiedono più tempo, e la tua richiesta resta aperta a tutti gli autisti approvati.",
+    "helpTitle": "<strong>Due cose che di solito aiutano</strong>",
+    "help": [
+      "Aggiungi dettagli: i luoghi che vuoi visitare, quante persone siete e i bagagli, e se le tue date sono flessibili.",
+      "Scrivici su WhatsApp al {whatsapp} e segnaleremo la tua richiesta agli autisti."
+    ],
+    "willEmail": "Ti scriveremo appena arriva la prima offerta.",
+    "text": "Nessun autista ha ancora inviato un'offerta per il tuo viaggio {route}. Alcuni percorsi e alcune date richiedono più tempo, e la tua richiesta resta aperta.\n\nAiuta aggiungere dettagli alla richiesta, oppure scriverci su WhatsApp al {whatsapp}.\n\nVedi la tua richiesta: {url}",
+    "subject": "Ancora nessuna offerta per il tuo viaggio {route} – ecco cosa aiuta"
+  },
+  "reminder": {
+    "from": "dal {date}",
+    "viewOffer": "Vedi l'offerta",
+    "titleOne": "La tua offerta è ancora valida",
+    "titleMany": "{count} offerte sono ancora valide",
+    "preheader": "{price}{model}. Nessun costo di prenotazione, nessun acconto.",
+    "bodyOne": "{driver} ti ha inviato un'offerta che non hai ancora aperto.",
+    "bodyMany": "Hai {count} offerte che non hai ancora aperto.",
+    "actionOne": "Vedi l'offerta",
+    "actionMany": "Vedi le mie offerte",
+    "subjectOne": "L'offerta di {driver} da {price} è ancora valida",
+    "subjectOneDate": "L'offerta di {driver} da {price} per il {date} è ancora valida",
+    "subjectMany": "{count} offerte ti stanno ancora aspettando"
+  },
+  "preTrip": {
+    "title": "Il tuo viaggio inizia il {date}",
+    "preheader": "{driver} verrà a prenderti. Ecco cosa tenere pronto.",
+    "preheaderAt": "{driver} verrà a prenderti a {place}. Ecco cosa tenere pronto.",
+    "away": "Il tuo viaggio con <strong>{driver}</strong> inizia tra tre giorni.",
+    "dates": "<strong>Date:</strong> {value}",
+    "pickup": "<strong>Partenza:</strong> {value}",
+    "vehicle": "<strong>Veicolo:</strong> {value}",
+    "phone": "<strong>Telefono dell'autista:</strong> {value}",
+    "total": "<strong>Totale:</strong> {value}, da pagare all'autista il primo giorno",
+    "readyTitle": "<strong>Tieni pronto</strong>",
+    "flightKnown": "Il tuo numero di volo ({flight}) è nella prenotazione. Avvisa l'autista se cambia.",
+    "flightUnknown": "Il tuo numero di volo e l'orario di arrivo, inviati all'autista in chat.",
+    "payment": "Il pagamento per l'autista, come concordato con lui.",
+    "meeting": "L'orario di partenza e il punto d'incontro esatto, confermati con l'autista.",
+    "changed": "Hai cambiato programma? Cancellare più di 2 giorni prima della data di inizio è gratuito. Entro 2 giorni, il 50% del totale è dovuto all'autista.",
+    "action": "Vedi la mia prenotazione",
+    "text": "Il tuo viaggio con {driver} inizia il {date}.",
+    "textPickup": "Partenza: {value}",
+    "textPhone": "Telefono dell'autista: {value}",
+    "textView": "Vedi la tua prenotazione: {url}",
+    "subject": "Tra 3 giorni: {driver} viene a prenderti",
+    "subjectAt": "Tra 3 giorni: {driver} viene a prenderti a {place}"
+  },
+  "booking": {
+    "aVehicle": "un veicolo",
+    "calendarTitle": "Viaggio in Sri Lanka con {driver}",
+    "calendarDetails": "{model}. Prenotato su {brand}: {url}",
+    "confirmedBody": "La tua prenotazione è confermata. <strong>{driver}</strong> è stato avvisato e verrà a prenderti il {date}.",
+    "confirmedBodyAt": "La tua prenotazione è confermata. <strong>{driver}</strong> è stato avvisato e verrà a prenderti a {place} il {date}.",
+    "phone": "Telefono:",
+    "dates": "Date:",
+    "total": "Totale:",
+    "sendFlight": "Invia all'autista in chat il tuo numero di volo e l'orario di arrivo, così può organizzare il tuo prelievo.",
+    "ifChange": "<strong>Se cambi programma</strong>",
+    "cancellation": [
+      "Più di 2 giorni prima della data di inizio: cancellazione gratuita, niente da pagare.",
+      "Entro 2 giorni dalla data di inizio: il 50% del totale è dovuto all'autista.",
+      "Dopo l'inizio del viaggio: i giorni già effettuati per intero, più il 50% dei giorni rimanenti."
+    ],
+    "calendar": "Aggiungi questo viaggio a Google Calendar",
+    "pendingBody": "Abbiamo inviato all'autista la tua richiesta per {model}.",
+    "tripDates": "<strong>Date del viaggio:</strong> {value}",
+    "totalEstimate": "<strong>Totale stimato:</strong> {value}",
+    "statusLine": "<strong>Stato:</strong> {value}",
+    "pendingNext": "Riceverai un'email quando l'autista accetterà o modificherà la richiesta.",
+    "titleConfirmed": "Il tuo viaggio è prenotato",
+    "titlePending": "Richiesta di prenotazione ricevuta",
+    "preheaderConfirmed": "I dati di {driver}, cosa è incluso e come cancellare.",
+    "preheaderPending": "Abbiamo inoltrato la tua richiesta per {model}.",
+    "textConfirmed": "La tua prenotazione con {driver} ({model}) è confermata.",
+    "textPhone": "Telefono dell'autista: {value}",
+    "textPending": "Abbiamo inviato la tua richiesta di prenotazione per {model}.",
+    "textDates": "Date: {value}",
+    "textTotal": "Totale: {value}",
+    "textStatus": "Stato: {value}",
+    "textCancellation": "Cancellazione:",
+    "textView": "Vedi la tua prenotazione: {url}",
+    "subjectConfirmed": "Prenotato: {driver} verrà a prenderti il {date}",
+    "subjectPending": "Abbiamo ricevuto la tua richiesta di prenotazione per {model}"
+  },
+  "status": {
+    "titleConfirmed": "Il tuo viaggio è confermato",
+    "titleRejected": "La prenotazione è stata rifiutata",
+    "titleCancelled": "Prenotazione annullata",
+    "titleUpdated": "Prenotazione aggiornata",
+    "yourBooking": "La tua prenotazione",
+    "theBooking": "La prenotazione",
+    "booking": "Prenotazione",
+    "preheader": "{model}: stato ora {status}.",
+    "body": "{model}: stato ora <strong>{status}</strong>.",
+    "tripDates": "<strong>Date del viaggio:</strong> {value}",
+    "total": "<strong>Totale:</strong> {value}",
+    "follow": "Apri la conversazione se hai bisogno di chiarimenti.",
+    "text": "{model}: stato ora {status}.",
+    "textDates": "Date: {value}",
+    "textTotal": "Totale: {value}",
+    "textVisit": "Apri la tua dashboard per vedere i dettagli.",
+    "subject": "{model} aggiornato: {status}"
+  },
+  "review": {
+    "title": "Com'è andato il tuo viaggio con {driver}?",
+    "preheader": "Racconta agli altri viaggiatori il tuo viaggio con {driver}",
+    "yourVehicle": "che hai scelto",
+    "hope": "Speriamo che il tuo viaggio con {driver} nel veicolo {vehicle} ti sia piaciuto.",
+    "hopeDates": "Speriamo che il tuo viaggio con {driver} ({dates}) nel veicolo {vehicle} ti sia piaciuto.",
+    "ask": "Ti va di dedicare un minuto a valutare il tuo autista? La tua recensione aiuta gli altri viaggiatori a scegliere con fiducia, e per il tuo autista significa molto.",
+    "noSignIn": "Non serve accedere – il pulsante qui sotto apre direttamente il modulo di recensione.",
+    "action": "Lascia una recensione",
+    "text": "Speriamo che il tuo viaggio con {driver} ti sia piaciuto.",
+    "textDates": "Speriamo che il tuo viaggio con {driver} ({dates}) ti sia piaciuto.",
+    "textLink": "Lascia una recensione qui: {url}",
+    "textThanks": "Grazie per aver scelto {brand}.",
+    "subject": "Com'è andato il tuo viaggio con {driver}?"
+  },
+  "pages": {
+    "invalidTitle": "Questo link non è valido",
+    "invalidBody": "Forse è stato troncato durante la copia. Apri di nuovo il link dall'email.",
+    "failedTitle": "Si è verificato un problema",
+    "failedBody": "Al momento non siamo riusciti a salvare. Riprova il link tra qualche minuto.",
+    "prefs": {
+      "title": "Le tue preferenze email",
+      "all": "Ogni offerta appena arriva",
+      "allHint": "Un'email ogni volta che un autista ti invia un'offerta.",
+      "summary": "Un riepilogo, al massimo una volta al giorno (consigliato)",
+      "summaryHint": "La tua prima offerta subito, poi le nostre migliori scelte in un'unica email.",
+      "essential": "Solo i messaggi dei miei autisti e le mie prenotazioni",
+      "essentialHint": "Nessun avviso di offerte né promemoria. Puoi sempre vedere tutte le offerte nella tua dashboard.",
+      "saved": "Salvato. La tua scelta vale da ora in poi.",
+      "intro": "Scegli ogni quanto ti scriviamo per le offerte degli autisti.",
+      "save": "Salva la mia scelta",
+      "always": "Qualunque cosa tu scelga, riceverai sempre i messaggi degli autisti con cui stai parlando e le email sulle tue prenotazioni."
+    },
+    "answer": {
+      "title": "Cosa ti trattiene?",
+      "intro": "La tua risposta ci aiuta a mandarti qualcosa di utile invece di un altro promemoria.",
+      "send": "Invia la mia risposta",
+      "openDashboard": "Apri la mia dashboard",
+      "priceTitle": "Grazie per avercelo detto",
+      "priceBody": "Gli autisti stabiliscono i propri prezzi e spesso hanno margine per modificarli: meno chilometri, un altro veicolo o un percorso più breve possono abbassare il totale. Scrivi a un autista indicando il tuo budget e chiedi cosa può fare.",
+      "datesTitle": "Nessun problema, prenditi il tuo tempo",
+      "datesUntil": "Non ti invieremo promemoria su questa richiesta fino al {date}. La tua richiesta e le sue offerte restano nella tua dashboard.",
+      "datesForNow": "Per ora non ti invieremo promemoria su questa richiesta. La tua richiesta e le sue offerte restano nella tua dashboard.",
+      "choiceTitle": "Possiamo aiutarti a scegliere",
+      "choiceBody": "Rispondi a una delle nostre email su questa richiesta, o scrivici su WhatsApp al +94 76 3021 483, e il nostro team in Sri Lanka esaminerà le offerte con te.",
+      "bookedTitle": "Grazie, la tua richiesta è chiusa",
+      "bookedBody": "Gli autisti smetteranno di inviarti offerte e non riceverai altri promemoria. Buon viaggio!"
+    },
+    "repost": {
+      "alreadyTitle": "Già pubblicata di nuovo",
+      "alreadyBody": "Questa richiesta è già stata inviata di nuovo agli autisti. Le nuove offerte arriveranno via email e nella tua dashboard.",
+      "openRequests": "Apri le mie richieste",
+      "title": "Pubblicare di nuovo questa richiesta?",
+      "adults": {
+        "one": "{count} adulto",
+        "other": "{count} adulti"
+      },
+      "children": {
+        "one": "{count} bambino",
+        "other": "{count} bambini"
+      },
+      "body": "Invieremo di nuovo la stessa richiesta agli autisti, così riceverai prezzi aggiornati. Se prima vuoi cambiare qualcosa, pubblica invece una nuova richiesta dalla tua dashboard.",
+      "button": "Pubblicala di nuovo",
+      "liveTitle": "La tua richiesta è di nuovo online",
+      "liveBody": "Stiamo avvisando gli autisti. Ti invieremo subito la prima offerta via email, poi un riepilogo delle altre.",
+      "notTitle": "Non pubblicata di nuovo",
+      "problemAlready": "Questa richiesta è già stata inviata di nuovo agli autisti.",
+      "problemPast": "La data di inizio di questa richiesta è passata, quindi non può essere pubblicata di nuovo così com'è. Pubblica una nuova richiesta con le nuove date dalla tua dashboard.",
+      "problemNotOpen": "Questa richiesta ha già una prenotazione, quindi non è stata pubblicata di nuovo."
+    }
+  }
+}

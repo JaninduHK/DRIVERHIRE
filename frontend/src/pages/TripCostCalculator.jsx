@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '../i18n/router.jsx';
+import { Trans, useI18n } from '../i18n/I18nProvider.jsx';
 import { useLoaderData } from 'react-router';
 import {
   Activity,
@@ -36,10 +37,10 @@ const isoToday = () => {
   return d.toISOString().slice(0, 10);
 };
 
-const formatDate = (iso) => {
+const formatDate = (iso, intl) => {
   const d = new Date(`${iso}T00:00:00`);
   if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  return d.toLocaleDateString(intl, { weekday: 'short', day: 'numeric', month: 'short' });
 };
 
 const toIso = (d) => {
@@ -47,28 +48,8 @@ const toIso = (d) => {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
 };
 
-const FAQS = [
-  {
-    q: 'Is fuel included in the daily rate?',
-    a: 'For a normal touring day of roughly 120–150 km, yes on most listings — check the "what\'s included" panel for how many vehicles matching your itinerary include it. Long transfer days sometimes carry a per-kilometre surcharge instead.',
-  },
-  {
-    q: "Do I pay for the driver's hotel and meals?",
-    a: "Most drivers arrange their own accommodation and meals on multi-day trips, and it's commonly folded into the daily rate rather than billed separately — again, the inclusion panel reflects real listings for your current search.",
-  },
-  {
-    q: 'What is typically not included?',
-    a: 'Entrance tickets to sites like Sigiriya or the Temple of the Tooth, safari jeep hire inside national parks, and highway tolls are usually paid separately from the driver day-rate.',
-  },
-  {
-    q: 'How accurate is this estimate?',
-    a: 'It is built from the current rates of approved drivers on carwithdriver.lk and real road distances between your stops — not a flat industry average. Final pricing comes from drivers themselves once you request quotes for your exact itinerary.',
-  },
-  {
-    q: 'Can I change the itinerary after booking?',
-    a: 'Small changes are normally fine and agreed with your driver directly. If you add days or change the route significantly, your driver sends an updated offer before the trip starts.',
-  },
-];
+// Text in tripCost.faq.<key>.
+const FAQS = ['fuel', 'hotel', 'notIncluded', 'accuracy', 'change'];
 
 let uidCounter = 0;
 const nextUid = () => {
@@ -78,6 +59,10 @@ const nextUid = () => {
 const withUids = (stops) => stops.map((s) => ({ uid: nextUid(), ...s }));
 
 const TripCostCalculator = () => {
+  const { t, locale, intl } = useI18n();
+  // This page always used British-style dates in English ("Mon 5 Jan").
+  const dateLocale = locale === 'en' ? 'en-GB' : intl;
+  const placeName = (id) => t(`places.names.${id}`);
   const { vehicles } = useLoaderData();
 
   const [startDate, setStartDate] = useState(isoToday);
@@ -101,14 +86,19 @@ const TripCostCalculator = () => {
       const km = roadDistanceKm(stops[i - 1].place, stops[i].place);
       const hours = km / 42;
       out.push({
-        from: PLACES[stops[i - 1].place]?.name || '',
-        to: PLACES[stops[i].place]?.name || '',
+        from: PLACES[stops[i - 1].place] ? placeName(stops[i - 1].place) : '',
+        to: PLACES[stops[i].place] ? placeName(stops[i].place) : '',
         km,
-        timeLabel: hours < 1 ? `~${Math.round(hours * 60)} min drive` : `~${Math.round(hours * 2) / 2} hrs drive`,
+        timeLabel:
+          hours < 1
+            ? t('tripCost.minDrive', { count: Math.round(hours * 60) })
+            : t('tripCost.hrsDrive', { count: Math.round(hours * 2) / 2 }),
       });
     }
     return out;
-  }, [stops]);
+    // placeName depends only on t.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stops, t]);
 
   const totalKm = legs.reduce((sum, l) => sum + l.km, 0);
   const nightsTotal = stops.reduce(
@@ -155,10 +145,10 @@ const TripCostCalculator = () => {
   const faqSchema = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
-    mainEntity: FAQS.map((f) => ({
+    mainEntity: FAQS.map((key) => ({
       '@type': 'Question',
-      name: f.q,
-      acceptedAnswer: { '@type': 'Answer', text: f.a },
+      name: t(`tripCost.faq.${key}.q`),
+      acceptedAnswer: { '@type': 'Answer', text: t(`tripCost.faq.${key}.a`) },
     })),
   };
 
@@ -166,35 +156,35 @@ const TripCostCalculator = () => {
   // mobile, where the sidebar would otherwise land at the very bottom of the page.
   const costSummary = (
       <div className="rounded-[22px] bg-ink p-6 text-white">
-        <p className="text-[11px] font-bold uppercase tracking-wide text-white/65">Estimated trip cost</p>
+        <p className="text-[11px] font-bold uppercase tracking-wide text-white/65">{t('tripCost.summary.estimated')}</p>
         <div className="mt-2 flex items-end gap-2">
           <p className="text-4xl font-extrabold tracking-tight">{totalAverage}</p>
-          <p className="pb-1 text-sm font-bold text-white/55">≈ {money(overallEstimate.totals ? Math.round(overallEstimate.totals.average / days) : null)}/day</p>
+          <p className="pb-1 text-sm font-bold text-white/55">≈ {money(overallEstimate.totals ? Math.round(overallEstimate.totals.average / days) : null)}{t('tripCost.perDay')}</p>
         </div>
         <p className="mt-1 text-sm font-medium text-white/70">
-          {days} days · {nightsTotal} nights · {paxNumber || '—'} {paxNumber === 1 ? 'passenger' : 'passengers'}
+          {t('tripCost.days', { count: days })} · {t('tripCost.nights', { count: nightsTotal })} · {paxNumber ? t('tripCost.passengers', { count: paxNumber }) : `— ${t('tripCost.passengersWord')}`}
         </p>
         <div className="mt-5 grid grid-cols-2 gap-2.5">
           <div className="rounded-xl bg-white/10 p-3">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-white/55">Likely range</p>
+            <p className="text-[11px] font-bold uppercase tracking-wide text-white/55">{t('tripCost.summary.likelyRange')}</p>
             <p className="mt-1 text-lg font-extrabold">{totalRange}</p>
           </div>
           <div className="rounded-xl bg-white/10 p-3">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-white/55">Total distance</p>
-            <p className="mt-1 text-lg font-extrabold">{totalKm.toLocaleString('en-US')} km</p>
+            <p className="text-[11px] font-bold uppercase tracking-wide text-white/55">{t('tripCost.summary.totalDistance')}</p>
+            <p className="mt-1 text-lg font-extrabold">{totalKm.toLocaleString(intl)} km</p>
           </div>
         </div>
         {buffer ? (
-          <p className="mt-4 text-xs font-medium text-white/55">Keep ~{buffer} aside as a flexibility buffer for extra km or upgrades.</p>
+          <p className="mt-4 text-xs font-medium text-white/55">{t('tripCost.summary.buffer', { amount: buffer })}</p>
         ) : null}
         <Link
           to="/get-quotes"
           className="mt-5 flex items-center justify-center rounded-2xl bg-brand px-4 py-3.5 text-sm font-extrabold text-white hover:bg-brand-dark"
         >
-          Request free driver quotes
+          {t('tripCost.summary.request')}
         </Link>
         <p className="mt-2 text-center text-[11px] font-medium leading-relaxed text-white/45">
-          No payment now. Drivers reply with a fixed price for this exact itinerary.
+          {t('tripCost.summary.noPayment')}
         </p>
       </div>
   );
@@ -208,37 +198,36 @@ const TripCostCalculator = () => {
         <div className="mx-auto max-w-[1240px] space-y-6 px-4 py-[clamp(30px,4.5vw,58px)] sm:px-6 lg:px-10">
         <p className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]">
           <Sparkles className="h-3.5 w-3.5" />
-          Trip Cost Calculator
+          {t('tripCost.hero.badge')}
         </p>
         <div className="space-y-4">
           <h1 className="text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl lg:text-5xl">
-            Build your Sri Lanka itinerary and see the real cost of a car with driver
+            {t('tripCost.hero.title')}
           </h1>
           <p className="max-w-3xl text-base text-white/85 sm:text-lg">
-            Add your stops day by day. We work out the driving distance between them and price the trip from
-            today&apos;s live driver rates — not a flat industry average.
+            {t('tripCost.hero.lead')}
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <article className="rounded-2xl bg-white/[0.13] border border-white/[0.15] p-4">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-white/70">Live fleet</p>
+            <p className="text-[11px] font-bold uppercase tracking-wide text-white/70">{t('tripCost.hero.liveFleet')}</p>
             <p className="mt-1 text-2xl font-extrabold">{vehicles.length}</p>
-            <p className="text-sm font-medium text-white/70">Approved driver vehicles</p>
+            <p className="text-sm font-medium text-white/70">{t('tripCost.hero.approvedVehicles')}</p>
           </article>
           <article className="rounded-2xl bg-white/[0.13] border border-white/[0.15] p-4">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-white/70">Median daily rate</p>
+            <p className="text-[11px] font-bold uppercase tracking-wide text-white/70">{t('tripCost.hero.medianRate')}</p>
             <p className="mt-1 text-2xl font-extrabold">{perDayAverage}</p>
-            <p className="text-sm font-medium text-white/70">For {paxNumber || 'any'} {paxNumber === 1 ? 'passenger' : 'passengers'}</p>
+            <p className="text-sm font-medium text-white/70">{paxNumber ? t('tripCost.hero.forPassengers', { count: paxNumber }) : t('tripCost.hero.forAny')}</p>
           </article>
           <article className="rounded-2xl bg-white/[0.13] border border-white/[0.15] p-4">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-white/70">Typical daily range</p>
+            <p className="text-[11px] font-bold uppercase tracking-wide text-white/70">{t('tripCost.hero.typicalRange')}</p>
             <p className="mt-1 text-2xl font-extrabold">{perDayRange}</p>
-            <p className="text-sm font-medium text-white/70">Middle 50% of quotes</p>
+            <p className="text-sm font-medium text-white/70">{t('tripCost.hero.middle50')}</p>
           </article>
           <article className="rounded-2xl bg-white/[0.13] border border-white/[0.15] p-4">
-            <p className="text-[11px] font-bold uppercase tracking-wide text-white/70">This itinerary</p>
-            <p className="mt-1 text-2xl font-extrabold">{days}{days === 1 ? ' day' : ' days'}</p>
-            <p className="text-sm font-medium text-white/70">{stops.length} stops · {totalKm.toLocaleString('en-US')} km</p>
+            <p className="text-[11px] font-bold uppercase tracking-wide text-white/70">{t('tripCost.hero.thisItinerary')}</p>
+            <p className="mt-1 text-2xl font-extrabold">{t('tripCost.days', { count: days })}</p>
+            <p className="text-sm font-medium text-white/70">{t('tripCost.hero.stops', { count: stops.length })} · {totalKm.toLocaleString(intl)} km</p>
           </article>
           </div>
         </div>
@@ -250,17 +239,17 @@ const TripCostCalculator = () => {
           <div className="space-y-4 rounded-[22px] border border-[#e6ece9] bg-white p-6">
             <header className="flex flex-wrap items-end justify-between gap-3">
               <div className="space-y-1">
-                <p className="text-[11.5px] font-extrabold uppercase tracking-wide text-brand-dark">Step 1</p>
-                <h2 className="text-xl font-extrabold tracking-tight text-ink">Who is travelling</h2>
+                <p className="text-[11.5px] font-extrabold uppercase tracking-wide text-brand-dark">{t('tripCost.step', { n: 1 })}</p>
+                <h2 className="text-xl font-extrabold tracking-tight text-ink">{t('tripCost.who.title')}</h2>
               </div>
               <span className="inline-flex items-center gap-2 rounded-xl border border-[#d6ece0] bg-[#f2faf6] px-3 py-2 text-[13px] font-bold text-brand-dark">
                 <Clock className="h-[15px] w-[15px]" />
-                {days} {days === 1 ? 'day' : 'days'} · {nightsTotal} {nightsTotal === 1 ? 'night' : 'nights'}
+                {t('tripCost.days', { count: days })} · {t('tripCost.nights', { count: nightsTotal })}
               </span>
             </header>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="flex flex-col gap-1.5 text-[13px] font-bold text-ink-soft">
-                Start date
+                {t('tripCost.who.startDate')}
                 <input
                   type="date"
                   value={startDate}
@@ -269,7 +258,7 @@ const TripCostCalculator = () => {
                 />
               </label>
               <label className="flex flex-col gap-1.5 text-[13px] font-bold text-ink-soft">
-                Passengers
+                {t('tripCost.who.passengers')}
                 <div className="relative">
                   <Users className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-soft" />
                   <input
@@ -290,21 +279,21 @@ const TripCostCalculator = () => {
           <div id="itinerary" className="scroll-mt-24 space-y-4 rounded-[22px] border border-[#e6ece9] bg-white p-6">
             <header className="flex flex-wrap items-start justify-between gap-3">
               <div className="space-y-1">
-                <p className="text-[11.5px] font-extrabold uppercase tracking-wide text-brand-dark">Step 2</p>
-                <h2 className="text-xl font-extrabold tracking-tight text-ink">Your itinerary</h2>
-                <p className="text-sm text-muted">Pick a destination and how many nights you stay. Distances update as you go.</p>
+                <p className="text-[11.5px] font-extrabold uppercase tracking-wide text-brand-dark">{t('tripCost.step', { n: 2 })}</p>
+                <h2 className="text-xl font-extrabold tracking-tight text-ink">{t('tripCost.itinerary.title')}</h2>
+                <p className="text-sm text-muted">{t('tripCost.itinerary.lead')}</p>
               </div>
             </header>
 
             <div className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-              {ITINERARY_PRESETS.map((preset) => (
+              {ITINERARY_PRESETS.map((preset, presetIndex) => (
                 <button
                   key={preset.label}
                   type="button"
                   onClick={() => applyPreset(preset.stops)}
                   className="flex-shrink-0 whitespace-nowrap rounded-full border-[1.5px] border-[#dde4e1] bg-white px-3.5 py-1.5 text-xs font-bold text-ink transition hover:border-brand hover:text-brand-dark"
                 >
-                  {preset.label}
+                  {t(`places.presets.p${presetIndex}`)}
                 </button>
               ))}
             </div>
@@ -315,8 +304,13 @@ const TripCostCalculator = () => {
                 const leg = i > 0 ? legs[i - 1] : null;
                 const open = searchOpenUid === stop.uid;
                 const q = query.trim().toLowerCase();
+                // Matches the place name and type in the visitor's language and in English.
                 const results = Object.entries(PLACES).filter(
-                  ([, p]) => !q || p.name.toLowerCase().includes(q) || placeTypeLabel(p.type).toLowerCase().includes(q)
+                  ([id, p]) =>
+                    !q ||
+                    [p.name, placeName(id), placeTypeLabel(p.type), t(`places.types.${p.type}`)].some((text) =>
+                      text.toLowerCase().includes(q)
+                    )
                 );
                 const isLast = i === stops.length - 1;
 
@@ -337,17 +331,17 @@ const TripCostCalculator = () => {
                           {i + 1}
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-base font-extrabold tracking-tight text-ink">{place?.name}</p>
+                          <p className="truncate text-base font-extrabold tracking-tight text-ink">{place ? placeName(stop.place) : ''}</p>
                           <p className="text-xs font-semibold text-muted-soft">
-                            {i === 0 ? 'Arrive · ' : ''}
-                            {formatDate(toIso(dateForIndex(i) || new Date()))}
+                            {i === 0 ? `${t('tripCost.itinerary.arrive')} · ` : ''}
+                            {formatDate(toIso(dateForIndex(i) || new Date()), dateLocale)}
                           </p>
                         </div>
                         {stops.length > 2 ? (
                           <button
                             type="button"
                             onClick={() => removeStop(stop.uid)}
-                            aria-label="Remove stop"
+                            aria-label={t('tripCost.itinerary.removeStop')}
                             className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-[#e6ece9] bg-white text-muted-soft hover:border-[#c3ccd3] hover:text-ink"
                           >
                             <X className="h-4 w-4" />
@@ -357,26 +351,26 @@ const TripCostCalculator = () => {
 
                       <div className="mt-3 grid gap-3 sm:grid-cols-2">
                         <div className="relative">
-                          <label className="mb-1.5 block text-xs font-bold text-ink-soft">Destination</label>
+                          <label className="mb-1.5 block text-xs font-bold text-ink-soft">{t('tripCost.itinerary.destination')}</label>
                           <div className="relative">
                             <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-soft" />
                             <input
                               type="text"
-                              value={open ? query : place?.name || ''}
+                              value={open ? query : place ? placeName(stop.place) : ''}
                               onFocus={() => {
                                 setSearchOpenUid(stop.uid);
                                 setQuery('');
                               }}
                               onChange={(e) => setQuery(e.target.value)}
                               onBlur={() => setTimeout(() => setSearchOpenUid(null), 120)}
-                              placeholder="Search destinations…"
+                              placeholder={t('tripCost.itinerary.searchPlaceholder')}
                               className="w-full rounded-xl border-[1.5px] border-[#dde4e1] bg-white py-2 pl-8 pr-3 text-sm font-medium text-ink focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
                             />
                           </div>
                           {open ? (
                             <div className="absolute z-20 mt-1.5 max-h-56 w-full overflow-y-auto rounded-xl border border-[#dde4e1] bg-white p-1 shadow-lg">
                               {results.length === 0 ? (
-                                <p className="p-3 text-xs font-semibold text-muted-soft">No destination matches that search.</p>
+                                <p className="p-3 text-xs font-semibold text-muted-soft">{t('tripCost.itinerary.noMatch')}</p>
                               ) : (
                                 results.map(([id, p]) => (
                                   <button
@@ -392,8 +386,8 @@ const TripCostCalculator = () => {
                                       id === stop.place ? 'bg-brand-tint text-brand-dark' : 'hover:bg-hairline'
                                     }`}
                                   >
-                                    <span className="font-bold">{p.name}</span>
-                                    <span className="text-xs font-semibold text-muted-soft">{placeTypeLabel(p.type)}</span>
+                                    <span className="font-bold">{placeName(id)}</span>
+                                    <span className="text-xs font-semibold text-muted-soft">{t(`places.types.${p.type}`)}</span>
                                   </button>
                                 ))
                               )}
@@ -403,24 +397,24 @@ const TripCostCalculator = () => {
 
                         <div>
                           <label className="mb-1.5 block text-xs font-bold text-ink-soft">
-                            {i === 0 ? 'Nights here' : 'Nights'}
+                            {i === 0 ? t('tripCost.itinerary.nightsHere') : t('tripCost.itinerary.nightsLabel')}
                           </label>
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
                               onClick={() => updateStop(stop.uid, { nights: Math.max(0, (stop.nights || 0) - 1) })}
-                              aria-label="Fewer nights"
+                              aria-label={t('tripCost.itinerary.fewerNights')}
                               className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border-[1.5px] border-[#dde4e1] bg-white text-ink hover:border-brand"
                             >
                               <Minus className="h-4 w-4" />
                             </button>
                             <span className="flex-1 text-center text-sm font-extrabold text-ink">
-                              {(stop.nights || 0) === 0 ? 'Same day' : `${stop.nights} night${stop.nights === 1 ? '' : 's'}`}
+                              {(stop.nights || 0) === 0 ? t('tripCost.itinerary.sameDay') : t('tripCost.nights', { count: stop.nights })}
                             </span>
                             <button
                               type="button"
                               onClick={() => updateStop(stop.uid, { nights: Math.min(14, (stop.nights || 0) + 1) })}
-                              aria-label="More nights"
+                              aria-label={t('tripCost.itinerary.moreNights')}
                               className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border-[1.5px] border-[#dde4e1] bg-white text-ink hover:border-brand"
                             >
                               <Plus className="h-4 w-4" />
@@ -431,7 +425,7 @@ const TripCostCalculator = () => {
 
                       {place?.hl ? (
                         <p className="mt-3 flex items-start gap-2 rounded-xl border border-[#f0dcae] bg-[#fdf7e8] px-3 py-2 text-xs font-semibold leading-relaxed text-[#7a5410]">
-                          {place.hl}
+                          {t(`places.highlights.${stop.place}`)}
                         </p>
                       ) : null}
                     </article>
@@ -447,14 +441,14 @@ const TripCostCalculator = () => {
                 className="inline-flex items-center gap-2 rounded-xl border-[1.5px] border-dashed border-[#b9d8c7] bg-[#f7fbf9] px-4 py-2.5 text-sm font-bold text-brand-dark hover:bg-brand-tint"
               >
                 <Plus className="h-4 w-4" />
-                Add another stop
+                {t('tripCost.itinerary.addStop')}
               </button>
               <button
                 type="button"
                 onClick={startOver}
                 className="inline-flex items-center rounded-xl border-[1.5px] border-[#dde4e1] bg-white px-4 py-2.5 text-sm font-bold text-muted hover:border-[#c3ccd3]"
               >
-                Start over
+                {t('tripCost.itinerary.startOver')}
               </button>
             </div>
           </div>
@@ -464,18 +458,20 @@ const TripCostCalculator = () => {
           {/* Vehicle classes */}
           <div className="space-y-4 rounded-[22px] border border-[#e6ece9] bg-white p-6">
             <header className="space-y-1">
-              <p className="text-[11.5px] font-extrabold uppercase tracking-wide text-brand-dark">Step 3</p>
-              <h2 className="text-xl font-extrabold tracking-tight text-ink">Recommended vehicle classes for this itinerary</h2>
+              <p className="text-[11.5px] font-extrabold uppercase tracking-wide text-brand-dark">{t('tripCost.step', { n: 3 })}</p>
+              <h2 className="text-xl font-extrabold tracking-tight text-ink">{t('tripCost.classes.title')}</h2>
               <p className="text-sm text-muted">
-                Priced from live listings that currently seat {paxNumber || 'your group'} — not an assumed base rate.
+                {paxNumber ? t('tripCost.classes.leadCount', { count: paxNumber }) : t('tripCost.classes.leadGroup')}
               </p>
             </header>
 
             {classEstimates.length === 0 ? (
               <p className="rounded-2xl border-[1.5px] border-dashed border-[#dde4e1] p-5 text-sm text-muted">
-                No live vehicles currently match {paxNumber || 'that many'} passengers. Try a lower passenger count,
-                or <Link to="/get-quotes" className="font-bold text-brand-dark underline">request quotes</Link> directly —
-                drivers sometimes have vehicles not yet reflected in the public listings.
+                <Trans
+                  k={paxNumber ? 'tripCost.classes.noneCount' : 'tripCost.classes.noneAny'}
+                  vars={{ count: paxNumber }}
+                  components={{ link: <Link to="/get-quotes" className="font-bold text-brand-dark underline" /> }}
+                />
               </p>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2">
@@ -486,25 +482,39 @@ const TripCostCalculator = () => {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="text-base font-extrabold tracking-tight text-ink">{cls.label}</p>
+                        <p className="text-base font-extrabold tracking-tight text-ink">{t(`estimator.buckets.${cls.id}.label`)}</p>
                         {cls.example ? (
-                          <p className="truncate text-xs font-semibold text-muted-soft">e.g. {cls.example}</p>
+                          <p className="truncate text-xs font-semibold text-muted-soft">{t('tripCost.classes.example', { model: cls.example })}</p>
                         ) : null}
                       </div>
                       {i === 0 ? (
-                        <span className="flex-shrink-0 rounded-lg bg-brand px-2 py-1 text-[11px] font-extrabold text-white">Best match</span>
+                        <span className="flex-shrink-0 rounded-lg bg-brand px-2 py-1 text-[11px] font-extrabold text-white">{t('tripCost.classes.bestMatch')}</span>
                       ) : null}
                     </div>
                     {cls.exampleImage ? (
                       <img
                         src={cls.exampleImage}
-                        alt={cls.example ? `${cls.example} — example ${cls.label.toLowerCase()} listed on carwithdriver.lk` : cls.label}
+                        alt={
+                          cls.example
+                            ? t('tripCost.classes.imageAlt', {
+                                model: cls.example,
+                                // German nouns stay capitalised; English matched the old lower-case alt text.
+                                class: locale === 'en'
+                                  ? t(`estimator.buckets.${cls.id}.label`).toLowerCase()
+                                  : t(`estimator.buckets.${cls.id}.label`),
+                              })
+                            : t(`estimator.buckets.${cls.id}.label`)
+                        }
                         loading="lazy"
                         className="h-24 w-full rounded-[13px] object-cover"
                       />
                     ) : null}
                     <div className="flex flex-wrap gap-1.5">
-                      {[cls.seatLabel, `${cls.sampleSize} listed`, `${money(cls.perDay.low)}–${money(cls.perDay.high)}/day`].map((spec) => (
+                      {[
+                        t(`estimator.buckets.${cls.id}.seats`),
+                        t('tripCost.classes.listed', { count: cls.sampleSize }),
+                        `${money(cls.perDay.low)}–${money(cls.perDay.high)}${t('tripCost.perDay')}`,
+                      ].map((spec) => (
                         <span
                           key={spec}
                           className="rounded-lg border border-[#e6ece9] bg-white px-2.5 py-1 text-[12px] font-bold text-ink-soft"
@@ -516,14 +526,14 @@ const TripCostCalculator = () => {
                     <div>
                       <p className="text-2xl font-extrabold tracking-tight text-ink">{money(cls.total.average)}</p>
                       <p className="text-xs font-semibold text-muted-soft">
-                        ≈ {money(Math.round(cls.total.average / days))}/day over {days} {days === 1 ? 'day' : 'days'}
+                        {t('tripCost.classes.perDayOver', { amount: money(Math.round(cls.total.average / days)), days: t('tripCost.days', { count: days }) })}
                       </p>
                     </div>
                     <Link
                       to="/get-quotes"
                       className="mt-auto inline-flex items-center justify-center rounded-xl bg-brand px-3 py-2.5 text-xs font-extrabold text-white hover:bg-brand-dark"
                     >
-                      Get quotes
+                      {t('tripCost.classes.getQuotes')}
                     </Link>
                   </article>
                 ))}
@@ -533,32 +543,32 @@ const TripCostCalculator = () => {
 
           {/* FAQ */}
           <div className="space-y-4 rounded-[22px] border border-[#e6ece9] bg-white p-6">
-            <h2 className="text-xl font-extrabold tracking-tight text-ink">Frequently asked questions</h2>
+            <h2 className="text-xl font-extrabold tracking-tight text-ink">{t('tripCost.faq.title')}</h2>
             {resultReady ? (
               <p className="max-w-[680px] text-[15px] leading-[1.7] text-muted">
-                Travellers matching this group size mostly pay between{' '}
-                <b className="text-ink">{money(overallEstimate.perDay.low)} and {money(overallEstimate.perDay.high)} per day</b> for a
-                private driver and vehicle, depending on the size of the car. The daily rate normally covers the
-                driver, fuel for a typical 120–150 km day, and the driver&apos;s own accommodation and meals. Entrance
-                tickets, safari jeeps and highway tolls are usually paid separately.
+                <Trans
+                  k="tripCost.faq.summary"
+                  vars={{ low: money(overallEstimate.perDay.low), high: money(overallEstimate.perDay.high) }}
+                  components={{ b: <b className="text-ink" /> }}
+                />
               </p>
             ) : null}
             <div className="space-y-2">
-              {FAQS.map((f) => (
-                <details key={f.q} className="group rounded-2xl border border-[#e6ece9] bg-[#f9fbfa] p-4">
+              {FAQS.map((key) => (
+                <details key={key} className="group rounded-2xl border border-[#e6ece9] bg-[#f9fbfa] p-4">
                   <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-extrabold text-ink">
-                    {f.q}
+                    {t(`tripCost.faq.${key}.q`)}
                     <ChevronDown className="h-4 w-4 flex-shrink-0 text-muted-soft transition group-open:rotate-180" />
                   </summary>
-                  <p className="mt-2 text-sm leading-relaxed text-muted">{f.a}</p>
+                  <p className="mt-2 text-sm leading-relaxed text-muted">{t(`tripCost.faq.${key}.a`)}</p>
                 </details>
               ))}
             </div>
 
             <div className="pt-2">
-              <h3 className="text-base font-extrabold tracking-tight text-ink">Popular routes travellers price here</h3>
+              <h3 className="text-base font-extrabold tracking-tight text-ink">{t('tripCost.faq.popularRoutes')}</h3>
               <div className="mt-3 flex flex-wrap gap-2">
-                {ITINERARY_PRESETS.map((preset) => (
+                {ITINERARY_PRESETS.map((preset, presetIndex) => (
                   <button
                     key={preset.label}
                     type="button"
@@ -568,7 +578,7 @@ const TripCostCalculator = () => {
                     }}
                     className="inline-flex min-h-[44px] items-center rounded-xl border border-[#e6ece9] bg-[#f9fbfa] px-3.5 text-[13.5px] font-bold text-ink-soft transition hover:border-brand hover:text-brand-dark"
                   >
-                    {preset.label}
+                    {t(`places.presets.p${presetIndex}`)}
                   </button>
                 ))}
               </div>
@@ -583,11 +593,11 @@ const TripCostCalculator = () => {
           <div className="rounded-[20px] border border-[#e6ece9] bg-white p-5">
             <div className="flex items-center gap-2 text-sm font-extrabold text-ink">
               <Activity className="h-4 w-4 text-brand-dark" />
-              Distance by leg
+              {t('tripCost.legs.title')}
             </div>
             <div className="mt-3 space-y-2.5">
               {legs.length === 0 ? (
-                <p className="text-xs font-medium text-muted-soft">Add a second stop to see leg distances.</p>
+                <p className="text-xs font-medium text-muted-soft">{t('tripCost.legs.empty')}</p>
               ) : (
                 legs.map((leg, i) => (
                   <div key={i} className="flex items-center justify-between gap-3 border-b border-[#f1f5f3] pb-2.5 text-sm last:border-0 last:pb-0">
@@ -606,18 +616,16 @@ const TripCostCalculator = () => {
                   paceOk ? 'border-[#d6ece0] bg-[#f2faf6] text-brand-dark' : 'border-[#f0dcae] bg-[#fdf7e8] text-[#7a5410]'
                 }`}
               >
-                {paceOk
-                  ? `Comfortable pace — about ${kmPerDay} km a day, leaving time for stops.`
-                  : `That's about ${kmPerDay} km a day. Consider adding a night somewhere so the drive days stay enjoyable.`}
+                {paceOk ? t('tripCost.legs.paceOk', { km: kmPerDay }) : t('tripCost.legs.paceFast', { km: kmPerDay })}
               </div>
             ) : null}
           </div>
 
           <div className="rounded-[20px] border border-[#d6ece0] bg-[#f2faf6] p-5">
-            <p className="text-sm font-extrabold text-ink">What&apos;s included on this fleet</p>
+            <p className="text-sm font-extrabold text-ink">{t('tripCost.included.title')}</p>
             {inclusionRates.length === 0 ? (
               <p className="mt-2 text-xs font-medium text-muted">
-                Set a passenger count with at least one matching vehicle to see real inclusion rates.
+                {t('tripCost.included.empty')}
               </p>
             ) : (
               <div className="mt-3 space-y-2">
@@ -625,8 +633,11 @@ const TripCostCalculator = () => {
                   <div key={flag.key} className="flex items-start gap-2.5">
                     <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-brand-dark" />
                     <p className="text-sm text-ink-soft">
-                      <span className="font-bold">{flag.label}</span> — included on {flag.percent}% of the {flag.total}{' '}
-                      matching {flag.total === 1 ? 'vehicle' : 'vehicles'}
+                      <Trans
+                        k="tripCost.included.rate"
+                        vars={{ label: t(`estimator.inclusions.${flag.key}`), percent: flag.percent, count: flag.total }}
+                        components={{ b: <span className="font-bold" /> }}
+                      />
                     </p>
                   </div>
                 ))}

@@ -1,3 +1,4 @@
+import { localizeServerMessage } from '../i18n/serverMessages.js';
 import { API_BASE_URL } from '../constants/api.js';
 import { getStoredToken, handleSessionExpired } from './authToken.js';
 
@@ -6,7 +7,7 @@ const AUTH_BASE_URL = `${API_BASE_URL}/auth`;
 const withAuthHeaders = () => {
   const token = getStoredToken();
   if (!token) {
-    throw new Error('Please sign in to manage your profile.');
+    throw new Error(localizeServerMessage('Please sign in to manage your profile.'));
   }
   return {
     Authorization: `Bearer ${token}`,
@@ -61,7 +62,7 @@ const request = async (path, options = {}) => {
       timeoutMs
     );
   } catch (e) {
-    throw new Error(e?.message || 'Network error');
+    throw new Error(localizeServerMessage(e?.message || 'Network error'));
   }
 
   if (response.status === 204) {
@@ -73,7 +74,7 @@ const request = async (path, options = {}) => {
     if (response.status === 401) {
       handleSessionExpired(message);
     }
-    throw new Error(message);
+    throw new Error(localizeServerMessage(message));
   }
 
   const text = await response.text();
@@ -83,7 +84,7 @@ const request = async (path, options = {}) => {
   try {
     return JSON.parse(text);
   } catch (_error) {
-    throw new Error('Unable to parse server response');
+    throw new Error(localizeServerMessage('Unable to parse server response'));
   }
 };
 
@@ -117,4 +118,16 @@ export default {
   updateProfile,
   updatePassword,
   deleteOwnAccount,
+};
+
+// Saves the website language a traveller is using, so their emails match it.
+// Best-effort: a failure just leaves the previous language on file.
+export const saveLanguage = async (language) => {
+  const response = await fetch(`${AUTH_BASE_URL}/language`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...withAuthHeaders() },
+    body: JSON.stringify({ language }),
+  });
+  if (!response.ok) throw new Error(localizeServerMessage(await parseError(response)));
+  return response.json();
 };

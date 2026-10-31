@@ -1,0 +1,15 @@
+{
+  "expiry": {
+    "expired": "Questa offerta è scaduta",
+    "days": "Scade tra {count} giorni",
+    "tomorrow": "Scade domani",
+    "hours": {
+      "one": "Scade tra {count} ora",
+      "other": "Scade tra {count} ore"
+    },
+    "minutes": {
+      "one": "Scade tra {count} minuto",
+      "other": "Scade tra {count} minuti"
+    }
+  }
+}

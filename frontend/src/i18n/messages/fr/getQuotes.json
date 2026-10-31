@@ -1,0 +1,213 @@
+{
+  "breadcrumb": "Fil d'Ariane",
+  "breadcrumbHome": "Accueil",
+  "breadcrumbCurrent": "Obtenir des devis",
+  "hero": {
+    "title": "Devis gratuits de chauffeurs et chauffeurs-guides au Sri Lanka",
+    "lead": "Indiquez-nous vos dates et où vous souhaitez aller. Nous envoyons votre demande à des chauffeurs approuvés et à des chauffeurs-guides SLTDA dans toute l'île : ils vous envoient directement un devis, vous comparez, discutez et réservez. Aucuns frais de réservation, et vous payez votre chauffeur, pas nous.",
+    "points": [
+      "Des offres de chauffeurs touristiques, de chauffeurs-guides et de guides nationaux",
+      "Les tarifs journaliers couvrent 120–150 km par jour dans toute l'île",
+      "Discutez avec les chauffeurs avant de vous engager : vos coordonnées restent privées",
+      "Acceptez une offre et ce prix est bloqué pour l'itinéraire convenu"
+    ],
+    "stat1Value": "30 min",
+    "stat1Label": "Premier devis, en général",
+    "stat2Label": "Offres par demande",
+    "stat3Value": "GRATUIT",
+    "stat3Label": "Aucuns frais de réservation"
+  },
+  "errors": {
+    "dates": "Sélectionnez vos dates de début et de fin.",
+    "endAfterStart": "La date de fin doit être postérieure à la date de début.",
+    "startPast": "La date de début ne peut pas être dans le passé.",
+    "allFields": "Veuillez remplir tous les champs.",
+    "tooLong": "Les détails de l'itinéraire ne doivent pas dépasser {max} caractères.",
+    "adults": "Veuillez indiquer au moins un voyageur adulte."
+  },
+  "form": {
+    "title": "Demandez vos devis",
+    "intro": "Cela prend environ une minute. À l'étape suivante, vous vous connecterez ou créerez un compte gratuit : inutile de remplir quoi que ce soit deux fois.",
+    "startDate": "Date de début",
+    "endDate": "Date de fin",
+    "pickup": "Lieu de prise en charge",
+    "dropoff": "Lieu de dépose",
+    "placePlaceholder": "Ville, hôtel ou aéroport",
+    "adults": "Adultes",
+    "children": "Enfants",
+    "country": "Pays de résidence",
+    "countryPlaceholder": "ex. France",
+    "limit": "Limiter le nombre de devis",
+    "optional": "(facultatif)",
+    "noLimit": "Sans limite",
+    "limitHelp": "Nous n'acceptons plus de devis une fois que ce nombre de chauffeurs a répondu.",
+    "driverType": "Type de chauffeur",
+    "allDrivers": "Tous les chauffeurs",
+    "touristOnly": "Chauffeurs touristiques uniquement",
+    "chauffeurOnly": "Chauffeurs-guides uniquement",
+    "driverTypeHelp": "Avec cette restriction, seuls les chauffeurs titulaires de cette licence vérifiée par la SLTDA peuvent vous envoyer un devis : vous risquez donc de recevoir moins d'offres.",
+    "notes": "Détails de l'itinéraire",
+    "notesPlaceholder": "Les lieux que vous souhaitez voir, vos horaires de vol, des enfants ou des bagages supplémentaires. Tout ce qui aide les chauffeurs à établir un devis précis.",
+    "noContact": "Merci de ne pas indiquer de numéro de téléphone ni d'e-mail ici : nous partagerons les coordonnées une fois que vous aurez accepté une offre et que votre réservation sera confirmée.",
+    "next": "Suivant",
+    "footnote": "Demande gratuite · Aucuns frais de réservation · Paiement directement au chauffeur"
+  },
+  "how": {
+    "title": "Comment ça marche, en trois étapes",
+    "lead": "Pas besoin de chercher au hasard. Vous décrivez le voyage une seule fois, et les chauffeurs disponibles à vos dates viennent à vous avec un prix. Rien ne vous est facturé à aucun moment : lorsque vous acceptez une offre, vous payez ce chauffeur directement, le premier jour du voyage.",
+    "step1": {
+      "title": "Décrivez votre voyage une seule fois",
+      "body": "Vos dates, le lieu de prise en charge, votre nombre et un itinéraire approximatif. Si quelque chose n'est pas encore décidé, dites-le : les chauffeurs vous proposeront des alternatives plutôt que de deviner.",
+      "meta": "Cela prend environ une minute"
+    },
+    "step2": {
+      "title": "Les chauffeurs vous envoient des devis",
+      "body": "Votre demande est envoyée à des chauffeurs approuvés dans toute l'île. Chaque offre indique le véhicule, le chauffeur, sa note et un tarif journalier fixe pour votre itinéraire.",
+      "meta": "Vos coordonnées restent privées"
+    },
+    "step3": {
+      "title": "Discutez, comparez et réservez",
+      "body": "Posez vos questions dans le chat, ajustez le programme, puis acceptez l'offre qui vous convient. Aucune carte n'est nécessaire : vous payez directement votre chauffeur lorsque vous le rencontrez le premier jour.",
+      "meta": "Aucuns frais de réservation, à aucun moment"
+    }
+  },
+  "types": {
+    "title": "De quel type de chauffeur avez-vous besoin ?",
+    "lead": "Le Sri Lanka compte trois rôles distincts, et les sites de réservation emploient les termes de façon approximative. La différence tient à la licence : la Sri Lanka Tourism Development Authority forme et certifie les chauffeurs-guides (titre officiel : Chauffeur Guide Lecturer) et les guides nationaux (titre officiel : National Guide Lecturer), tandis qu'un chauffeur touristique (Tourist Driver) possède un permis de conduire standard. Les chauffeurs de ce site soumettent leur licence pour vérification, et le type qu'ils détiennent est indiqué sur leur profil.",
+    "bestFor": "Idéal pour : {text}",
+    "touristDriver": {
+      "body": "Titulaire d'un permis standard, il conduit selon votre itinéraire, s'occupe de la logistique et sait où s'arrêter, manger et dormir.",
+      "bestFor": "les séjours balnéaires, les transferts et les voyageurs qui aiment se documenter eux-mêmes"
+    },
+    "chauffeurGuideLecturer": {
+      "body": "Agréé par la Sri Lanka Tourism Development Authority : il conduit et vous explique aussi les sites que vous visitez.",
+      "bestFor": "la plupart des itinéraires de deux semaines, avec une seule personne pour tout le voyage"
+    },
+    "nationalGuideLecturer": {
+      "body": "La plus haute qualification de guide de la SLTDA, avec une interprétation historique et culturelle complète.",
+      "bestFor": "les voyages axés sur l'histoire et les groupes aux centres d'intérêt particuliers"
+    },
+    "readMore": "Lire la comparaison complète, avec le coût de chacun →"
+  },
+  "rates": {
+    "title": "Combien coûte une voiture avec chauffeur au Sri Lanka",
+    "lead": "Il ne s'agit pas d'une grille tarifaire officielle : les chauffeurs fixent leurs propres tarifs. Le tableau ci-dessous est établi à partir des véhicules actuellement proposés sur carwithdriver.lk, regroupés par taille, et indique pour chaque catégorie le milieu habituel de la fourchette.",
+    "fromListings": "SUR LA BASE DE {count} ANNONCES ACTUELLES",
+    "updated": "Mis à jour automatiquement lorsque les chauffeurs modifient leurs prix",
+    "caption": "Tarif journalier habituel en USD, par véhicule, d'après les annonces actuelles",
+    "colClass": "Catégorie de véhicule",
+    "colSeats": "Places",
+    "colPerDay": "Habituel par jour",
+    "colListings": "Annonces",
+    "example": "ex. {model}",
+    "note": "Les tarifs couvrent {low}–{high} km par jour dans toute l'île, ce qui correspond en général à une journée de circuit avec chauffeur-guide. Les journées plus longues et les dates de haute saison de décembre à janvier se situent dans le haut de chaque fourchette.",
+    "estimate": "Estimer votre propre voyage →",
+    "loading": "Chargement des tarifs en direct.",
+    "browseFleet": "Voir la flotte →"
+  },
+  "included": {
+    "title": "Ce que comprend votre devis",
+    "lead": "Les annonces de ce site précisent ce que couvre leur tarif, afin que les offres que vous comparez soient réellement comparables. Certains éléments sont presque toujours inclus ; d'autres dépendent du chauffeur, vérifiez-les donc dans l'offre avant d'accepter.",
+    "always": "INCLUS DANS PRESQUE TOUS LES DEVIS",
+    "kmPerDay": "{low}–{high} km par jour",
+    "varies": "VARIE SELON L'ANNONCE : VÉRIFIEZ L'OFFRE",
+    "notIncluded": [
+      "Billets d'entrée des sites : Sigiriya, Dambulla, le temple de la Dent",
+      "Jeeps de safari à Yala, Udawalawe et Minneriya",
+      "Votre propre hébergement, vos repas et vos boissons",
+      "Les pourboires pour votre chauffeur : d'usage, mais jamais exigés"
+    ]
+  },
+  "recommended": {
+    "title": "Chauffeurs recommandés",
+    "lead": "Quelques-uns des chauffeurs les plus expérimentés de la plateforme. Vous n'avez pas besoin d'en choisir un pour demander des devis (votre demande est de toute façon envoyée dans toute l'île), mais cela vaut la peine de voir quel type de chauffeur vous répondra.",
+    "reviews": {
+      "one": "{count} avis",
+      "other": "{count} avis"
+    },
+    "yearsDriving": {
+      "one": "{count} an de conduite",
+      "other": "{count} ans de conduite"
+    },
+    "vehiclesFrom": "{count} VÉHICULES · À PARTIR DE",
+    "from": "À PARTIR DE",
+    "quote": "Sur devis",
+    "perDay": "/jour",
+    "viewDriver": "Voir le chauffeur",
+    "browseAll": "Voir tous les chauffeurs →"
+  },
+  "why": {
+    "title": "Pourquoi passer par carwithdriver.lk",
+    "lead": "Nous sommes une plateforme sri-lankaise, pas un revendeur étranger. Les chauffeurs publient eux-mêmes leurs annonces, fixent leurs propres prix et gardent l'intégralité du montant : aucun voyagiste ne prend de commission, et la personne qui répond à votre message est celle qui vous accueillera à l'arrivée.",
+    "middleman": {
+      "title": "Vous payez le chauffeur, pas un intermédiaire",
+      "body": "Les chauffeurs publient eux-mêmes leurs annonces, fixent leur prix et gardent l'intégralité du montant. Aucune marge d'agence ne s'y ajoute, c'est pourquoi les offres sont ici inférieures aux prix des voyagistes pour le même itinéraire."
+    },
+    "locked": {
+      "title": "Le prix est bloqué dès que vous acceptez",
+      "body": "Accepter une offre fixe ce montant total pour l'itinéraire convenu. Le tarif ne peut pas être augmenté ensuite, et les dates sont liées à l'offre."
+    },
+    "private": {
+      "title": "Vos coordonnées restent privées",
+      "body": "Les chauffeurs voient votre itinéraire, pas votre numéro de téléphone ni votre e-mail. Les coordonnées ne sont échangées qu'une fois que vous avez accepté une offre et que la réservation est confirmée."
+    },
+    "licences": {
+      "title": "Les licences sont vérifiées par notre équipe",
+      "body": "Les chauffeurs soumettent leur permis à un administrateur pour vérification avant l'approbation de leur profil, et le type de licence qu'ils détiennent est indiqué sur leur profil."
+    },
+    "reviews": {
+      "title": "Les avis proviennent de vrais voyages",
+      "body": "Les voyageurs ne peuvent évaluer qu'une réservation qu'ils ont réellement effectuée via la plateforme, une fois le voyage terminé."
+    },
+    "support": {
+      "title": "Une assistance basée au Sri Lanka",
+      "body": "Si vos projets changent en cours de route ou si un véhicule a un problème, notre équipe est dans le même fuseau horaire que vous et peut joindre directement votre chauffeur."
+    }
+  },
+  "faq": {
+    "title": "Questions fréquentes",
+    "contact": "Vous avez encore un doute ? Écrivez à <email>hello@carwithdriver.lk</email> ou appelez le <phone>+94 76 3021 483</phone>.",
+    "cost": {
+      "q": "Combien coûte la location d'une voiture avec chauffeur au Sri Lanka ?",
+      "a": "Cela dépend du véhicule et de la durée de votre voyage : les chauffeurs fixent leurs propres tarifs. Le tableau ci-dessus est établi à partir des annonces actuellement en ligne sur ce site : il reflète donc ce que les chauffeurs facturent réellement, et non une grille tarifaire officielle. Pour un montant basé sur votre propre itinéraire et vos dates, utilisez le calculateur de coût de voyage."
+    },
+    "fee": {
+      "q": "Y a-t-il des frais de réservation ?",
+      "a": "Non. Demander des devis, comparer les offres et discuter avec les chauffeurs est entièrement gratuit, et nous n'ajoutons aucuns frais de réservation ni frais de service au prix du chauffeur. Le tarif que vous acceptez est celui que vous payez."
+    },
+    "pay": {
+      "q": "Comment et quand dois-je payer ?",
+      "a": "Vous payez votre chauffeur directement lorsque vous le rencontrez le premier jour du voyage : aucune donnée de carte n'est demandée sur ce site et aucun acompte n'est prélevé via la plateforme. Convenez d'abord de tout élément inhabituel avec votre chauffeur dans le chat, afin d'en garder une trace."
+    },
+    "difference": {
+      "q": "Quelle est la différence entre un chauffeur touristique et un chauffeur-guide ?",
+      "a": "Un chauffeur touristique possède un permis standard et conduit selon votre itinéraire. Un chauffeur-guide (Chauffeur Guide Lecturer) est agréé par la Sri Lanka Tourism Development Authority et peut aussi vous expliquer les sites que vous visitez. Un guide national (National Guide Lecturer) détient la plus haute qualification de la SLTDA et assure une interprétation historique complète."
+    },
+    "fuel": {
+      "q": "Le carburant et les kilomètres sont-ils inclus ?",
+      "a": "Presque toutes les annonces incluent le carburant et l'assurance, et les tarifs journaliers couvrent 120–150 km par jour dans toute l'île, ce qui correspond en général à une journée de circuit avec chauffeur-guide. Chaque offre précise exactement ce qu'elle comprend : vérifiez-la avant d'accepter."
+    },
+    "meals": {
+      "q": "Les repas et l'hébergement du chauffeur sont-ils inclus ?",
+      "a": "De nombreuses annonces les incluent, mais pas toutes : cela varie selon le chauffeur, c'est pourquoi c'est indiqué sur chaque annonce et dans l'offre que vous recevez. On ne vous demandera jamais de réserver vous-même une chambre d'hôtel pour votre chauffeur ; lorsque c'est inclus, ce coût est déjà compris dans le tarif journalier."
+    },
+    "howLong": {
+      "q": "Combien de temps avant de recevoir des devis ?",
+      "a": "Votre demande est envoyée aux chauffeurs approuvés dès que vous la soumettez, et vous recevez un e-mail et une notification push pour chaque nouvelle offre. Les demandes envoyées pendant la nuit, heure du Sri Lanka, reçoivent généralement une réponse le lendemain matin."
+    },
+    "change": {
+      "q": "Puis-je modifier mon itinéraire après la réservation ?",
+      "a": "Oui. Les petits changements en cours de route (changer de plage, ajouter un temple, décaler une heure de départ) ne posent normalement aucun problème. Si un changement ajoute des jours de conduite ou beaucoup de distance, convenez du nouveau tarif avec votre chauffeur dans le chat avant le départ, afin d'en garder une trace."
+    },
+    "wrong": {
+      "q": "Et si quelque chose se passe mal pendant mon voyage ?",
+      "a": "Écrivez à hello@carwithdriver.lk ou appelez le +94 76 3021 483. Chaque message et chaque offre sont conservés : il existe donc toujours une trace de ce qui a été convenu avec votre chauffeur."
+    }
+  },
+  "cta": {
+    "title": "Prêt à découvrir ce que votre voyage coûte vraiment ?",
+    "body": "Envoyez une seule demande et laissez les chauffeurs venir à vous. Gratuit, sans engagement, et vos coordonnées restent privées jusqu'à ce que vous acceptiez une offre.",
+    "request": "Demander des devis gratuits",
+    "estimate": "L'estimer vous-même"
+  }
+}

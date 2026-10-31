@@ -1,0 +1,93 @@
+{
+  "read": "Gelesen",
+  "sent": "Gesendet",
+  "close": "Schließen",
+  "included": "(inklusive)",
+  "notIncluded": "(nicht inklusive)",
+  "brief": {
+    "label": "Anfrage",
+    "adults": {
+      "one": "{count} Erwachsener",
+      "other": "{count} Erwachsene"
+    },
+    "children": {
+      "one": "{count} Kind",
+      "other": "{count} Kinder"
+    },
+    "readLess": "Weniger anzeigen",
+    "readMore": "Mehr anzeigen"
+  },
+  "booking": {
+    "title": "Buchungsdetails",
+    "traveller": "Reisende(r)",
+    "name": "Name",
+    "email": "E-Mail",
+    "phone": "Telefon",
+    "trip": "Reise",
+    "dates": "Reisedaten",
+    "days": "Tage",
+    "dayCount": {
+      "one": "{count} Tag",
+      "other": "{count} Tage"
+    },
+    "vehicle": "Fahrzeug",
+    "route": "Abholort & Zielort",
+    "startPoint": "Startpunkt",
+    "endPoint": "Zielort",
+    "flight": "Flug",
+    "flightNumber": "Flugnummer",
+    "arrival": "Ankunftszeit",
+    "departure": "Abflugzeit",
+    "included": "Im Angebot enthalten",
+    "notes": "Notizen & Extras",
+    "status": {
+      "pending": "ausstehend",
+      "confirmed": "bestätigt",
+      "cancelled": "storniert",
+      "rejected": "abgelehnt"
+    }
+  },
+  "photos": {
+    "vehicle": "Fahrzeug",
+    "view": "Foto von {name} ansehen",
+    "viewNumbered": "Foto {n} von {name} ansehen",
+    "numbered": "{name}, Foto {n}"
+  },
+  "profile": {
+    "missing": "Fahrerinformationen fehlen.",
+    "loadError": "Fahrerprofil konnte nicht geladen werden.",
+    "linkCopied": "Profillink kopiert.",
+    "copyFailed": "Link konnte nicht kopiert werden.",
+    "title": "Fahrerprofil",
+    "copyLink": "Profillink kopieren",
+    "newDriver": "Neuer Fahrer",
+    "reviews": {
+      "one": "{count} Bewertung",
+      "other": "{count} Bewertungen"
+    },
+    "sriLanka": "Sri Lanka",
+    "loading": "Fahrerprofil wird geladen…",
+    "notFound": "Dieses Fahrerprofil wurde nicht gefunden.",
+    "years": "{count} J.",
+    "experience": "Erfahrung",
+    "rating": "Bewertung",
+    "vehicles": "Fahrzeuge",
+    "about": "Über {name}",
+    "noBio": "{name} hat noch keine Beschreibung hinzugefügt.",
+    "location": "Standort",
+    "memberSince": "Mitglied seit",
+    "vehiclesCount": "Fahrzeuge ({count})",
+    "noVehicles": "Derzeit sind keine Fahrzeuge eingetragen.",
+    "inThisChat": "IN DIESEM CHAT",
+    "seats": "{count} Sitze",
+    "perDay": "PRO TAG",
+    "reviewsTitle": "Bewertungen",
+    "loadingReviews": "Bewertungen werden geladen…",
+    "noReviews": "Noch keine Bewertungen. Entdecken Sie als Erste(r) Sri Lanka mit diesem Fahrer und erzählen Sie davon.",
+    "traveller": "Reisende(r)",
+    "showFewer": "Weniger Bewertungen anzeigen",
+    "readAll": "Alle {count} Bewertungen lesen",
+    "tripDetails": "Reisedetails",
+    "backToChat": "Zurück zum Chat"
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "logoAlt": "Логотип Car with Driver LK",
+  "nav": {
+    "home": "Главная",
+    "vehicles": "Автомобили",
+    "drivers": "Водители",
+    "liveMap": "Карта онлайн",
+    "tripCost": "Стоимость поездки",
+    "getQuotes": "Получить предложения",
+    "myVehicles": "Мои автомобили",
+    "myBookings": "Мои бронирования",
+    "messages": "Сообщения",
+    "myEarnings": "Мой доход",
+    "myAvailability": "Моя доступность",
+    "myProfile": "Мой профиль",
+    "overview": "Обзор",
+    "myRequests": "Мои запросы",
+    "settings": "Настройки",
+    "roleDriver": "Водитель",
+    "roleAdmin": "Администратор",
+    "roleTraveller": "Путешественник",
+    "toggle": "Показать или скрыть меню",
+    "dashboard": "Личный кабинет",
+    "login": "Войти",
+    "register": "Регистрация",
+    "closeMenu": "Закрыть меню",
+    "tourBriefs": "Запросы на туры",
+    "driverMenu": "Меню водителя",
+    "travellerMenu": "Меню путешественника",
+    "goToDashboard": "Перейти в личный кабинет"
+  },
+  "footer": {
+    "homeLabel": "Главная страница Car with Driver",
+    "tagline": "Проверенные водители и современные автомобили для путешественников по Шри-Ланке. Поездки пятизвёздочного уровня по всему острову.",
+    "travellers": "Путешественникам",
+    "drivers": "Водителям",
+    "help": "Помощь",
+    "browseVehicles": "Смотреть автомобили",
+    "featuredDrivers": "Рекомендуемые водители",
+    "myQuoteRequests": "Мои запросы предложений",
+    "chatMessages": "Сообщения в чате",
+    "applyAsDriver": "Стать водителем",
+    "driverGuide": "Руководство для водителей",
+    "driverTerms": "Условия для водителей",
+    "driverPortal": "Кабинет водителя",
+    "contactSupport": "Связаться с поддержкой",
+    "safetyPromise": "Наши обязательства по безопасности",
+    "privacyPolicy": "Политика конфиденциальности",
+    "terms": "Условия использования",
+    "rights": "Все права защищены.",
+    "about": "О нас",
+    "blog": "Блог",
+    "contact": "Контакты"
+  },
+  "language": {
+    "choose": "Выбрать язык"
+  },
+  "error": {
+    "notFoundTitle": "Страница не найдена",
+    "title": "Что-то пошло не так",
+    "notFoundBody": "Страница, которую вы ищете, не существует или была перемещена.",
+    "body": "Произошла непредвиденная ошибка. Пожалуйста, попробуйте ещё раз.",
+    "backHome": "Вернуться на главную"
+  },
+  "features": {
+    "englishSpeakingDriver": "Англоговорящий водитель",
+    "meetAndGreetAtAirport": "Встреча в аэропорту",
+    "fuelAndInsurance": "Топливо и страховка включены",
+    "driverMealsAndAccommodation": "Питание и проживание водителя",
+    "parkingFeesAndTolls": "Парковка и платные дороги",
+    "allTaxes": "Все налоги включены"
+  },
+  "inclusions": {
+    "englishSpeakingDriver": "Англоговорящий водитель",
+    "fuelAndInsurance": "Топливо и страховка",
+    "parkingFeesAndTolls": "Вся оплата парковок и платных дорог",
+    "meetAndGreetAtAirport": "Встреча в аэропорту",
+    "driverMealsAndAccommodation": "Питание и проживание водителя",
+    "allTaxes": "Все налоги"
+  },
+  "licenseTypes": {
+    "touristDriver": "Туристический водитель",
+    "chauffeurGuideLecturer": "Шофёр-гид",
+    "nationalGuideLecturer": "Национальный гид"
+  },
+  "photos": {
+    "view": "Посмотреть фото из отзыва",
+    "reviewPhoto": "Фото из отзыва",
+    "delete": "Удалить фото",
+    "close": "Закрыть",
+    "previous": "Предыдущее фото",
+    "next": "Следующее фото"
+  },
+  "badges": {
+    "englishSpeakingDriver": "Говорит по-английски",
+    "meetAndGreetAtAirport": "Встреча в аэропорту",
+    "fuelAndInsurance": "Топливо и страховка включены",
+    "driverMealsAndAccommodation": "Питание и проживание оплачены",
+    "parkingFeesAndTolls": "Парковка и платные дороги оплачены",
+    "allTaxes": "Все налоги включены"
+  }
+}

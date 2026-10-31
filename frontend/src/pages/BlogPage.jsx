@@ -1,25 +1,29 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '../i18n/router.jsx';
+import { useI18n } from '../i18n/I18nProvider.jsx';
 import toast from 'react-hot-toast';
 import { Search } from 'lucide-react';
-import { BLOG_POSTS, CATEGORIES, getPostBySlug } from '../data/blogPosts.js';
+import { CATEGORIES, getLocalizedPosts, getPostBySlug } from '../data/blogPosts.js';
 import ImagePlaceholder from '../components/ImagePlaceholder.jsx';
 import { Avatar } from '../components/dashboard/primitives.jsx';
 
-const formatDate = (value) => {
+const formatDate = (value, intl = 'en-US') => {
   if (!value) return '';
   const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString(intl, { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
 const FEATURED_SLUG = 'tourist-driver-vs-chauffeur-guide-vs-national-guide';
 
 const BlogPage = () => {
+  const { t, locale, intl } = useI18n();
+  const BLOG_POSTS = useMemo(() => getLocalizedPosts(locale), [locale]);
+  const categoryLabel = (cat) => t(`blog.categories.${cat}`);
   const [category, setCategory] = useState('All');
   const [query, setQuery] = useState('');
 
   const trimmedQuery = query.trim().toLowerCase();
-  const featuredPost = getPostBySlug(FEATURED_SLUG);
+  const featuredPost = getPostBySlug(FEATURED_SLUG, locale);
   // Skip the separate featured banner while it's the only post — otherwise the grid
   // below it (which excludes the featured slug) would just show an empty state.
   const showFeatured = category === 'All' && !trimmedQuery && BLOG_POSTS.length > 1;
@@ -30,41 +34,44 @@ const BlogPage = () => {
       .filter((post) => {
         const matchesCategory = category === 'All' || post.category === category;
         const matchesQuery =
-          !trimmedQuery || `${post.title} ${post.excerpt} ${post.category}`.toLowerCase().includes(trimmedQuery);
+          !trimmedQuery ||
+          `${post.title} ${post.excerpt} ${post.category} ${categoryLabel(post.category)}`.toLowerCase().includes(trimmedQuery);
         return matchesCategory && matchesQuery;
       })
       .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
-  }, [category, trimmedQuery, showFeatured]);
+    // categoryLabel depends only on t.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [category, trimmedQuery, showFeatured, BLOG_POSTS, t]);
 
   const listHeading = trimmedQuery
-    ? `Results for "${query.trim()}"`
+    ? t('blog.resultsFor', { query: query.trim() })
     : category === 'All'
-      ? 'Latest guides'
-      : category;
+      ? t('blog.latest')
+      : categoryLabel(category);
 
   const handleNewsletterSubmit = (event) => {
     event.preventDefault();
-    toast("Newsletter signup isn't available yet.");
+    toast(t('blog.newsletterUnavailable'));
   };
 
   return (
     <div className="bg-white font-sans text-ink">
       <section className="border-b border-hairline bg-gradient-to-b from-[#f4f8f6] to-white">
         <div className="mx-auto max-w-[1200px] px-[clamp(16px,4vw,40px)] py-[clamp(26px,5vw,58px)] pb-[clamp(22px,4vw,40px)]">
-          <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-1.5 text-[13px] font-semibold text-muted-soft">
-            <Link to="/" className="hover:text-ink">Home</Link>
+          <nav aria-label={t('blog.breadcrumb')} className="flex flex-wrap items-center gap-1.5 text-[13px] font-semibold text-muted-soft">
+            <Link to="/" className="hover:text-ink">{t('blog.home')}</Link>
             <span aria-hidden="true">/</span>
-            <span className="font-bold text-ink">Blog</span>
+            <span className="font-bold text-ink">{t('blog.blog')}</span>
           </nav>
           <h1 className="mt-3.5 max-w-[15ch] text-[clamp(28px,4.6vw,48px)] font-extrabold leading-[1.06] tracking-tight text-ink">
-            Sri Lanka, explained by the people driving it
+            {t('blog.title')}
           </h1>
           <p className="mt-3.5 max-w-[60ch] text-[clamp(15px,1.4vw,17.5px)] leading-relaxed text-muted-soft">
-            Route costs, honest itineraries and road conditions — written with the chauffeur guides who drive these roads every week, and updated as prices and roads change.
+            {t('blog.lead')}
           </p>
 
           <form onSubmit={(event) => event.preventDefault()} role="search" className="mt-[22px] flex max-w-[560px] flex-wrap gap-2.5">
-            <label htmlFor="blog-search" className="sr-only">Search the blog</label>
+            <label htmlFor="blog-search" className="sr-only">{t('blog.searchLabel')}</label>
             <div className="flex min-h-[50px] flex-1 items-center gap-2.5 rounded-[13px] border-[1.5px] border-[#dfe7e2] bg-white px-3.5">
               <Search className="h-[17px] w-[17px] flex-shrink-0 text-muted-soft" strokeWidth={2.2} />
               <input
@@ -72,7 +79,7 @@ const BlogPage = () => {
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search guides, e.g. Ella by train"
+                placeholder={t('blog.searchPlaceholder')}
                 className="min-w-0 flex-1 bg-transparent text-[15px] font-semibold text-ink outline-none placeholder:text-muted-soft"
               />
             </div>
@@ -81,7 +88,7 @@ const BlogPage = () => {
       </section>
 
       <div className="mx-auto max-w-[1200px] px-[clamp(16px,4vw,40px)] pb-[clamp(44px,6vw,80px)] pt-[clamp(18px,3vw,32px)]">
-        <nav aria-label="Categories" className="no-scrollbar mb-[clamp(18px,3vw,28px)] flex gap-2 overflow-x-auto pb-1.5">
+        <nav aria-label={t('blog.categoriesLabel')} className="no-scrollbar mb-[clamp(18px,3vw,28px)] flex gap-2 overflow-x-auto pb-1.5">
           {CATEGORIES.map((cat) => {
             const active = category === cat;
             return (
@@ -93,7 +100,7 @@ const BlogPage = () => {
                   active ? 'border-brand bg-brand text-white' : 'border-[#e0e7e3] bg-white text-ink-soft hover:border-brand'
                 }`}
               >
-                {cat}
+                {categoryLabel(cat)}
               </button>
             );
           })}
@@ -108,12 +115,12 @@ const BlogPage = () => {
               {featuredPost.heroImage ? (
                 <img src={featuredPost.heroImage} alt={featuredPost.heroAlt} className="h-full w-full object-cover" />
               ) : (
-                <ImagePlaceholder alt={`Hero: ${featuredPost.heroAlt}`} />
+                <ImagePlaceholder alt={t('blog.heroAlt', { alt: featuredPost.heroAlt })} />
               )}
             </span>
             <div className="min-w-[min(100%,280px)] flex-1 basis-[320px]">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-[#cdeadb] bg-[#e8f7ef] px-2.5 py-1 text-[11.5px] font-extrabold tracking-wide text-brand-dark">FEATURED · COSTS</span>
+                <span className="rounded-full border border-[#cdeadb] bg-[#e8f7ef] px-2.5 py-1 text-[11.5px] font-extrabold tracking-wide text-brand-dark">{t('blog.featuredCosts')}</span>
                 <span className="text-[12.5px] font-semibold text-muted-soft">{featuredPost.readTime}</span>
               </div>
               <h2 className="mt-3 text-[clamp(21px,2.8vw,31px)] font-extrabold leading-[1.15] tracking-tight text-ink">{featuredPost.title}</h2>
@@ -122,7 +129,7 @@ const BlogPage = () => {
                 <Avatar name={featuredPost.author.name} image={featuredPost.author.photo} tone="brand" className="h-10 w-10 flex-shrink-0 text-[13.5px]" />
                 <div>
                   <div className="text-[13.5px] font-extrabold text-ink">{featuredPost.author.name}</div>
-                  <div className="text-[12px] font-semibold text-muted-soft">Updated {formatDate(featuredPost.updatedAt)}</div>
+                  <div className="text-[12px] font-semibold text-muted-soft">{t('blog.updated', { date: formatDate(featuredPost.updatedAt, intl) })}</div>
                 </div>
               </div>
             </div>
@@ -133,8 +140,8 @@ const BlogPage = () => {
 
         {posts.length === 0 ? (
           <div className="rounded-[20px] border-[1.5px] border-dashed border-[#dfe7e2] p-9 text-center">
-            <div className="text-[15.5px] font-extrabold text-ink">Nothing here yet</div>
-            <p className="mt-1.5 text-[14px] font-semibold text-muted-soft">Try another category or clear your search.</p>
+            <div className="text-[15.5px] font-extrabold text-ink">{t('blog.emptyTitle')}</div>
+            <p className="mt-1.5 text-[14px] font-semibold text-muted-soft">{t('blog.emptyBody')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,280px),1fr))] gap-[clamp(14px,2.2vw,24px)]">
@@ -154,12 +161,12 @@ const BlogPage = () => {
                       <ImagePlaceholder alt={post.heroAlt} />
                     )}
                     {!post.body ? (
-                      <span className="absolute right-2.5 top-2.5 rounded-full bg-ink/80 px-2.5 py-1 text-[10.5px] font-extrabold tracking-wide text-white">COMING SOON</span>
+                      <span className="absolute right-2.5 top-2.5 rounded-full bg-ink/80 px-2.5 py-1 text-[10.5px] font-extrabold tracking-wide text-white">{t('blog.comingSoon')}</span>
                     ) : null}
                   </span>
                   <div className="flex flex-1 flex-col p-4 pb-[17px]">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded-lg border border-[#d6ece0] bg-[#f2faf6] px-2.5 py-1 text-[11px] font-extrabold tracking-wide text-brand-dark">{post.category.toUpperCase()}</span>
+                      <span className="rounded-lg border border-[#d6ece0] bg-[#f2faf6] px-2.5 py-1 text-[11px] font-extrabold tracking-wide text-brand-dark">{categoryLabel(post.category).toUpperCase()}</span>
                       <span className="text-[12px] font-semibold text-muted-soft">{post.readTime}</span>
                     </div>
                     <h3 className="mt-2.5 text-[17px] font-extrabold leading-[1.28] tracking-tight text-ink">{post.title}</h3>
@@ -167,7 +174,7 @@ const BlogPage = () => {
                     <div className="mt-3.5 flex items-center gap-2.5 border-t border-[#eef2f0] pt-3.5">
                       <Avatar name={post.author.name} image={post.author.photo} tone="brand" className="h-[30px] w-[30px] flex-shrink-0 text-[11.5px]" />
                       <span className="text-[12.5px] font-bold text-ink-soft">{post.author.name}</span>
-                      <time dateTime={post.publishedAt} className="ml-auto text-[12px] font-semibold text-muted-soft">{formatDate(post.publishedAt)}</time>
+                      <time dateTime={post.publishedAt} className="ml-auto text-[12px] font-semibold text-muted-soft">{formatDate(post.publishedAt, intl)}</time>
                     </div>
                   </div>
                 </CardTag>
@@ -177,12 +184,12 @@ const BlogPage = () => {
         )}
 
         <section className="mt-[clamp(34px,5vw,60px)] rounded-3xl bg-gradient-to-br from-[#0c7a44] to-brand p-[clamp(20px,3vw,34px)] text-white">
-          <h2 className="text-[clamp(20px,2.4vw,27px)] font-extrabold tracking-tight">One email a month, from the road</h2>
+          <h2 className="text-[clamp(20px,2.4vw,27px)] font-extrabold tracking-tight">{t('blog.newsletterTitle')}</h2>
           <p className="mt-2.5 max-w-[52ch] text-[15px] leading-relaxed text-white/80">
-            New route guides, updated prices and the odd road closure worth knowing about. No offers, no spam.
+            {t('blog.newsletterBody')}
           </p>
           <form onSubmit={handleNewsletterSubmit} className="mt-[18px] flex max-w-[520px] flex-wrap gap-2.5">
-            <label htmlFor="nl-email" className="sr-only">Email address</label>
+            <label htmlFor="nl-email" className="sr-only">{t('blog.emailLabel')}</label>
             <input
               id="nl-email"
               type="email"
@@ -191,7 +198,7 @@ const BlogPage = () => {
               className="min-h-[50px] min-w-[220px] flex-1 rounded-[13px] border-0 px-[15px] text-[15px] font-semibold text-ink outline-none"
             />
             <button type="submit" className="min-h-[50px] flex-shrink-0 rounded-[13px] bg-ink px-[22px] text-[14.5px] font-extrabold text-white transition hover:bg-ink/90">
-              Subscribe
+              {t('blog.subscribe')}
             </button>
           </form>
         </section>

@@ -1,0 +1,154 @@
+{
+  "hero": {
+    "badge": "Trusted with 1200+ genuine reviews",
+    "title": "Sri Lanka car rentals <brand>with a driver</brand> who knows the island.",
+    "lead": "Licensed drivers, air-conditioned vehicles and itineraries built around your dates. Beaches, tea country, UNESCO cities, all on one fixed daily rate with no hidden extras.",
+    "planTrip": "Plan my trip",
+    "browse": "Browse vehicles & drivers",
+    "statRate": "Daily rate from",
+    "statRating": "Guest rating",
+    "statReply": "Reply time",
+    "statReplyValue": "< 1 hr"
+  },
+  "form": {
+    "title": "Get driver quotes in minutes",
+    "intro": "Tell us the basics and we match you with vetted drivers who send fixed prices.",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "pickup": "Pick-up",
+    "dropoff": "Drop-off",
+    "placePlaceholder": "City, hotel or airport",
+    "travellers": "Travellers",
+    "notes": "Itinerary details",
+    "optional": "Optional",
+    "notesPlaceholder": "Places you want to see, flight times, kids or extra luggage. Anything that helps drivers quote accurately.",
+    "submit": "Get Quotes from Drivers",
+    "footnote": "Free to request · No booking fee · Pay the driver directly"
+  },
+  "badges": {
+    "sltda": "SLTDA Licensed drivers",
+    "coverage": "Island-wide coverage",
+    "priceGuarantee": "Booked Price Guarantee",
+    "support": "24/7 trip support"
+  },
+  "how": {
+    "eyebrow": "How it works",
+    "title": "Three steps from enquiry to airport pick-up",
+    "step1Title": "Share your itinerary",
+    "step1Body": "Dates, group size and the places on your list. A rough idea is enough, and drivers help refine it.",
+    "step2Title": "Compare real quotes",
+    "step2Body": "See vehicle, daily rate, languages and reviews side by side. Message drivers before you commit.",
+    "step3Title": "Secure your booking",
+    "step3Body": "Agree the final itinerary and rate with your driver, then confirm. You get written trip details and direct contact before you fly."
+  },
+  "fleet": {
+    "eyebrow": "Fleet for every journey",
+    "title": "Vehicles for island-wide car rentals in Sri Lanka",
+    "copy": "Modern SUVs, executive sedans and group vans, all maintained, GPS-enabled and paired with a bilingual driver.",
+    "cta": "View all vehicles",
+    "error": "Unable to load vehicles.",
+    "errorCta": "Open catalog",
+    "empty": "No vehicles yet. <link>Browse the catalog</link>."
+  },
+  "vehicleTags": {
+    "bestValue": "Best value",
+    "groupFriendly": "Group friendly",
+    "longTours": "Long tours"
+  },
+  "drivers": {
+    "eyebrow": "Driver partners",
+    "title": "Meet the drivers travellers ask for by name",
+    "copy": "Background-checked, insured and trained in hospitality. They know the viewpoints, the heritage sites and the best roadside cafés.",
+    "cta": "Explore driver directory",
+    "error": "Unable to load drivers.",
+    "errorCta": "View directory",
+    "empty": "No drivers published yet. <link>Browse the directory</link>."
+  },
+  "pricing": {
+    "eyebrow": "Transparent trip cost",
+    "title": "One daily rate. Everything that matters included.",
+    "body": "No commission on top, no per-kilometre surprises. You see the full figure before you confirm, and you pay your driver directly.",
+    "items": [
+      "Driver fee, meals and accommodation",
+      "Fuel and 120–150 km per day island-wide",
+      "Full vehicle insurance and 24/7 support",
+      "Airport meet & greet on arrival day"
+    ],
+    "sampleTitle": "SAMPLE 6-DAY TRIP · 1–3 TRAVELLERS",
+    "rowVehicle": "Vehicle & driver ($50 × 6 days)",
+    "rowFuel": "Fuel & 120–150 km/day",
+    "rowAirport": "Airport pick-up",
+    "rowFee": "Platform booking fee",
+    "included": "Included",
+    "total": "Estimated total",
+    "cta": "Price my own itinerary"
+  },
+  "reviews": {
+    "eyebrow": "Guest stories",
+    "title": "4.9 out of 5 across driver-guided trips",
+    "error": "Unable to load reviews.",
+    "empty": "Be the first to share your journey. <link>Plan your trip</link>."
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "title": "Hiring a car with driver in Sri Lanka",
+    "intro": "Still unsure about something? Message us on WhatsApp at <phone>+94 76 3021 483</phone> and we usually reply within the hour.",
+    "cost": {
+      "q": "How much does a car with driver cost in Sri Lanka?",
+      "a": "Drivers set their own rates, so you'll see a range. Sedans typically start around $50 a day and large touring vans reach about $95. Most daily rates cover the vehicle, fuel, 120–150 km per day island-wide, and the driver's meals and accommodation, and each listing spells out exactly what's included. For a figure based on your own route and dates, use the trip cost calculator."
+    },
+    "free": {
+      "q": "Is it free to book, and do I pay a deposit?",
+      "a": "The platform is completely free for tourists: browsing, quotes, chat and booking all cost you nothing. There's no deposit and no advance either. You pay your driver directly on the first day of your trip."
+    },
+    "quotes": {
+      "q": "How do I get quotes for my own itinerary?",
+      "a": "Post your tour plan with your dates, passenger count and the places you want to see. Available drivers send you quotations free of charge, and you can compare them side by side, message any driver with questions, and negotiate before you commit."
+    },
+    "cancel": {
+      "q": "What if I need to cancel?",
+      "bullets": [
+        "More than 2 days before your start date: free to cancel, nothing to pay.",
+        "Within 2 days of your start date: 50% of the total goes to the driver.",
+        "After the trip has started: 100% for the days already completed, plus 50% of the remaining days."
+      ],
+      "outro": "Your driver turns down other bookings to hold your dates, so message them as soon as your plans change."
+    },
+    "licensed": {
+      "q": "Are your drivers licensed and insured?",
+      "a": "Every driver on the platform is SLTDA-registered and carries valid insurance, and licence and vehicle documents are checked before a profile goes live. Reviews come from tourists who actually travelled with that driver and stay on the profile permanently, good and bad, so read a few before you decide."
+    }
+  },
+  "cta": {
+    "eyebrow": "Car with driver · Sri Lanka tours",
+    "title": "Ready to secure the right driver for your itinerary?",
+    "body": "Share your dates, passenger count and wish list. We match you with the ideal vehicle and driver, and keep you updated until arrival.",
+    "quote": "Get a custom quote",
+    "call": "Call {phone}"
+  },
+  "card": {
+    "newGuide": "New guide",
+    "years": "{count} yrs",
+    "sriLankaTrip": "Sri Lanka trip",
+    "quote": "Quote",
+    "seats": "{count} seats",
+    "year": "Year {year}",
+    "vehicleAlt": "Vehicle",
+    "featuredVehicle": "Featured vehicle",
+    "vehicleFallback": "Comfortable and ready for Sri Lanka road trips, with strong air-conditioning.",
+    "from": "FROM",
+    "perDay": "/day",
+    "getQuote": "Get a quote",
+    "islandWide": "Island-wide",
+    "multidayTours": "Multiday tours",
+    "reviews": "{count} reviews",
+    "noReviews": "No reviews yet",
+    "driverFallback": "Trusted chauffeur for bespoke Sri Lanka tours across the island.",
+    "avgDailyRate": "AVG. DAILY RATE",
+    "viewDriver": "View driver",
+    "readMore": "Read More",
+    "traveller": "Traveller",
+    "reviewFallback": "A five-star car-with-driver journey across Sri Lanka.",
+    "tripPhoto": "{name}'s trip photo"
+  }
+}

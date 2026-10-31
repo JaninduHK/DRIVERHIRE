@@ -1,0 +1,345 @@
+{
+  "traveller": "Reisende(r)",
+  "travellerLower": "Reisende(r)",
+  "driver": "Fahrer",
+  "browseVehicles": "Fahrzeuge ansehen",
+  "tryAgain": "Erneut versuchen",
+  "retry": "Wiederholen",
+  "back": "Zurück",
+  "close": "Schließen",
+  "saving": "Wird gespeichert…",
+  "saveChanges": "Änderungen speichern",
+  "message": "Nachricht",
+  "viewOffer": "Angebot ansehen",
+  "viewOffers": "Angebote ansehen",
+  "openChat": "Chat öffnen",
+  "sentOffer": "Hat ein Angebot gesendet",
+  "conversationStarted": "Gespräch begonnen.",
+  "awaitingOffers": "Warten auf Angebote",
+  "offersCount": {
+    "one": "{count} Angebot",
+    "other": "{count} Angebote"
+  },
+  "guests": {
+    "one": "{count} Gast",
+    "other": "{count} Gäste"
+  },
+  "nav": {
+    "overview": "Übersicht",
+    "bookings": "Meine Buchungen",
+    "messages": "Nachrichten",
+    "requests": "Meine Anfragen",
+    "settings": "Einstellungen",
+    "browse-vehicles": "Fahrzeuge",
+    "browse-drivers": "Fahrer",
+    "browse-trip-cost": "Reisekosten"
+  },
+  "shell": {
+    "notifications": "Benachrichtigungen",
+    "openMenu": "Menü öffnen",
+    "home": "Zur Startseite",
+    "user": "Benutzer",
+    "logout": "Abmelden",
+    "closeMenu": "Menü schließen"
+  },
+  "toast": {
+    "loggedOut": "Sie wurden abgemeldet.",
+    "newOfferRequested": "Anfrage gesendet. Der Fahrer antwortet mit einem neuen Angebot.",
+    "profileUpdated": "Profil aktualisiert.",
+    "passwordUpdated": "Passwort aktualisiert.",
+    "briefPosted": "Reiseanfrage veröffentlicht."
+  },
+  "errors": {
+    "conversations": "Gespräche konnten nicht geladen werden.",
+    "messages": "Nachrichten konnten nicht geladen werden.",
+    "bookings": "Ihre Buchungen können gerade nicht geladen werden.",
+    "briefs": "Ihre Reiseanfragen konnten nicht geladen werden.",
+    "profile": "Profil konnte nicht geladen werden.",
+    "send": "Nachricht konnte nicht gesendet werden.",
+    "newOffer": "Neues Angebot konnte nicht angefordert werden.",
+    "offerVehicle": "Für dieses Angebot fehlen die Fahrzeugdetails.",
+    "updateProfile": "Profil konnte nicht aktualisiert werden.",
+    "updatePassword": "Passwort konnte nicht aktualisiert werden.",
+    "postBrief": "Reiseanfrage konnte nicht veröffentlicht werden."
+  },
+  "overview": {
+    "eyebrow": "REISENDEN-DASHBOARD",
+    "welcome": "Willkommen zurück, {name}",
+    "lead": "Verwalten Sie Ihre Reisen, Gespräche und Anfragen an einem Ort.",
+    "upcoming": "Bevorstehend",
+    "completed": "Abgeschlossen",
+    "totalSpent": "Insgesamt ausgegeben",
+    "noUpcoming": "Noch keine bevorstehenden Reisen.",
+    "recentMessages": "Neueste Nachrichten",
+    "noConversationsHint": "Noch keine Gespräche. Schreiben Sie einem Fahrer über eine Fahrzeugseite.",
+    "noConversations": "Noch keine Gespräche.",
+    "upcomingTrips": "Bevorstehende Reisen",
+    "viewAll": "Alle ansehen"
+  },
+  "quoteSteps": {
+    "step1": {
+      "title": "Erzählen Sie uns von Ihrer Reise",
+      "body": "Reisedaten, Start und Ziel und wie viele Personen reisen."
+    },
+    "step2": {
+      "title": "Fahrer senden Ihnen Angebote",
+      "body": "Jedes Angebot hat einen festen Preis und ein festes Fahrzeug. Wir benachrichtigen Sie per E-Mail, sobald eines eintrifft."
+    },
+    "step3": {
+      "title": "Chatten, vergleichen und buchen",
+      "body": "Stellen Sie Fragen, vergleichen Sie Preise und buchen Sie unter „Nachrichten“ das Angebot, das Ihnen gefällt."
+    }
+  },
+  "quoteCard": {
+    "title": "Angebote von Fahrern erhalten",
+    "body": "Stellen Sie Ihre Reise einmal ein, und geprüfte Fahrer kommen mit Angeboten zu Ihnen. Kostenlos und ohne Buchungsgebühr.",
+    "cta": "Angebote anfragen"
+  },
+  "slot": {
+    "title": {
+      "one": "Ihre Anfrage",
+      "other": "Ihre Anfragen"
+    },
+    "body": "Fahrer antworten mit Angeboten. Wir benachrichtigen Sie per E-Mail, sobald eines eintrifft, und unter „Nachrichten“ können Sie vergleichen und buchen.",
+    "newRequest": "Neue Anfrage",
+    "noOffers": "Noch keine Angebote. Wir schreiben Ihnen, sobald ein Fahrer antwortet.",
+    "viewAll": "Alle {count} Anfragen ansehen"
+  },
+  "nextTrip": {
+    "scheduled": "Geplant",
+    "inProgress": "Läuft",
+    "daysAway": {
+      "one": "in {count} Tag",
+      "other": "in {count} Tagen"
+    },
+    "upcomingTrip": "Bevorstehende Reise",
+    "yourDriver": "Ihrem Fahrer",
+    "title": "Ihre nächste Reise",
+    "datesToConfirm": "Reisedaten noch offen",
+    "withDriver": "mit {name}"
+  },
+  "bookings": {
+    "eyebrow": "REISEN",
+    "loading": "Ihre Buchungen werden geladen…",
+    "emptyTitle": "Noch keine Reisen gebucht",
+    "emptyBody": "Sobald Sie einen Fahrer bestätigen, erscheint Ihre Reiseroute hier.",
+    "noUpcoming": "Keine bevorstehenden Reisen.",
+    "noCompleted": "Noch keine abgeschlossenen Reisen.",
+    "noConversation": "Zu dieser Reise gibt es noch keinen Chat.",
+    "toast": {
+      "updated": "Buchung aktualisiert."
+    },
+    "errors": {
+      "bothDates": "Bitte wählen Sie Start- und Enddatum.",
+      "validDates": "Wählen Sie gültige Reisedaten.",
+      "update": "Buchung konnte nicht aktualisiert werden."
+    }
+  },
+  "cancel": {
+    "title": "Buchung stornieren",
+    "notice": [
+      "Kostenlose Stornierung bis 2 Tage vor dem Startdatum.",
+      "Bei Stornierung innerhalb von 2 Tagen vor dem Startdatum sind 50 % des Gesamtpreises an den Fahrer zu zahlen.",
+      "Bei Stornierung nach dem Startdatum sind 100 % der gefahrenen Tage und 50 % der nicht gefahrenen Tage an den Fahrer zu zahlen."
+    ],
+    "why": "Warum stornieren Sie?",
+    "explain": "Grund erläutern",
+    "explainPlaceholder": "Dies wird unserem Team und Ihrem Fahrer mitgeteilt.",
+    "keep": "Buchung behalten",
+    "cancelling": "Wird storniert…",
+    "reasons": {
+      "plansChanged": "Reisepläne haben sich geändert",
+      "betterPrice": "Anderswo einen besseren Preis gefunden",
+      "datesMoved": "Reisedaten haben sich verschoben",
+      "driverSilent": "Fahrer antwortet nicht mehr",
+      "driverAsked": "Fahrer hat um Stornierung gebeten",
+      "notTravelling": "Reise nach Sri Lanka findet nicht statt",
+      "other": "Etwas anderes"
+    },
+    "toast": {
+      "cancelled": "Buchung storniert."
+    },
+    "errors": {
+      "reason": "Bitte wählen Sie einen Grund für die Stornierung.",
+      "detail": "Bitte erläutern Sie den Grund für die Stornierung.",
+      "cancel": "Buchung konnte nicht storniert werden."
+    }
+  },
+  "form": {
+    "startDate": "Startdatum",
+    "endDate": "Enddatum"
+  },
+  "edit": {
+    "title": "Buchung bearbeiten",
+    "offerDates": "Die Reisedaten wurden über ein Fahrerangebot bestätigt. Schreiben Sie Ihrem Fahrer, um den Zeitplan zu ändern.",
+    "pickup": "Abholort",
+    "pickupPlaceholder": "Hotel oder Treffpunkt",
+    "dropoff": "Zielort",
+    "dropoffPlaceholder": "Endziel",
+    "flight": "Flugnummer (optional)",
+    "flightPlaceholder": "z. B. UL 403",
+    "arrival": "Ankunftszeit",
+    "departure": "Abflugzeit",
+    "timePlaceholder": "z. B. {time}",
+    "special": "Besondere Wünsche",
+    "specialPlaceholder": "Ernährungswünsche, Hinweise zur Barrierefreiheit – alles, was Ihr Fahrer wissen sollte."
+  },
+  "review": {
+    "title": "Feedback zur Reise",
+    "titleModel": "Bewertung · {model}",
+    "adminNote": "Hinweis des Teams",
+    "rating": "Bewertung",
+    "ratings": {
+      "r5": "Fantastisch",
+      "r4": "Sehr gut",
+      "r3": "Gut",
+      "r2": "In Ordnung",
+      "r1": "Verbesserungswürdig"
+    },
+    "reviewTitle": "Titel der Bewertung (optional)",
+    "titlePlaceholder": "Highlights Ihrer Reise",
+    "experience": "Teilen Sie Ihre Erfahrung",
+    "experiencePlaceholder": "Erzählen Sie von Ihrem Fahrer, dem Fahrzeug und den Höhepunkten Ihrer Reiseroute.",
+    "minChars": "Mindestens 10 Zeichen.",
+    "photos": "Fotos (optional)",
+    "removePhoto": "Foto entfernen",
+    "photosHelp": "Fügen Sie bis zu 4 Fotos von Ihrer Reise hinzu.",
+    "submitting": "Wird gesendet…",
+    "submit": "Bewertung senden",
+    "status": {
+      "published": "Veröffentlicht",
+      "declined": "Abgelehnt",
+      "awaiting": "Wartet auf Freigabe"
+    },
+    "toast": {
+      "submitted": "Bewertung zur Prüfung eingereicht."
+    },
+    "errors": {
+      "rating": "Bitte wählen Sie eine Bewertung zwischen 1 und 5.",
+      "tooShort": "Erzählen Sie uns etwas mehr über Ihre Erfahrung (mindestens 10 Zeichen).",
+      "submit": "Bewertung konnte nicht gesendet werden."
+    }
+  },
+  "card": {
+    "driverTbd": "Fahrer wird noch zugewiesen",
+    "vehicleTbd": "Fahrzeug wird noch bestätigt",
+    "seats": "{count} Sitze",
+    "datesTbd": "Reisedaten werden noch bestätigt",
+    "datesTbdShort": "Daten offen",
+    "startsIn": {
+      "one": "Beginnt in {count} Tag",
+      "other": "Beginnt in {count} Tagen"
+    },
+    "status": {
+      "pending": "ausstehend",
+      "confirmed": "bestätigt",
+      "cancelled": "storniert",
+      "rejected": "abgelehnt",
+      "completed": "abgeschlossen"
+    },
+    "messageDriver": "Fahrer schreiben",
+    "details": "Details",
+    "viewVehicle": "Fahrzeug ansehen",
+    "editDetails": "Details bearbeiten",
+    "viewReview": "Bewertung ansehen",
+    "leaveReview": "Bewertung schreiben"
+  },
+  "chat": {
+    "eyebrow": "POSTEINGANG",
+    "discussing": "Thema: {model}",
+    "general": "Allgemeines Gespräch",
+    "loadingMessages": "Nachrichten werden geladen…",
+    "introduce": "Senden Sie eine Nachricht, um sich dem Fahrer vorzustellen.",
+    "bookingConfirmed": "Ihre Buchung bei diesem Fahrer ist bestätigt",
+    "bookingWithDriver": "Sie haben eine Buchung bei diesem Fahrer",
+    "tapForDetails": "Tippen Sie hier, um Ihre Reisedetails zu sehen",
+    "loadingConversations": "Gespräche werden geladen…",
+    "emptyList": "Beginnen Sie ein Gespräch über eine Fahrzeugseite, dann erscheint es hier.",
+    "noMatch": "Keine Gespräche passen zu Ihrer Suche.",
+    "read": "Gelesen",
+    "sent": "Gesendet",
+    "offerAccepted": "Angebot angenommen",
+    "offerExpired": "Angebot abgelaufen",
+    "offerDeclined": "Angebot abgelehnt",
+    "latestOffer": "Neuestes Angebot",
+    "viewProfile": "Fahrerprofil von {name} ansehen",
+    "placeholder": "Nachricht…",
+    "send": "Senden",
+    "sending": "Wird gesendet…",
+    "search": "Gespräche durchsuchen",
+    "select": "Wählen Sie ein Gespräch, um die Nachrichten zu sehen."
+  },
+  "offer": {
+    "received": "Angebot erhalten",
+    "discount": "{name} – {percent} % sparen",
+    "vehicle": "Fahrzeug",
+    "selectedVehicle": "Ausgewähltes Fahrzeug",
+    "kms": "{km} km inklusive · {rate} / zusätzlicher km",
+    "accept": "Angebot annehmen",
+    "newerBelow": "Neueres Angebot unten",
+    "requested": "Neues Angebot angefordert",
+    "requestNew": "Neues Angebot anfordern",
+    "declineHint": "Antworten Sie im Chat, um zu verhandeln oder abzulehnen.",
+    "decline": "Ablehnen"
+  },
+  "requests": {
+    "booked": "Gebucht",
+    "new": "Neu",
+    "eyebrow": "MEINE ANFRAGEN",
+    "title": "Reiseanfragen",
+    "subtitle": "Reisen, die Sie für Angebote von Fahrern eingestellt haben.",
+    "loading": "Ihre Anfragen werden geladen…",
+    "postNew": "Neue Anfrage stellen",
+    "emptyTitle": "Noch keine Anfragen",
+    "emptyBody": "Stellen Sie Ihre erste Reiseroute ein, damit geprüfte Fahrer Ihnen Angebote senden.",
+    "errors": {
+      "dates": "Bitte wählen Sie Ihre Reisedaten.",
+      "allFields": "Alle Felder sind erforderlich.",
+      "adults": "Bitte geben Sie mindestens einen erwachsenen Reisenden an."
+    },
+    "form": {
+      "reviewTitle": "Anfrage prüfen und veröffentlichen",
+      "title": "Anfrage stellen",
+      "reviewNote": "Hier ist die Reise, die Sie eingegeben haben. Sie wurde noch nicht gesendet. Prüfen Sie die Details, ändern Sie bei Bedarf etwas und senden Sie sie dann an die Fahrer.",
+      "from": "Von",
+      "fromPlaceholder": "Flughafen Colombo",
+      "to": "Nach",
+      "toPlaceholder": "Kandy",
+      "adults": "Erwachsene",
+      "children": "Kinder",
+      "country": "Wohnsitzland",
+      "countryPlaceholder": "Deutschland",
+      "details": "Reisedetails",
+      "detailsPlaceholder": "Wichtige Stopps, Unterkunftswünsche, Sprachen usw.",
+      "noContact": "Bitte geben Sie hier keine Telefonnummern oder E-Mail-Adressen an – wir teilen die Kontaktdaten, sobald Sie ein Angebot angenommen haben und Ihre Buchung bestätigt ist.",
+      "upTo": "Bis zu {count} Angebote",
+      "onlyType": "Nur {type}",
+      "nextTitle": "So geht es weiter",
+      "nextBody": "Nach dem Veröffentlichen erhalten Sie Angebote von Fahrern. Sie können mit ihnen chatten, Angebote und Preise vergleichen und unter „Nachrichten“ buchen. Bei jedem neuen Angebot erhalten Sie eine E-Mail.",
+      "posting": "Wird veröffentlicht…",
+      "postToDrivers": "Anfrage an Fahrer senden",
+      "post": "Reiseanfrage veröffentlichen"
+    }
+  },
+  "settings": {
+    "mismatch": "Die neuen Passwörter stimmen nicht überein.",
+    "eyebrow": "KONTO",
+    "subtitle": "Sagen Sie uns, wie wir Sie unterwegs erreichen.",
+    "loading": "Profil wird geladen…",
+    "noProfile": "Keine Profildaten verfügbar.",
+    "fullName": "Vollständiger Name",
+    "email": "E-Mail",
+    "emailHelp": "Möchten Sie Ihre E-Mail-Adresse ändern? Wenden Sie sich an den Support.",
+    "contact": "Telefonnummer",
+    "contactPlaceholder": "z. B. {example}",
+    "homeBase": "Wohnort",
+    "homeBasePlaceholder": "Stadt, Land",
+    "resetPassword": "Passwort zurücksetzen",
+    "resetHelp": "Aktualisieren Sie Ihr Passwort, um Ihr Konto zu schützen.",
+    "currentPassword": "Aktuelles Passwort",
+    "newPassword": "Neues Passwort",
+    "confirmPassword": "Neues Passwort bestätigen",
+    "updating": "Wird aktualisiert…",
+    "updatePassword": "Passwort aktualisieren"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "errors": {
+    "missing": "Inserisci il tuo nome, la tua email e il messaggio.",
+    "send": "Impossibile inviare la richiesta."
+  },
+  "sent": "La tua richiesta è stata inviata alla nostra casella di assistenza.",
+  "badge": "ASSISTENZA TOUR 24/7",
+  "title1": "Hai bisogno di aiuto con il tuo",
+  "title2": "autista o la prenotazione del tour?",
+  "lead": "Il nostro team è a disposizione dei turisti che hanno bisogno di supporto prima, durante o dopo il viaggio in Sri Lanka: modifiche, domande, problemi o aiuto per una nuova prenotazione.",
+  "helpWith": "Possiamo aiutarti con",
+  "helpItems": [
+    "Modificare l'orario o il luogo di partenza",
+    "Aggiornare l'itinerario o le tappe",
+    "Domande su prezzi o veicoli"
+  ],
+  "responseTime": "Tempo medio di risposta",
+  "responseValue": "Meno di 3 ore",
+  "responseNote": "Diamo priorità ai viaggiatori già in Sri Lanka e agli arrivi in aeroporto.",
+  "quick": "Contatto rapido per i turisti",
+  "callNow": "Chiama l'assistenza / WhatsApp ora",
+  "emailNow": "Invia per email i dettagli della prenotazione",
+  "tip": "Consiglio: quando ci contatti, indica il codice di prenotazione (se ne hai uno), le date del viaggio e il nome a cui è intestata la prenotazione. Così possiamo aiutarti più velocemente.",
+  "form": {
+    "title": "Dicci di cosa hai bisogno",
+    "lead": "Usa questo modulo se preferisci l'assistenza via email. Ti risponderemo con i prossimi passi chiari e le opzioni per il tuo autista o il tuo tour.",
+    "noFees": "Nessun\ncosto di\nprenotazione",
+    "category": "Di cosa hai bisogno?",
+    "select": "Seleziona un'opzione",
+    "name": "Nome e cognome",
+    "namePlaceholder": "Nome sulla prenotazione",
+    "email": "Indirizzo email",
+    "bookingId": "Codice di prenotazione (se ne hai uno)",
+    "bookingIdPlaceholder": "#DRIVER12345 o riferimento della piattaforma",
+    "message": "Descrivi la tua situazione",
+    "messagePlaceholder": "Indica le date del viaggio, dove ti trovi ora (o dove atterri), cosa è andato storto o cosa vuoi cambiare. Se possibile, indica il nome dell'autista o il tipo di veicolo.",
+    "sending": "Invio in corso...",
+    "submit": "Invia la richiesta di assistenza",
+    "note": "Rispondiamo personalmente a ogni turista: niente bot. Per problemi urgenti in giornata, ti consigliamo di chiamare o usare WhatsApp prima, e poi inviare questo modulo con i dettagli."
+  },
+  "categories": {
+    "change": "Modificare o cancellare una prenotazione esistente",
+    "question": "Domanda sulla mia prossima prenotazione",
+    "problem": "Problema durante il viaggio (autista / veicolo)",
+    "urgent": "Ritiro urgente in aeroporto oggi / domani",
+    "quote": "Nuovo preventivo per tour / autista",
+    "other": "Altro"
+  },
+  "info": {
+    "phone": {
+      "label": "Chiamata / WhatsApp",
+      "hint": "Ideale per ritiri urgenti in aeroporto e tour in giornata"
+    },
+    "email": {
+      "label": "Email di assistenza",
+      "hint": "Invia i dettagli della prenotazione o degli screenshot per un aiuto più rapido"
+    }
+  }
+}

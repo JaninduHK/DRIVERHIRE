@@ -1,3 +1,4 @@
+import { localizeServerMessage } from '../i18n/serverMessages.js';
 import { API_BASE_URL } from '../constants/api.js';
 import { getStoredToken, handleSessionExpired } from './authToken.js';
 
@@ -44,7 +45,7 @@ const request = async (path, options = {}) => {
   try {
     response = await withTimeout(fetchPromise);
   } catch (error) {
-    throw new Error(error?.message || 'Network error');
+    throw new Error(localizeServerMessage(error?.message || 'Network error'));
   }
 
   if (!response.ok) {
@@ -52,7 +53,7 @@ const request = async (path, options = {}) => {
     if (response.status === 401) {
       handleSessionExpired(message);
     }
-    throw new Error(message);
+    throw new Error(localizeServerMessage(message));
   }
 
   return safeJson(response);
@@ -76,21 +77,21 @@ export const fetchVehicles = (filters = {}) => request(buildQueryString(filters)
 
 export const fetchVehicleDetails = (vehicleId) => {
   if (!vehicleId) {
-    return Promise.reject(new Error('Vehicle identifier is required'));
+    return Promise.reject(new Error(localizeServerMessage('Vehicle identifier is required')));
   }
   return request(`/${encodeURIComponent(vehicleId)}`);
 };
 
 export const fetchVehicleReviews = (vehicleId, filters = {}) => {
   if (!vehicleId) {
-    return Promise.reject(new Error('Vehicle identifier is required'));
+    return Promise.reject(new Error(localizeServerMessage('Vehicle identifier is required')));
   }
   return request(`/${encodeURIComponent(vehicleId)}/reviews${buildQueryString(filters)}`);
 };
 
 export const checkVehicleAvailability = (vehicleId, payload) => {
   if (!vehicleId) {
-    return Promise.reject(new Error('Vehicle identifier is required'));
+    return Promise.reject(new Error(localizeServerMessage('Vehicle identifier is required')));
   }
   return request(`/${encodeURIComponent(vehicleId)}/check-availability`, {
     method: 'POST',
@@ -101,11 +102,11 @@ export const checkVehicleAvailability = (vehicleId, payload) => {
 
 export const createVehicleBooking = (vehicleId, payload) => {
   if (!vehicleId) {
-    return Promise.reject(new Error('Vehicle identifier is required'));
+    return Promise.reject(new Error(localizeServerMessage('Vehicle identifier is required')));
   }
   const token = getStoredToken();
   if (!token) {
-    return Promise.reject(new Error('Please sign in to confirm your booking.'));
+    return Promise.reject(new Error(localizeServerMessage('Please sign in to confirm your booking.')));
   }
   return request(`/${encodeURIComponent(vehicleId)}/bookings`, {
     method: 'POST',

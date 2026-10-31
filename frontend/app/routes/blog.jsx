@@ -1,11 +1,12 @@
-import { buildMeta } from '../lib/seo.js';
+import { buildMeta, metaLocale } from '../lib/seo.js';
 
-export function meta() {
+export function meta({ location }) {
+  const { locale, t } = metaLocale(location);
   return buildMeta({
-    title: 'Sri Lanka travel guides, written by local drivers | Car with Driver LK',
-    description:
-      'Sri Lanka travel guides from the drivers who actually drive the routes — trip costs, itineraries, road conditions and local advice from carwithdriver.lk.',
+    title: t('meta.blog.title'),
+    description: t('meta.blog.description'),
     path: '/blog',
+    locale,
   });
 }
 

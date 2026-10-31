@@ -1,0 +1,79 @@
+{
+  "missingId": "Не указан идентификатор водителя.",
+  "loadError": "Сейчас не удаётся загрузить профиль водителя.",
+  "reviewsAll": "Все",
+  "thisDriver": "этим водителем",
+  "loading": "Загрузка профиля водителя…",
+  "unavailable": "Водитель недоступен",
+  "notFound": "Этот профиль не найден.",
+  "retry": "Повторить",
+  "allDrivers": "Все водители",
+  "sriLanka": "Шри-Ланка",
+  "missingInfo": "Нет данных о водителе.",
+  "chatReady": "Диалог готов во входящих сообщениях.",
+  "chatError": "Сейчас не удаётся начать диалог.",
+  "back": "Назад",
+  "save": "Сохранить",
+  "share": "Поделиться",
+  "noReviews": "Отзывов пока нет",
+  "years": {
+    "one": "{count} год",
+    "few": "{count} года",
+    "many": "{count} лет",
+    "other": "{count} года"
+  },
+  "new": "Новичок",
+  "stats": {
+    "guiding": "Опыт",
+    "rating": "Рейтинг",
+    "vehicles": {
+      "one": "Автомобиль",
+      "few": "Автомобиля",
+      "many": "Автомобилей",
+      "other": "Автомобиля"
+    },
+    "guidingExperience": "Опыт работы гидом",
+    "travellerRating": "Оценка путешественников",
+    "availableVehicles": "Доступные автомобили"
+  },
+  "tabs": {
+    "about": "О водителе",
+    "vehicles": "Автомобили",
+    "reviews": "Отзывы"
+  },
+  "noBio": "Водитель пока не добавил описание.",
+  "everyTripIncludes": "В каждую поездку входит",
+  "vehiclesHeading": {
+    "one": "Автомобиль",
+    "few": "Автомобили",
+    "many": "Автомобили",
+    "other": "Автомобили"
+  },
+  "seats": {
+    "one": "{count} место",
+    "few": "{count} места",
+    "many": "{count} мест",
+    "other": "{count} места"
+  },
+  "perDay": "/ день",
+  "perDayShort": "/день",
+  "from": "от",
+  "message": "Написать",
+  "requestBooking": "Запросить бронирование",
+  "backToDrivers": "Назад к водителям",
+  "reviewCount": {
+    "one": "{count} отзыв",
+    "few": "{count} отзыва",
+    "many": "{count} отзывов",
+    "other": "{count} отзыва"
+  },
+  "view": "Смотреть",
+  "perDayAllIn": "/ день, всё включено",
+  "noBookingFee": "Без комиссии за бронирование · оплата водителю по прибытии",
+  "starting": "Запускаем…",
+  "messageName": "Написать {name}",
+  "licenseVerified": "{license}: проверено",
+  "identityVerified": "Личность и лицензия проверены",
+  "repliesWithinDay": "Обычно отвечает в течение дня",
+  "freeCancellation": "Бесплатная отмена не позднее чем за 2 дня до поездки"
+}

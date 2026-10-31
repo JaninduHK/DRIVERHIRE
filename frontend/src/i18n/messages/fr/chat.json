@@ -1,0 +1,93 @@
+{
+  "read": "Lu",
+  "sent": "Envoyé",
+  "close": "Fermer",
+  "included": "(inclus)",
+  "notIncluded": "(non inclus)",
+  "brief": {
+    "label": "Demande de devis",
+    "adults": {
+      "one": "{count} adulte",
+      "other": "{count} adultes"
+    },
+    "children": {
+      "one": "{count} enfant",
+      "other": "{count} enfants"
+    },
+    "readLess": "Réduire",
+    "readMore": "Lire la suite"
+  },
+  "booking": {
+    "title": "Détails de la réservation",
+    "traveller": "Voyageur",
+    "name": "Nom",
+    "email": "E-mail",
+    "phone": "Téléphone",
+    "trip": "Voyage",
+    "dates": "Dates",
+    "days": "Jours",
+    "dayCount": {
+      "one": "{count} jour",
+      "other": "{count} jours"
+    },
+    "vehicle": "Véhicule",
+    "route": "Prise en charge et dépose",
+    "startPoint": "Point de départ",
+    "endPoint": "Point de dépose",
+    "flight": "Vol",
+    "flightNumber": "Numéro de vol",
+    "arrival": "Heure d'arrivée",
+    "departure": "Heure de départ",
+    "included": "Inclus dans l'offre",
+    "notes": "Notes et options",
+    "status": {
+      "pending": "en attente",
+      "confirmed": "confirmée",
+      "cancelled": "annulée",
+      "rejected": "refusée"
+    }
+  },
+  "photos": {
+    "vehicle": "Véhicule",
+    "view": "Voir la photo de {name}",
+    "viewNumbered": "Voir la photo {n} de {name}",
+    "numbered": "{name}, photo {n}"
+  },
+  "profile": {
+    "missing": "Les informations du chauffeur sont manquantes.",
+    "loadError": "Impossible de charger le profil du chauffeur.",
+    "linkCopied": "Lien du profil copié.",
+    "copyFailed": "Impossible de copier le lien.",
+    "title": "Profil du chauffeur",
+    "copyLink": "Copier le lien du profil",
+    "newDriver": "Nouveau chauffeur",
+    "reviews": {
+      "one": "{count} avis",
+      "other": "{count} avis"
+    },
+    "sriLanka": "Sri Lanka",
+    "loading": "Chargement du profil du chauffeur…",
+    "notFound": "Ce profil de chauffeur est introuvable.",
+    "years": "{count} ans",
+    "experience": "Expérience",
+    "rating": "Note",
+    "vehicles": "Véhicules",
+    "about": "À propos de {name}",
+    "noBio": "{name} n'a pas encore ajouté de présentation.",
+    "location": "Localisation",
+    "memberSince": "Membre depuis",
+    "vehiclesCount": "Véhicules ({count})",
+    "noVehicles": "Aucun véhicule proposé pour le moment.",
+    "inThisChat": "DANS CE CHAT",
+    "seats": "{count} places",
+    "perDay": "PAR JOUR",
+    "reviewsTitle": "Avis",
+    "loadingReviews": "Chargement des avis…",
+    "noReviews": "Pas encore d'avis. Soyez le premier à découvrir le Sri Lanka avec ce chauffeur et à raconter votre expérience.",
+    "traveller": "Voyageur",
+    "showFewer": "Afficher moins d'avis",
+    "readAll": "Lire les {count} avis",
+    "tripDetails": "Détails du voyage",
+    "backToChat": "Retour au chat"
+  }
+}

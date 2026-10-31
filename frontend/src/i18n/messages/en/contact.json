@@ -1,0 +1,59 @@
+{
+  "errors": {
+    "missing": "Please add your name, email, and message.",
+    "send": "Unable to send your request."
+  },
+  "sent": "Your request was sent to our support inbox.",
+  "badge": "24/7 TOUR SUPPORT",
+  "title1": "Need help with your",
+  "title2": "driver or tour booking?",
+  "lead": "Our team is here for tourists who need support before, during, or after their trip in Sri Lanka — changes, questions, issues, or new booking help.",
+  "helpWith": "We can help with",
+  "helpItems": [
+    "Changing pickup time or location",
+    "Updating your itinerary or stops",
+    "Questions about prices or vehicles"
+  ],
+  "responseTime": "Average response time",
+  "responseValue": "Under 3 hrs",
+  "responseNote": "We prioritise active travellers already in Sri Lanka & airport arrivals.",
+  "quick": "Quick contact for tourists",
+  "callNow": "Call / WhatsApp support now",
+  "emailNow": "Email booking details to support",
+  "tip": "Tip: When you contact us, include your booking ID (if you have one), travel dates, and the name the booking is under. This helps us assist you faster.",
+  "form": {
+    "title": "Tell us what you need help with",
+    "lead": "Use this form if you prefer email support. We’ll reply with clear next steps and options for your driver or tour.",
+    "noFees": "No\nBooking\nFees",
+    "category": "What do you need help with?",
+    "select": "Select an option",
+    "name": "Full Name",
+    "namePlaceholder": "Name on your booking",
+    "email": "Email Address",
+    "bookingId": "Booking ID (if you have one)",
+    "bookingIdPlaceholder": "#DRIVER12345 or platform reference",
+    "message": "Explain your situation",
+    "messagePlaceholder": "Tell us your travel dates, where you are now (or landing), what went wrong or what you want to change. Include driver name or vehicle type if possible.",
+    "sending": "Sending...",
+    "submit": "Send support request",
+    "note": "We answer all tourists personally — no bots. For urgent same-day issues, we recommend calling or using WhatsApp first, then sending this form with details."
+  },
+  "categories": {
+    "change": "Change or cancel an existing booking",
+    "question": "Question about my upcoming booking",
+    "problem": "Problem during my trip (driver / vehicle)",
+    "urgent": "Urgent same-day / tomorrow airport pickup",
+    "quote": "New tour / driver quote",
+    "other": "Something else"
+  },
+  "info": {
+    "phone": {
+      "label": "Call / WhatsApp",
+      "hint": "Best for urgent airport pickups & same-day tours"
+    },
+    "email": {
+      "label": "Support Email",
+      "hint": "Send booking details or screenshots for faster help"
+    }
+  }
+}

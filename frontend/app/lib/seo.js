@@ -1,3 +1,13 @@
+import {
+  DEFAULT_LOCALE,
+  LOCALES,
+  LOCALE_INFO,
+  getLocaleFromPath,
+  isLocalizedPath,
+  localizePath,
+} from '../../src/i18n/locales.js';
+import { getT } from '../../src/i18n/translate.js';
+
 // Canonical public origin for canonical/OG URLs.
 export const SITE_URL = 'https://carwithdriver.lk';
 export const SITE_NAME = 'Car with Driver LK';
@@ -49,8 +59,17 @@ const clamp = (text, max = 160) => {
  * and Twitter card. `path` should be the clean path (no query) so filtered variants
  * canonicalise to their base URL. Pass `noindex` for auth/transactional pages.
  */
-export function buildMeta({ title, description, path = '/', image, type = 'website', noindex = false }) {
-  const url = `${SITE_URL}${path}`;
+export function buildMeta({
+  title,
+  description,
+  path = '/',
+  image,
+  type = 'website',
+  noindex = false,
+  locale = DEFAULT_LOCALE,
+}) {
+  const translated = isLocalizedPath(path);
+  const url = `${SITE_URL}${translated ? localizePath(path, locale) : path}`;
   const img = absoluteUrl(image);
   const desc = clamp(description);
 
@@ -67,6 +86,20 @@ export function buildMeta({ title, description, path = '/', image, type = 'websi
     { name: 'twitter:title', content: title },
     { name: 'twitter:description', content: desc },
   ];
+  // Every language version lists all the others so Google shows each searcher
+  // the right one (x-default = English for everyone else).
+  if (translated && !noindex) {
+    for (const code of LOCALES) {
+      tags.push({
+        tagName: 'link',
+        rel: 'alternate',
+        hrefLang: LOCALE_INFO[code].htmlLang,
+        href: `${SITE_URL}${localizePath(path, code)}`,
+      });
+    }
+    tags.push({ tagName: 'link', rel: 'alternate', hrefLang: 'x-default', href: `${SITE_URL}${path}` });
+    tags.push({ property: 'og:locale', content: LOCALE_INFO[locale]?.ogLocale || 'en_US' });
+  }
   if (img) {
     tags.push({ property: 'og:image', content: img });
     tags.push({ name: 'twitter:image', content: img });
@@ -90,3 +123,9 @@ export function noindexMeta({ title, description = '' } = {}) {
   if (description) tags.push({ name: 'description', content: description });
   return tags;
 }
+
+// Language and translator for a route's meta() function: meta({ location }).
+export const metaLocale = (location) => {
+  const locale = getLocaleFromPath(location?.pathname || '/');
+  return { locale, t: getT(locale) };
+};

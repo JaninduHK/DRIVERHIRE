@@ -1,5 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from '../i18n/router.jsx';
+import { Trans, useI18n } from '../i18n/I18nProvider.jsx';
+import { translateLicenseType } from '../i18n/labels.js';
 import { useLoaderData } from 'react-router';
 import toast from 'react-hot-toast';
 import { Check, ChevronDown, Star, X } from 'lucide-react';
@@ -19,7 +21,7 @@ const KM_PER_DAY = { low: 120, high: 150 };
 const DRIVER_TYPES_ARTICLE = '/blog/tourist-driver-vs-chauffeur-guide-vs-national-guide';
 
 const QUOTE_LIMIT_OPTIONS = [
-  { value: '', label: 'No limit' },
+  { value: '', label: 'noLimit' },
   { value: '10', label: '10' },
   { value: '15', label: '15' },
   { value: '20', label: '20' },
@@ -27,9 +29,9 @@ const QUOTE_LIMIT_OPTIONS = [
 
 // Values must match LICENSE_TYPES on the backend exactly.
 const DRIVER_TYPE_OPTIONS = [
-  { value: '', label: 'All drivers' },
-  { value: 'Tourist Driver', label: 'Tourist Drivers only' },
-  { value: 'Chauffeur Guide Lecturer', label: 'Chauffeur Guides only' },
+  { value: '', label: 'allDrivers' },
+  { value: 'Tourist Driver', label: 'touristOnly' },
+  { value: 'Chauffeur Guide Lecturer', label: 'chauffeurOnly' },
 ];
 
 // A class with a single listing has identical bounds; "$120–$120" reads as a bug.
@@ -55,112 +57,18 @@ const inputCls =
   'w-full rounded-xl border-[1.5px] border-[#e5ebe8] bg-[#fbfcfc] px-3.5 py-3 text-[14.5px] font-semibold text-ink outline-none transition focus:border-brand';
 const labelCls = 'mb-1.5 block text-xs font-bold text-muted';
 
-const STEPS = [
-  {
-    n: '1',
-    title: 'Describe your trip once',
-    body: 'Dates, pick-up, how many of you and a rough route. If something is still undecided, say so — drivers will suggest alternatives rather than guess.',
-    meta: 'Takes about a minute',
-  },
-  {
-    n: '2',
-    title: 'Drivers send you quotes',
-    body: 'Your request goes to approved drivers across the island. Each offer shows the vehicle, the driver, their rating and a fixed daily rate for your itinerary.',
-    meta: 'Your contact details stay private',
-  },
-  {
-    n: '3',
-    title: 'Chat, compare and book',
-    body: 'Ask questions in chat, adjust the plan, then accept the offer that fits. No card is needed — you pay your driver directly when you meet on day one.',
-    meta: 'No booking fee at any point',
-  },
-];
-
+// Text for these lives in getQuotes.json under the same keys.
+const STEPS = ['1', '2', '3'];
 const DRIVER_TYPES = [
-  {
-    name: 'Tourist Driver',
-    body: 'Holds a standard licence and drives your itinerary, handles logistics and knows where to stop, eat and stay.',
-    bestFor: 'Beach trips, transfers and travellers who like to read up themselves',
-  },
-  {
-    name: 'Chauffeur Guide Lecturer',
-    body: 'Licensed by the Sri Lanka Tourism Development Authority, so they drive and also explain the sites you visit.',
-    bestFor: 'Most two-week itineraries — one person for the whole trip',
-  },
-  {
-    name: 'National Guide Lecturer',
-    body: 'The highest SLTDA guiding qualification, delivering full historical and cultural interpretation.',
-    bestFor: 'History-led trips and special-interest groups',
-  },
+  { name: 'Tourist Driver', key: 'touristDriver' },
+  { name: 'Chauffeur Guide Lecturer', key: 'chauffeurGuideLecturer' },
+  { name: 'National Guide Lecturer', key: 'nationalGuideLecturer' },
 ];
-
-const REASONS = [
-  {
-    title: 'You pay the driver, not a middleman',
-    body: 'Drivers list themselves, set their own price and keep the full fare. There is no agency margin on top, which is why offers here land below tour-operator pricing for the same route.',
-  },
-  {
-    title: 'The price is locked once you accept',
-    body: 'Accepting an offer fixes that total for the itinerary you agreed. The rate cannot be raised afterwards, and the dates are locked to the offer.',
-  },
-  {
-    title: 'Your details stay private',
-    body: 'Drivers see your itinerary, not your phone number or email. Contact details are exchanged only once you accept an offer and the booking is confirmed.',
-  },
-  {
-    title: 'Licences are checked by our team',
-    body: 'Drivers submit their driving licence for admin review before their profile is approved, and the licence type they hold is shown on their profile.',
-  },
-  {
-    title: 'Reviews come from real trips',
-    body: 'Travellers can only review a booking they actually made through the platform, once the trip has ended.',
-  },
-  {
-    title: 'Support based in Sri Lanka',
-    body: 'If plans change mid-trip or a vehicle has trouble, our team is in the same time zone you are travelling in and can reach your driver directly.',
-  },
-];
-
-const FAQS = [
-  {
-    q: 'How much does it cost to hire a car with driver in Sri Lanka?',
-    a: 'It depends on the vehicle and the length of your trip — drivers set their own rates. The table above is built from the live listings on this site right now, so it reflects what drivers are actually charging rather than a published price list. For a figure based on your own route and dates, use the trip cost calculator.',
-  },
-  {
-    q: 'Is there a booking fee?',
-    a: 'No. Requesting quotes, comparing offers and chatting with drivers is completely free, and we add no booking fee or service charge on top of the driver’s price. The rate you accept is the rate you pay.',
-  },
-  {
-    q: 'How and when do I pay?',
-    a: 'You pay your driver directly when you meet on the first day of the trip — no card details are taken on this site and no deposit is charged through the platform. Agree anything unusual with your driver in chat first so it stays on record.',
-  },
-  {
-    q: 'What’s the difference between a tourist driver and a chauffeur guide?',
-    a: 'A tourist driver holds a standard licence and drives your itinerary. A chauffeur guide lecturer is licensed by the Sri Lanka Tourism Development Authority and may also explain the sites you visit. A national guide lecturer holds the highest SLTDA qualification and delivers full historical interpretation.',
-  },
-  {
-    q: 'Are fuel and kilometres included?',
-    a: 'Nearly every listing includes fuel and insurance, and daily rates cover 120–150 km per day island-wide, which is what a driver-guided touring day usually comes to. Each offer spells out exactly what it includes, so check it before you accept.',
-  },
-  {
-    q: 'Are the driver’s meals and accommodation included?',
-    a: 'Many listings include them, but not all — it varies by driver, so it is shown on each listing and in the offer you receive. You are never asked to book a hotel room for your driver yourself; where it is included, that cost already sits inside the daily rate.',
-  },
-  {
-    q: 'How long until I receive quotes?',
-    a: 'Your request goes out to approved drivers as soon as you submit it, and you will get an email and a push notification for each new offer. Requests sent overnight in Sri Lanka time are usually answered the following morning.',
-  },
-  {
-    q: 'Can I change my itinerary after booking?',
-    a: 'Yes. Small changes on the road — swapping a beach, adding a temple, shifting a departure time — are normally fine. If a change adds driving days or a lot of distance, agree the adjusted rate with your driver in chat before you travel so it stays on record.',
-  },
-  {
-    q: 'What if something goes wrong during my trip?',
-    a: 'Email hello@carwithdriver.lk or call +94 76 3021 483. Every message and offer is stored, so there is always a record of what was agreed with your driver.',
-  },
-];
+const REASONS = ['middleman', 'locked', 'private', 'licences', 'reviews', 'support'];
+const FAQS = ['cost', 'fee', 'pay', 'difference', 'fuel', 'meals', 'howLong', 'change', 'wrong'];
 
 const GetQuotes = () => {
+  const { t, locale } = useI18n();
   const navigate = useNavigate();
   const loaderData = useLoaderData();
   const vehicles = useMemo(() => (Array.isArray(loaderData?.vehicles) ? loaderData.vehicles : []), [loaderData]);
@@ -197,17 +105,17 @@ const GetQuotes = () => {
         '@context': 'https://schema.org',
         '@type': 'BreadcrumbList',
         itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'Home', item: 'https://carwithdriver.lk' },
-          { '@type': 'ListItem', position: 2, name: 'Get quotes', item: 'https://carwithdriver.lk/get-quotes' },
+          { '@type': 'ListItem', position: 1, name: t('getQuotes.breadcrumbHome'), item: `https://carwithdriver.lk${locale === 'en' ? '' : `/${locale}`}` },
+          { '@type': 'ListItem', position: 2, name: t('getQuotes.breadcrumbCurrent'), item: `https://carwithdriver.lk${locale === 'en' ? '' : `/${locale}`}/get-quotes` },
         ],
       },
       {
         '@context': 'https://schema.org',
         '@type': 'FAQPage',
-        mainEntity: FAQS.map((f) => ({
+        mainEntity: FAQS.map((key) => ({
           '@type': 'Question',
-          name: f.q,
-          acceptedAnswer: { '@type': 'Answer', text: f.a },
+          name: t(`getQuotes.faq.${key}.q`),
+          acceptedAnswer: { '@type': 'Answer', text: t(`getQuotes.faq.${key}.a`) },
         })),
       },
     ];
@@ -218,7 +126,7 @@ const GetQuotes = () => {
         serviceType: 'Car with driver hire and chauffeur guide quotations',
         provider: { '@type': 'Organization', name: 'Car With Driver LK', url: 'https://carwithdriver.lk' },
         areaServed: { '@type': 'Country', name: 'Sri Lanka' },
-        url: 'https://carwithdriver.lk/get-quotes',
+        url: `https://carwithdriver.lk${locale === 'en' ? '' : `/${locale}`}/get-quotes`,
         offers: {
           '@type': 'AggregateOffer',
           priceCurrency: 'USD',
@@ -230,7 +138,7 @@ const GetQuotes = () => {
       });
     }
     return blocks;
-  }, [fleet]);
+  }, [fleet, t, locale]);
 
   const handleNext = async (event) => {
     event.preventDefault();
@@ -246,30 +154,32 @@ const GetQuotes = () => {
       country: form.country.trim(),
       maxOffers: form.maxOffers ? Number(form.maxOffers) : null,
       requiredLicenseType: driverTypeSelectionEnabled ? form.requiredLicenseType || null : null,
+      // The language the traveller used, so drivers and admin can see it on the request.
+      language: locale,
     };
 
     if (!payload.startDate || !payload.endDate) {
-      toast.error('Select your start and end dates.');
+      toast.error(t('getQuotes.errors.dates'));
       return;
     }
     if (payload.endDate < payload.startDate) {
-      toast.error('End date must be after the start date.');
+      toast.error(t('getQuotes.errors.endAfterStart'));
       return;
     }
     if (payload.startDate < todayDate) {
-      toast.error('Start date cannot be in the past.');
+      toast.error(t('getQuotes.errors.startPast'));
       return;
     }
     if (!payload.startLocation || !payload.endLocation || !payload.message || !payload.country) {
-      toast.error('Please fill in all fields.');
+      toast.error(t('getQuotes.errors.allFields'));
       return;
     }
     if (payload.message.length > MESSAGE_MAX_LENGTH) {
-      toast.error(`Itinerary details must be ${MESSAGE_MAX_LENGTH} characters or fewer.`);
+      toast.error(t('getQuotes.errors.tooLong', { max: MESSAGE_MAX_LENGTH }));
       return;
     }
     if (payload.adults < 1) {
-      toast.error('Please specify at least one adult traveller.');
+      toast.error(t('getQuotes.errors.adults'));
       return;
     }
 
@@ -307,27 +217,20 @@ const GetQuotes = () => {
           <div className="grid items-center gap-[clamp(24px,3.4vw,56px)] lg:grid-cols-[1.2fr_minmax(0,1fr)]">
             <div className="min-w-0">
               {/* Sits with the heading so it stays attached when the column centres. */}
-              <nav aria-label="Breadcrumb" className="mb-3.5 flex flex-wrap items-center gap-[7px] text-[13px] font-semibold text-muted-soft">
-                <Link to="/" className="text-brand-dark hover:underline">Home</Link>
+              <nav aria-label={t('getQuotes.breadcrumb')} className="mb-3.5 flex flex-wrap items-center gap-[7px] text-[13px] font-semibold text-muted-soft">
+                <Link to="/" className="text-brand-dark hover:underline">{t('getQuotes.breadcrumbHome')}</Link>
                 <span aria-hidden="true">/</span>
-                <span className="font-bold text-ink">Get quotes</span>
+                <span className="font-bold text-ink">{t('getQuotes.breadcrumbCurrent')}</span>
               </nav>
               <h1 className="text-[clamp(28px,4.2vw,46px)] font-extrabold leading-[1.06] tracking-[-.03em] text-ink">
-                Get Free Quotes from Sri Lanka Drivers &amp; Chauffeur Guides
+                {t('getQuotes.hero.title')}
               </h1>
               <p className="mt-4 max-w-[60ch] text-[clamp(15.5px,1.4vw,17.5px)] leading-[1.65] text-muted lg:mt-5">
-                Tell us your dates and where you want to go. We send your request to approved drivers and SLTDA
-                chauffeur guides across the island — they quote you directly, you compare, chat and book. No booking
-                fee, and you pay your driver, not us.
+                {t('getQuotes.hero.lead')}
               </p>
 
               <ul className="mt-5 flex flex-col gap-[11px] lg:mt-7 lg:gap-[15px]">
-                {[
-                  'Offers from tourist drivers, chauffeur guides and national guide lecturers',
-                  'Daily rates cover 120–150 km per day island-wide',
-                  'Chat with drivers before you commit — your contact details stay private',
-                  'Accept an offer and that price is locked for the itinerary you agreed',
-                ].map((text) => (
+                {t('getQuotes.hero.points').map((text) => (
                   <li key={text} className="flex items-start gap-2.5 text-[14.5px] font-semibold leading-[1.5] text-ink-soft lg:text-[15.5px]">
                     <span className="mt-0.5 grid h-[21px] w-[21px] flex-shrink-0 place-items-center rounded-full bg-brand-tint">
                       <Check className="h-3 w-3 text-brand-dark" strokeWidth={3} />
@@ -339,9 +242,9 @@ const GetQuotes = () => {
 
               {/* Always three across — these read as a single band, so they must not wrap. */}
               <div className="mt-[22px] grid grid-cols-3 gap-x-3 sm:gap-x-[clamp(26px,4vw,44px)] lg:mt-8">
-                <Stat value="30 min" label="First quote, typically" />
-                <Stat value="10+" label="Offers per request" />
-                <Stat value="FREE" label="No booking fee" />
+                <Stat value={t('getQuotes.hero.stat1Value')} label={t('getQuotes.hero.stat1Label')} />
+                <Stat value="10+" label={t('getQuotes.hero.stat2Label')} />
+                <Stat value={t('getQuotes.hero.stat3Value')} label={t('getQuotes.hero.stat3Label')} />
               </div>
             </div>
 
@@ -351,16 +254,15 @@ const GetQuotes = () => {
                 onSubmit={handleNext}
                 className="rounded-[24px] border border-[#e7ecea] bg-white p-[clamp(16px,2.4vw,24px)] shadow-[0_18px_44px_rgba(15,36,48,.07)]"
               >
-                <h2 className="text-[18px] font-extrabold tracking-[-.01em] text-ink">Request your quotations</h2>
+                <h2 className="text-[18px] font-extrabold tracking-[-.01em] text-ink">{t('getQuotes.form.title')}</h2>
                 <p className="mt-1.5 text-[13.5px] leading-[1.55] text-muted">
-                  Takes about a minute. You&apos;ll sign in or create a free account on the next step — no need to fill
-                  anything in twice.
+                  {t('getQuotes.form.intro')}
                 </p>
 
                 <div className="mt-4 grid gap-4">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <label className="block">
-                      <span className={labelCls}>Start date</span>
+                      <span className={labelCls}>{t('getQuotes.form.startDate')}</span>
                       <input
                         type="date"
                         required
@@ -371,7 +273,7 @@ const GetQuotes = () => {
                       />
                     </label>
                     <label className="block">
-                      <span className={labelCls}>End date</span>
+                      <span className={labelCls}>{t('getQuotes.form.endDate')}</span>
                       <input
                         type="date"
                         required
@@ -385,24 +287,24 @@ const GetQuotes = () => {
 
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <label className="block">
-                      <span className={labelCls}>Pick-up location</span>
+                      <span className={labelCls}>{t('getQuotes.form.pickup')}</span>
                       <input
                         type="text"
                         required
                         value={form.startLocation}
                         onChange={setField('startLocation')}
-                        placeholder="City, hotel or airport"
+                        placeholder={t('getQuotes.form.placePlaceholder')}
                         className={inputCls}
                       />
                     </label>
                     <label className="block">
-                      <span className={labelCls}>Drop-off location</span>
+                      <span className={labelCls}>{t('getQuotes.form.dropoff')}</span>
                       <input
                         type="text"
                         required
                         value={form.endLocation}
                         onChange={setField('endLocation')}
-                        placeholder="City, hotel or airport"
+                        placeholder={t('getQuotes.form.placePlaceholder')}
                         className={inputCls}
                       />
                     </label>
@@ -410,7 +312,7 @@ const GetQuotes = () => {
 
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                     <label className="block">
-                      <span className={labelCls}>Adults</span>
+                      <span className={labelCls}>{t('getQuotes.form.adults')}</span>
                       <input
                         type="number"
                         min="1"
@@ -421,7 +323,7 @@ const GetQuotes = () => {
                       />
                     </label>
                     <label className="block">
-                      <span className={labelCls}>Children</span>
+                      <span className={labelCls}>{t('getQuotes.form.children')}</span>
                       <input
                         type="number"
                         min="0"
@@ -431,13 +333,13 @@ const GetQuotes = () => {
                       />
                     </label>
                     <label className="block">
-                      <span className={labelCls}>Country of residence</span>
+                      <span className={labelCls}>{t('getQuotes.form.country')}</span>
                       <input
                         type="text"
                         required
                         value={form.country}
                         onChange={setField('country')}
-                        placeholder="e.g. Germany"
+                        placeholder={t('getQuotes.form.countryPlaceholder')}
                         className={inputCls}
                       />
                     </label>
@@ -445,54 +347,54 @@ const GetQuotes = () => {
 
                   <div className={`grid grid-cols-1 gap-4 ${driverTypeSelectionEnabled ? 'sm:grid-cols-2' : ''}`}>
                     <label className="block">
-                      <span className={labelCls}>Limit quotations <span className="font-semibold text-muted-soft">(optional)</span></span>
+                      <span className={labelCls}>{t('getQuotes.form.limit')} <span className="font-semibold text-muted-soft">{t('getQuotes.form.optional')}</span></span>
                       <select
                         value={form.maxOffers}
                         onChange={setField('maxOffers')}
                         className={inputCls}
                       >
                         {QUOTE_LIMIT_OPTIONS.map((o) => (
-                          <option key={o.label} value={o.value}>{o.label}</option>
+                          <option key={o.label} value={o.value}>{o.value ? o.label : t(`getQuotes.form.${o.label}`)}</option>
                         ))}
                       </select>
                       <span className="mt-1.5 block text-[11.5px] leading-[1.5] text-muted-soft">
-                        We stop accepting quotes once this many drivers have replied.
+                        {t('getQuotes.form.limitHelp')}
                       </span>
                     </label>
 
                     {driverTypeSelectionEnabled ? (
                       <label className="block">
-                        <span className={labelCls}>Driver type <span className="font-semibold text-muted-soft">(optional)</span></span>
+                        <span className={labelCls}>{t('getQuotes.form.driverType')} <span className="font-semibold text-muted-soft">{t('getQuotes.form.optional')}</span></span>
                         <select
                           value={form.requiredLicenseType}
                           onChange={setField('requiredLicenseType')}
                           className={inputCls}
                         >
                           {DRIVER_TYPE_OPTIONS.map((o) => (
-                            <option key={o.label} value={o.value}>{o.label}</option>
+                            <option key={o.label} value={o.value}>{t(`getQuotes.form.${o.label}`)}</option>
                           ))}
                         </select>
                         <span className="mt-1.5 block text-[11.5px] leading-[1.5] text-muted-soft">
-                          Restricting this means only drivers with that SLTDA-verified licence can quote, so you may receive fewer offers.
+                          {t('getQuotes.form.driverTypeHelp')}
                         </span>
                       </label>
                     ) : null}
                   </div>
 
                   <label className="block">
-                    <span className={labelCls}>Itinerary details</span>
+                    <span className={labelCls}>{t('getQuotes.form.notes')}</span>
                     <textarea
                       rows="4"
                       required
                       maxLength={MESSAGE_MAX_LENGTH}
                       value={form.message}
                       onChange={setField('message')}
-                      placeholder="Places you want to see, flight times, kids or extra luggage. Anything that helps drivers quote accurately."
+                      placeholder={t('getQuotes.form.notesPlaceholder')}
                       className={`${inputCls} resize-y leading-[1.5]`}
                     />
                     <span className="mt-1.5 flex items-start justify-between gap-2 text-[11.5px] leading-[1.5] text-muted-soft">
                       <span>
-                        Please don&apos;t include phone numbers or emails here — we&apos;ll share contact details once you accept an offer and your booking is confirmed.
+                        {t('getQuotes.form.noContact')}
                       </span>
                       <span className={`flex-shrink-0 whitespace-nowrap ${form.message.length > MESSAGE_MAX_LENGTH ? 'text-red-600' : ''}`}>
                         {form.message.length}/{MESSAGE_MAX_LENGTH}
@@ -504,10 +406,10 @@ const GetQuotes = () => {
                     type="submit"
                     className="mt-1 flex min-h-[52px] items-center justify-center gap-2 rounded-[13px] bg-brand px-6 text-[15.5px] font-bold text-white shadow-[0_12px_26px_-14px_rgba(16,163,90,.75)] transition hover:bg-[#0e9351] disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    Next
+                    {t('getQuotes.form.next')}
                   </button>
                   <p className="text-center text-xs leading-[1.5] text-muted-soft">
-                    Free to request · No booking fee · Pay the driver directly
+                    {t('getQuotes.form.footnote')}
                   </p>
                 </div>
               </form>
@@ -520,21 +422,17 @@ const GetQuotes = () => {
 
         {/* How it works */}
         <section id="how-it-works" className="scroll-mt-24">
-          <SectionHeading>How it works in three steps</SectionHeading>
-          <SectionLead>
-            There is no search-and-guess step. You describe the trip once, and drivers who are free on your dates come
-            to you with a price. Nothing is charged at any point — when you accept an offer you pay that driver
-            directly, on the first day of the trip.
-          </SectionLead>
+          <SectionHeading>{t('getQuotes.how.title')}</SectionHeading>
+          <SectionLead>{t('getQuotes.how.lead')}</SectionLead>
           <div className="mt-[22px] grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
-            {STEPS.map((s) => (
-              <div key={s.n} className="rounded-[20px] border border-[#e7ecea] bg-white p-5">
+            {STEPS.map((n) => (
+              <div key={n} className="rounded-[20px] border border-[#e7ecea] bg-white p-5">
                 <span className="grid h-[38px] w-[38px] place-items-center rounded-xl bg-brand-tint text-[15px] font-extrabold text-brand-dark">
-                  {s.n}
+                  {n}
                 </span>
-                <h3 className="mt-3 text-[17px] font-extrabold tracking-[-.015em] text-ink">{s.title}</h3>
-                <p className="mt-2 text-[14.5px] leading-[1.6] text-muted">{s.body}</p>
-                <div className="mt-3 text-[12.5px] font-extrabold text-brand-dark">{s.meta}</div>
+                <h3 className="mt-3 text-[17px] font-extrabold tracking-[-.015em] text-ink">{t(`getQuotes.how.step${n}.title`)}</h3>
+                <p className="mt-2 text-[14.5px] leading-[1.6] text-muted">{t(`getQuotes.how.step${n}.body`)}</p>
+                <div className="mt-3 text-[12.5px] font-extrabold text-brand-dark">{t(`getQuotes.how.step${n}.meta`)}</div>
               </div>
             ))}
           </div>
@@ -542,25 +440,20 @@ const GetQuotes = () => {
 
         {/* Driver types */}
         <section id="driver-types" className="scroll-mt-24">
-          <SectionHeading>Which driver type do you need?</SectionHeading>
-          <SectionLead>
-            Sri Lanka has three distinct roles, and booking sites use the words loosely. The difference is licensing:
-            the Sri Lanka Tourism Development Authority trains and certifies chauffeur guides and national guide
-            lecturers, while a tourist driver holds a standard driving licence. Drivers on this site submit their
-            licence for review, and the type they hold is shown on their profile.
-          </SectionLead>
+          <SectionHeading>{t('getQuotes.types.title')}</SectionHeading>
+          <SectionLead>{t('getQuotes.types.lead')}</SectionLead>
           <div className="mt-5 grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
-            {DRIVER_TYPES.map((t) => {
-              const badge = LICENSE_BADGE_STYLES[t.name];
+            {DRIVER_TYPES.map((type) => {
+              const badge = LICENSE_BADGE_STYLES[type.name];
               const Icon = badge?.icon;
               return (
-                <div key={t.name} className="rounded-[20px] border border-[#e7ecea] bg-white p-5">
+                <div key={type.name} className="rounded-[20px] border border-[#e7ecea] bg-white p-5">
                   <span className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[12px] font-extrabold ${badge?.badgeClass || 'bg-slate-100 text-slate-700'}`}>
                     {Icon ? <Icon className={`h-3.5 w-3.5 ${badge.iconClass}`} /> : null}
-                    {t.name}
+                    {translateLicenseType(type.name, t)}
                   </span>
-                  <p className="mt-3 text-[14.5px] leading-[1.6] text-muted">{t.body}</p>
-                  <p className="mt-3 text-[13px] font-bold leading-[1.5] text-ink-soft">Best for: {t.bestFor}</p>
+                  <p className="mt-3 text-[14.5px] leading-[1.6] text-muted">{t(`getQuotes.types.${type.key}.body`)}</p>
+                  <p className="mt-3 text-[13px] font-bold leading-[1.5] text-ink-soft">{t('getQuotes.types.bestFor', { text: t(`getQuotes.types.${type.key}.bestFor`) })}</p>
                 </div>
               );
             })}
@@ -569,28 +462,24 @@ const GetQuotes = () => {
             to={DRIVER_TYPES_ARTICLE}
             className="mt-4 inline-flex min-h-[48px] items-center gap-2 text-[14.5px] font-extrabold text-brand-dark hover:underline"
           >
-            Read the full comparison, including what each one costs →
+            {t('getQuotes.types.readMore')}
           </Link>
         </section>
 
         {/* Rates */}
         <section id="rates" className="scroll-mt-24">
-          <SectionHeading>What a car with driver costs in Sri Lanka</SectionHeading>
-          <SectionLead>
-            This is not a published price list — drivers set their own rates. The table below is built from the
-            vehicles listed on carwithdriver.lk right now, grouped by size, showing the typical middle of the range
-            for each class.
-          </SectionLead>
+          <SectionHeading>{t('getQuotes.rates.title')}</SectionHeading>
+          <SectionLead>{t('getQuotes.rates.lead')}</SectionLead>
 
           {classBands.length > 0 ? (
             <>
               {fleet ? (
                 <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-[#c9ead8] bg-brand-tint px-4 py-3.5">
                   <span className="text-[13px] font-extrabold text-brand-dark">
-                    FROM {fleet.count} LIVE LISTINGS
+                    {t('getQuotes.rates.fromListings', { count: fleet.count })}
                   </span>
                   <span className="text-[13px] font-semibold text-ink-soft">
-                    Updated automatically as drivers change their prices
+                    {t('getQuotes.rates.updated')}
                   </span>
                 </div>
               ) : null}
@@ -598,24 +487,24 @@ const GetQuotes = () => {
               <div className="mt-3.5 overflow-x-auto rounded-[20px] border border-[#e7ecea] bg-white">
                 <table className="w-full min-w-[620px] border-collapse">
                   <caption className="border-b border-[#eef2f0] px-[18px] py-[15px] text-left text-[13px] font-bold text-muted-soft">
-                    Typical daily rate in USD, per vehicle, from current listings
+                    {t('getQuotes.rates.caption')}
                   </caption>
                   <thead>
                     <tr className="bg-[#f7faf8]">
-                      <th scope="col" className="px-[18px] py-3 text-left text-[12.5px] font-extrabold text-ink-soft">Vehicle class</th>
-                      <th scope="col" className="px-[18px] py-3 text-left text-[12.5px] font-extrabold text-ink-soft">Seats</th>
-                      <th scope="col" className="whitespace-nowrap px-[18px] py-3 text-right text-[12.5px] font-extrabold text-ink-soft">Typical per day</th>
-                      <th scope="col" className="whitespace-nowrap px-[18px] py-3 text-right text-[12.5px] font-extrabold text-ink-soft">Listings</th>
+                      <th scope="col" className="px-[18px] py-3 text-left text-[12.5px] font-extrabold text-ink-soft">{t('getQuotes.rates.colClass')}</th>
+                      <th scope="col" className="px-[18px] py-3 text-left text-[12.5px] font-extrabold text-ink-soft">{t('getQuotes.rates.colSeats')}</th>
+                      <th scope="col" className="whitespace-nowrap px-[18px] py-3 text-right text-[12.5px] font-extrabold text-ink-soft">{t('getQuotes.rates.colPerDay')}</th>
+                      <th scope="col" className="whitespace-nowrap px-[18px] py-3 text-right text-[12.5px] font-extrabold text-ink-soft">{t('getQuotes.rates.colListings')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {classBands.map((b) => (
                       <tr key={b.id} className="border-t border-[#eef2f0]">
                         <th scope="row" className="px-[18px] py-3.5 text-left text-[14px] font-bold text-ink">
-                          {b.label}
-                          {b.example ? <span className="block text-[12.5px] font-semibold text-muted-soft">e.g. {b.example}</span> : null}
+                          {t(`estimator.buckets.${b.id}.label`)}
+                          {b.example ? <span className="block text-[12.5px] font-semibold text-muted-soft">{t('getQuotes.rates.example', { model: b.example })}</span> : null}
                         </th>
-                        <td className="px-[18px] py-3.5 text-[14px] font-semibold text-muted">{b.seatLabel}</td>
+                        <td className="px-[18px] py-3.5 text-[14px] font-semibold text-muted">{t(`estimator.buckets.${b.id}.seats`)}</td>
                         <td className="whitespace-nowrap px-[18px] py-3.5 text-right text-[14px] font-extrabold text-ink">
                           {formatBand(b.perDay.low, b.perDay.high)}
                         </td>
@@ -626,17 +515,16 @@ const GetQuotes = () => {
                 </table>
               </div>
               <p className="mt-3 text-[14px] leading-[1.6] text-muted-soft">
-                Rates cover {KM_PER_DAY.low}–{KM_PER_DAY.high} km per day island-wide, which is what a driver-guided touring
-                day usually comes to. Longer days and December–January peak dates sit at the upper end of each range.{' '}
+                {t('getQuotes.rates.note', { low: KM_PER_DAY.low, high: KM_PER_DAY.high })}{' '}
                 <Link to="/trip-cost-calculator" className="font-bold text-brand-dark hover:underline">
-                  Estimate your own trip →
+                  {t('getQuotes.rates.estimate')}
                 </Link>
               </p>
             </>
           ) : (
             <p className="mt-4 text-[15px] text-muted">
-              Live rates are loading.{' '}
-              <Link to="/vehicles" className="font-bold text-brand-dark hover:underline">Browse the fleet →</Link>
+              {t('getQuotes.rates.loading')}{' '}
+              <Link to="/vehicles" className="font-bold text-brand-dark hover:underline">{t('getQuotes.rates.browseFleet')}</Link>
             </p>
           )}
         </section>
@@ -644,38 +532,34 @@ const GetQuotes = () => {
         {/* What's included */}
         {inclusions.length > 0 ? (
           <section id="included" className="scroll-mt-24">
-            <SectionHeading>What your quotation includes</SectionHeading>
-            <SectionLead>
-              Listings on this site declare what their rate covers, so the offers you compare are genuinely
-              comparable. Some things are near-universal; others depend on the driver, so check them in the offer
-              before you accept.
-            </SectionLead>
+            <SectionHeading>{t('getQuotes.included.title')}</SectionHeading>
+            <SectionLead>{t('getQuotes.included.lead')}</SectionLead>
             <div className="mt-5 grid gap-3.5 md:grid-cols-2">
               <div className="rounded-[20px] border-[1.5px] border-[#c9ead8] bg-white p-5">
-                <div className="text-[12px] font-extrabold tracking-[.07em] text-brand-dark">INCLUDED IN NEARLY EVERY QUOTE</div>
+                <div className="text-[12px] font-extrabold tracking-[.07em] text-brand-dark">{t('getQuotes.included.always')}</div>
                 <ul className="mt-3.5 flex flex-col gap-2.5">
                   {alwaysIncluded.map((i) => (
                     <li key={i.key} className="flex gap-2.5 text-[14.5px] font-semibold leading-[1.5] text-ink-soft">
                       <Check className="mt-0.5 h-[17px] w-[17px] flex-shrink-0 text-brand-dark" strokeWidth={3} />
-                      {i.label}
+                      {t(`estimator.inclusions.${i.key}`)}
                     </li>
                   ))}
                   <li className="flex gap-2.5 text-[14.5px] font-semibold leading-[1.5] text-ink-soft">
                     <Check className="mt-0.5 h-[17px] w-[17px] flex-shrink-0 text-brand-dark" strokeWidth={3} />
-                    {KM_PER_DAY.low}–{KM_PER_DAY.high} km per day
+                    {t('getQuotes.included.kmPerDay', { low: KM_PER_DAY.low, high: KM_PER_DAY.high })}
                   </li>
                 </ul>
               </div>
               <div className="rounded-[20px] border-[1.5px] border-[#e7ecea] bg-white p-5">
-                <div className="text-[12px] font-extrabold tracking-[.07em] text-muted-soft">VARIES BY LISTING — CHECK THE OFFER</div>
+                <div className="text-[12px] font-extrabold tracking-[.07em] text-muted-soft">{t('getQuotes.included.varies')}</div>
                 <ul className="mt-3.5 flex flex-col gap-2.5">
                   {variesByListing.map((i) => (
                     <li key={i.key} className="flex gap-2.5 text-[14.5px] font-semibold leading-[1.5] text-ink-soft">
                       <X className="mt-0.5 h-[17px] w-[17px] flex-shrink-0 text-muted-soft" strokeWidth={3} />
-                      {i.label}
+                      {t(`estimator.inclusions.${i.key}`)}
                     </li>
                   ))}
-                  {['Site entry tickets — Sigiriya, Dambulla, the Temple of the Tooth', 'Safari jeeps at Yala, Udawalawe and Minneriya', 'Your own accommodation, meals and drinks', 'Tips for your driver — customary but never expected'].map((text) => (
+                  {t('getQuotes.included.notIncluded').map((text) => (
                     <li key={text} className="flex gap-2.5 text-[14.5px] font-semibold leading-[1.5] text-ink-soft">
                       <X className="mt-0.5 h-[17px] w-[17px] flex-shrink-0 text-muted-soft" strokeWidth={3} />
                       {text}
@@ -690,12 +574,8 @@ const GetQuotes = () => {
         {/* Recommended drivers */}
         {recommendedDrivers.length > 0 ? (
           <section id="recommended-drivers" className="scroll-mt-24">
-            <SectionHeading>Recommended drivers</SectionHeading>
-            <SectionLead>
-              A few of the most experienced drivers on the platform. You do not have to pick one to request quotes —
-              your request goes out island-wide either way — but it is worth seeing the kind of driver who will be
-              answering you.
-            </SectionLead>
+            <SectionHeading>{t('getQuotes.recommended.title')}</SectionHeading>
+            <SectionLead>{t('getQuotes.recommended.lead')}</SectionLead>
             <div className="mt-5 grid gap-3.5 sm:grid-cols-2">
               {recommendedDrivers.map((d) => (
                 <article
@@ -733,13 +613,13 @@ const GetQuotes = () => {
                       <>
                         <Star className="h-[15px] w-[15px] fill-[#f5b400] text-[#f5b400]" />
                         {d.reviewScore}
-                        <span className="font-semibold text-muted-soft">· {d.reviewCount} reviews</span>
+                        <span className="font-semibold text-muted-soft">· {t('getQuotes.recommended.reviews', { count: d.reviewCount })}</span>
                       </>
                     ) : null}
                     {d.experienceYears > 0 ? (
                       <span className="font-semibold text-muted-soft">
                         {d.reviewCount > 0 ? '· ' : ''}
-                        {d.experienceYears} yrs driving
+                        {t('getQuotes.recommended.yearsDriving', { count: d.experienceYears })}
                       </span>
                     ) : null}
                   </div>
@@ -751,18 +631,18 @@ const GetQuotes = () => {
                   <div className="mt-4 flex items-center justify-between gap-2.5 border-t border-[#f0f3f2] pt-3.5">
                     <div>
                       <div className="text-[11px] font-bold tracking-[.04em] text-muted-soft">
-                        {d.vehicleCount > 1 ? `${d.vehicleCount} VEHICLES · FROM` : 'FROM'}
+                        {d.vehicleCount > 1 ? t('getQuotes.recommended.vehiclesFrom', { count: d.vehicleCount }) : t('getQuotes.recommended.from')}
                       </div>
                       <div className="text-[17px] font-extrabold text-ink">
-                        {d.fromPrice ? priceFormatter(d.fromPrice) : 'Quote'}
-                        <span className="text-[12.5px] font-semibold text-muted-soft">/day</span>
+                        {d.fromPrice ? priceFormatter(d.fromPrice) : t('getQuotes.recommended.quote')}
+                        <span className="text-[12.5px] font-semibold text-muted-soft">{t('getQuotes.recommended.perDay')}</span>
                       </div>
                     </div>
                     <Link
                       to={`/drivers/${d.id}`}
                       className="inline-flex min-h-[44px] items-center rounded-[11px] bg-brand-tint px-4 text-[13.5px] font-bold text-brand-dark"
                     >
-                      View driver
+                      {t('getQuotes.recommended.viewDriver')}
                     </Link>
                   </div>
                 </article>
@@ -772,24 +652,20 @@ const GetQuotes = () => {
               to="/drivers"
               className="mt-4 inline-flex min-h-[48px] items-center gap-2 text-[14.5px] font-extrabold text-brand-dark hover:underline"
             >
-              Browse all drivers →
+              {t('getQuotes.recommended.browseAll')}
             </Link>
           </section>
         ) : null}
 
         {/* Why us */}
         <section id="why-us" className="scroll-mt-24">
-          <SectionHeading>Why request through carwithdriver.lk</SectionHeading>
-          <SectionLead>
-            We are a Sri Lankan marketplace, not an overseas reseller. Drivers list themselves, set their own prices
-            and keep the full fare — there is no tour operator taking a cut, and the person who answers your message
-            is the person who will meet you at arrivals.
-          </SectionLead>
+          <SectionHeading>{t('getQuotes.why.title')}</SectionHeading>
+          <SectionLead>{t('getQuotes.why.lead')}</SectionLead>
           <div className="mt-5 grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
-            {REASONS.map((r) => (
-              <div key={r.title} className="rounded-[20px] border border-[#e7ecea] bg-white p-[18px]">
-                <h3 className="text-[16px] font-extrabold tracking-[-.015em] text-ink">{r.title}</h3>
-                <p className="mt-2 text-[14.5px] leading-[1.6] text-muted">{r.body}</p>
+            {REASONS.map((key) => (
+              <div key={key} className="rounded-[20px] border border-[#e7ecea] bg-white p-[18px]">
+                <h3 className="text-[16px] font-extrabold tracking-[-.015em] text-ink">{t(`getQuotes.why.${key}.title`)}</h3>
+                <p className="mt-2 text-[14.5px] leading-[1.6] text-muted">{t(`getQuotes.why.${key}.body`)}</p>
               </div>
             ))}
           </div>
@@ -797,12 +673,13 @@ const GetQuotes = () => {
 
         {/* FAQ */}
         <section id="faq" className="scroll-mt-24">
-          <SectionHeading>Frequently asked questions</SectionHeading>
+          <SectionHeading>{t('getQuotes.faq.title')}</SectionHeading>
           <div className="mt-4 flex flex-col gap-2.5">
-            {FAQS.map((f, i) => {
+            {FAQS.map((key, i) => {
               const open = openFaq === i;
+              const f = { q: t(`getQuotes.faq.${key}.q`), a: t(`getQuotes.faq.${key}.a`) };
               return (
-                <div key={f.q} className="overflow-hidden rounded-[18px] border border-[#e7ecea] bg-white">
+                <div key={key} className="overflow-hidden rounded-[18px] border border-[#e7ecea] bg-white">
                   <h3 className="m-0">
                     <button
                       type="button"
@@ -826,20 +703,23 @@ const GetQuotes = () => {
             })}
           </div>
           <p className="mt-4 text-[14.5px] leading-[1.6] text-muted">
-            Still unsure about something? Email{' '}
-            <a href="mailto:hello@carwithdriver.lk" className="font-bold text-brand-dark hover:underline">hello@carwithdriver.lk</a>{' '}
-            or call <a href="tel:+94763021483" className="font-bold text-brand-dark hover:underline">+94 76 3021 483</a>.
+            <Trans
+              k="getQuotes.faq.contact"
+              components={{
+                email: <a href="mailto:hello@carwithdriver.lk" className="font-bold text-brand-dark hover:underline" />,
+                phone: <a href="tel:+94763021483" className="font-bold text-brand-dark hover:underline" />,
+              }}
+            />
           </p>
         </section>
 
         {/* Closing CTA */}
         <section className="rounded-[26px] bg-gradient-to-br from-brand-dark to-brand p-[clamp(22px,3.4vw,38px)] text-white">
           <h2 className="text-[clamp(21px,2.6vw,29px)] font-extrabold leading-[1.15] tracking-[-.025em]">
-            Ready to hear what your trip actually costs?
+            {t('getQuotes.cta.title')}
           </h2>
           <p className="mt-3 max-w-[56ch] text-[16px] leading-[1.6] text-white/85">
-            Send one request and let drivers come to you. Free, no obligation, and your contact details stay private
-            until you accept an offer.
+            {t('getQuotes.cta.body')}
           </p>
           <div className="mt-5 flex flex-wrap gap-2.5">
             <button
@@ -847,13 +727,13 @@ const GetQuotes = () => {
               onClick={() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
               className="inline-flex min-h-[50px] items-center rounded-[13px] bg-white px-[22px] text-[15px] font-extrabold text-brand-dark"
             >
-              Request free quotes
+              {t('getQuotes.cta.request')}
             </button>
             <Link
               to="/trip-cost-calculator"
               className="inline-flex min-h-[50px] items-center rounded-[13px] border-[1.5px] border-white/55 px-[22px] text-[15px] font-extrabold text-white"
             >
-              Estimate it yourself
+              {t('getQuotes.cta.estimate')}
             </Link>
           </div>
         </section>

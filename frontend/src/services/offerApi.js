@@ -1,3 +1,4 @@
+import { localizeServerMessage } from '../i18n/serverMessages.js';
 import { API_BASE_URL } from '../constants/api.js';
 
 const OFFER_INVITE_BASE_URL = `${API_BASE_URL}/offer-invite`;
@@ -15,7 +16,7 @@ const safeJson = async (response) => {
 const parseInviteError = async (response) => {
   const data = await safeJson(response);
   const error = new Error(
-    typeof data?.message === 'string' ? data.message : 'Unable to reach the server'
+    localizeServerMessage(typeof data?.message === 'string' ? data.message : 'Unable to reach the server')
   );
   error.reason = data?.reason;
   return error;

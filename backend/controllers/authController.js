@@ -452,6 +452,25 @@ const parseBooleanLike = (value) => {
   return false;
 };
 
+const SITE_LANGUAGES = ['en', 'de', 'fr', 'it', 'ru', 'ja'];
+
+// PUT /api/auth/language { language } — the traveller's website language, used
+// for the emails we send them. Called by the dashboard when it opens in a
+// language different from the one on file.
+export const updateLanguage = async (req, res) => {
+  const { language } = req.body || {};
+  if (!SITE_LANGUAGES.includes(language)) {
+    return res.status(400).json({ message: 'Unsupported language.' });
+  }
+  try {
+    await User.updateOne({ _id: req.user.id }, { $set: { language: language === 'en' ? null : language } });
+    return res.json({ language });
+  } catch (error) {
+    console.error('Update language error:', error);
+    return res.status(500).json({ message: 'Unable to save language.' });
+  }
+};
+
 export const updateProfile = async (req, res) => {
   const validationError = handleValidation(req, res);
   if (validationError) {

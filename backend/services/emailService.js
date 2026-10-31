@@ -1,5 +1,24 @@
 import Brevo from 'sib-api-v3-sdk';
-import { OFFER_INCLUSION_KEYS, OFFER_INCLUSION_LABELS } from '../utils/offerInclusions.js';
+import { OFFER_INCLUSION_KEYS } from '../utils/offerInclusions.js';
+import User from '../models/User.js';
+import { emailT, intlFor, localizeUrl, normalizeLanguage } from '../i18n/emailI18n.js';
+
+const EN = emailT('en');
+
+// The language a traveller's emails are written in: their saved website
+// language. Drivers and admins always get English. Looked up by email when the
+// caller passed a person without the field.
+const languageOf = async (person) => {
+  if (!person || person.role === 'driver' || person.role === 'admin') return 'en';
+  if (person.language !== undefined) return normalizeLanguage(person.language);
+  if (!person.email) return 'en';
+  try {
+    const user = await User.findOne({ email: String(person.email).toLowerCase() }).select('language role').lean();
+    return user && user.role !== 'driver' && user.role !== 'admin' ? normalizeLanguage(user.language) : 'en';
+  } catch {
+    return 'en';
+  }
+};
 
 let brevoClient;
 
@@ -38,20 +57,23 @@ const getWhatsAppNumber = () => process.env.SUPPORT_WHATSAPP || '+94 76 3021 483
 
 // `replyable`: true when a reply is posted into the driver chat, 'support' when
 // it reaches our own inbox, false for send-only emails.
-const getDefaultFooterLines = ({ replyable = false, preferencesUrl = '' } = {}) => {
+const getDefaultFooterLines = ({ replyable = false, preferencesUrl = '', tr = EN } = {}) => {
   const whatsApp = getWhatsAppNumber();
   const whatsAppLink = `<a href="https://wa.me/${whatsApp.replace(/\D/g, '')}" style="color:#64748b;font-family:${fontStack};">${whatsApp}</a>`;
   return [
     replyable === 'support'
-      ? 'Reply to this email and our team in Sri Lanka will get back to you.'
+      ? tr('footer.support')
       : replyable
-        ? 'Replies to this email are posted to your chat with the driver.'
-        : "This is an automated message — please don't reply to this email.",
-    `Questions? WhatsApp us on ${whatsAppLink} or email ${getSupportEmail()}.`,
+        ? tr('footer.replyable')
+        : tr('footer.noReply'),
+    tr('footer.questions', { whatsapp: whatsAppLink, email: getSupportEmail() }),
     preferencesUrl
-      ? `Getting too many emails? <a href="${preferencesUrl}" style="color:#64748b;font-family:${fontStack};">Email me less often</a>.`
+      ? tr('footer.lessOften').replace(
+          /<link>(.*?)<\/link>/,
+          `<a href="${preferencesUrl}" style="color:#64748b;font-family:${fontStack};">$1</a>`
+        )
       : null,
-    `You are receiving this email because you have an active account on ${getBrandName()}.`,
+    tr('footer.reason', { brand: getBrandName() }),
     `© ${new Date().getFullYear()} ${getBrandName()}`,
   ];
 };
@@ -74,9 +96,14 @@ const htmlToText = (html = '') =>
     .replace(/\s{2,}/g, ' ')
     .trim();
 
-const formatStatus = (status) => {
+const formatStatus = (status, tr = null) => {
   if (!status) {
     return '';
+  }
+  if (tr) {
+    const key = `common.status.${status}`;
+    const label = tr(key);
+    if (label !== key) return label;
   }
   return status.charAt(0).toUpperCase() + status.slice(1);
 };
@@ -92,26 +119,26 @@ const buildUrl = (pathname = '/') => {
   }
 };
 
-const formatDate = (value) => {
+const formatDate = (value, lang = 'en') => {
   if (!value) {
-    return 'TBD';
+    return emailT(lang)('common.tbd');
   }
   const date = value instanceof Date ? value : new Date(value);
   if (Number.isNaN(date.getTime())) {
-    return 'TBD';
+    return emailT(lang)('common.tbd');
   }
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString(intlFor(lang), {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   });
 };
 
-const formatDateRange = (start, end) => {
+const formatDateRange = (start, end, lang = 'en') => {
   if (!start || !end) {
-    return 'TBD';
+    return emailT(lang)('common.tbd');
   }
-  return `${formatDate(start)} — ${formatDate(end)}`;
+  return emailT(lang)('common.dateRange', { start: formatDate(start, lang), end: formatDate(end, lang) });
 };
 
 const formatCurrency = (value) => {
@@ -185,6 +212,7 @@ const buildEmailTemplate = ({
   footerLines = [],
   replyable = false,
   preferencesUrl = '',
+  lang = 'en',
 }) => `
   ${
     preheader
@@ -208,7 +236,7 @@ const buildEmailTemplate = ({
                 </h1>
                 ${renderParagraphs(bodyLines)}
                 ${action ? renderButton(action) : ''}
-                ${renderFooter([...footerLines, ...getDefaultFooterLines({ replyable, preferencesUrl })])}
+                ${renderFooter([...footerLines, ...getDefaultFooterLines({ replyable, preferencesUrl, tr: emailT(lang) })])}
               </td>
             </tr>
           </table>
@@ -521,8 +549,10 @@ export const sendConversationNotificationEmail = async ({
   }
 
   const forTraveller = recipient.role !== 'driver';
-  const recipientName = escapeHtml(recipient.name || 'there');
-  const plainSender = sender?.name || 'your contact';
+  // Drivers always get English; travellers get their website language.
+  const lang = forTraveller ? await languageOf(recipient) : 'en';
+  const tr = emailT(lang);
+  const plainSender = sender?.name || tr('message.yourContact');
   const senderName = escapeHtml(plainSender);
   const bodies = (Array.isArray(messages) && messages.length > 0 ? messages : [messagePreview]).filter(Boolean);
   const brandName = getBrandName();
@@ -533,43 +563,57 @@ export const sendConversationNotificationEmail = async ({
   const snippet = firstLine.length > 50 ? `${firstLine.slice(0, 50).trimEnd()}…` : firstLine;
   const subject = isOffer
     ? price
-      ? `${plainSender}: ${price} offer for your trip`
-      : `${plainSender} sent you a trip offer`
+      ? tr('message.subjectOfferPrice', { sender: plainSender, price })
+      : tr('message.subjectOffer', { sender: plainSender })
     : snippet
-      ? `${plainSender}: "${snippet}"`
-      : `New message from ${plainSender}`;
+      ? tr('message.subjectSnippet', { sender: plainSender, snippet })
+      : tr('message.subjectMessage', { sender: plainSender });
+
+  const action = isOffer
+    ? tr('message.sentOffer')
+    : bodies.length > 1
+      ? tr('message.sentMany', { count: bodies.length })
+      : tr('message.sentOne');
+  const conversationLink = forTraveller ? localizeUrl(conversationUrl, lang) : conversationUrl;
 
   const quoteStyle = `margin:0 0 12px 0;padding:12px 16px;border-left:4px solid ${brandColor};background:#f1f5f9;border-radius:12px;color:#0f172a;font-size:15px;line-height:1.6;font-family:${fontStack};`;
   const lines = [
-    `Hi ${recipientName},`,
-    `${senderName} ${
-      isOffer ? 'sent you a trip offer' : bodies.length > 1 ? `sent you ${bodies.length} new messages` : 'sent you a new message'
-    }${vehicleModel ? ` about ${escapeHtml(vehicleModel)}` : ''} on ${brandName}.`,
+    greeting(tr, recipient.name),
+    tr('message.on', {
+      sender: senderName,
+      action,
+      about: vehicleModel ? tr('message.about', { model: escapeHtml(vehicleModel) }) : '',
+      brand: brandName,
+    }),
     ...bodies.map((body) => ({ raw: `<blockquote style="${quoteStyle}">${formatMultiline(body)}</blockquote>` })),
-    replyTo
-      ? `Reply to this email to answer ${senderName} directly. Your reply goes straight to the chat.`
-      : 'Reply from your dashboard to keep the conversation moving.',
-    isOffer && forTraveller ? renderReassurance() : null,
+    replyTo ? tr('message.replyDirect', { sender: senderName }) : tr('message.replyDashboard'),
+    isOffer && forTraveller ? renderReassurance(tr) : null,
   ];
 
   const html = buildEmailTemplate({
-    title: isOffer ? 'New trip offer' : bodies.length > 1 ? 'New messages waiting' : 'New message waiting',
+    lang,
+    title: isOffer ? tr('message.titleOffer') : bodies.length > 1 ? tr('message.titleMany') : tr('message.titleOne'),
     preheader: replyTo
-      ? `Reply to this email to answer ${senderName} directly.`
-      : `${senderName} ${isOffer ? 'shared a trip offer' : 'sent you a message'} on ${brandName}`,
+      ? tr('message.preheaderReply', { sender: senderName })
+      : isOffer
+        ? tr('message.preheaderOffer', { sender: senderName, brand: brandName })
+        : tr('message.preheaderMessage', { sender: senderName, brand: brandName }),
     bodyLines: lines,
     action: {
-      label: isOffer ? 'View offer and chat' : 'Reply in chat',
-      url: conversationUrl || (recipient?.role === 'driver' ? buildUrl('/portal/driver/messages') : buildUrl('/dashboard')),
+      label: isOffer ? tr('message.actionOffer') : tr('message.actionReply'),
+      url: conversationLink || (recipient?.role === 'driver' ? buildUrl('/portal/driver/messages') : localizeUrl(buildUrl('/dashboard'), lang)),
     },
     replyable: Boolean(replyTo),
   });
 
-  const text = `Hi ${recipient.name || 'there'},\n\n${plainSender} ${
-    isOffer ? 'sent you a trip offer' : 'sent you a new message'
-  }.\n\n${bodies.join('\n\n')}\n\n${replyTo ? 'Reply to this email, or open' : 'Open'} your ${
-    recipient?.role === 'driver' ? 'driver portal' : 'dashboard'
-  } to reply.`;
+  const text = forTraveller
+    ? `${greeting(tr, recipient.name, { html: false })}\n\n${tr('message.textBody', {
+        sender: plainSender,
+        action: isOffer ? tr('message.sentOffer') : tr('message.sentOne'),
+      })}\n\n${bodies.join('\n\n')}\n\n${replyTo ? tr('message.textReplyOrOpen') : tr('message.textOpen')}`
+    : `Hi ${recipient.name || 'there'},\n\n${plainSender} ${
+        isOffer ? 'sent you a trip offer' : 'sent you a new message'
+      }.\n\n${bodies.join('\n\n')}\n\n${replyTo ? 'Reply to this email, or open' : 'Open'} your driver portal to reply.`;
 
   await sendEmail({
     to: recipient.email,
@@ -578,7 +622,7 @@ export const sendConversationNotificationEmail = async ({
     text,
     replyTo,
     // A named person gets more attention than a system alert; the address is unchanged.
-    senderName: forTraveller ? `${plainSender} via ${brandName}` : undefined,
+    senderName: forTraveller ? tr('message.senderVia', { sender: plainSender, brand: brandName }) : undefined,
     tags: forTraveller ? [isOffer ? EMAIL_TAGS.OFFER : EMAIL_TAGS.MESSAGE] : undefined,
   });
 };
@@ -644,23 +688,16 @@ const formatWholeCurrency = (value) => {
 
 const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
 
-const briefRouteLabel = (brief) =>
-  [brief?.startLocation, brief?.endLocation].filter(Boolean).join(' → ') || 'your trip';
+const briefRouteLabel = (brief, tr = EN) =>
+  [brief?.startLocation, brief?.endLocation].filter(Boolean).join(' → ') || tr('common.yourTrip');
 
 // The promises the site makes on its pricing and cancellation pages. Kept in
-// one place so every offer email says the same thing.
-const REASSURANCE_POINTS = [
-  'No booking fee',
-  'No deposit',
-  'Pay your driver on day one',
-  'Free cancellation up to 2 days before your trip',
-];
-
-const renderReassurance = () => ({
+// one place (reassurance.* in the email texts) so every offer email says the same thing.
+const renderReassurance = (tr = EN) => ({
   raw: `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px 0;">
     <tr>
       <td bgcolor="#eefaf3" style="padding:14px 16px;border-radius:12px;${cellStyles}">
-        <strong style="font-family:${fontStack};">Booking is risk-free.</strong> ${REASSURANCE_POINTS.join(' &middot; ')}. The price is locked once you accept an offer.
+        <strong style="font-family:${fontStack};">${tr('reassurance.title')}</strong> ${tr('reassurance.points').join(' &middot; ')}. ${tr('reassurance.locked')}
       </td>
     </tr>
   </table>`,
@@ -671,17 +708,17 @@ const renderStars = (rating) => {
   return `<span style="color:#f59e0b;">${'&#9733;'.repeat(full)}</span><span style="color:#cbd5e1;">${'&#9733;'.repeat(5 - full)}</span>`;
 };
 
-const describeDriverFacts = (offer) =>
+const describeDriverFacts = (offer, tr = EN) =>
   [
     offer.reviewCount > 0
-      ? `${renderStars(offer.rating)} ${Number(offer.rating).toFixed(1)} &middot; ${plural(offer.reviewCount, 'review')}`
-      : 'New on the platform',
-    offer.experienceYears > 0 ? `${offer.experienceYears} yr${offer.experienceYears === 1 ? '' : 's'}' experience` : null,
+      ? `${renderStars(offer.rating)} ${Number(offer.rating).toFixed(1)} &middot; ${tr('common.reviews', { count: offer.reviewCount })}`
+      : tr('card.newOnPlatform'),
+    offer.experienceYears > 0 ? tr('card.experience', { count: offer.experienceYears }) : null,
   ]
     .filter(Boolean)
     .join(' &middot; ');
 
-const renderOfferInclusions = (inclusions) => {
+const renderOfferInclusions = (inclusions, tr = EN) => {
   // Offers sent before inclusions existed carry no list; showing six crosses
   // for those would wrongly read as "nothing included".
   if (!Array.isArray(inclusions)) return '';
@@ -690,7 +727,7 @@ const renderOfferInclusions = (inclusions) => {
     // Grey cross, not red: in an email red reads as a warning about the offer.
     return `<td width="50%" valign="top" style="padding:2px 6px 2px 0;font-family:${fontStack};font-size:13px;line-height:1.45;color:${included ? '#0f172a' : '#94a3b8'};">
       <span style="color:${included ? '#059669' : '#94a3b8'};font-weight:800;">${included ? '&#10003;' : '&#10005;'}</span>
-      ${escapeHtml(OFFER_INCLUSION_LABELS[key])}
+      ${escapeHtml(tr(`card.inclusions.${key}`))}
     </td>`;
   };
   const rows = [];
@@ -700,6 +737,14 @@ const renderOfferInclusions = (inclusions) => {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:12px;">${rows.join('')}</table>`;
 };
 
+// Pick labels ("Best value", …) are set in English by quoteFollowUpService.
+const offerLabel = (label, tr = EN) => {
+  if (!label) return '';
+  const key = `card.labels.${label}`;
+  const value = tr(key);
+  return value === key ? label : value;
+};
+
 /**
  * One offer as a card. Offer shape (built in services/quoteFollowUpService.js):
  * { driverName, driverPhoto, rating, reviewCount, experienceYears, vehicleModel,
@@ -707,47 +752,51 @@ const renderOfferInclusions = (inclusions) => {
  *   note, viewUrl, label }
  * `expired` greys the card and drops its link.
  */
-const renderOfferCard = (offer, { expired = false, button = true } = {}) => {
+const renderOfferCard = (offer, { expired = false, button = true, tr = EN, lang = 'en' } = {}) => {
   const vehicle = [
     offer.vehicleModel ? escapeHtml(offer.vehicleModel) : null,
-    offer.vehicleSeats ? `${offer.vehicleSeats} seats` : null,
+    offer.vehicleSeats ? tr('card.seats', { count: offer.vehicleSeats }) : null,
   ].filter(Boolean).join(', ');
   const perDay = offer.days > 0 && Number.isFinite(offer.totalPrice) ? formatWholeCurrency(offer.totalPrice / offer.days) : '';
   const distance = Number.isFinite(offer.totalKms)
-    ? `${offer.totalKms} km included${Number.isFinite(offer.pricePerExtraKm) ? `, then $${Number(offer.pricePerExtraKm).toFixed(2)} per km` : ''}`
+    ? Number.isFinite(offer.pricePerExtraKm)
+      ? tr('card.kmsThen', { km: offer.totalKms, rate: `$${Number(offer.pricePerExtraKm).toFixed(2)}` })
+      : tr('card.kms', { km: offer.totalKms })
     : '';
   const initial = escapeHtml((offer.driverName || 'D').trim().charAt(0).toUpperCase());
   const photo = offer.driverPhoto
     ? `<img src="${offer.driverPhoto}" alt="" width="52" height="52" style="display:block;border:0;width:52px;height:52px;border-radius:26px;" />`
     : `<table role="presentation" cellpadding="0" cellspacing="0"><tr><td width="52" height="52" align="center" bgcolor="#e2e8f0" style="border-radius:26px;font-family:${fontStack};font-size:20px;font-weight:700;color:#475569;">${initial}</td></tr></table>`;
+  const label = offerLabel(offer.label, tr);
+  const viewUrl = localizeUrl(offer.viewUrl, lang);
 
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 14px 0;border:1px solid #e2e8f0;border-radius:14px;">
     <tr>
       <td style="padding:16px;${expired ? 'opacity:0.7;' : ''}">
         ${
-          offer.label
-            ? `<div style="margin:0 0 10px 0;font-family:${fontStack};font-size:11px;font-weight:800;letter-spacing:0.08em;color:${brandColor};">${escapeHtml(offer.label.toUpperCase())}</div>`
+          label
+            ? `<div style="margin:0 0 10px 0;font-family:${fontStack};font-size:11px;font-weight:800;letter-spacing:0.08em;color:${brandColor};">${escapeHtml(label.toUpperCase())}</div>`
             : ''
         }
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
           <tr>
             <td width="64" valign="top">${photo}</td>
             <td valign="top" style="${cellStyles}">
-              <div style="font-family:${fontStack};font-size:16px;font-weight:700;color:#0f172a;">${escapeHtml(offer.driverName || 'Driver')}</div>
-              <div style="font-family:${fontStack};font-size:13px;color:#475569;">${describeDriverFacts(offer)}</div>
+              <div style="font-family:${fontStack};font-size:16px;font-weight:700;color:#0f172a;">${escapeHtml(offer.driverName || tr('common.driver'))}</div>
+              <div style="font-family:${fontStack};font-size:13px;color:#475569;">${describeDriverFacts(offer, tr)}</div>
               ${vehicle ? `<div style="font-family:${fontStack};font-size:13px;color:#475569;">${vehicle}</div>` : ''}
             </td>
           </tr>
         </table>
         <div style="margin-top:12px;font-family:${fontStack};">
           <span style="font-family:${fontStack};font-size:22px;font-weight:800;color:${expired ? '#94a3b8' : '#0f172a'};${expired ? 'text-decoration:line-through;' : ''}">${formatWholeCurrency(offer.totalPrice)}</span>
-          <span style="font-family:${fontStack};font-size:13px;color:#475569;"> total${perDay ? ` &nbsp;&middot;&nbsp; ${perDay} / day` : ''}</span>
+          <span style="font-family:${fontStack};font-size:13px;color:#475569;">${tr('card.total')}${perDay ? ` &nbsp;&middot;&nbsp; ${tr('card.perDay', { amount: perDay })}` : ''}</span>
         </div>
         ${distance ? `<div style="font-family:${fontStack};font-size:13px;color:#475569;">${distance}</div>` : ''}
-        ${renderOfferInclusions(offer.inclusions)}
+        ${renderOfferInclusions(offer.inclusions, tr)}
         ${
-          !expired && button && offer.viewUrl
-            ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:14px;"><tr><td align="center" bgcolor="${brandColor}" style="border-radius:10px;"><a href="${offer.viewUrl}" style="display:inline-block;padding:12px 20px;font-family:${fontStack};font-size:14px;font-weight:600;line-height:20px;color:#ffffff;text-decoration:none;border-radius:10px;">View offer and chat</a></td></tr></table>`
+          !expired && button && viewUrl
+            ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:14px;"><tr><td align="center" bgcolor="${brandColor}" style="border-radius:10px;"><a href="${viewUrl}" style="display:inline-block;padding:12px 20px;font-family:${fontStack};font-size:14px;font-weight:600;line-height:20px;color:#ffffff;text-decoration:none;border-radius:10px;">${tr('common.viewOfferAndChat')}</a></td></tr></table>`
             : ''
         }
       </td>
@@ -757,10 +806,10 @@ const renderOfferCard = (offer, { expired = false, button = true } = {}) => {
 
 const renderOfferCards = (offers, options) => ({ raw: offers.map((offer) => renderOfferCard(offer, options)).join('') });
 
-const describeOfferText = (offer) =>
-  `- ${offer.label ? `${offer.label}: ` : ''}${offer.driverName || 'Driver'}, ${formatWholeCurrency(offer.totalPrice)}${
+const describeOfferText = (offer, tr = EN, lang = 'en') =>
+  `- ${offer.label ? `${offerLabel(offer.label, tr)}: ` : ''}${offer.driverName || tr('common.driver')}, ${formatWholeCurrency(offer.totalPrice)}${
     offer.vehicleModel ? `, ${offer.vehicleModel}` : ''
-  }${Number.isFinite(offer.totalKms) ? `, ${offer.totalKms} km included` : ''}${offer.viewUrl ? `\n  ${offer.viewUrl}` : ''}`;
+  }${Number.isFinite(offer.totalKms) ? `, ${tr('card.kms', { km: offer.totalKms })}` : ''}${offer.viewUrl ? `\n  ${localizeUrl(offer.viewUrl, lang)}` : ''}`;
 
 const listUnsubscribeHeaders = (preferencesUrl) =>
   preferencesUrl
@@ -774,10 +823,11 @@ const listUnsubscribeHeaders = (preferencesUrl) =>
       }
     : undefined;
 
-const withTextFooter = (text, preferencesUrl) =>
-  `${text}\n\nNo booking fee. No deposit. Free cancellation up to 2 days before your trip.${
-    preferencesUrl ? `\n\nEmail me less often: ${preferencesUrl}` : ''
-  }`;
+const withTextFooter = (text, preferencesUrl, tr = EN) =>
+  `${text}\n\n${tr('footer.textFooter')}${preferencesUrl ? `\n\n${tr('footer.textLessOften', { url: preferencesUrl })}` : ''}`;
+
+const greeting = (tr, name, { html = true } = {}) =>
+  tr('common.hi', { name: html ? escapeHtml(name || tr('common.there')) : name || tr('common.there') });
 
 /** Sent the moment a quote request is posted: says what will happen and when. */
 export const sendQuoteRequestReceivedEmail = async ({ traveler, brief, preferencesUrl }) => {
@@ -785,42 +835,44 @@ export const sendQuoteRequestReceivedEmail = async ({ traveler, brief, preferenc
     return;
   }
 
-  const route = briefRouteLabel(brief);
-  const requestsUrl = buildUrl('/dashboard?tab=requests');
+  const lang = await languageOf(traveler);
+  const tr = emailT(lang);
+  const route = briefRouteLabel(brief, tr);
+  const requestsUrl = localizeUrl(buildUrl('/dashboard?tab=requests'), lang);
   const supportEmail = getSupportEmail();
+  const dates = formatDateRange(brief?.startDate, brief?.endDate, lang);
 
   const html = buildEmailTemplate({
-    title: 'Your trip request is live',
-    preheader: 'Drivers are being notified now. Here is what happens next.',
+    lang,
+    title: tr('received.title'),
+    preheader: tr('received.preheader'),
     bodyLines: [
-      `Hi ${escapeHtml(traveler.name || 'there')},`,
-      `Your request for <strong>${escapeHtml(route)}</strong> (${formatDateRange(brief?.startDate, brief?.endDate)}, ${plural(
-        Number(brief?.adults) || 1,
-        'adult'
-      )}) has gone to approved drivers across Sri Lanka.`,
-      '<strong>What happens next</strong>',
+      greeting(tr, traveler.name),
+      tr('received.body', { route: escapeHtml(route), dates, adults: tr('common.adults', { count: Number(brief?.adults) || 1 }) }),
+      tr('received.nextTitle'),
       {
         raw: `<ol style="margin:0 0 14px 20px;padding:0;color:#0f172a;font-size:15px;line-height:1.6;font-family:${fontStack};">
-          <li style="margin-bottom:6px;font-family:${fontStack};">Drivers send you offers, often within the first hour.</li>
-          <li style="margin-bottom:6px;font-family:${fontStack};">We email you the first one straight away, then a summary so your inbox stays clear.</li>
-          <li style="font-family:${fontStack};">Chat with any driver, compare, and book the one you like.</li>
+          ${tr('received.steps')
+            .map((step, index, all) => `<li style="${index < all.length - 1 ? 'margin-bottom:6px;' : ''}font-family:${fontStack};">${step}</li>`)
+            .join('\n          ')}
         </ol>`,
       },
-      renderReassurance(),
-      `<strong>One quick favour:</strong> add ${supportEmail} to your contacts, or move this email to your main inbox, so the offers reach you.`,
+      renderReassurance(tr),
+      tr('received.favour', { email: supportEmail }),
     ],
-    action: { label: 'View my request', url: requestsUrl },
+    action: { label: tr('common.viewMyRequest'), url: requestsUrl },
     preferencesUrl,
   });
 
   const text = withTextFooter(
-    `Hi ${traveler.name || 'there'},\n\nYour request for ${route} (${formatDateRange(brief?.startDate, brief?.endDate)}) has gone to approved drivers across Sri Lanka.\n\nWhat happens next:\n1. Drivers send you offers, often within the first hour.\n2. We email you the first one straight away, then a summary.\n3. Chat with any driver, compare, and book the one you like.\n\nView your request: ${requestsUrl}`,
-    preferencesUrl
+    `${greeting(tr, traveler.name, { html: false })}\n\n${tr('received.text', { route, dates, url: requestsUrl })}`,
+    preferencesUrl,
+    tr
   );
 
   await sendEmail({
     to: traveler.email,
-    subject: 'Your Sri Lanka trip request is live',
+    subject: tr('received.subject'),
     html,
     text,
     headers: listUnsubscribeHeaders(preferencesUrl),
@@ -834,128 +886,137 @@ export const sendFirstOfferEmail = async ({ traveler, brief, offer, replyTo, pre
     return;
   }
 
-  const route = briefRouteLabel(brief);
-  const driverName = offer.driverName || 'A driver';
+  const lang = await languageOf(traveler);
+  const tr = emailT(lang);
+  const route = briefRouteLabel(brief, tr);
+  const driverName = offer.driverName || tr('common.aDriver');
   const price = formatWholeCurrency(offer.totalPrice);
+  const viewUrl = localizeUrl(offer.viewUrl, lang);
   const previewFacts = [
     offer.vehicleModel,
-    offer.days > 0 ? plural(offer.days, 'day') : null,
-    offer.reviewCount > 0 ? `★ ${Number(offer.rating).toFixed(1)} from ${plural(offer.reviewCount, 'review')}` : null,
+    offer.days > 0 ? tr('common.days', { count: offer.days }) : null,
+    offer.reviewCount > 0
+      ? tr('first.ratingFrom', { rating: Number(offer.rating).toFixed(1), reviews: tr('common.reviews', { count: offer.reviewCount }) })
+      : null,
   ].filter(Boolean).join(' · ');
 
   const html = buildEmailTemplate({
-    title: 'Your first offer is in',
-    preheader: escapeHtml(`${previewFacts}${previewFacts ? '. ' : ''}More drivers are replying.`),
+    lang,
+    title: tr('first.title'),
+    preheader: escapeHtml(`${previewFacts}${previewFacts ? '. ' : ''}${tr('first.more')}`),
     bodyLines: [
-      `Hi ${escapeHtml(traveler.name || 'there')},`,
-      `${escapeHtml(driverName)} has sent the first offer for your <strong>${escapeHtml(route)}</strong> trip. More drivers usually reply over the next few hours, and we will send you a summary so your inbox doesn't fill up.`,
-      renderOfferCards([offer], { button: false }),
+      greeting(tr, traveler.name),
+      tr('first.body', { driver: escapeHtml(driverName), route: escapeHtml(route) }),
+      renderOfferCards([offer], { button: false, tr, lang }),
       offer.note
         ? { raw: `<blockquote style="margin:0 0 16px 0;padding:12px 16px;border-left:4px solid ${brandColor};background:#f1f5f9;border-radius:12px;color:#0f172a;font-size:14px;line-height:1.6;font-family:${fontStack};">${formatMultiline(offer.note)}</blockquote>` }
         : null,
-      replyTo
-        ? `Reply to this email to ask ${escapeHtml(driverName)} a question. Your reply goes straight to the chat.`
-        : null,
-      renderReassurance(),
+      replyTo ? tr('first.replyAsk', { driver: escapeHtml(driverName) }) : null,
+      renderReassurance(tr),
     ],
-    action: offer.viewUrl ? { label: 'View offer and chat', url: offer.viewUrl } : null,
+    action: viewUrl ? { label: tr('common.viewOfferAndChat'), url: viewUrl } : null,
     replyable: Boolean(replyTo),
     preferencesUrl,
   });
 
+  const details = `${price}${offer.vehicleModel ? `, ${offer.vehicleModel}` : ''}${
+    Number.isFinite(offer.totalKms) ? `, ${tr('card.kms', { km: offer.totalKms })}` : ''
+  }`;
   const text = withTextFooter(
-    `Hi ${traveler.name || 'there'},\n\n${driverName} has sent the first offer for your ${route} trip: ${price}${
-      offer.vehicleModel ? `, ${offer.vehicleModel}` : ''
-    }${Number.isFinite(offer.totalKms) ? `, ${offer.totalKms} km included` : ''}.\n${offer.note ? `\n${offer.note}\n` : ''}\nView the offer: ${offer.viewUrl || buildUrl('/dashboard?tab=messages')}`,
-    preferencesUrl
+    `${greeting(tr, traveler.name, { html: false })}\n\n${tr('first.text', { driver: driverName, route, details })}\n${
+      offer.note ? `\n${offer.note}\n` : ''
+    }\n${tr('first.viewOffer', { url: viewUrl || localizeUrl(buildUrl('/dashboard?tab=messages'), lang) })}`,
+    preferencesUrl,
+    tr
   );
 
   await sendEmail({
     to: traveler.email,
-    subject: `${driverName}: ${price} for your ${route} trip`,
+    subject: tr('first.subject', { driver: driverName, price, route }),
     html,
     text,
     replyTo,
-    senderName: `${driverName} via ${getBrandName()}`,
+    senderName: tr('message.senderVia', { sender: driverName, brand: getBrandName() }),
     headers: listUnsubscribeHeaders(preferencesUrl),
     tags: [EMAIL_TAGS.FIRST_OFFER],
   });
 };
 
+// Text for each summary is in digest.<variant>.* of the email texts.
 const DIGEST_VARIANTS = {
   // A few hours after the first offer: our picks out of everything received.
   digest1: {
     tag: EMAIL_TAGS.DIGEST,
-    subject: ({ total, route, shown }) =>
-      total > shown ? `${total} drivers replied — our top ${shown} picks for ${route}` : `${plural(total, 'driver')} replied to your ${route} request`,
-    title: ({ total }) => (total === 1 ? 'A driver wants to show you Sri Lanka' : `${total} drivers want to show you Sri Lanka`),
-    intro: ({ total, shown, route, dates }) =>
+    subject: (tr, { total, route, shown }) =>
       total > shown
-        ? `${total} drivers have offered to take you on your <strong>${route}</strong> trip (${dates}). To save you comparing them all, here are the ${shown} we would look at first.`
-        : `${total === 1 ? 'A driver has' : `${total} drivers have`} offered to take you on your <strong>${route}</strong> trip (${dates}).`,
-    outro: 'Not sure which to choose? Reply to this email with your questions and our team in Sri Lanka will help you decide.',
-    helpByReply: true,
+        ? tr('digest.digest1.subjectTop', { total, shown, route })
+        : tr('digest.digest1.subjectAll', { drivers: tr('common.drivers', { count: total }), route }),
+    title: (tr, { total }) => (total === 1 ? tr('digest.digest1.titleOne') : tr('digest.digest1.titleMany', { total })),
+    intro: (tr, { total, shown, route, dates }) =>
+      total > shown
+        ? tr('digest.digest1.introTop', { total, shown, route, dates })
+        : total === 1
+          ? tr('digest.digest1.introOne', { route, dates })
+          : tr('digest.digest1.introMany', { total, route, dates }),
+    outro: (tr) => tr('digest.digest1.outro'),
   },
   // At most once a day: offers that arrived since we last wrote.
   update: {
     tag: EMAIL_TAGS.UPDATE,
-    subject: ({ fresh, route }) => `${plural(fresh, 'new offer')} for your ${route} trip`,
-    title: ({ fresh }) => `${plural(fresh, 'new offer')} since we last wrote`,
-    intro: ({ fresh, total, route }) =>
-      `${fresh === 1 ? 'Another driver has' : `${fresh} more drivers have`} sent an offer for your <strong>${route}</strong> trip. You now have ${plural(total, 'offer')} you can book.`,
-    outro: 'Not sure which to choose? Reply to this email with your questions and our team in Sri Lanka will help you decide.',
-    helpByReply: true,
+    subject: (tr, { fresh, route }) => tr('digest.update.subject', { fresh: tr('common.newOffers', { count: fresh }), route }),
+    title: (tr, { fresh }) => tr('digest.update.title', { fresh: tr('common.newOffers', { count: fresh }) }),
+    intro: (tr, { fresh, total, route }) =>
+      fresh === 1
+        ? tr('digest.update.introOne', { route, total: tr('common.offers', { count: total }) })
+        : tr('digest.update.introMany', { count: fresh, route, total: tr('common.offers', { count: total }) }),
+    outro: (tr) => tr('digest.update.outro'),
   },
   // Three days on: ask what is in the way.
   digest2: {
     tag: EMAIL_TAGS.STILL_DECIDING,
-    subject: ({ route }) => `Still planning your ${route} trip?`,
-    title: () => 'Still planning your trip?',
-    intro: ({ total, route }) =>
-      `Your request for <strong>${route}</strong> has ${plural(total, 'offer')} you can still book. If something is in the way, tell us and we will stop guessing.`,
-    outro: 'Any questions before you decide? Reply to this email and our team in Sri Lanka will help.',
-    helpByReply: true,
+    subject: (tr, { route }) => tr('digest.digest2.subject', { route }),
+    title: (tr) => tr('digest.digest2.title'),
+    intro: (tr, { total, route }) => tr('digest.digest2.intro', { route, total: tr('common.offers', { count: total }) }),
+    outro: (tr) => tr('digest.digest2.outro'),
     askWhy: true,
   },
   // 30 and 14 days before the start date.
   approaching: {
     tag: EMAIL_TAGS.APPROACHING,
-    subject: ({ daysToTrip }) => `Your trip is in ${daysToTrip} days — your driver isn't booked yet`,
-    title: ({ daysToTrip }) => `${daysToTrip} days to go, and no driver booked yet`,
-    intro: ({ total, route, dates }) =>
-      `Your <strong>${route}</strong> trip starts on ${dates.split(' — ')[0]}. You have ${plural(total, 'offer')} waiting, and booking one takes a minute.`,
-    outro: 'Any questions before you decide? Reply to this email and our team in Sri Lanka will help.',
-    helpByReply: true,
+    subject: (tr, { daysToTrip }) => tr('digest.approaching.subject', { days: daysToTrip }),
+    title: (tr, { daysToTrip }) => tr('digest.approaching.title', { days: daysToTrip }),
+    intro: (tr, { total, route, startLabel }) =>
+      tr('digest.approaching.intro', { route, start: startLabel, total: tr('common.offers', { count: total }) }),
+    outro: (tr) => tr('digest.approaching.outro'),
   },
   // A day before the first bookable offer lapses.
   expiring: {
     tag: EMAIL_TAGS.EXPIRING,
-    subject: ({ lead }) => `${lead.driverName || 'Your driver'}'s ${formatWholeCurrency(lead.totalPrice)} offer expires tomorrow`,
-    title: () => 'An offer expires tomorrow',
-    intro: ({ lead, route }) =>
-      `${escapeHtml(lead.driverName || 'Your driver')}'s ${formatWholeCurrency(lead.totalPrice)} offer for your <strong>${route}</strong> trip expires within a day. After that they would need to send a new one, and the price may change.`,
-    outro: 'Any questions before you decide? Reply to this email and our team in Sri Lanka will help.',
-    helpByReply: true,
+    subject: (tr, { lead }) =>
+      tr('digest.expiring.subject', { driver: lead.driverName || tr('common.YourDriver'), price: formatWholeCurrency(lead.totalPrice) }),
+    title: (tr) => tr('digest.expiring.title'),
+    intro: (tr, { lead, route }) =>
+      tr('digest.expiring.intro', {
+        driver: escapeHtml(lead.driverName || tr('common.YourDriver')),
+        price: formatWholeCurrency(lead.totalPrice),
+        route,
+      }),
+    outro: (tr) => tr('digest.expiring.outro'),
   },
 };
 
-const WHY_ANSWERS = [
-  { key: 'price', label: 'Prices are higher than I expected' },
-  { key: 'dates', label: "I haven't fixed my dates" },
-  { key: 'choice', label: "I can't choose a driver" },
-  { key: 'booked', label: "I've booked something else" },
-];
+const WHY_ANSWERS = ['price', 'dates', 'choice', 'booked'];
 
-const renderWhyQuestion = (answerUrls = {}) => {
-  const buttons = WHY_ANSWERS.filter((answer) => answerUrls[answer.key])
+const renderWhyQuestion = (answerUrls = {}, tr = EN) => {
+  const buttons = WHY_ANSWERS.filter((key) => answerUrls[key])
     .map(
-      (answer) =>
-        `<tr><td style="padding:0 0 8px 0;"><a href="${answerUrls[answer.key]}" style="display:block;padding:12px 16px;border:1px solid #cbd5e1;border-radius:10px;font-family:${fontStack};font-size:14px;font-weight:600;line-height:20px;color:#0f172a;text-decoration:none;">${escapeHtml(answer.label)}</a></td></tr>`
+      (key) =>
+        `<tr><td style="padding:0 0 8px 0;"><a href="${answerUrls[key]}" style="display:block;padding:12px 16px;border:1px solid #cbd5e1;border-radius:10px;font-family:${fontStack};font-size:14px;font-weight:600;line-height:20px;color:#0f172a;text-decoration:none;">${escapeHtml(tr(`digest.why.${key}`))}</a></td></tr>`
     )
     .join('');
   if (!buttons) return null;
   return {
-    raw: `<p style="${paragraphStyles}font-weight:700;">What's holding you back?</p>
+    raw: `<p style="${paragraphStyles}font-weight:700;">${tr('digest.why.title')}</p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px 0;">${buttons}</table>`,
   };
 };
@@ -988,53 +1049,58 @@ export const sendQuoteOffersDigestEmail = async ({
     return;
   }
 
+  const lang = await languageOf(traveler);
+  const tr = emailT(lang);
   const copy = DIGEST_VARIANTS[variant] || DIGEST_VARIANTS.digest1;
   const total = Number.isFinite(totalCount) ? totalCount : offers.length;
-  const dashboardUrl = buildUrl('/dashboard?tab=messages');
+  const dashboardUrl = localizeUrl(buildUrl('/dashboard?tab=messages'), lang);
   const startMonth = brief?.startDate ? new Date(brief.startDate).getUTCMonth() : -1;
   const context = {
     total,
     shown: offers.length,
     fresh: freshCount || offers.length,
-    route: escapeHtml(briefRouteLabel(brief)),
-    dates: formatDateRange(brief?.startDate, brief?.endDate),
+    route: escapeHtml(briefRouteLabel(brief, tr)),
+    dates: formatDateRange(brief?.startDate, brief?.endDate, lang),
+    startLabel: formatDate(brief?.startDate, lang),
     lead: leadOffer || offers[0],
     daysToTrip,
   };
   const lowest = formatWholeCurrency(Math.min(...offers.map((offer) => Number(offer.totalPrice) || Infinity)));
 
   const html = buildEmailTemplate({
-    title: copy.title(context),
-    preheader: escapeHtml(`${lowest ? `From ${lowest}. ` : ''}No booking fee, pay your driver on day one.`),
+    lang,
+    title: copy.title(tr, context),
+    preheader: escapeHtml(`${lowest ? tr('digest.preheaderFrom', { price: lowest }) : ''}${tr('digest.preheader')}`),
     bodyLines: [
-      `Hi ${escapeHtml(traveler.name || 'there')},`,
-      copy.intro(context),
+      greeting(tr, traveler.name),
+      copy.intro(tr, context),
       // December and January are Sri Lanka's peak months.
-      variant === 'expiring' && (startMonth === 11 || startMonth === 0)
-        ? 'Your dates fall in peak season, when drivers fill their calendars early.'
-        : null,
-      copy.askWhy ? renderWhyQuestion(answerUrls) : null,
-      renderOfferCards(offers),
+      variant === 'expiring' && (startMonth === 11 || startMonth === 0) ? tr('digest.peak') : null,
+      copy.askWhy ? renderWhyQuestion(answerUrls, tr) : null,
+      renderOfferCards(offers, { tr, lang }),
       total > offers.length
-        ? `<a href="${dashboardUrl}" style="font-family:${fontStack};color:${brandColor};font-weight:700;">See all ${total} offers</a>`
+        ? `<a href="${dashboardUrl}" style="font-family:${fontStack};color:${brandColor};font-weight:700;">${tr('digest.seeAll', { total })}</a>`
         : null,
-      renderReassurance(),
-      replyTo ? copy.outro : null,
+      renderReassurance(tr),
+      replyTo ? copy.outro(tr) : null,
     ],
-    action: { label: total > 1 ? `Compare all ${total} offers` : 'Open your offer', url: dashboardUrl },
+    action: { label: total > 1 ? tr('digest.compareAll', { total }) : tr('digest.openOffer'), url: dashboardUrl },
     replyable: replyTo ? 'support' : false,
     preferencesUrl,
   });
 
-  const plainContext = { ...context, route: briefRouteLabel(brief) };
+  const plainContext = { ...context, route: briefRouteLabel(brief, tr) };
   const text = withTextFooter(
-    `Hi ${traveler.name || 'there'},\n\n${copy.title(plainContext)}\n\n${offers.map(describeOfferText).join('\n')}\n\nCompare and book in your dashboard: ${dashboardUrl}`,
-    preferencesUrl
+    `${greeting(tr, traveler.name, { html: false })}\n\n${copy.title(tr, plainContext)}\n\n${offers
+      .map((offer) => describeOfferText(offer, tr, lang))
+      .join('\n')}\n\n${tr('digest.text', { url: dashboardUrl })}`,
+    preferencesUrl,
+    tr
   );
 
   await sendEmail({
     to: traveler.email,
-    subject: copy.subject(plainContext),
+    subject: copy.subject(tr, plainContext),
     html,
     text,
     replyTo,
@@ -1052,40 +1118,42 @@ export const sendQuoteOffersExpiredEmail = async ({ traveler, brief, offers = []
     return;
   }
 
-  const route = briefRouteLabel(brief);
-  const dashboardUrl = buildUrl('/dashboard?tab=messages');
+  const lang = await languageOf(traveler);
+  const tr = emailT(lang);
+  const route = briefRouteLabel(brief, tr);
+  const dashboardUrl = localizeUrl(buildUrl('/dashboard?tab=messages'), lang);
 
   const html = buildEmailTemplate({
-    title: 'Your offers have expired',
-    preheader: escapeHtml(`Get fresh prices for ${route} in one step.`),
+    lang,
+    title: tr('expired.title'),
+    preheader: escapeHtml(tr('expired.preheader', { route })),
     bodyLines: [
-      `Hi ${escapeHtml(traveler.name || 'there')},`,
-      `The offers drivers sent for your <strong>${escapeHtml(route)}</strong> trip (${formatDateRange(
-        brief?.startDate,
-        brief?.endDate
-      )}) have expired, so they can no longer be booked as they are.`,
+      greeting(tr, traveler.name),
+      tr('expired.body', { route: escapeHtml(route), dates: formatDateRange(brief?.startDate, brief?.endDate, lang) }),
+      repostUrl ? tr('expired.repost') : tr('expired.noRepost'),
       repostUrl
-        ? 'Still planning this trip? Post the same request again and drivers will send you up-to-date prices. You do not need to fill anything in.'
-        : 'Still planning this trip? Open the conversation with any driver below and tap <strong>Request new offer</strong>.',
-      repostUrl
-        ? `Prefer one of the drivers below? Open your <a href="${dashboardUrl}" style="font-family:${fontStack};color:${brandColor};font-weight:700;">messages</a> and tap <strong>Request new offer</strong> in their chat.`
+        ? tr('expired.preferDriver').replace(
+            /<link>(.*?)<\/link>/,
+            `<a href="${dashboardUrl}" style="font-family:${fontStack};color:${brandColor};font-weight:700;">$1</a>`
+          )
         : null,
-      offers.length > 0 ? renderOfferCards(offers, { expired: true }) : null,
+      offers.length > 0 ? renderOfferCards(offers, { expired: true, tr, lang }) : null,
     ],
-    action: repostUrl ? { label: 'Post this request again', url: repostUrl } : { label: 'Request new offers', url: dashboardUrl },
+    action: repostUrl ? { label: tr('expired.actionRepost'), url: repostUrl } : { label: tr('expired.actionNew'), url: dashboardUrl },
     preferencesUrl,
   });
 
   const text = withTextFooter(
-    `Hi ${traveler.name || 'there'},\n\nThe offers for your ${route} trip have expired.\n\n${
-      repostUrl ? `Post the same request again: ${repostUrl}\n\n` : ''
-    }Or ask a driver for a new offer in your messages: ${dashboardUrl}`,
-    preferencesUrl
+    `${greeting(tr, traveler.name, { html: false })}\n\n${tr('expired.text', { route })}\n\n${
+      repostUrl ? `${tr('expired.textRepost', { url: repostUrl })}\n\n` : ''
+    }${tr('expired.textAsk', { url: dashboardUrl })}`,
+    preferencesUrl,
+    tr
   );
 
   await sendEmail({
     to: traveler.email,
-    subject: `Your offers for ${route} have expired`,
+    subject: tr('expired.subject', { route }),
     html,
     text,
     headers: listUnsubscribeHeaders(preferencesUrl),
@@ -1099,38 +1167,43 @@ export const sendNoOffersYetEmail = async ({ traveler, brief, preferencesUrl }) 
     return;
   }
 
-  const route = briefRouteLabel(brief);
-  const requestsUrl = buildUrl('/dashboard?tab=requests');
+  const lang = await languageOf(traveler);
+  const tr = emailT(lang);
+  const route = briefRouteLabel(brief, tr);
+  const requestsUrl = localizeUrl(buildUrl('/dashboard?tab=requests'), lang);
   const whatsApp = getWhatsAppNumber();
 
   const html = buildEmailTemplate({
-    title: 'Still waiting on your first offer',
-    preheader: 'Some routes and dates take longer. Here is what can help.',
+    lang,
+    title: tr('noOffers.title'),
+    preheader: tr('noOffers.preheader'),
     bodyLines: [
-      `Hi ${escapeHtml(traveler.name || 'there')},`,
-      `No driver has sent an offer yet for your <strong>${escapeHtml(route)}</strong> trip (${formatDateRange(brief?.startDate, brief?.endDate)}). Some routes and dates take longer, and your request stays open to every approved driver.`,
-      '<strong>Two things that usually help</strong>',
+      greeting(tr, traveler.name),
+      tr('noOffers.body', { route: escapeHtml(route), dates: formatDateRange(brief?.startDate, brief?.endDate, lang) }),
+      tr('noOffers.helpTitle'),
       {
         raw: `<ul style="margin:0 0 14px 20px;padding:0;color:#0f172a;font-size:15px;line-height:1.6;font-family:${fontStack};">
-          <li style="margin-bottom:6px;font-family:${fontStack};">Add detail: the places you want to visit, your group size and luggage, and whether your dates are flexible.</li>
-          <li style="font-family:${fontStack};">Message us on WhatsApp at ${escapeHtml(whatsApp)} and we will point drivers to your request.</li>
+          ${tr('noOffers.help')
+            .map((item, index, all) => `<li style="${index < all.length - 1 ? 'margin-bottom:6px;' : ''}font-family:${fontStack};">${item.replace('{whatsapp}', escapeHtml(whatsApp))}</li>`)
+            .join('\n          ')}
         </ul>`,
       },
-      'We will email you as soon as the first offer arrives.',
+      tr('noOffers.willEmail'),
     ],
-    action: { label: 'View my request', url: requestsUrl },
+    action: { label: tr('common.viewMyRequest'), url: requestsUrl },
     replyable: 'support',
     preferencesUrl,
   });
 
   const text = withTextFooter(
-    `Hi ${traveler.name || 'there'},\n\nNo driver has sent an offer yet for your ${route} trip. Some routes and dates take longer, and your request stays open.\n\nIt helps to add detail to your request, or message us on WhatsApp at ${whatsApp}.\n\nView your request: ${requestsUrl}`,
-    preferencesUrl
+    `${greeting(tr, traveler.name, { html: false })}\n\n${tr('noOffers.text', { route, whatsapp: whatsApp, url: requestsUrl })}`,
+    preferencesUrl,
+    tr
   );
 
   await sendEmail({
     to: traveler.email,
-    subject: `No offers yet for your ${route} trip — here is what helps`,
+    subject: tr('noOffers.subject', { route }),
     html,
     text,
     replyTo: getSupportEmail(),
@@ -1149,46 +1222,59 @@ export const sendOfferReminderEmail = async ({ recipient, offers = [], preferenc
     return;
   }
 
+  const lang = await languageOf(recipient);
+  const tr = emailT(lang);
   const first = offers[0];
-  const firstDriver = first.driverName || 'your driver';
+  const firstDriver = first.driverName || tr('common.yourDriver');
   const rows = offers
     .map(
       (offer) => `<tr>
         <td style="padding:12px 14px;border:1px solid #e2e8f0;border-radius:12px;${cellStyles}">
-          <strong style="font-family:${fontStack};">${escapeHtml(offer.driverName || 'Driver')}</strong> &middot; ${formatWholeCurrency(offer.totalPrice)}
-          <div style="font-family:${fontStack};font-size:13px;color:#475569;">${[offer.vehicleModel ? escapeHtml(offer.vehicleModel) : null, offer.startDate ? `from ${formatDate(offer.startDate)}` : null].filter(Boolean).join(' &middot; ')}</div>
-          ${offer.viewUrl ? `<a href="${offer.viewUrl}" style="font-family:${fontStack};font-size:13px;font-weight:700;color:${brandColor};">View offer</a>` : ''}
+          <strong style="font-family:${fontStack};">${escapeHtml(offer.driverName || tr('common.driver'))}</strong> &middot; ${formatWholeCurrency(offer.totalPrice)}
+          <div style="font-family:${fontStack};font-size:13px;color:#475569;">${[offer.vehicleModel ? escapeHtml(offer.vehicleModel) : null, offer.startDate ? tr('reminder.from', { date: formatDate(offer.startDate, lang) }) : null].filter(Boolean).join(' &middot; ')}</div>
+          ${offer.viewUrl ? `<a href="${localizeUrl(offer.viewUrl, lang)}" style="font-family:${fontStack};font-size:13px;font-weight:700;color:${brandColor};">${tr('reminder.viewOffer')}</a>` : ''}
         </td>
       </tr><tr><td height="8" style="font-size:0;line-height:0;">&nbsp;</td></tr>`
     )
     .join('');
 
   const html = buildEmailTemplate({
-    title: offers.length === 1 ? 'Your offer is still open' : `${offers.length} offers are still open`,
-    preheader: escapeHtml(`${formatWholeCurrency(first.totalPrice)}${first.vehicleModel ? ` · ${first.vehicleModel}` : ''}. No booking fee, no deposit.`),
+    lang,
+    title: offers.length === 1 ? tr('reminder.titleOne') : tr('reminder.titleMany', { count: offers.length }),
+    preheader: escapeHtml(
+      tr('reminder.preheader', { price: formatWholeCurrency(first.totalPrice), model: first.vehicleModel ? ` · ${first.vehicleModel}` : '' })
+    ),
     bodyLines: [
-      `Hi ${escapeHtml(recipient.name || 'there')},`,
+      greeting(tr, recipient.name),
       offers.length === 1
-        ? `${escapeHtml(firstDriver)} sent you an offer you have not opened yet.`
-        : `You have ${offers.length} offers you have not opened yet.`,
+        ? tr('reminder.bodyOne', { driver: escapeHtml(firstDriver) })
+        : tr('reminder.bodyMany', { count: offers.length }),
       { raw: `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 8px 0;">${rows}</table>` },
-      renderReassurance(),
+      renderReassurance(tr),
     ],
-    action: { label: offers.length === 1 ? 'View offer' : 'View my offers', url: offers.length === 1 && first.viewUrl ? first.viewUrl : buildUrl('/dashboard?tab=messages') },
+    action: {
+      label: offers.length === 1 ? tr('reminder.actionOne') : tr('reminder.actionMany'),
+      url: offers.length === 1 && first.viewUrl ? localizeUrl(first.viewUrl, lang) : localizeUrl(buildUrl('/dashboard?tab=messages'), lang),
+    },
     preferencesUrl,
   });
 
   const text = withTextFooter(
-    `Hi ${recipient.name || 'there'},\n\n${offers.length === 1 ? `${firstDriver} sent you an offer you have not opened yet.` : `You have ${offers.length} offers you have not opened yet.`}\n\n${offers.map(describeOfferText).join('\n')}`,
-    preferencesUrl
+    `${greeting(tr, recipient.name, { html: false })}\n\n${
+      offers.length === 1 ? tr('reminder.bodyOne', { driver: firstDriver }) : tr('reminder.bodyMany', { count: offers.length })
+    }\n\n${offers.map((offer) => describeOfferText(offer, tr, lang)).join('\n')}`,
+    preferencesUrl,
+    tr
   );
 
   await sendEmail({
     to: recipient.email,
     subject:
       offers.length === 1
-        ? `${firstDriver}'s ${formatWholeCurrency(first.totalPrice)} offer${first.startDate ? ` for ${formatDate(first.startDate)}` : ''} is still open`
-        : `${offers.length} offers are still waiting for you`,
+        ? first.startDate
+          ? tr('reminder.subjectOneDate', { driver: firstDriver, price: formatWholeCurrency(first.totalPrice), date: formatDate(first.startDate, lang) })
+          : tr('reminder.subjectOne', { driver: firstDriver, price: formatWholeCurrency(first.totalPrice) })
+        : tr('reminder.subjectMany', { count: offers.length }),
     html,
     text,
     headers: listUnsubscribeHeaders(preferencesUrl),
@@ -1202,40 +1288,49 @@ export const sendPreTripReminderEmail = async ({ traveler, booking, driver, vehi
     return;
   }
 
-  const driverName = driver?.name || 'Your driver';
-  const dashboardUrl = buildUrl('/dashboard?tab=bookings');
+  const lang = await languageOf(traveler);
+  const tr = emailT(lang);
+  const driverName = driver?.name || tr('common.YourDriver');
+  const dashboardUrl = localizeUrl(buildUrl('/dashboard?tab=bookings'), lang);
 
   const html = buildEmailTemplate({
-    title: `Your trip starts on ${formatDate(booking?.startDate)}`,
-    preheader: escapeHtml(`${driverName} will meet you${booking?.startPoint ? ` at ${booking.startPoint}` : ''}. Here is what to have ready.`),
+    lang,
+    title: tr('preTrip.title', { date: formatDate(booking?.startDate, lang) }),
+    preheader: escapeHtml(
+      booking?.startPoint
+        ? tr('preTrip.preheaderAt', { driver: driverName, place: booking.startPoint })
+        : tr('preTrip.preheader', { driver: driverName })
+    ),
     bodyLines: [
-      `Hi ${escapeHtml(traveler.name || 'there')},`,
-      `Your trip with <strong>${escapeHtml(driverName)}</strong> is three days away.`,
-      `<strong>Dates:</strong> ${formatDateRange(booking?.startDate, booking?.endDate)}`,
-      booking?.startPoint ? `<strong>Pick-up:</strong> ${escapeHtml(booking.startPoint)}` : null,
-      vehicle?.model ? `<strong>Vehicle:</strong> ${escapeHtml(vehicle.model)}` : null,
-      driver?.contactNumber ? `<strong>Driver's phone:</strong> ${escapeHtml(driver.contactNumber)}` : null,
-      `<strong>Total:</strong> ${formatCurrency(booking?.payableTotal > 0 ? booking.payableTotal : booking?.totalPrice)}, paid to your driver on day one`,
-      '<strong>Have ready</strong>',
+      greeting(tr, traveler.name),
+      tr('preTrip.away', { driver: escapeHtml(driverName) }),
+      tr('preTrip.dates', { value: formatDateRange(booking?.startDate, booking?.endDate, lang) }),
+      booking?.startPoint ? tr('preTrip.pickup', { value: escapeHtml(booking.startPoint) }) : null,
+      vehicle?.model ? tr('preTrip.vehicle', { value: escapeHtml(vehicle.model) }) : null,
+      driver?.contactNumber ? tr('preTrip.phone', { value: escapeHtml(driver.contactNumber) }) : null,
+      tr('preTrip.total', { value: formatCurrency(booking?.payableTotal > 0 ? booking.payableTotal : booking?.totalPrice) }),
+      tr('preTrip.readyTitle'),
       {
         raw: `<ul style="margin:0 0 14px 20px;padding:0;color:#0f172a;font-size:15px;line-height:1.6;font-family:${fontStack};">
-          <li style="margin-bottom:6px;font-family:${fontStack};">${booking?.flightNumber ? `Your flight number (${escapeHtml(booking.flightNumber)}) is on the booking. Tell your driver if it changes.` : 'Your flight number and arrival time, sent to your driver in the chat.'}</li>
-          <li style="margin-bottom:6px;font-family:${fontStack};">The payment for your driver, as you agreed with them.</li>
-          <li style="font-family:${fontStack};">Your pick-up time and exact meeting point, confirmed with your driver.</li>
+          <li style="margin-bottom:6px;font-family:${fontStack};">${booking?.flightNumber ? tr('preTrip.flightKnown', { flight: escapeHtml(booking.flightNumber) }) : tr('preTrip.flightUnknown')}</li>
+          <li style="margin-bottom:6px;font-family:${fontStack};">${tr('preTrip.payment')}</li>
+          <li style="font-family:${fontStack};">${tr('preTrip.meeting')}</li>
         </ul>`,
       },
-      'Plans changed? Cancelling more than 2 days before your start date is free. Within 2 days, 50% of the total is due to the driver.',
+      tr('preTrip.changed'),
     ],
-    action: { label: 'View my booking', url: dashboardUrl },
+    action: { label: tr('preTrip.action'), url: dashboardUrl },
   });
 
-  const text = `Hi ${traveler.name || 'there'},\n\nYour trip with ${driverName} starts on ${formatDate(booking?.startDate)}.\n${
-    booking?.startPoint ? `Pick-up: ${booking.startPoint}\n` : ''
-  }${driver?.contactNumber ? `Driver's phone: ${driver.contactNumber}\n` : ''}\nView your booking: ${dashboardUrl}`;
+  const text = `${greeting(tr, traveler.name, { html: false })}\n\n${tr('preTrip.text', { driver: driverName, date: formatDate(booking?.startDate, lang) })}\n${
+    booking?.startPoint ? `${tr('preTrip.textPickup', { value: booking.startPoint })}\n` : ''
+  }${driver?.contactNumber ? `${tr('preTrip.textPhone', { value: driver.contactNumber })}\n` : ''}\n${tr('preTrip.textView', { url: dashboardUrl })}`;
 
   await sendEmail({
     to: traveler.email,
-    subject: `In 3 days: ${driverName} meets you${booking?.startPoint ? ` at ${booking.startPoint}` : ''}`,
+    subject: booking?.startPoint
+      ? tr('preTrip.subjectAt', { driver: driverName, place: booking.startPoint })
+      : tr('preTrip.subject', { driver: driverName }),
     html,
     text,
     tags: [EMAIL_TAGS.PRE_TRIP],
@@ -1289,12 +1384,6 @@ export const sendBriefAlertEmail = async ({ drivers = [], brief }) => {
   );
 };
 
-const CANCELLATION_POLICY_LINES = [
-  'More than 2 days before your start date: free to cancel, nothing to pay.',
-  'Within 2 days of the start date: 50% of the total is due to the driver.',
-  'After the trip has started: the completed days in full, plus 50% of the remaining days.',
-];
-
 const googleCalendarUrl = ({ title, startDate, endDate, details, location }) => {
   const day = (value, addDays = 0) => {
     const date = new Date(value);
@@ -1333,24 +1422,29 @@ export const sendBookingRequestConfirmationEmail = async ({
     return;
   }
 
+  const lang = await languageOf(traveler);
+  const tr = emailT(lang);
   const confirmed = booking?.status === 'confirmed';
-  const vehicleModel = vehicle?.model || 'a vehicle';
-  const driverName = driver?.name || 'your driver';
-  const dashboardUrl = buildUrl('/dashboard?tab=bookings');
+  const vehicleModel = vehicle?.model || tr('booking.aVehicle');
+  const driverName = driver?.name || tr('common.yourDriver');
+  const dashboardUrl = localizeUrl(buildUrl('/dashboard?tab=bookings'), lang);
+  const dates = formatDateRange(booking?.startDate, booking?.endDate, lang);
+  const startLabel = formatDate(booking?.startDate, lang);
+  const cancellation = tr('booking.cancellation');
   const calendarUrl = confirmed
     ? googleCalendarUrl({
-        title: `Sri Lanka trip with ${driverName}`,
+        title: tr('booking.calendarTitle', { driver: driverName }),
         startDate: booking?.startDate,
         endDate: booking?.endDate,
         location: booking?.startPoint,
-        details: `${vehicleModel}. Booked on ${getBrandName()}: ${dashboardUrl}`,
+        details: tr('booking.calendarDetails', { model: vehicleModel, brand: getBrandName(), url: dashboardUrl }),
       })
     : '';
 
   const confirmedLines = [
-    `Your booking is confirmed. <strong>${escapeHtml(driverName)}</strong> has been notified and will meet you${
-      booking?.startPoint ? ` at ${escapeHtml(booking.startPoint)}` : ''
-    } on ${formatDate(booking?.startDate)}.`,
+    booking?.startPoint
+      ? tr('booking.confirmedBodyAt', { driver: escapeHtml(driverName), place: escapeHtml(booking.startPoint), date: startLabel })
+      : tr('booking.confirmedBody', { driver: escapeHtml(driverName), date: startLabel }),
     {
       raw: `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px 0;border:1px solid #e2e8f0;border-radius:14px;">
         <tr>
@@ -1365,68 +1459,71 @@ export const sendBookingRequestConfirmationEmail = async ({
                 <td valign="top" style="${cellStyles}">
                   <div style="font-family:${fontStack};font-size:16px;font-weight:700;color:#0f172a;">${escapeHtml(driverName)}</div>
                   <div style="font-family:${fontStack};font-size:13px;color:#475569;">${escapeHtml(vehicleModel)}</div>
-                  ${driver?.contactNumber ? `<div style="font-family:${fontStack};font-size:14px;color:#0f172a;"><strong style="font-family:${fontStack};">Phone:</strong> ${escapeHtml(driver.contactNumber)}</div>` : ''}
+                  ${driver?.contactNumber ? `<div style="font-family:${fontStack};font-size:14px;color:#0f172a;"><strong style="font-family:${fontStack};">${tr('booking.phone')}</strong> ${escapeHtml(driver.contactNumber)}</div>` : ''}
                 </td>
               </tr>
             </table>
             <div style="margin-top:12px;font-family:${fontStack};font-size:14px;line-height:1.6;color:#0f172a;">
-              <strong style="font-family:${fontStack};">Dates:</strong> ${formatDateRange(booking?.startDate, booking?.endDate)}<br />
-              <strong style="font-family:${fontStack};">Total:</strong> ${formatCurrency(booking?.payableTotal > 0 ? booking.payableTotal : booking?.totalPrice)}
+              <strong style="font-family:${fontStack};">${tr('booking.dates')}</strong> ${dates}<br />
+              <strong style="font-family:${fontStack};">${tr('booking.total')}</strong> ${formatCurrency(booking?.payableTotal > 0 ? booking.payableTotal : booking?.totalPrice)}
             </div>
-            ${renderOfferInclusions(inclusions)}
+            ${renderOfferInclusions(inclusions, tr)}
           </td>
         </tr>
       </table>`,
     },
     paymentNote ? formatMultiline(paymentNote) : null,
-    'Send your driver your flight number and arrival time in the chat, so they can plan your pick-up.',
-    '<strong>If your plans change</strong>',
+    tr('booking.sendFlight'),
+    tr('booking.ifChange'),
     {
-      raw: `<ul style="margin:0 0 14px 20px;padding:0;color:#0f172a;font-size:14px;line-height:1.6;font-family:${fontStack};">${CANCELLATION_POLICY_LINES.map(
+      raw: `<ul style="margin:0 0 14px 20px;padding:0;color:#0f172a;font-size:14px;line-height:1.6;font-family:${fontStack};">${cancellation.map(
         (line) => `<li style="margin-bottom:4px;font-family:${fontStack};">${line}</li>`
       ).join('')}</ul>`,
     },
     calendarUrl
-      ? `<a href="${calendarUrl}" style="font-family:${fontStack};color:${brandColor};font-weight:700;">Add this trip to Google Calendar</a>`
+      ? `<a href="${calendarUrl}" style="font-family:${fontStack};color:${brandColor};font-weight:700;">${tr('booking.calendar')}</a>`
       : null,
   ];
 
   const pendingLines = [
-    `We've sent your request for ${escapeHtml(vehicleModel)} to the driver.`,
-    `<strong>Trip dates:</strong> ${formatDateRange(booking?.startDate, booking?.endDate)}`,
-    `<strong>Total estimate:</strong> ${formatCurrency(booking?.totalPrice)}`,
-    `<strong>Status:</strong> ${formatStatus(booking?.status)}`,
+    tr('booking.pendingBody', { model: escapeHtml(vehicleModel) }),
+    tr('booking.tripDates', { value: dates }),
+    tr('booking.totalEstimate', { value: formatCurrency(booking?.totalPrice) }),
+    tr('booking.statusLine', { value: formatStatus(booking?.status, tr) }),
     paymentNote ? formatMultiline(paymentNote) : null,
-    'You will get an email when the driver accepts or updates the request.',
+    tr('booking.pendingNext'),
   ];
 
   const html = buildEmailTemplate({
-    title: confirmed ? 'Your trip is booked' : 'Booking request received',
+    lang,
+    title: confirmed ? tr('booking.titleConfirmed') : tr('booking.titlePending'),
     preheader: confirmed
-      ? escapeHtml(`${driverName}'s details, what is included and how to cancel.`)
-      : `We shared your request for ${escapeHtml(vehicleModel)}.`,
-    bodyLines: [`Hi ${escapeHtml(traveler.name || 'there')},`, ...(confirmed ? confirmedLines : pendingLines)],
+      ? escapeHtml(tr('booking.preheaderConfirmed', { driver: driverName }))
+      : tr('booking.preheaderPending', { model: escapeHtml(vehicleModel) }),
+    bodyLines: [greeting(tr, traveler.name), ...(confirmed ? confirmedLines : pendingLines)],
     action: {
-      label: 'View booking',
+      label: tr('common.viewBooking'),
       url: dashboardUrl,
     },
   });
 
-  const text = `Hi ${traveler.name || 'there'},\n\n${
+  const text = `${greeting(tr, traveler.name, { html: false })}\n\n${
     confirmed
-      ? `Your booking with ${driverName} (${vehicleModel}) is confirmed.${driver?.contactNumber ? `\nDriver's phone: ${driver.contactNumber}` : ''}`
-      : `We sent your booking request for ${vehicleModel}.`
-  }\nDates: ${formatDateRange(booking?.startDate, booking?.endDate)}\nTotal: ${formatCurrency(
-    booking?.totalPrice
-  )}\nStatus: ${formatStatus(booking?.status)}${
-    confirmed ? `\n\nCancellation:\n${CANCELLATION_POLICY_LINES.map((line) => `- ${line}`).join('\n')}` : ''
-  }\n\nView your booking: ${dashboardUrl}`;
+      ? `${tr('booking.textConfirmed', { driver: driverName, model: vehicleModel })}${driver?.contactNumber ? `\n${tr('booking.textPhone', { value: driver.contactNumber })}` : ''}`
+      : tr('booking.textPending', { model: vehicleModel })
+  }\n${tr('booking.textDates', { value: dates })}\n${tr('booking.textTotal', { value: formatCurrency(booking?.totalPrice) })}\n${tr(
+    'booking.textStatus',
+    { value: formatStatus(booking?.status, tr) }
+  )}${confirmed ? `\n\n${tr('booking.textCancellation')}\n${cancellation.map((line) => `- ${line}`).join('\n')}` : ''}\n\n${tr(
+    'booking.textView',
+    { url: dashboardUrl }
+  )}`;
 
   await sendEmail({
     to: traveler.email,
     subject: confirmed
-      ? `Booked: ${driverName} will meet you on ${formatDate(booking?.startDate)}`
-      : `We received your booking request for ${vehicleModel}`,
+      ? tr('booking.subjectConfirmed', { driver: driverName, date: startLabel })
+      : tr('booking.subjectPending', { model: vehicleModel }),
     html,
     text,
     tags: [EMAIL_TAGS.BOOKING],
@@ -1504,44 +1601,51 @@ export const sendBookingStatusUpdateEmail = async ({
   }
 
   const { role } = recipient;
-  const statusLabel = formatStatus(status || booking?.status);
+  const lang = await languageOf(recipient);
+  const tr = emailT(lang);
+  const currentStatus = status || booking?.status;
+  const statusLabel = formatStatus(currentStatus, tr);
+  const englishLabel = formatStatus(currentStatus);
   const title =
-    statusLabel === 'Confirmed'
-      ? 'Your trip is confirmed'
-      : statusLabel === 'Rejected'
-        ? 'Booking was declined'
-        : statusLabel === 'Cancelled'
-          ? 'Booking cancelled'
-          : 'Booking updated';
+    englishLabel === 'Confirmed'
+      ? tr('status.titleConfirmed')
+      : englishLabel === 'Rejected'
+        ? tr('status.titleRejected')
+        : englishLabel === 'Cancelled'
+          ? tr('status.titleCancelled')
+          : tr('status.titleUpdated');
+  const dates = formatDateRange(booking?.startDate, booking?.endDate, lang);
+  const total = formatCurrency(booking?.totalPrice);
+  const inSentence = statusLabel.toLowerCase();
 
   const html = buildEmailTemplate({
+    lang,
     title,
-    preheader: `${vehicle?.model || 'Your booking'} is now ${statusLabel.toLowerCase()}.`,
+    preheader: tr('status.preheader', { model: vehicle?.model || tr('status.yourBooking'), status: inSentence }),
     bodyLines: [
-      `Hi ${escapeHtml(recipient.name || 'there')},`,
-      `${vehicle?.model || 'The booking'} is now <strong>${statusLabel}</strong>.`,
-      `<strong>Trip dates:</strong> ${formatDateRange(booking?.startDate, booking?.endDate)}`,
-      `<strong>Total:</strong> ${formatCurrency(booking?.totalPrice)}`,
+      greeting(tr, recipient.name),
+      tr('status.body', { model: vehicle?.model || tr('status.theBooking'), status: statusLabel }),
+      tr('status.tripDates', { value: dates }),
+      tr('status.total', { value: total }),
       note ? formatMultiline(note) : null,
-      'Open the conversation if you need to follow up.',
+      tr('status.follow'),
     ],
     action: {
-      label: role === 'driver' ? 'Open driver portal' : 'View booking',
-      url: role === 'driver' ? buildUrl('/portal/driver/messages') : buildUrl('/dashboard'),
+      label: role === 'driver' ? 'Open driver portal' : tr('common.viewBooking'),
+      url: role === 'driver' ? buildUrl('/portal/driver/messages') : localizeUrl(buildUrl('/dashboard'), lang),
     },
   });
 
-  const text = `Hi ${recipient.name || 'there'},\n\n${
-    vehicle?.model || 'Your booking'
-  } is now ${statusLabel}.\nDates: ${formatDateRange(booking?.startDate, booking?.endDate)}\nTotal: ${formatCurrency(
-    booking?.totalPrice
-  )}\n${note || ''}\n\nVisit your ${
-    role === 'driver' ? 'driver portal' : 'dashboard'
-  } to review details.`;
+  const text = `${greeting(tr, recipient.name, { html: false })}\n\n${tr('status.text', {
+    model: vehicle?.model || tr('status.yourBooking'),
+    status: statusLabel,
+  })}\n${tr('status.textDates', { value: dates })}\n${tr('status.textTotal', { value: total })}\n${note || ''}\n\n${
+    role === 'driver' ? 'Visit your driver portal to review details.' : tr('status.textVisit')
+  }`;
 
   await sendEmail({
     to: recipient.email,
-    subject: `${vehicle?.model || 'Booking'} updated: ${statusLabel}`,
+    subject: tr('status.subject', { model: vehicle?.model || tr('status.booking'), status: statusLabel }),
     html,
     text,
   });
@@ -1788,33 +1892,53 @@ export const sendCommissionDueEmail = async ({
   });
 };
 
-export const sendReviewRequestEmail = async ({ to, travelerName, driverName, vehicleModel, tripDates, reviewUrl }) => {
-  const safeName = escapeHtml(travelerName || 'there');
-  const safeDriver = escapeHtml(driverName || 'your driver');
-  const safeVehicle = escapeHtml(vehicleModel || 'your vehicle');
-  const safeDates = escapeHtml(tripDates || '');
+export const sendReviewRequestEmail = async ({
+  to,
+  travelerName,
+  driverName,
+  vehicleModel,
+  tripDates,
+  startDate,
+  endDate,
+  language,
+  reviewUrl,
+}) => {
+  const lang = await languageOf({ email: to, language });
+  const tr = emailT(lang);
+  // English keeps the caller's date wording; other languages format the dates themselves.
+  const dates = lang === 'en' || !startDate ? tripDates || '' : formatDateRange(startDate, endDate, lang);
+  const plainDriver = driverName || tr('common.yourDriver');
+  const safeDriver = escapeHtml(plainDriver);
+  const safeVehicle = escapeHtml(vehicleModel || tr('review.yourVehicle'));
+  const safeDates = escapeHtml(dates);
   const brandName = getBrandName();
+  const link = localizeUrl(reviewUrl, lang);
 
   const html = buildEmailTemplate({
-    title: `How was your trip with ${safeDriver}?`,
-    preheader: `Tell other travellers about your trip with ${safeDriver}`,
+    lang,
+    title: tr('review.title', { driver: safeDriver }),
+    preheader: tr('review.preheader', { driver: safeDriver }),
     bodyLines: [
-      `Hi ${safeName},`,
-      `We hope you enjoyed your trip with ${safeDriver}${safeDates ? ` (${safeDates})` : ''} in the ${safeVehicle}.`,
-      'Would you take a minute to rate your driver? Your review helps other travellers choose with confidence, and it means a great deal to your driver.',
-      'You do not need to sign in — the button below opens your review form directly.',
+      greeting(tr, travelerName),
+      safeDates
+        ? tr('review.hopeDates', { driver: safeDriver, dates: safeDates, vehicle: safeVehicle })
+        : tr('review.hope', { driver: safeDriver, vehicle: safeVehicle }),
+      tr('review.ask'),
+      tr('review.noSignIn'),
     ],
     action: {
-      label: 'Leave a review',
-      url: reviewUrl,
+      label: tr('review.action'),
+      url: link,
     },
   });
 
-  const text = `Hi ${travelerName || 'there'},\n\nWe hope you enjoyed your trip with ${driverName || 'your driver'}${tripDates ? ` (${tripDates})` : ''}.\n\nLeave a review here: ${reviewUrl}\n\nThank you for choosing ${brandName}.`;
+  const text = `${greeting(tr, travelerName, { html: false })}\n\n${
+    dates ? tr('review.textDates', { driver: plainDriver, dates }) : tr('review.text', { driver: plainDriver })
+  }\n\n${tr('review.textLink', { url: link })}\n\n${tr('review.textThanks', { brand: brandName })}`;
 
   await sendEmail({
     to,
-    subject: `How was your trip with ${driverName || 'your driver'}?`,
+    subject: tr('review.subject', { driver: plainDriver }),
     html,
     text,
   });

@@ -1,0 +1,32 @@
+{
+  "buckets": {
+    "sedan": {
+      "label": "Sedan",
+      "seats": "1-3 seats"
+    },
+    "mpv": {
+      "label": "MPV",
+      "seats": "4-6 seats"
+    },
+    "van": {
+      "label": "Van",
+      "seats": "7-10 seats"
+    },
+    "coach": {
+      "label": "Mini coach",
+      "seats": "11+ seats"
+    },
+    "flex": {
+      "label": "Flexible / unspecified",
+      "seats": ""
+    }
+  },
+  "inclusions": {
+    "fuelAndInsurance": "Fuel & insurance",
+    "driverMealsAndAccommodation": "Driver's meals & accommodation",
+    "meetAndGreetAtAirport": "Airport meet & greet",
+    "englishSpeakingDriver": "English-speaking driver",
+    "parkingFeesAndTolls": "Parking fees & tolls",
+    "allTaxes": "All taxes"
+  }
+}

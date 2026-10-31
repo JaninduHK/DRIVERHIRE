@@ -1,0 +1,102 @@
+{
+  "logoAlt": "Car with Driver LK のロゴ",
+  "nav": {
+    "home": "ホーム",
+    "vehicles": "車両",
+    "drivers": "ドライバー",
+    "liveMap": "ライブマップ",
+    "tripCost": "旅行費用",
+    "getQuotes": "見積もりを依頼",
+    "myVehicles": "マイ車両",
+    "myBookings": "マイ予約",
+    "messages": "メッセージ",
+    "myEarnings": "収益",
+    "myAvailability": "空き状況",
+    "myProfile": "マイプロフィール",
+    "overview": "概要",
+    "myRequests": "マイ依頼",
+    "settings": "設定",
+    "roleDriver": "ドライバー",
+    "roleAdmin": "管理者",
+    "roleTraveller": "旅行者",
+    "toggle": "メニューの表示切り替え",
+    "dashboard": "ダッシュボード",
+    "login": "ログイン",
+    "register": "新規登録",
+    "closeMenu": "メニューを閉じる",
+    "tourBriefs": "ツアー依頼",
+    "driverMenu": "ドライバーメニュー",
+    "travellerMenu": "旅行者メニュー",
+    "goToDashboard": "ダッシュボードへ"
+  },
+  "footer": {
+    "homeLabel": "Car with Driver ホーム",
+    "tagline": "スリランカを旅する方のための、審査済みのドライバーと最新の車両。島内全域で五つ星の旅を。",
+    "travellers": "旅行者の方",
+    "drivers": "ドライバーの方",
+    "help": "ヘルプ",
+    "browseVehicles": "車両を見る",
+    "featuredDrivers": "おすすめのドライバー",
+    "myQuoteRequests": "マイ見積もり依頼",
+    "chatMessages": "チャットメッセージ",
+    "applyAsDriver": "ドライバーとして応募",
+    "driverGuide": "ドライバーガイド",
+    "driverTerms": "ドライバー規約",
+    "driverPortal": "ドライバーポータル",
+    "contactSupport": "サポートに問い合わせる",
+    "safetyPromise": "安全へのお約束",
+    "privacyPolicy": "プライバシーポリシー",
+    "terms": "利用規約",
+    "rights": "無断転載を禁じます。",
+    "about": "会社概要",
+    "blog": "ブログ",
+    "contact": "お問い合わせ"
+  },
+  "language": {
+    "choose": "言語を選択"
+  },
+  "error": {
+    "notFoundTitle": "ページが見つかりません",
+    "title": "問題が発生しました",
+    "notFoundBody": "お探しのページは存在しないか、移動した可能性があります。",
+    "body": "予期しないエラーが発生しました。もう一度お試しください。",
+    "backHome": "ホームに戻る"
+  },
+  "features": {
+    "englishSpeakingDriver": "英語を話すドライバー",
+    "meetAndGreetAtAirport": "空港でのお出迎え",
+    "fuelAndInsurance": "燃料費・保険込み",
+    "driverMealsAndAccommodation": "ドライバーの食事・宿泊",
+    "parkingFeesAndTolls": "駐車料金・通行料",
+    "allTaxes": "税金込み"
+  },
+  "inclusions": {
+    "englishSpeakingDriver": "英語を話すドライバー",
+    "fuelAndInsurance": "燃料費・保険",
+    "parkingFeesAndTolls": "駐車料金・通行料すべて",
+    "meetAndGreetAtAirport": "空港でのお出迎え",
+    "driverMealsAndAccommodation": "ドライバーの食事・宿泊",
+    "allTaxes": "税金すべて"
+  },
+  "licenseTypes": {
+    "touristDriver": "ツーリストドライバー",
+    "chauffeurGuideLecturer": "ショーファーガイド",
+    "nationalGuideLecturer": "ナショナルガイド"
+  },
+  "photos": {
+    "view": "レビュー写真を見る",
+    "reviewPhoto": "レビュー写真",
+    "delete": "写真を削除",
+    "close": "閉じる",
+    "previous": "前の写真",
+    "next": "次の写真"
+  },
+  "badges": {
+    "englishSpeakingDriver": "英語対応",
+    "meetAndGreetAtAirport": "空港でのお出迎え",
+    "fuelAndInsurance": "燃料費・保険込み",
+    "driverMealsAndAccommodation": "食事・宿泊費込み",
+    "parkingFeesAndTolls": "駐車料金・通行料込み",
+    "allTaxes": "税金込み"
+  }
+}

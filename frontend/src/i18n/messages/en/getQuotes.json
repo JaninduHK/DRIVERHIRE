@@ -1,0 +1,207 @@
+{
+  "breadcrumb": "Breadcrumb",
+  "breadcrumbHome": "Home",
+  "breadcrumbCurrent": "Get quotes",
+  "hero": {
+    "title": "Get Free Quotes from Sri Lanka Drivers & Chauffeur Guides",
+    "lead": "Tell us your dates and where you want to go. We send your request to approved drivers and SLTDA chauffeur guides across the island — they quote you directly, you compare, chat and book. No booking fee, and you pay your driver, not us.",
+    "points": [
+      "Offers from tourist drivers, chauffeur guides and national guide lecturers",
+      "Daily rates cover 120–150 km per day island-wide",
+      "Chat with drivers before you commit — your contact details stay private",
+      "Accept an offer and that price is locked for the itinerary you agreed"
+    ],
+    "stat1Value": "30 min",
+    "stat1Label": "First quote, typically",
+    "stat2Label": "Offers per request",
+    "stat3Value": "FREE",
+    "stat3Label": "No booking fee"
+  },
+  "errors": {
+    "dates": "Select your start and end dates.",
+    "endAfterStart": "End date must be after the start date.",
+    "startPast": "Start date cannot be in the past.",
+    "allFields": "Please fill in all fields.",
+    "tooLong": "Itinerary details must be {max} characters or fewer.",
+    "adults": "Please specify at least one adult traveller."
+  },
+  "form": {
+    "title": "Request your quotations",
+    "intro": "Takes about a minute. You'll sign in or create a free account on the next step — no need to fill anything in twice.",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "pickup": "Pick-up location",
+    "dropoff": "Drop-off location",
+    "placePlaceholder": "City, hotel or airport",
+    "adults": "Adults",
+    "children": "Children",
+    "country": "Country of residence",
+    "countryPlaceholder": "e.g. Germany",
+    "limit": "Limit quotations",
+    "optional": "(optional)",
+    "noLimit": "No limit",
+    "limitHelp": "We stop accepting quotes once this many drivers have replied.",
+    "driverType": "Driver type",
+    "allDrivers": "All drivers",
+    "touristOnly": "Tourist Drivers only",
+    "chauffeurOnly": "Chauffeur Guides only",
+    "driverTypeHelp": "Restricting this means only drivers with that SLTDA-verified licence can quote, so you may receive fewer offers.",
+    "notes": "Itinerary details",
+    "notesPlaceholder": "Places you want to see, flight times, kids or extra luggage. Anything that helps drivers quote accurately.",
+    "noContact": "Please don't include phone numbers or emails here — we'll share contact details once you accept an offer and your booking is confirmed.",
+    "next": "Next",
+    "footnote": "Free to request · No booking fee · Pay the driver directly"
+  },
+  "how": {
+    "title": "How it works in three steps",
+    "lead": "There is no search-and-guess step. You describe the trip once, and drivers who are free on your dates come to you with a price. Nothing is charged at any point — when you accept an offer you pay that driver directly, on the first day of the trip.",
+    "step1": {
+      "title": "Describe your trip once",
+      "body": "Dates, pick-up, how many of you and a rough route. If something is still undecided, say so — drivers will suggest alternatives rather than guess.",
+      "meta": "Takes about a minute"
+    },
+    "step2": {
+      "title": "Drivers send you quotes",
+      "body": "Your request goes to approved drivers across the island. Each offer shows the vehicle, the driver, their rating and a fixed daily rate for your itinerary.",
+      "meta": "Your contact details stay private"
+    },
+    "step3": {
+      "title": "Chat, compare and book",
+      "body": "Ask questions in chat, adjust the plan, then accept the offer that fits. No card is needed — you pay your driver directly when you meet on day one.",
+      "meta": "No booking fee at any point"
+    }
+  },
+  "types": {
+    "title": "Which driver type do you need?",
+    "lead": "Sri Lanka has three distinct roles, and booking sites use the words loosely. The difference is licensing: the Sri Lanka Tourism Development Authority trains and certifies chauffeur guides and national guide lecturers, while a tourist driver holds a standard driving licence. Drivers on this site submit their licence for review, and the type they hold is shown on their profile.",
+    "bestFor": "Best for: {text}",
+    "touristDriver": {
+      "body": "Holds a standard licence and drives your itinerary, handles logistics and knows where to stop, eat and stay.",
+      "bestFor": "Beach trips, transfers and travellers who like to read up themselves"
+    },
+    "chauffeurGuideLecturer": {
+      "body": "Licensed by the Sri Lanka Tourism Development Authority, so they drive and also explain the sites you visit.",
+      "bestFor": "Most two-week itineraries — one person for the whole trip"
+    },
+    "nationalGuideLecturer": {
+      "body": "The highest SLTDA guiding qualification, delivering full historical and cultural interpretation.",
+      "bestFor": "History-led trips and special-interest groups"
+    },
+    "readMore": "Read the full comparison, including what each one costs →"
+  },
+  "rates": {
+    "title": "What a car with driver costs in Sri Lanka",
+    "lead": "This is not a published price list — drivers set their own rates. The table below is built from the vehicles listed on carwithdriver.lk right now, grouped by size, showing the typical middle of the range for each class.",
+    "fromListings": "FROM {count} LIVE LISTINGS",
+    "updated": "Updated automatically as drivers change their prices",
+    "caption": "Typical daily rate in USD, per vehicle, from current listings",
+    "colClass": "Vehicle class",
+    "colSeats": "Seats",
+    "colPerDay": "Typical per day",
+    "colListings": "Listings",
+    "example": "e.g. {model}",
+    "note": "Rates cover {low}–{high} km per day island-wide, which is what a driver-guided touring day usually comes to. Longer days and December–January peak dates sit at the upper end of each range.",
+    "estimate": "Estimate your own trip →",
+    "loading": "Live rates are loading.",
+    "browseFleet": "Browse the fleet →"
+  },
+  "included": {
+    "title": "What your quotation includes",
+    "lead": "Listings on this site declare what their rate covers, so the offers you compare are genuinely comparable. Some things are near-universal; others depend on the driver, so check them in the offer before you accept.",
+    "always": "INCLUDED IN NEARLY EVERY QUOTE",
+    "kmPerDay": "{low}–{high} km per day",
+    "varies": "VARIES BY LISTING — CHECK THE OFFER",
+    "notIncluded": [
+      "Site entry tickets — Sigiriya, Dambulla, the Temple of the Tooth",
+      "Safari jeeps at Yala, Udawalawe and Minneriya",
+      "Your own accommodation, meals and drinks",
+      "Tips for your driver — customary but never expected"
+    ]
+  },
+  "recommended": {
+    "title": "Recommended drivers",
+    "lead": "A few of the most experienced drivers on the platform. You do not have to pick one to request quotes — your request goes out island-wide either way — but it is worth seeing the kind of driver who will be answering you.",
+    "reviews": "{count} reviews",
+    "yearsDriving": "{count} yrs driving",
+    "vehiclesFrom": "{count} VEHICLES · FROM",
+    "from": "FROM",
+    "quote": "Quote",
+    "perDay": "/day",
+    "viewDriver": "View driver",
+    "browseAll": "Browse all drivers →"
+  },
+  "why": {
+    "title": "Why request through carwithdriver.lk",
+    "lead": "We are a Sri Lankan marketplace, not an overseas reseller. Drivers list themselves, set their own prices and keep the full fare — there is no tour operator taking a cut, and the person who answers your message is the person who will meet you at arrivals.",
+    "middleman": {
+      "title": "You pay the driver, not a middleman",
+      "body": "Drivers list themselves, set their own price and keep the full fare. There is no agency margin on top, which is why offers here land below tour-operator pricing for the same route."
+    },
+    "locked": {
+      "title": "The price is locked once you accept",
+      "body": "Accepting an offer fixes that total for the itinerary you agreed. The rate cannot be raised afterwards, and the dates are locked to the offer."
+    },
+    "private": {
+      "title": "Your details stay private",
+      "body": "Drivers see your itinerary, not your phone number or email. Contact details are exchanged only once you accept an offer and the booking is confirmed."
+    },
+    "licences": {
+      "title": "Licences are checked by our team",
+      "body": "Drivers submit their driving licence for admin review before their profile is approved, and the licence type they hold is shown on their profile."
+    },
+    "reviews": {
+      "title": "Reviews come from real trips",
+      "body": "Travellers can only review a booking they actually made through the platform, once the trip has ended."
+    },
+    "support": {
+      "title": "Support based in Sri Lanka",
+      "body": "If plans change mid-trip or a vehicle has trouble, our team is in the same time zone you are travelling in and can reach your driver directly."
+    }
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "contact": "Still unsure about something? Email <email>hello@carwithdriver.lk</email> or call <phone>+94 76 3021 483</phone>.",
+    "cost": {
+      "q": "How much does it cost to hire a car with driver in Sri Lanka?",
+      "a": "It depends on the vehicle and the length of your trip — drivers set their own rates. The table above is built from the live listings on this site right now, so it reflects what drivers are actually charging rather than a published price list. For a figure based on your own route and dates, use the trip cost calculator."
+    },
+    "fee": {
+      "q": "Is there a booking fee?",
+      "a": "No. Requesting quotes, comparing offers and chatting with drivers is completely free, and we add no booking fee or service charge on top of the driver’s price. The rate you accept is the rate you pay."
+    },
+    "pay": {
+      "q": "How and when do I pay?",
+      "a": "You pay your driver directly when you meet on the first day of the trip — no card details are taken on this site and no deposit is charged through the platform. Agree anything unusual with your driver in chat first so it stays on record."
+    },
+    "difference": {
+      "q": "What’s the difference between a tourist driver and a chauffeur guide?",
+      "a": "A tourist driver holds a standard licence and drives your itinerary. A chauffeur guide lecturer is licensed by the Sri Lanka Tourism Development Authority and may also explain the sites you visit. A national guide lecturer holds the highest SLTDA qualification and delivers full historical interpretation."
+    },
+    "fuel": {
+      "q": "Are fuel and kilometres included?",
+      "a": "Nearly every listing includes fuel and insurance, and daily rates cover 120–150 km per day island-wide, which is what a driver-guided touring day usually comes to. Each offer spells out exactly what it includes, so check it before you accept."
+    },
+    "meals": {
+      "q": "Are the driver’s meals and accommodation included?",
+      "a": "Many listings include them, but not all — it varies by driver, so it is shown on each listing and in the offer you receive. You are never asked to book a hotel room for your driver yourself; where it is included, that cost already sits inside the daily rate."
+    },
+    "howLong": {
+      "q": "How long until I receive quotes?",
+      "a": "Your request goes out to approved drivers as soon as you submit it, and you will get an email and a push notification for each new offer. Requests sent overnight in Sri Lanka time are usually answered the following morning."
+    },
+    "change": {
+      "q": "Can I change my itinerary after booking?",
+      "a": "Yes. Small changes on the road — swapping a beach, adding a temple, shifting a departure time — are normally fine. If a change adds driving days or a lot of distance, agree the adjusted rate with your driver in chat before you travel so it stays on record."
+    },
+    "wrong": {
+      "q": "What if something goes wrong during my trip?",
+      "a": "Email hello@carwithdriver.lk or call +94 76 3021 483. Every message and offer is stored, so there is always a record of what was agreed with your driver."
+    }
+  },
+  "cta": {
+    "title": "Ready to hear what your trip actually costs?",
+    "body": "Send one request and let drivers come to you. Free, no obligation, and your contact details stay private until you accept an offer.",
+    "request": "Request free quotes",
+    "estimate": "Estimate it yourself"
+  }
+}

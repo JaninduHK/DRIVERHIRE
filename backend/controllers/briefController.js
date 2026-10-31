@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import TourBrief from '../models/TourBrief.js';
+import TourBrief, { BRIEF_LANGUAGES } from '../models/TourBrief.js';
 import ChatConversation from '../models/ChatConversation.js';
 import ChatMessage from '../models/ChatMessage.js';
 import Vehicle, { VEHICLE_STATUS } from '../models/Vehicle.js';
@@ -98,6 +98,7 @@ const toPlainBrief = (brief, currentUserId = null, viewer = null) => {
     offersCount: typeof source.offersCount === 'number' ? source.offersCount : responses.length,
     maxOffers: source.maxOffers ?? null,
     requiredLicenseType: source.requiredLicenseType ?? null,
+    language: source.language ?? null,
     eligibility: eligibilityFor(source, responses, viewer),
     lastResponseAt: source.lastResponseAt,
     createdAt: source.createdAt,
@@ -164,6 +165,7 @@ export const createBrief = async (req, res) => {
     country = '',
     maxOffers = null,
     requiredLicenseType = null,
+    language = null,
   } = req.body || {};
 
   const startDate = parseDate(startInput);
@@ -233,10 +235,16 @@ export const createBrief = async (req, res) => {
       country: trimmedCountry,
       maxOffers: normalizedMaxOffers,
       requiredLicenseType: normalizedLicenseType,
+      // Anything other than a supported translation (including 'en') is stored as null.
+      language: BRIEF_LANGUAGES.includes(language) ? language : null,
       status: 'open',
     });
 
     await brief.save();
+    // Posting from a translated page also sets the language their emails use.
+    if (brief.language) {
+      User.updateOne({ _id: req.user.id }, { $set: { language: brief.language } }).catch(() => {});
+    }
     await brief.populate('traveler', 'id name country');
     const plainBrief = toPlainBrief(brief, req.user.id);
     // Notification goes to drivers, not the traveller — build it from the
@@ -310,6 +318,7 @@ export const repostBrief = async (briefId) => {
     maxOffers: original.maxOffers,
     // Same rule as a new request: a restriction the admin has since switched off is dropped.
     requiredLicenseType: (await isDriverTypeSelectionEnabled()) ? original.requiredLicenseType : null,
+    language: original.language ?? null,
     status: 'open',
   });
   await brief.save();

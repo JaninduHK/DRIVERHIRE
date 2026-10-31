@@ -1,0 +1,163 @@
+{
+  "hero": {
+    "badge": "Scelti da oltre 1200 recensioni autentiche",
+    "title": "Noleggio auto in Sri Lanka <brand>con un autista</brand> che conosce l'isola.",
+    "lead": "Autisti con licenza, veicoli climatizzati e itinerari costruiti intorno alle tue date. Spiagge, la regione del tè, città patrimonio UNESCO, tutto a una tariffa giornaliera fissa senza costi nascosti.",
+    "planTrip": "Pianifica il mio viaggio",
+    "browse": "Sfoglia veicoli e autisti",
+    "statRate": "Tariffa giornaliera da",
+    "statRating": "Valutazione degli ospiti",
+    "statReply": "Tempo di risposta",
+    "statReplyValue": "< 1 ora"
+  },
+  "form": {
+    "title": "Ricevi preventivi dagli autisti in pochi minuti",
+    "intro": "Indicaci le informazioni principali e ti mettiamo in contatto con autisti selezionati che ti inviano prezzi fissi.",
+    "startDate": "Data di inizio",
+    "endDate": "Data di fine",
+    "pickup": "Partenza",
+    "dropoff": "Arrivo",
+    "placePlaceholder": "Città, hotel o aeroporto",
+    "travellers": "Viaggiatori",
+    "notes": "Dettagli dell'itinerario",
+    "optional": "Facoltativo",
+    "notesPlaceholder": "Luoghi che vuoi visitare, orari dei voli, bambini o bagagli extra. Tutto ciò che aiuta gli autisti a fare un preventivo preciso.",
+    "submit": "Richiedi preventivi agli autisti",
+    "footnote": "Richiesta gratuita · Nessun costo di prenotazione · Paghi direttamente l'autista"
+  },
+  "badges": {
+    "sltda": "Autisti con licenza SLTDA",
+    "coverage": "Copertura in tutta l'isola",
+    "priceGuarantee": "Garanzia sul prezzo prenotato",
+    "support": "Assistenza in viaggio 24/7"
+  },
+  "how": {
+    "eyebrow": "Come funziona",
+    "title": "Tre passaggi dalla richiesta al ritiro in aeroporto",
+    "step1Title": "Condividi il tuo itinerario",
+    "step1Body": "Date, numero di persone e i luoghi della tua lista. Basta un'idea di massima: gli autisti ti aiutano a perfezionarla.",
+    "step2Title": "Confronta preventivi reali",
+    "step2Body": "Confronta fianco a fianco veicolo, tariffa giornaliera, lingue e recensioni. Scrivi agli autisti prima di impegnarti.",
+    "step3Title": "Conferma la prenotazione",
+    "step3Body": "Concorda con il tuo autista l'itinerario definitivo e la tariffa, poi conferma. Ricevi i dettagli del viaggio per iscritto e il contatto diretto prima di partire."
+  },
+  "fleet": {
+    "eyebrow": "Una flotta per ogni viaggio",
+    "title": "Veicoli per noleggi con autista in tutto lo Sri Lanka",
+    "copy": "SUV moderni, berline executive e van per gruppi, tutti sottoposti a manutenzione, dotati di GPS e affidati a un autista bilingue.",
+    "cta": "Vedi tutti i veicoli",
+    "error": "Impossibile caricare i veicoli.",
+    "errorCta": "Apri il catalogo",
+    "empty": "Ancora nessun veicolo. <link>Sfoglia il catalogo</link>."
+  },
+  "vehicleTags": {
+    "bestValue": "Miglior rapporto qualità-prezzo",
+    "groupFriendly": "Ideale per gruppi",
+    "longTours": "Tour lunghi"
+  },
+  "drivers": {
+    "eyebrow": "Autisti partner",
+    "title": "Conosci gli autisti che i viaggiatori chiedono per nome",
+    "copy": "Controllati, assicurati e formati nell'ospitalità. Conoscono i punti panoramici, i siti storici e i migliori caffè lungo la strada.",
+    "cta": "Esplora l'elenco degli autisti",
+    "error": "Impossibile caricare gli autisti.",
+    "errorCta": "Vedi l'elenco",
+    "empty": "Ancora nessun autista pubblicato. <link>Sfoglia l'elenco</link>."
+  },
+  "pricing": {
+    "eyebrow": "Costo del viaggio trasparente",
+    "title": "Una tariffa giornaliera. Tutto ciò che conta è incluso.",
+    "body": "Nessuna commissione aggiuntiva, nessuna sorpresa a chilometro. Vedi l'importo totale prima di confermare e paghi direttamente il tuo autista.",
+    "items": [
+      "Compenso, pasti e alloggio dell'autista",
+      "Carburante e 120–150 km al giorno in tutta l'isola",
+      "Assicurazione completa del veicolo e assistenza 24/7",
+      "Accoglienza in aeroporto il giorno dell'arrivo"
+    ],
+    "sampleTitle": "ESEMPIO DI VIAGGIO DI 6 GIORNI · 1–3 VIAGGIATORI",
+    "rowVehicle": "Veicolo e autista ($50 × 6 giorni)",
+    "rowFuel": "Carburante e 120–150 km/giorno",
+    "rowAirport": "Ritiro in aeroporto",
+    "rowFee": "Costo di prenotazione della piattaforma",
+    "included": "Incluso",
+    "total": "Totale stimato",
+    "cta": "Calcola il prezzo del mio itinerario"
+  },
+  "reviews": {
+    "eyebrow": "Storie degli ospiti",
+    "title": "4,9 su 5 nei viaggi con autista-guida",
+    "error": "Impossibile caricare le recensioni.",
+    "empty": "Sii il primo a raccontare il tuo viaggio. <link>Pianifica il tuo viaggio</link>."
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "title": "Noleggiare un'auto con autista in Sri Lanka",
+    "intro": "Hai ancora qualche dubbio? Scrivici su WhatsApp al <phone>+94 76 3021 483</phone>: di solito rispondiamo entro un'ora.",
+    "cost": {
+      "q": "Quanto costa un'auto con autista in Sri Lanka?",
+      "a": "Gli autisti stabiliscono le proprie tariffe, quindi vedrai una fascia di prezzi. Le berline partono in genere da circa $50 al giorno e i grandi van da tour arrivano a circa $95. La maggior parte delle tariffe giornaliere copre il veicolo, il carburante, 120–150 km al giorno in tutta l'isola e i pasti e l'alloggio dell'autista, e ogni annuncio indica esattamente cosa è incluso. Per una cifra basata sul tuo percorso e sulle tue date, usa il calcolatore del costo del viaggio."
+    },
+    "free": {
+      "q": "Prenotare è gratuito? Devo versare un acconto?",
+      "a": "La piattaforma è completamente gratuita per i turisti: consultare, ricevere preventivi, chattare e prenotare non ti costa nulla. Non c'è nessun acconto né anticipo. Paghi il tuo autista direttamente il primo giorno del viaggio."
+    },
+    "quotes": {
+      "q": "Come ricevo preventivi per il mio itinerario?",
+      "a": "Pubblica il tuo piano di viaggio con le date, il numero di passeggeri e i luoghi che vuoi visitare. Gli autisti disponibili ti inviano preventivi gratuitamente, e puoi confrontarli fianco a fianco, scrivere a qualsiasi autista per fare domande e negoziare prima di impegnarti."
+    },
+    "cancel": {
+      "q": "E se devo cancellare?",
+      "bullets": [
+        "Più di 2 giorni prima della data di inizio: cancellazione gratuita, nulla da pagare.",
+        "Entro 2 giorni dalla data di inizio: il 50% del totale va all'autista.",
+        "Dopo l'inizio del viaggio: il 100% per i giorni già effettuati, più il 50% dei giorni rimanenti."
+      ],
+      "outro": "Il tuo autista rifiuta altre prenotazioni per tenere libere le tue date, quindi scrivigli non appena i tuoi piani cambiano."
+    },
+    "licensed": {
+      "q": "I vostri autisti hanno licenza e assicurazione?",
+      "a": "Ogni autista della piattaforma è registrato presso la SLTDA e ha un'assicurazione valida, e i documenti della licenza e del veicolo vengono verificati prima che un profilo vada online. Le recensioni provengono da turisti che hanno davvero viaggiato con quell'autista e restano sul profilo per sempre, positive e negative, quindi leggine qualcuna prima di decidere."
+    }
+  },
+  "cta": {
+    "eyebrow": "Auto con autista · Tour in Sri Lanka",
+    "title": "Pronto a prenotare l'autista giusto per il tuo itinerario?",
+    "body": "Indicaci le date, il numero di passeggeri e i tuoi desideri. Ti abbiniamo al veicolo e all'autista ideali e ti teniamo aggiornato fino all'arrivo.",
+    "quote": "Richiedi un preventivo personalizzato",
+    "call": "Chiama il {phone}"
+  },
+  "card": {
+    "newGuide": "Nuova guida",
+    "years": {
+      "one": "{count} anno",
+      "other": "{count} anni"
+    },
+    "sriLankaTrip": "Viaggio in Sri Lanka",
+    "quote": "Su preventivo",
+    "seats": {
+      "one": "{count} posto",
+      "other": "{count} posti"
+    },
+    "year": "Anno {year}",
+    "vehicleAlt": "Veicolo",
+    "featuredVehicle": "Veicolo in evidenza",
+    "vehicleFallback": "Comodo e pronto per i viaggi on the road in Sri Lanka, con un'aria condizionata potente.",
+    "from": "DA",
+    "perDay": "/giorno",
+    "getQuote": "Richiedi un preventivo",
+    "islandWide": "In tutta l'isola",
+    "multidayTours": "Tour di più giorni",
+    "reviews": {
+      "one": "{count} recensione",
+      "other": "{count} recensioni"
+    },
+    "noReviews": "Ancora nessuna recensione",
+    "driverFallback": "Un autista di fiducia per tour su misura in tutto lo Sri Lanka.",
+    "avgDailyRate": "TARIFFA GIORNALIERA MEDIA",
+    "viewDriver": "Vedi l'autista",
+    "readMore": "Leggi tutto",
+    "traveller": "Viaggiatore",
+    "reviewFallback": "Un viaggio a cinque stelle con auto e autista attraverso lo Sri Lanka.",
+    "tripPhoto": "Foto del viaggio di {name}"
+  }
+}

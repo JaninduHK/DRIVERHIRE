@@ -1,0 +1,101 @@
+{
+  "read": "Прочитано",
+  "sent": "Отправлено",
+  "close": "Закрыть",
+  "included": "(включено)",
+  "notIncluded": "(не включено)",
+  "brief": {
+    "label": "Запрос",
+    "adults": {
+      "one": "{count} взрослый",
+      "few": "{count} взрослых",
+      "many": "{count} взрослых",
+      "other": "{count} взрослого"
+    },
+    "children": {
+      "one": "{count} ребёнок",
+      "few": "{count} ребёнка",
+      "many": "{count} детей",
+      "other": "{count} ребёнка"
+    },
+    "readLess": "Свернуть",
+    "readMore": "Читать дальше"
+  },
+  "booking": {
+    "title": "Детали бронирования",
+    "traveller": "Путешественник",
+    "name": "Имя",
+    "email": "Email",
+    "phone": "Телефон",
+    "trip": "Поездка",
+    "dates": "Даты",
+    "days": "Дни",
+    "dayCount": {
+      "one": "{count} день",
+      "few": "{count} дня",
+      "many": "{count} дней",
+      "other": "{count} дня"
+    },
+    "vehicle": "Автомобиль",
+    "route": "Место посадки и высадки",
+    "startPoint": "Место посадки",
+    "endPoint": "Место высадки",
+    "flight": "Рейс",
+    "flightNumber": "Номер рейса",
+    "arrival": "Время прилёта",
+    "departure": "Время вылета",
+    "included": "Входит в предложение",
+    "notes": "Примечания и дополнительно",
+    "status": {
+      "pending": "ожидает",
+      "confirmed": "подтверждено",
+      "cancelled": "отменено",
+      "rejected": "отклонено"
+    }
+  },
+  "photos": {
+    "vehicle": "Автомобиль",
+    "view": "Посмотреть фото: {name}",
+    "viewNumbered": "Посмотреть фото {n}: {name}",
+    "numbered": "{name}, фото {n}"
+  },
+  "profile": {
+    "missing": "Нет информации о водителе.",
+    "loadError": "Не удалось загрузить профиль водителя.",
+    "linkCopied": "Ссылка на профиль скопирована.",
+    "copyFailed": "Не удалось скопировать ссылку.",
+    "title": "Профиль водителя",
+    "copyLink": "Скопировать ссылку на профиль",
+    "newDriver": "Новый водитель",
+    "reviews": {
+      "one": "{count} отзыв",
+      "few": "{count} отзыва",
+      "many": "{count} отзывов",
+      "other": "{count} отзыва"
+    },
+    "sriLanka": "Шри-Ланка",
+    "loading": "Загрузка профиля водителя…",
+    "notFound": "Профиль водителя не найден.",
+    "years": "{count} г.",
+    "experience": "Опыт",
+    "rating": "Рейтинг",
+    "vehicles": "Автомобили",
+    "about": "О водителе {name}",
+    "noBio": "{name} ещё не добавил(а) информацию о себе.",
+    "location": "Местоположение",
+    "memberSince": "На платформе с",
+    "vehiclesCount": "Автомобили ({count})",
+    "noVehicles": "Сейчас нет доступных автомобилей.",
+    "inThisChat": "В ЭТОМ ЧАТЕ",
+    "seats": "мест: {count}",
+    "perDay": "В ДЕНЬ",
+    "reviewsTitle": "Отзывы",
+    "loadingReviews": "Загрузка отзывов…",
+    "noReviews": "Отзывов пока нет. Откройте Шри-Ланку с этим водителем первым и поделитесь впечатлениями.",
+    "traveller": "Путешественник",
+    "showFewer": "Показать меньше отзывов",
+    "readAll": "Читать все отзывы ({count})",
+    "tripDetails": "Детали поездки",
+    "backToChat": "Назад в чат"
+  }
+}

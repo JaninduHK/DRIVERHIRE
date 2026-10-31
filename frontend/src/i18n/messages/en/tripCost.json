@@ -1,0 +1,102 @@
+{
+  "perDay": "/day",
+  "minDrive": "~{count} min drive",
+  "hrsDrive": "~{count} hrs drive",
+  "days": { "one": "{count} day", "other": "{count} days" },
+  "nights": { "one": "{count} night", "other": "{count} nights" },
+  "passengers": { "one": "{count} passenger", "other": "{count} passengers" },
+  "passengersWord": "passengers",
+  "step": "Step {n}",
+  "summary": {
+    "estimated": "Estimated trip cost",
+    "likelyRange": "Likely range",
+    "totalDistance": "Total distance",
+    "buffer": "Keep ~{amount} aside as a flexibility buffer for extra km or upgrades.",
+    "request": "Request free driver quotes",
+    "noPayment": "No payment now. Drivers reply with a fixed price for this exact itinerary."
+  },
+  "hero": {
+    "badge": "Trip Cost Calculator",
+    "title": "Build your Sri Lanka itinerary and see the real cost of a car with driver",
+    "lead": "Add your stops day by day. We work out the driving distance between them and price the trip from today's live driver rates — not a flat industry average.",
+    "liveFleet": "Live fleet",
+    "approvedVehicles": "Approved driver vehicles",
+    "medianRate": "Median daily rate",
+    "forPassengers": { "one": "For {count} passenger", "other": "For {count} passengers" },
+    "forAny": "For any passengers",
+    "typicalRange": "Typical daily range",
+    "middle50": "Middle 50% of quotes",
+    "thisItinerary": "This itinerary",
+    "stops": "{count} stops"
+  },
+  "who": {
+    "title": "Who is travelling",
+    "startDate": "Start date",
+    "passengers": "Passengers"
+  },
+  "itinerary": {
+    "title": "Your itinerary",
+    "lead": "Pick a destination and how many nights you stay. Distances update as you go.",
+    "arrive": "Arrive",
+    "removeStop": "Remove stop",
+    "destination": "Destination",
+    "searchPlaceholder": "Search destinations…",
+    "noMatch": "No destination matches that search.",
+    "nightsHere": "Nights here",
+    "nightsLabel": "Nights",
+    "fewerNights": "Fewer nights",
+    "moreNights": "More nights",
+    "sameDay": "Same day",
+    "addStop": "Add another stop",
+    "startOver": "Start over"
+  },
+  "classes": {
+    "title": "Recommended vehicle classes for this itinerary",
+    "leadCount": "Priced from live listings that currently seat {count} — not an assumed base rate.",
+    "leadGroup": "Priced from live listings that currently seat your group — not an assumed base rate.",
+    "noneCount": "No live vehicles currently match {count} passengers. Try a lower passenger count, or <link>request quotes</link> directly — drivers sometimes have vehicles not yet reflected in the public listings.",
+    "noneAny": "No live vehicles currently match that many passengers. Try a lower passenger count, or <link>request quotes</link> directly — drivers sometimes have vehicles not yet reflected in the public listings.",
+    "example": "e.g. {model}",
+    "bestMatch": "Best match",
+    "imageAlt": "{model} — example {class} listed on carwithdriver.lk",
+    "listed": "{count} listed",
+    "perDayOver": "≈ {amount}/day over {days}",
+    "getQuotes": "Get quotes"
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "summary": "Travellers matching this group size mostly pay between <b>{low} and {high} per day</b> for a private driver and vehicle, depending on the size of the car. The daily rate normally covers the driver, fuel for a typical 120–150 km day, and the driver's own accommodation and meals. Entrance tickets, safari jeeps and highway tolls are usually paid separately.",
+    "popularRoutes": "Popular routes travellers price here",
+    "fuel": {
+      "q": "Is fuel included in the daily rate?",
+      "a": "For a normal touring day of roughly 120–150 km, yes on most listings — check the \"what's included\" panel for how many vehicles matching your itinerary include it. Long transfer days sometimes carry a per-kilometre surcharge instead."
+    },
+    "hotel": {
+      "q": "Do I pay for the driver's hotel and meals?",
+      "a": "Most drivers arrange their own accommodation and meals on multi-day trips, and it's commonly folded into the daily rate rather than billed separately — again, the inclusion panel reflects real listings for your current search."
+    },
+    "notIncluded": {
+      "q": "What is typically not included?",
+      "a": "Entrance tickets to sites like Sigiriya or the Temple of the Tooth, safari jeep hire inside national parks, and highway tolls are usually paid separately from the driver day-rate."
+    },
+    "accuracy": {
+      "q": "How accurate is this estimate?",
+      "a": "It is built from the current rates of approved drivers on carwithdriver.lk and real road distances between your stops — not a flat industry average. Final pricing comes from drivers themselves once you request quotes for your exact itinerary."
+    },
+    "change": {
+      "q": "Can I change the itinerary after booking?",
+      "a": "Small changes are normally fine and agreed with your driver directly. If you add days or change the route significantly, your driver sends an updated offer before the trip starts."
+    }
+  },
+  "legs": {
+    "title": "Distance by leg",
+    "empty": "Add a second stop to see leg distances.",
+    "paceOk": "Comfortable pace — about {km} km a day, leaving time for stops.",
+    "paceFast": "That's about {km} km a day. Consider adding a night somewhere so the drive days stay enjoyable."
+  },
+  "included": {
+    "title": "What's included on this fleet",
+    "empty": "Set a passenger count with at least one matching vehicle to see real inclusion rates.",
+    "rate": { "one": "<b>{label}</b> — included on {percent}% of the {count} matching vehicle", "other": "<b>{label}</b> — included on {percent}% of the {count} matching vehicles" }
+  }
+}

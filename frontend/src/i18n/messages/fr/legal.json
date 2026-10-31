@@ -1,0 +1,141 @@
+{
+  "englishPrevails": "Cette traduction est fournie pour votre commodité. En cas de divergence avec la <link>version anglaise</link>, la version anglaise prévaut.",
+  "terms": {
+    "eyebrow": "Conditions générales",
+    "title": "Votre accord avec Car With Driver LK",
+    "intro": "Date d'entrée en vigueur : {date}",
+    "sections": [
+      {
+        "title": "1. Utilisation de notre plateforme",
+        "paragraphs": [
+          "En créant un compte ou en réservant un chauffeur, vous acceptez les présentes Conditions. Vous devez avoir au moins 18 ans et fournir des informations exactes. Nous pouvons suspendre des comptes en cas de fraude, d'abus, de comportement dangereux ou de violation des présentes Conditions."
+        ]
+      },
+      {
+        "title": "2. Réservations et paiements",
+        "items": [
+          "Prix : les chauffeurs fixent les tarifs. Les réductions appliquées sur toute la plateforme diminuent le montant total à payer affiché lors du paiement.",
+          "Paiement : les voyageurs paient directement le chauffeur, sauf indication contraire. La commission est déduite des revenus du chauffeur.",
+          "Modifications/annulations : suivez les instructions de vos e-mails de réservation ou écrivez au chauffeur. Certains voyages peuvent ne pas être remboursables une fois commencés.",
+          "Litiges : contactez l'assistance si un chauffeur ou un voyageur doit modifier quelque chose ou résoudre un problème."
+        ]
+      },
+      {
+        "title": "3. Responsabilités des chauffeurs",
+        "items": [
+          "Disposer de licences et d'assurances valides et de véhicules en bon état de marche.",
+          "Tenir à jour le profil, les disponibilités et les prix ; répondre rapidement aux voyageurs.",
+          "Honorer les réservations acceptées et prévenir au plus tôt en cas d'urgence."
+        ]
+      },
+      {
+        "title": "4. Responsabilités des voyageurs",
+        "items": [
+          "Fournir des détails de voyage exacts, les lieux de prise en charge et de dépose et, le cas échéant, les horaires de vol.",
+          "Traiter les chauffeurs avec respect et respecter les lois locales et les consignes de sécurité.",
+          "Payer au chauffeur le montant convenu dans les délais, en tenant compte des réductions affichées lors du paiement."
+        ]
+      },
+      {
+        "title": "5. Sécurité et comportement",
+        "paragraphs": [
+          "Nous pouvons exclure des utilisateurs pour harcèlement, discrimination, conduite dangereuse, fraude ou utilisation abusive de la plateforme. Signalez tout problème à support@carwithdriver.lk en indiquant les détails du voyage."
+        ]
+      },
+      {
+        "title": "6. Contenus et avis",
+        "paragraphs": [
+          "Les avis doivent être sincères et respectueux. Nous pouvons modérer ou supprimer les contenus injurieux, trompeurs ou contraires à la loi ou aux présentes Conditions."
+        ]
+      },
+      {
+        "title": "7. Responsabilité",
+        "paragraphs": [
+          "Car With Driver LK met en relation voyageurs et chauffeurs. Nous ne sommes ni l'employeur des chauffeurs ni l'exploitant des véhicules. Dans toute la mesure permise par la loi, nous déclinons toute responsabilité pour les dommages indirects ou accessoires découlant des voyages ou de l'utilisation de la plateforme."
+        ]
+      },
+      {
+        "title": "8. Modification des conditions",
+        "paragraphs": [
+          "Nous pouvons mettre à jour les présentes Conditions pour des raisons juridiques, de sécurité ou liées au produit. Si vous continuez à utiliser la plateforme après une mise à jour, vous acceptez les nouvelles Conditions. Nous indiquerons la date d'entrée en vigueur ci-dessus."
+        ]
+      },
+      {
+        "title": "9. Contact",
+        "paragraphs": [
+          "Des questions sur ces Conditions ? Écrivez à <email>hello@carwithdriver.lk</email> ou appelez le +94 76 302 1483."
+        ]
+      }
+    ]
+  },
+  "privacy": {
+    "eyebrow": "Politique de confidentialité",
+    "title": "Comment Car With Driver LK protège vos données",
+    "intro": "Date d'entrée en vigueur : {date}. Nous expliquons quelles données nous collectons, pourquoi nous les collectons et de quels moyens de contrôle vous disposez.",
+    "sections": [
+      {
+        "title": "Informations que nous collectons",
+        "items": [
+          "Données du compte : nom, e-mail, téléphone et mot de passe (haché).",
+          "Profil du chauffeur : description, informations sur le véhicule, libellé/coordonnées de la position en direct (si partagée) et images téléchargées.",
+          "Données de réservation : dates du voyage, points de départ et d'arrivée, détails des vols, messages des voyageurs et notes de paiement.",
+          "Données d'utilisation : informations sur l'appareil/le navigateur, pages consultées et événements d'analyse pour améliorer la fiabilité."
+        ]
+      },
+      {
+        "title": "Comment nous utilisons vos informations",
+        "items": [
+          "Pour créer et gérer les comptes des voyageurs, des chauffeurs et des administrateurs.",
+          "Pour traiter les réservations, les devis, les messages et les demandes d'assistance.",
+          "Pour vérifier les chauffeurs, publier les véhicules et afficher les repères sur la carte en direct lorsque les chauffeurs y consentent.",
+          "Pour envoyer des e-mails transactionnels (vérification, mises à jour de réservation, approbations) et des avis de service importants.",
+          "Pour améliorer la sécurité, détecter la fraude/les abus et respecter nos obligations légales."
+        ]
+      },
+      {
+        "title": "Partage et divulgation",
+        "items": [
+          "Avec les chauffeurs et voyageurs concernés par une réservation ou une conversation.",
+          "Avec des prestataires de services (hébergement, e-mail, analyse, passerelles de paiement) tenus à la confidentialité.",
+          "Lorsque la loi l'exige, pour protéger la sécurité ou pour faire respecter nos Conditions générales.",
+          "Nous ne vendons pas de données personnelles."
+        ]
+      },
+      {
+        "title": "Conservation et sécurité des données",
+        "items": [
+          "Les mots de passe sont hachés ; les fichiers téléchargés sont stockés de manière sécurisée avec des contrôles d'accès.",
+          "Nous conservons les données aussi longtemps que nécessaire pour fournir le service et respecter les exigences légales, puis nous les supprimons ou les anonymisons.",
+          "L'accès aux outils d'administration est restreint et journalisé."
+        ]
+      },
+      {
+        "title": "Vos choix",
+        "items": [
+          "Mettez à jour ou supprimez les informations de votre profil dans votre compte ou en contactant l'assistance.",
+          "Les chauffeurs peuvent effacer leur position en direct à tout moment depuis la page de profil.",
+          "Désabonnez-vous des e-mails marketing (s'ils sont activés) via le pied de page de l'e-mail ; les e-mails transactionnels continueront d'être envoyés.",
+          "Demandez l'accès, la rectification ou la suppression de vos données en écrivant à support@carwithdriver.lk."
+        ]
+      },
+      {
+        "title": "Enfants",
+        "paragraphs": [
+          "Nos services ne s'adressent pas aux enfants de moins de 16 ans. Si nous apprenons que nous avons collecté de telles données, nous les supprimerons."
+        ]
+      },
+      {
+        "title": "Modifications de cette politique",
+        "paragraphs": [
+          "Nous pouvons mettre à jour cette politique par souci de clarté ou de conformité. Nous publierons les mises à jour ici et ajusterons la date d'entrée en vigueur."
+        ]
+      },
+      {
+        "title": "Nous contacter",
+        "paragraphs": [
+          "Écrivez à <email>hello@carwithdriver.lk</email> ou appelez le +94 76 302 1483 pour toute question ou demande relative à la confidentialité."
+        ]
+      }
+    ]
+  }
+}

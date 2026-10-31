@@ -13,6 +13,7 @@ import {
   requestPasswordReset,
   resetPassword,
   deleteOwnAccount,
+  updateLanguage,
 } from '../controllers/authController.js';
 import { authenticate } from '../middleware/authMiddleware.js';
 import { conditionalProfileUpload, conditionalDriverRegistrationUpload } from '../middleware/cloudinaryUpload.js';
@@ -95,6 +96,7 @@ router.post(
 );
 
 router.get('/me', authenticate, getCurrentUser);
+router.put('/language', authenticate, updateLanguage);
 
 router.put(
   '/profile',

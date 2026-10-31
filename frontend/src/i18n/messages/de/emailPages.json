@@ -1,0 +1,46 @@
+{
+  "linkError": "Dieser Link konnte nicht geöffnet werden.",
+  "goHome": "Zur Startseite",
+  "backHome": "Zurück zur Startseite",
+  "offer": {
+    "opening": "Ihr Angebot wird geöffnet…",
+    "errorTitle": "Wir konnten dieses Angebot nicht öffnen",
+    "status": {
+      "accepted": "Sie haben dieses Angebot bereits angenommen – öffnen Sie Ihr Dashboard, um die Buchung zu sehen.",
+      "declined": "Dieses Angebot ist nicht mehr verfügbar."
+    },
+    "title": "Reiseangebot von {name}",
+    "kms": "{km} km inklusive",
+    "login": "Anmelden, um zu antworten",
+    "loginHelp": "Nach der Anmeldung gelangen Sie direkt zu diesem Chat."
+  },
+  "review": {
+    "opening": "Ihre Bewertung wird geöffnet…",
+    "errorTitle": "Wir konnten diese Bewertung nicht öffnen",
+    "errors": {
+      "rating": "Bitte wählen Sie eine Sternebewertung.",
+      "tooShort": "Bitte schreiben Sie etwas ausführlicher (mindestens 10 Zeichen).",
+      "submit": "Ihre Bewertung kann gerade nicht gesendet werden."
+    },
+    "thanksTitle": "Vielen Dank für Ihre Bewertung",
+    "thanksBody": "Sie erscheint auf der Website, sobald unser Team sie freigegeben hat.",
+    "title": "Wie war Ihre Reise mit {name}?",
+    "yourTrip": "Ihre Reise",
+    "rating": "Ihre Bewertung",
+    "stars": {
+      "one": "{count} Stern",
+      "other": "{count} Sterne"
+    },
+    "titleLabel": "Titel",
+    "optional": "(optional)",
+    "titlePlaceholder": "z. B. Ausgezeichneter Fahrer, sehr pünktlich",
+    "comment": "Ihre Bewertung",
+    "commentPlaceholder": "Was ist Ihnen am Fahrer, am Fahrzeug und an der Reise besonders aufgefallen?",
+    "photos": "Fotos",
+    "removePhoto": "Foto entfernen",
+    "photosHelp": "Fügen Sie bis zu {count} Fotos von Ihrer Reise hinzu.",
+    "submitting": "Wird gesendet…",
+    "submit": "Bewertung senden",
+    "checked": "Ihre Bewertung wird von unserem Team geprüft, bevor sie auf der Website erscheint."
+  }
+}

@@ -1,10 +1,11 @@
 import { CheckCheck } from 'lucide-react';
+import { useI18n } from '../i18n/I18nProvider.jsx';
 
-const formatMessageTime = (value) => {
+const formatMessageTime = (value, intl = 'en-US') => {
   if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleString('en-US', {
+  return date.toLocaleString(intl, {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
@@ -23,7 +24,8 @@ const formatMessageTime = (value) => {
  * not a thing anyone needs to be told.
  */
 const MessageMeta = ({ message, mine }) => {
-  const time = formatMessageTime(message?.createdAt);
+  const { t, intl } = useI18n();
+  const time = formatMessageTime(message?.createdAt, intl);
   if (!time) return null;
 
   const read = Boolean(message?.readByRecipient);
@@ -34,7 +36,7 @@ const MessageMeta = ({ message, mine }) => {
       {mine ? (
         <CheckCheck
           className={`h-3.5 w-3.5 ${read ? 'text-brand' : 'text-muted-soft'}`}
-          aria-label={read ? 'Read' : 'Sent'}
+          aria-label={read ? t('chat.read') : t('chat.sent')}
         />
       ) : null}
     </div>

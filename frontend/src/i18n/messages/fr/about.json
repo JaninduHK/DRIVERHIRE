@@ -1,0 +1,94 @@
+{
+  "hero": {
+    "badge": "À propos de Car with Driver LK",
+    "title": "Des réservations de chauffeurs transparentes pour chaque voyage au Sri Lanka.",
+    "lead": "Nous aidons les voyageurs à rencontrer des chauffeurs sri-lankais vérifiés, à comparer de vraies options et à convenir de prix et d'itinéraires clairs avant même d'atterrir. Notre mission est simple : des voyages sûrs, équitables et sans stress, pour les voyageurs comme pour les chauffeurs locaux.",
+    "builtFor": "Conçu pour les voyageurs indépendants et les familles.",
+    "coverage": "Présents sur les principaux itinéraires et destinations."
+  },
+  "pillars": {
+    "eyebrow": "Ce qui nous distingue",
+    "title": "Les trois piliers de la confiance",
+    "lead": "Tout ce que nous construisons vise à protéger les deux parties du voyage : les voyageurs indépendants et les chauffeurs locaux professionnels.",
+    "expertise": {
+      "title": "Une expertise sri-lankaise indépendante",
+      "description": "Car with Driver LK est conçu par une petite équipe locale qui connaît l'île et sait comment les voyageurs aiment la découvrir."
+    },
+    "matching": {
+      "title": "Une mise en relation transparente",
+      "description": "Nous vous mettons directement en relation avec des chauffeurs professionnels vérifiés et rendons les informations, les avis et les prix parfaitement clairs."
+    },
+    "support": {
+      "title": "Une assistance centrée sur la plateforme",
+      "description": "Réservations, conversations et documents restent dans un seul système sécurisé, pour que chacun voie les mêmes informations fiables."
+    }
+  },
+  "why": {
+    "eyebrow": "Pourquoi nous avons créé la plateforme",
+    "title": "De la clarté pour les voyageurs et les chauffeurs",
+    "body": "En restant indépendants et en misant sur une information transparente, nous veillons à ce que les deux parties de chaque voyage soient respectées. Les chauffeurs mettent en avant leur savoir-faire et fixent leurs propres tarifs, tandis que les voyageurs profitent d'un transport fiable, d'accords équitables et d'une assistance dédiée lorsque quelque chose doit être réglé."
+  },
+  "help": {
+    "title": "Quand vous avez besoin d'aide, nous sommes là",
+    "body": "La plupart des questions ou des problèmes peuvent se régler directement avec votre chauffeur. Mais si vous avez besoin d'un soutien supplémentaire, notre équipe peut vous aider à clarifier les accords, documenter les problèmes et servir de médiateur lorsque c'est possible, pour que vous puissiez poursuivre votre voyage en toute confiance.",
+    "note": "Pour les procédures complètes et les délais de réponse, consultez nos Conditions générales."
+  },
+  "faq": {
+    "eyebrow": "Questions fréquentes",
+    "title": "Comment fonctionne Car with Driver LK",
+    "lead": "Un aperçu rapide du fonctionnement de la plateforme, de la façon dont nous restons indépendants et de ce à quoi vous pouvez vous attendre en réservant chez nous.",
+    "what": {
+      "q": "Qu'est-ce que Car with Driver LK ?",
+      "a": "Car with Driver LK est une plateforme en ligne indépendante créée pour rendre les voyages au Sri Lanka plus simples, plus sûrs et plus transparents pour les visiteurs. Notre site vous aide à trouver des chauffeurs de confiance, à comparer les options, à lire de vrais avis et à réserver en toute confiance, au même endroit."
+    },
+    "aim": {
+      "q": "Quel est l'objectif de la plateforme ?",
+      "a": "Notre rôle est de mettre directement en relation les voyageurs avec des chauffeurs fiables et professionnels dans tout le Sri Lanka. Nous n'employons pas de chauffeurs, ne possédons pas de véhicules et ne sommes pas un voyagiste. Nous fournissons plutôt des processus clairs qui garantissent l'équité de chaque échange pour les voyageurs et les chauffeurs, du premier message à la fin du voyage."
+    },
+    "otherSites": {
+      "q": "Gérez-vous d'autres sites web ?",
+      "a": "Car with Driver LK se consacre entièrement à cette communauté de voyageurs et de chauffeurs. Il peut nous arriver de collaborer avec certains partenaires touristiques lorsque cela profite aux clients, mais chaque réservation et chaque message sont traités de manière sécurisée via notre plateforme."
+    },
+    "based": {
+      "q": "Où l'entreprise est-elle basée ?",
+      "a": "La plateforme est gérée par une petite équipe qui connaît très bien le Sri Lanka et possède des années d'expérience dans le tourisme et le service client. Notre position indépendante nous aide à rester neutres, transparents et équitables dans notre soutien aux voyageurs comme aux chauffeurs."
+    },
+    "money": {
+      "q": "Comment Car with Driver LK gagne-t-il de l'argent ?",
+      "a": "La plateforme est financée par les chauffeurs, qui peuvent payer de faibles frais de service ou commissions pour publier leurs annonces et recevoir des réservations. Des frais généraux réduits permettent aux chauffeurs de rester compétitifs et aux voyageurs d'éviter des frais de réservation supplémentaires : vous ne payez que le montant convenu, directement à votre chauffeur."
+    },
+    "help": {
+      "q": "M'aiderez-vous si quelque chose se passe mal ?",
+      "a": "Oui. Notre équipe d'assistance est disponible si vos projets changent ou si un problème ne peut pas être résolu avec votre chauffeur. Nous encourageons les voyageurs à en parler d'abord avec le chauffeur, et si une aide supplémentaire est nécessaire, nous pouvons intervenir ou servir de médiateur à partir des détails de réservation fournis. Consultez nos Conditions générales pour la procédure complète."
+    }
+  },
+  "promises": {
+    "eyebrow": "Pourquoi les voyageurs réservent ici",
+    "title": "Nos engagements de réservation",
+    "lead": "Voici les standards que nous visons pour chaque voyage, afin que vous puissiez réserver le bon chauffeur et le bon véhicule en toute sérénité.",
+    "items": [
+      "Vous recevez le type de véhicule décrit dans l'offre ou un équivalent direct.",
+      "Vous rencontrez le chauffeur que vous avez réservé, ou une alternative clairement convenue si nécessaire.",
+      "On ne vous demandera pas de payer plus que le prix total convenu à l'avance.",
+      "Vous pouvez demander des modifications ou des annulations via la plateforme, selon la politique du chauffeur.",
+      "Vous ne payez jamais de frais de réservation à Car with Driver LK. Le paiement va directement au chauffeur.",
+      "Vous pouvez laisser un avis sincère sur votre chauffeur après le voyage.",
+      "Vous recevez une confirmation de réservation écrite, pour que chacun sache ce qui a été convenu.",
+      "Nous faisons de notre mieux pour vous aider si des problèmes surviennent en cours de voyage.",
+      "Vous profitez d'un réseau croissant de chauffeurs vérifiés et des retours des voyageurs."
+    ]
+  },
+  "testimonials": {
+    "eyebrow": "Témoignages",
+    "title": "Ce que les voyageurs disent de Car with Driver LK",
+    "lead": "Une sélection d'expériences récentes de clients qui ont utilisé notre plateforme pour organiser leur voyage au Sri Lanka.",
+    "spain": {
+      "location": "Espagne",
+      "feedback": "« Chaque devis correspondait au prix final, et le chauffeur que nous avons rencontré à Colombo était exactement celui que nous avions réservé. Le dossier de confirmation nous a donné la confiance nécessaire pour explorer la côte sud sans stress. »"
+    },
+    "india": {
+      "location": "Inde",
+      "feedback": "« Notre itinéraire a changé deux fois et la plateforme a pris en compte les modifications instantanément. Avoir une équipe d'assistance disponible a rendu le trajet de Kandy à Ella détendu et agréable. »"
+    }
+  }
+}

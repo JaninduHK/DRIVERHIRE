@@ -1,0 +1,18 @@
+{
+  "delete": {
+    "typeWord": "Saisissez {word} pour confirmer.",
+    "enterPassword": "Saisissez votre mot de passe pour confirmer.",
+    "deleted": "Votre compte a été supprimé.",
+    "error": "Impossible de supprimer votre compte pour le moment.",
+    "title": "Supprimer le compte",
+    "body": "Cela supprime votre nom, votre e-mail, votre numéro de téléphone et vos autres données personnelles du site et de tout ce que les autres peuvent voir. Cette action est irréversible.",
+    "bookingsKept": "Vos réservations passées sont conservées sous forme anonyme, car nous sommes tenus de garder l'historique des paiements et des taxes. Elles ne seront plus associées publiquement à vous.",
+    "driverRecord": "Nos administrateurs conservent pendant 7 ans un dossier privé avec votre nom, vos coordonnées, votre licence et l'historique de vos trajets, car la loi nous oblige à savoir qui a conduit sur la plateforme. Il n'est jamais montré aux voyageurs ni aux autres chauffeurs, et il est supprimé automatiquement au bout de ces 7 ans.",
+    "open": "Supprimer mon compte",
+    "password": "Votre mot de passe",
+    "typeToConfirm": "Saisissez <w>{word}</w> pour confirmer",
+    "deleting": "Suppression…",
+    "confirm": "Supprimer définitivement",
+    "cancel": "Annuler"
+  }
+}

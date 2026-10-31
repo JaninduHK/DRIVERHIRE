@@ -1,0 +1,102 @@
+{
+  "logoAlt": "Logo von Car with Driver LK",
+  "nav": {
+    "home": "Startseite",
+    "vehicles": "Fahrzeuge",
+    "drivers": "Fahrer",
+    "liveMap": "Live-Karte",
+    "tripCost": "Reisekosten",
+    "getQuotes": "Angebote einholen",
+    "myVehicles": "Meine Fahrzeuge",
+    "myBookings": "Meine Buchungen",
+    "messages": "Nachrichten",
+    "myEarnings": "Meine Einnahmen",
+    "myAvailability": "Meine Verfügbarkeit",
+    "myProfile": "Mein Profil",
+    "overview": "Übersicht",
+    "myRequests": "Meine Anfragen",
+    "settings": "Einstellungen",
+    "roleDriver": "Fahrer",
+    "roleAdmin": "Admin",
+    "roleTraveller": "Reisende(r)",
+    "toggle": "Navigation ein-/ausblenden",
+    "dashboard": "Dashboard",
+    "login": "Anmelden",
+    "register": "Registrieren",
+    "closeMenu": "Menü schließen",
+    "tourBriefs": "Touranfragen",
+    "driverMenu": "Fahrermenü",
+    "travellerMenu": "Reisendenmenü",
+    "goToDashboard": "Zum Dashboard"
+  },
+  "footer": {
+    "homeLabel": "Car with Driver – Startseite",
+    "tagline": "Geprüfte Fahrer und moderne Fahrzeuge für Reisende, die Sri Lanka entdecken. Fünf-Sterne-Reisen, inselweit.",
+    "travellers": "Reisende",
+    "drivers": "Fahrer",
+    "help": "Hilfe",
+    "browseVehicles": "Fahrzeuge ansehen",
+    "featuredDrivers": "Empfohlene Fahrer",
+    "myQuoteRequests": "Meine Angebotsanfragen",
+    "chatMessages": "Chat-Nachrichten",
+    "applyAsDriver": "Als Fahrer bewerben",
+    "driverGuide": "Leitfaden für Fahrer",
+    "driverTerms": "Bedingungen für Fahrer",
+    "driverPortal": "Fahrerportal",
+    "contactSupport": "Support kontaktieren",
+    "safetyPromise": "Sicherheitsversprechen",
+    "privacyPolicy": "Datenschutzerklärung",
+    "terms": "Allgemeine Geschäftsbedingungen",
+    "rights": "Alle Rechte vorbehalten.",
+    "about": "Über uns",
+    "blog": "Blog",
+    "contact": "Kontakt"
+  },
+  "language": {
+    "choose": "Sprache wählen"
+  },
+  "error": {
+    "notFoundTitle": "Diese Seite wurde nicht gefunden",
+    "title": "Etwas ist schiefgelaufen",
+    "notFoundBody": "Die gesuchte Seite existiert nicht oder wurde verschoben.",
+    "body": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
+    "backHome": "Zurück zur Startseite"
+  },
+  "features": {
+    "englishSpeakingDriver": "Englischsprachiger Fahrer",
+    "meetAndGreetAtAirport": "Empfang am Flughafen",
+    "fuelAndInsurance": "Kraftstoff und Versicherung inklusive",
+    "driverMealsAndAccommodation": "Verpflegung & Unterkunft des Fahrers",
+    "parkingFeesAndTolls": "Parkgebühren & Mautgebühren",
+    "allTaxes": "Alle Steuern inbegriffen"
+  },
+  "inclusions": {
+    "englishSpeakingDriver": "Englischsprachiger Fahrer",
+    "fuelAndInsurance": "Kraftstoff und Versicherung",
+    "parkingFeesAndTolls": "Alle Park- und Mautgebühren",
+    "meetAndGreetAtAirport": "Empfang am Flughafen",
+    "driverMealsAndAccommodation": "Verpflegung & Unterkunft des Fahrers",
+    "allTaxes": "Alle Steuern"
+  },
+  "licenseTypes": {
+    "touristDriver": "Touristenfahrer",
+    "chauffeurGuideLecturer": "Chauffeur-Guide",
+    "nationalGuideLecturer": "Nationaler Guide"
+  },
+  "photos": {
+    "view": "Bewertungsfoto ansehen",
+    "reviewPhoto": "Bewertungsfoto",
+    "delete": "Foto löschen",
+    "close": "Schließen",
+    "previous": "Vorheriges Foto",
+    "next": "Nächstes Foto"
+  },
+  "badges": {
+    "englishSpeakingDriver": "Englischsprachig",
+    "meetAndGreetAtAirport": "Empfang am Flughafen",
+    "fuelAndInsurance": "Kraftstoff & Versicherung inklusive",
+    "driverMealsAndAccommodation": "Verpflegung & Unterkunft abgedeckt",
+    "parkingFeesAndTolls": "Park- & Mautgebühren abgedeckt",
+    "allTaxes": "Alle Steuern inbegriffen"
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "newGuide": "Neuer Guide",
+  "years": {
+    "one": "{count} Jahr",
+    "other": "{count} Jahre"
+  },
+  "filters": {
+    "all": "Alle Fahrer",
+    "available": "Jetzt verfügbar",
+    "group": "6+ Sitzplätze",
+    "top": "Bestbewertet"
+  },
+  "chatReady": "Die Unterhaltung ist in Ihrem Posteingang bereit.",
+  "chatError": "Eine Unterhaltung kann gerade nicht gestartet werden.",
+  "online": "LIVE · {count} FAHRER ONLINE",
+  "title": "Fahrer in Ihrer Nähe – jetzt",
+  "lead": "Tippen Sie auf eine Markierung auf der Karte oder eine Karte unten, um Fahrzeug, Sprachen und Tagespreis des Fahrers zu sehen – und starten Sie dann einen Chat.",
+  "mapLabel": "Fahrerkarte",
+  "listLabel": "Empfohlene Fahrer",
+  "recommended": "Für Sie empfohlen",
+  "ofTotal": "{shown} von {total}",
+  "emptyTitle": "Keine Fahrer entsprechen diesem Filter",
+  "emptyBody": "Wählen Sie „Alle Fahrer“, um alle auf der Karte zu sehen.",
+  "sriLanka": "Sri Lanka",
+  "quote": "Auf Anfrage",
+  "multidayTours": "Mehrtägige Touren",
+  "seats": {
+    "one": "{count} Sitzplatz",
+    "other": "{count} Sitzplätze"
+  },
+  "perDay": "pro Tag",
+  "reviews": {
+    "one": "{count} Bewertung",
+    "other": "{count} Bewertungen"
+  },
+  "sheet": {
+    "label": "Fahrerdetails",
+    "close": "Schließen",
+    "basedIn": "STANDORT",
+    "experience": "ERFAHRUNG",
+    "reviews": "BEWERTUNGEN",
+    "vehicles": "FAHRZEUGE",
+    "vehicle": "FAHRZEUG",
+    "seatsVary": "Sitzplätze unterschiedlich",
+    "goodToKnow": "GUT ZU WISSEN",
+    "perDay": "/ Tag",
+    "viewProfile": "Profil ansehen",
+    "opening": "Chat wird geöffnet…",
+    "chatWith": "Mit {name} chatten"
+  }
+}

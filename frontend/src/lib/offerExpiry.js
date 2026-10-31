@@ -7,11 +7,22 @@ const HOUR_MS = 60 * 60 * 1000;
  * Returns null when there is nothing to say: an offer that was accepted or
  * declined has reached its outcome, and a countdown would only confuse.
  */
-export const offerExpiryNotice = (offer, now = Date.now()) => {
+// English wording, used on driver pages (and as the fallback). Translated pages
+// pass `t`, which reads the same texts from offer.expiry.* in their language.
+const ENGLISH = {
+  expired: () => 'This offer has expired',
+  days: (count) => `Expires in ${count} days`,
+  tomorrow: () => 'Expires tomorrow',
+  hours: (count) => `Expires in ${count} hour${count === 1 ? '' : 's'}`,
+  minutes: (count) => `Expires in ${count} minute${count === 1 ? '' : 's'}`,
+};
+
+export const offerExpiryNotice = (offer, now = Date.now(), t = null) => {
   if (!offer) return null;
+  const text = (key, count) => (t ? t(`offer.expiry.${key}`, { count }) : ENGLISH[key](count));
 
   if (offer.status === 'expired') {
-    return { tone: 'expired', text: 'This offer has expired' };
+    return { tone: 'expired', text: text('expired') };
   }
   if (offer.status !== 'pending' || !offer.expiresAt) return null;
 
@@ -20,22 +31,21 @@ export const offerExpiryNotice = (offer, now = Date.now()) => {
 
   // The sweep only runs hourly, so an offer can still read "pending" after its
   // date has passed. Trust the date, not the status.
-  if (remaining <= 0) return { tone: 'expired', text: 'This offer has expired' };
+  if (remaining <= 0) return { tone: 'expired', text: text('expired') };
 
   const hours = remaining / HOUR_MS;
 
   if (hours >= 48) {
-    return { tone: 'normal', text: `Expires in ${Math.floor(hours / 24)} days` };
+    return { tone: 'normal', text: text('days', Math.floor(hours / 24)) };
   }
   if (hours >= 24) {
-    return { tone: 'normal', text: 'Expires tomorrow' };
+    return { tone: 'normal', text: text('tomorrow') };
   }
   if (hours >= 1) {
-    const whole = Math.floor(hours);
-    return { tone: 'soon', text: `Expires in ${whole} hour${whole === 1 ? '' : 's'}` };
+    return { tone: 'soon', text: text('hours', Math.floor(hours)) };
   }
   const minutes = Math.max(1, Math.round(remaining / 60000));
-  return { tone: 'soon', text: `Expires in ${minutes} minute${minutes === 1 ? '' : 's'}` };
+  return { tone: 'soon', text: text('minutes', minutes) };
 };
 
 /** Tailwind classes for the notice pill, by tone. */

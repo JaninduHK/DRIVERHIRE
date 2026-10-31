@@ -1,3 +1,4 @@
+import { localizeServerMessage } from '../i18n/serverMessages.js';
 import { API_BASE_URL } from '../constants/api.js';
 
 const SUPPORT_BASE_URL = `${API_BASE_URL}/support`;
@@ -31,7 +32,7 @@ export const submitSupportRequest = async (payload) => {
   });
 
   if (!response.ok) {
-    throw new Error(await parseError(response));
+    throw new Error(localizeServerMessage(await parseError(response)));
   }
 
   return safeJson(response);

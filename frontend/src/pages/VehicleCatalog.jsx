@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from '../i18n/router.jsx';
+import { useI18n } from '../i18n/I18nProvider.jsx';
+import { translateFeature } from '../i18n/labels.js';
 import { Car, Check, ChevronDown, RefreshCw, Search, SlidersHorizontal, Star, X } from 'lucide-react';
 import { useLoaderData } from 'react-router';
 import { fetchVehicles } from '../services/vehicleCatalogApi.js';
@@ -44,39 +46,46 @@ const cleanFilters = (filters) => {
 
 const formatPrice = (value) => (typeof value !== 'number' ? null : `$${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`);
 
-const shortDate = (value) => {
+const shortDate = (value, intl = 'en-US') => {
   if (!value) return '';
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return d.toLocaleDateString(intl, { month: 'short', day: 'numeric' });
 };
 
+// Labels that are keys (any, under40, …) are translated in vehicles.filters.*.
 const SEAT_OPTIONS = [
-  { value: '', label: 'Any' },
+  { value: '', label: 'any' },
   { value: '2', label: '2+' },
   { value: '3', label: '3+' },
   { value: '4', label: '4+' },
   { value: '6', label: '6+' },
 ];
 const BUDGET_PRESETS = [
-  { label: 'Any', min: '', max: '' },
-  { label: 'Under $40', min: '', max: '40' },
+  { label: 'any', min: '', max: '' },
+  { label: 'under40', min: '', max: '40' },
   { label: '$40 – $60', min: '40', max: '60' },
   { label: '$60+', min: '60', max: '' },
 ];
 const RATING_OPTIONS = [
-  { value: '', label: 'Any' },
+  { value: '', label: 'any' },
   { value: '4', label: '4.0★ +' },
   { value: '4.5', label: '4.5★ +' },
 ];
 const SORT_OPTIONS = [
-  { value: 'recent', label: 'Recommended' },
-  { value: 'priceAsc', label: 'Price: low to high' },
-  { value: 'priceDesc', label: 'Price: high to low' },
-  { value: 'ratingDesc', label: 'Top rated' },
+  { value: 'recent', label: 'recommended' },
+  { value: 'priceAsc', label: 'priceAsc' },
+  { value: 'priceDesc', label: 'priceDesc' },
+  { value: 'ratingDesc', label: 'topRated' },
 ];
 
+// Option labels that are translation keys; numeric ones ('2+', '$60+') are shown as-is.
+const TRANSLATED_OPTION_LABELS = ['any', 'under40', 'recommended', 'priceAsc', 'priceDesc', 'topRated'];
+const optionLabel = (label, t) =>
+  TRANSLATED_OPTION_LABELS.includes(label) ? t(`vehicles.filters.${label}`) : label;
+
 const VehicleCatalog = () => {
+  const { t, intl } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -105,7 +114,7 @@ const VehicleCatalog = () => {
       })
       .catch((error) => {
         if (cancelled) return;
-        setState({ items: [], loading: false, error: error?.message || 'Unable to load vehicles.' });
+        setState({ items: [], loading: false, error: error?.message || t('vehicles.loadError') });
       });
     return () => {
       cancelled = true;
@@ -150,28 +159,28 @@ const VehicleCatalog = () => {
   const hasAnyFilter = activeCount > 0 || appliedFilters.location || appliedFilters.sort !== 'recent';
   const priceChipLabel = priceActive
     ? `$${appliedFilters.minPrice || '0'}${appliedFilters.maxPrice ? `–$${appliedFilters.maxPrice}` : '+'}`
-    : 'Price';
+    : t('vehicles.chips.price');
 
   return (
     <div className="min-h-screen bg-canvas font-sans text-ink">
       {/* Sticky search + chips */}
       <div className="sticky top-0 z-20 border-b border-hairline bg-white">
         <div className="mx-auto max-w-6xl px-4 pb-2.5 pt-3 sm:px-6">
-          <h1 className="mb-2.5 text-[21px] font-extrabold tracking-tight text-ink lg:text-[26px]">Find your ride</h1>
+          <h1 className="mb-2.5 text-[21px] font-extrabold tracking-tight text-ink lg:text-[26px]">{t('vehicles.title')}</h1>
           <div className="flex gap-2">
             <form onSubmit={handleSearchSubmit} className="relative flex-1">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-soft" />
               <input
                 value={formState.search}
                 onChange={(e) => setFormState((p) => ({ ...p, search: e.target.value }))}
-                placeholder="Model, driver or city"
+                placeholder={t('vehicles.searchPlaceholder')}
                 className="h-[46px] w-full min-w-0 rounded-[14px] border-[1.5px] border-[#e2e8ea] bg-white pl-10 pr-3 text-[13.5px] text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none"
               />
             </form>
             <button
               type="button"
               onClick={openSheet}
-              aria-label="Filters"
+              aria-label={t('vehicles.filters.title')}
               className="relative grid h-[46px] w-[46px] flex-shrink-0 place-items-center rounded-[14px] bg-ink text-white"
             >
               <SlidersHorizontal className="h-[18px] w-[18px]" strokeWidth={1.8} />
@@ -185,33 +194,33 @@ const VehicleCatalog = () => {
           <div className="no-scrollbar mt-2.5 flex gap-2 overflow-x-auto pb-0.5">
             {datesActive ? (
               <ActiveChip onClear={() => applyFilters({ ...appliedFilters, startDate: '', endDate: '' })}>
-                {shortDate(appliedFilters.startDate)} – {shortDate(appliedFilters.endDate)}
+                {shortDate(appliedFilters.startDate, intl)} – {shortDate(appliedFilters.endDate, intl)}
               </ActiveChip>
             ) : (
-              <ChevronChip onClick={openSheet}>Dates</ChevronChip>
+              <ChevronChip onClick={openSheet}>{t('vehicles.chips.dates')}</ChevronChip>
             )}
             {appliedFilters.minSeats ? (
               <ActiveChip onClear={() => applyFilters({ ...appliedFilters, minSeats: '' })}>
-                {appliedFilters.minSeats}+ seats
+                {t('vehicles.chips.seatsActive', { count: appliedFilters.minSeats })}
               </ActiveChip>
             ) : (
-              <ChevronChip onClick={openSheet}>Seats</ChevronChip>
+              <ChevronChip onClick={openSheet}>{t('vehicles.chips.seats')}</ChevronChip>
             )}
             {priceActive ? (
               <ActiveChip onClear={() => applyFilters({ ...appliedFilters, minPrice: '', maxPrice: '' })}>
                 {priceChipLabel}
               </ActiveChip>
             ) : (
-              <ChevronChip onClick={openSheet}>Price</ChevronChip>
+              <ChevronChip onClick={openSheet}>{t('vehicles.chips.price')}</ChevronChip>
             )}
             {appliedFilters.minRating ? (
               <ActiveChip onClear={() => applyFilters({ ...appliedFilters, minRating: '' })}>
                 {appliedFilters.minRating}★ +
               </ActiveChip>
             ) : (
-              <ChevronChip onClick={openSheet}>Rating</ChevronChip>
+              <ChevronChip onClick={openSheet}>{t('vehicles.chips.rating')}</ChevronChip>
             )}
-            <ChevronChip onClick={openSheet}>Sort</ChevronChip>
+            <ChevronChip onClick={openSheet}>{t('vehicles.chips.sort')}</ChevronChip>
           </div>
         </div>
       </div>
@@ -220,11 +229,11 @@ const VehicleCatalog = () => {
       <div className="mx-auto max-w-6xl px-4 pb-20 pt-4 sm:px-6">
         <div className="mb-3 flex items-center justify-between">
           <span className="text-[12px] font-extrabold uppercase tracking-[0.05em] text-muted-soft">
-            {loading ? 'Loading…' : `${vehicles.length} vehicle${vehicles.length === 1 ? '' : 's'}`}
+            {loading ? t('vehicles.loading') : t('vehicles.count', { count: vehicles.length })}
           </span>
           {hasAnyFilter ? (
             <button type="button" onClick={() => applyFilters(defaultFilters)} className="text-[12.5px] font-bold text-brand-dark">
-              Clear filters
+              {t('vehicles.clearFilters')}
             </button>
           ) : null}
         </div>
@@ -243,20 +252,20 @@ const VehicleCatalog = () => {
           </div>
         ) : error ? (
           <div className="rounded-[18px] bg-white p-8 text-center shadow-card">
-            <h2 className="text-[16px] font-extrabold text-ink">Unable to load vehicles</h2>
+            <h2 className="text-[16px] font-extrabold text-ink">{t('vehicles.loadErrorTitle')}</h2>
             <p className="mt-2 text-sm text-muted">{error}</p>
             <button
               type="button"
               onClick={() => setRefreshIndex((p) => p + 1)}
               className="mt-4 inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-bold text-white transition hover:bg-brand-dark"
             >
-              <RefreshCw className="h-4 w-4" /> Try again
+              <RefreshCw className="h-4 w-4" /> {t('vehicles.tryAgain')}
             </button>
           </div>
         ) : vehicles.length === 0 ? (
           <div className="rounded-[18px] bg-white p-10 text-center text-sm text-muted shadow-card">
-            <b className="mb-1 block text-ink">No vehicles match your filters yet</b>
-            Adjust your search or check back soon — new listings are added regularly.
+            <b className="mb-1 block text-ink">{t('vehicles.emptyTitle')}</b>
+            {t('vehicles.emptyBody')}
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -281,14 +290,17 @@ const VehicleCatalog = () => {
   );
 };
 
-const ActiveChip = ({ children, onClear }) => (
+const ActiveChip = ({ children, onClear }) => {
+  const { t } = useI18n();
+  return (
   <span className="flex flex-shrink-0 items-center gap-1.5 rounded-full bg-brand px-[13px] py-[9px] text-[13px] font-bold text-white">
     {children}
-    <button type="button" onClick={onClear} aria-label="Clear" className="grid place-items-center">
+    <button type="button" onClick={onClear} aria-label={t('vehicles.clear')} className="grid place-items-center">
       <X className="h-[11px] w-[11px]" strokeWidth={2.5} />
     </button>
   </span>
-);
+  );
+};
 
 const ChevronChip = ({ children, onClick }) => (
   <button
@@ -302,6 +314,7 @@ const ChevronChip = ({ children, onClick }) => (
 );
 
 const VehicleCard = ({ vehicle }) => {
+  const { t } = useI18n();
   const cover = Array.isArray(vehicle.images) ? vehicle.images[0] : null;
   const discount = vehicle.activeDiscount;
   const hasDiscount = Boolean(discount?.name && typeof discount?.discountedPricePerDay === 'number');
@@ -309,9 +322,9 @@ const VehicleCard = ({ vehicle }) => {
   const originalPrice = hasDiscount ? formatPrice(vehicle.pricePerDay) : null;
   const reviews = vehicle.reviewSummary || {};
   const hasReviews = (reviews.totalReviews ?? 0) > 0 && typeof reviews.averageRating === 'number';
-  const features = getVehicleFeatureLabels(vehicle).slice(0, 2);
+  const features = getVehicleFeatureLabels(vehicle).slice(0, 2).map((label) => translateFeature(label, t));
   const cityLabel = vehicle.location || vehicle.driver?.location?.label || vehicle.driver?.address || '';
-  const meta = [vehicle.seats ? `${vehicle.seats} seats` : null, vehicle.year, cityLabel].filter(Boolean).join(' · ');
+  const meta = [vehicle.seats ? t('vehicles.card.seats', { count: vehicle.seats }) : null, vehicle.year, cityLabel].filter(Boolean).join(' · ');
 
   return (
     <Link to={`/vehicles/${vehicle.id}`} className="block overflow-hidden rounded-[18px] bg-white shadow-card transition hover:-translate-y-0.5 hover:shadow-lg">
@@ -333,12 +346,12 @@ const VehicleCard = ({ vehicle }) => {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <b className="block truncate text-[16px] text-ink">{vehicle.model}</b>
-            <div className="mt-0.5 truncate text-[12.5px] text-muted-soft">{meta || 'Vehicle'}</div>
+            <div className="mt-0.5 truncate text-[12.5px] text-muted-soft">{meta || t('vehicles.card.vehicle')}</div>
           </div>
           <div className="flex-shrink-0 text-right">
             <b className={`text-[16px] ${hasDiscount ? 'text-brand-dark' : 'text-ink'}`}>{price || '—'}</b>
             {originalPrice ? <div className="text-[11.5px] font-semibold text-[#e11d48] line-through">{originalPrice}</div> : null}
-            <div className="text-[11.5px] text-muted-soft">per day</div>
+            <div className="text-[11.5px] text-muted-soft">{t('vehicles.card.perDay')}</div>
           </div>
         </div>
         {features.length > 0 || hasReviews ? (
@@ -358,9 +371,9 @@ const VehicleCard = ({ vehicle }) => {
         ) : null}
         <div className="mt-3 flex items-center justify-between border-t border-hairline pt-3">
           <span className="truncate text-[12.5px] text-muted-soft">
-            By <b className="text-ink">{vehicle.driver?.name ?? 'Approved driver'}</b>
+            {t('vehicles.card.by')} <b className="text-ink">{vehicle.driver?.name ?? t('vehicles.card.approvedDriver')}</b>
           </span>
-          <span className="flex-shrink-0 rounded-full bg-brand px-4 py-2 text-[12.5px] font-bold text-white">View</span>
+          <span className="flex-shrink-0 rounded-full bg-brand px-4 py-2 text-[12.5px] font-bold text-white">{t('vehicles.card.view')}</span>
         </div>
       </div>
     </Link>
@@ -375,6 +388,7 @@ const SheetSection = ({ label, children, className = '' }) => (
 );
 
 const VehicleFilterSheet = ({ draft, setDraft, count, onApply, onReset, onClose }) => {
+  const { t } = useI18n();
   const set = (patch) => setDraft((p) => ({ ...p, ...patch }));
   const budgetActive = (min, max) => (draft.minPrice || '') === min && (draft.maxPrice || '') === max;
 
@@ -386,37 +400,37 @@ const VehicleFilterSheet = ({ draft, setDraft, count, onApply, onReset, onClose 
           <div className="h-1.5 w-11 rounded-full bg-[#e2e8ea]" />
         </div>
         <div className="flex items-center justify-between px-[18px] py-3">
-          <b className="text-[18px] text-ink">Filters</b>
-          <button type="button" onClick={onReset} className="text-[13px] font-bold text-brand-dark">Clear all</button>
+          <b className="text-[18px] text-ink">{t('vehicles.filters.title')}</b>
+          <button type="button" onClick={onReset} className="text-[13px] font-bold text-brand-dark">{t('vehicles.filters.clearAll')}</button>
         </div>
         <div className="flex-1 space-y-5 overflow-y-auto px-[18px] pb-3.5">
-          <SheetSection label="Trip dates">
+          <SheetSection label={t('vehicles.filters.tripDates')}>
             <div className="mt-2.5 flex gap-2.5">
               <div className="min-w-0 flex-1">
-                <label className="text-[10.5px] font-bold text-muted-soft">Start</label>
+                <label className="text-[10.5px] font-bold text-muted-soft">{t('vehicles.filters.start')}</label>
                 <input type="date" value={draft.startDate} onChange={(e) => set({ startDate: e.target.value })} className="mt-1 h-11 w-full min-w-0 rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-2.5 text-[13px] font-semibold text-ink focus:border-brand focus:outline-none" />
               </div>
               <div className="min-w-0 flex-1">
-                <label className="text-[10.5px] font-bold text-muted-soft">End</label>
+                <label className="text-[10.5px] font-bold text-muted-soft">{t('vehicles.filters.end')}</label>
                 <input type="date" value={draft.endDate} onChange={(e) => set({ endDate: e.target.value })} className="mt-1 h-11 w-full min-w-0 rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-2.5 text-[13px] font-semibold text-ink focus:border-brand focus:outline-none" />
               </div>
             </div>
           </SheetSection>
 
-          <SheetSection label="Seats">
+          <SheetSection label={t('vehicles.filters.seats')}>
             <div className="mt-2.5 flex gap-1.5 rounded-[14px] bg-[#f2f4f3] p-1">
               {SEAT_OPTIONS.map((o) => {
                 const on = (draft.minSeats || '') === o.value;
                 return (
                   <button key={o.label} type="button" onClick={() => set({ minSeats: o.value })} className={`flex-1 rounded-[10px] py-2.5 text-[13.5px] font-bold transition ${on ? 'bg-brand text-white' : 'text-muted'}`}>
-                    {o.label}
+                    {optionLabel(o.label, t)}
                   </button>
                 );
               })}
             </div>
           </SheetSection>
 
-          <SheetSection label="Budget per day">
+          <SheetSection label={t('vehicles.filters.budget')}>
             <div className="mt-2.5 flex flex-wrap gap-2">
               {BUDGET_PRESETS.map((b) => {
                 const on = budgetActive(b.min, b.max);
@@ -427,7 +441,7 @@ const VehicleFilterSheet = ({ draft, setDraft, count, onApply, onReset, onClose 
                     onClick={() => set({ minPrice: b.min, maxPrice: b.max })}
                     className={`rounded-full px-[15px] py-2.5 text-[13px] font-bold transition ${on ? 'border-[1.5px] border-brand bg-brand-tint text-brand-dark' : 'bg-[#f2f4f3] text-muted'}`}
                   >
-                    {b.label}
+                    {optionLabel(b.label, t)}
                   </button>
                 );
               })}
@@ -435,29 +449,29 @@ const VehicleFilterSheet = ({ draft, setDraft, count, onApply, onReset, onClose 
             <div className="mt-2.5 flex gap-2.5">
               <div className="flex h-[46px] min-w-0 flex-1 items-center rounded-xl border-[1.5px] border-[#e2e8ea] px-3">
                 <span className="mr-1 text-[13.5px] text-muted-soft">$</span>
-                <input type="number" min="0" value={draft.minPrice} onChange={(e) => set({ minPrice: e.target.value })} placeholder="Min" className="w-full min-w-0 bg-transparent text-[13.5px] font-semibold text-ink placeholder:font-normal placeholder:text-[#adb8c0] focus:outline-none" />
+                <input type="number" min="0" value={draft.minPrice} onChange={(e) => set({ minPrice: e.target.value })} placeholder={t('vehicles.filters.min')} className="w-full min-w-0 bg-transparent text-[13.5px] font-semibold text-ink placeholder:font-normal placeholder:text-[#adb8c0] focus:outline-none" />
               </div>
               <div className="flex h-[46px] min-w-0 flex-1 items-center rounded-xl border-[1.5px] border-[#e2e8ea] px-3">
                 <span className="mr-1 text-[13.5px] text-muted-soft">$</span>
-                <input type="number" min="0" value={draft.maxPrice} onChange={(e) => set({ maxPrice: e.target.value })} placeholder="Max" className="w-full min-w-0 bg-transparent text-[13.5px] font-semibold text-ink placeholder:font-normal placeholder:text-[#adb8c0] focus:outline-none" />
+                <input type="number" min="0" value={draft.maxPrice} onChange={(e) => set({ maxPrice: e.target.value })} placeholder={t('vehicles.filters.max')} className="w-full min-w-0 bg-transparent text-[13.5px] font-semibold text-ink placeholder:font-normal placeholder:text-[#adb8c0] focus:outline-none" />
               </div>
             </div>
           </SheetSection>
 
-          <SheetSection label="Rating">
+          <SheetSection label={t('vehicles.filters.rating')}>
             <div className="mt-2.5 flex gap-2">
               {RATING_OPTIONS.map((o) => {
                 const on = (draft.minRating || '') === o.value;
                 return (
                   <button key={o.label} type="button" onClick={() => set({ minRating: o.value })} className={`flex-1 rounded-xl py-2.5 text-[13px] font-bold transition ${on ? 'bg-brand text-white' : 'bg-[#f2f4f3] text-muted'}`}>
-                    {o.label}
+                    {optionLabel(o.label, t)}
                   </button>
                 );
               })}
             </div>
           </SheetSection>
 
-          <SheetSection label="Sort by">
+          <SheetSection label={t('vehicles.filters.sortBy')}>
             <div className="mt-1 flex flex-col">
               {SORT_OPTIONS.map((o, i) => {
                 const on = (draft.sort || 'recent') === o.value;
@@ -468,7 +482,7 @@ const VehicleFilterSheet = ({ draft, setDraft, count, onApply, onReset, onClose 
                     onClick={() => set({ sort: o.value })}
                     className={`flex items-center justify-between py-[13px] text-left ${i < SORT_OPTIONS.length - 1 ? 'border-b border-hairline' : ''}`}
                   >
-                    <span className={`text-[14px] ${on ? 'font-bold text-ink' : 'font-semibold text-ink-soft'}`}>{o.label}</span>
+                    <span className={`text-[14px] ${on ? 'font-bold text-ink' : 'font-semibold text-ink-soft'}`}>{optionLabel(o.label, t)}</span>
                     {on ? (
                       <span className="grid h-[22px] w-[22px] place-items-center rounded-full bg-brand">
                         <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />
@@ -482,10 +496,10 @@ const VehicleFilterSheet = ({ draft, setDraft, count, onApply, onReset, onClose 
         </div>
         <div className="flex gap-2.5 border-t border-hairline px-[18px] pb-6 pt-3.5">
           <button type="button" onClick={onReset} className="flex-shrink-0 rounded-[14px] border-[1.5px] border-[#e2e8ea] px-5 py-[14px] text-[14px] font-bold text-ink">
-            Reset
+            {t('vehicles.filters.reset')}
           </button>
           <button type="button" onClick={onApply} className="flex-1 rounded-[14px] bg-brand py-[14px] text-[15px] font-extrabold text-white transition hover:bg-brand-dark">
-            Show {count} vehicle{count === 1 ? '' : 's'}
+            {t('vehicles.filters.show', { count })}
           </button>
         </div>
       </div>

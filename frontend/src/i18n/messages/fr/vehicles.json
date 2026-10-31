@@ -1,0 +1,59 @@
+{
+  "title": "Trouvez votre véhicule",
+  "searchPlaceholder": "Modèle, chauffeur ou ville",
+  "loadError": "Impossible de charger les véhicules.",
+  "loadErrorTitle": "Impossible de charger les véhicules",
+  "tryAgain": "Réessayer",
+  "loading": "Chargement…",
+  "count": {
+    "one": "{count} véhicule",
+    "other": "{count} véhicules"
+  },
+  "clearFilters": "Effacer les filtres",
+  "clear": "Effacer",
+  "emptyTitle": "Aucun véhicule ne correspond encore à vos filtres",
+  "emptyBody": "Modifiez votre recherche ou revenez bientôt : de nouvelles annonces sont ajoutées régulièrement.",
+  "chips": {
+    "dates": "Dates",
+    "seats": "Places",
+    "seatsActive": "{count}+ places",
+    "price": "Prix",
+    "rating": "Note",
+    "sort": "Trier"
+  },
+  "card": {
+    "seats": {
+      "one": "{count} place",
+      "other": "{count} places"
+    },
+    "vehicle": "Véhicule",
+    "perDay": "par jour",
+    "by": "Par",
+    "approvedDriver": "Chauffeur approuvé",
+    "view": "Voir"
+  },
+  "filters": {
+    "title": "Filtres",
+    "clearAll": "Tout effacer",
+    "tripDates": "Dates du voyage",
+    "start": "Début",
+    "end": "Fin",
+    "seats": "Places",
+    "budget": "Budget par jour",
+    "min": "Min",
+    "max": "Max",
+    "rating": "Note",
+    "sortBy": "Trier par",
+    "reset": "Réinitialiser",
+    "show": {
+      "one": "Afficher {count} véhicule",
+      "other": "Afficher {count} véhicules"
+    },
+    "any": "Tous",
+    "under40": "Moins de $40",
+    "recommended": "Recommandés",
+    "priceAsc": "Prix : croissant",
+    "priceDesc": "Prix : décroissant",
+    "topRated": "Les mieux notés"
+  }
+}

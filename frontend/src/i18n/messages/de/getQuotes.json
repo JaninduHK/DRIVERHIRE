@@ -1,0 +1,213 @@
+{
+  "breadcrumb": "Brotkrümelnavigation",
+  "breadcrumbHome": "Startseite",
+  "breadcrumbCurrent": "Angebote einholen",
+  "hero": {
+    "title": "Kostenlose Angebote von Fahrern & Chauffeur-Guides in Sri Lanka",
+    "lead": "Nennen Sie uns Ihre Reisedaten und wohin Sie möchten. Wir senden Ihre Anfrage an freigegebene Fahrer und SLTDA-Chauffeur-Guides auf der ganzen Insel – sie schicken Ihnen direkt ein Angebot, Sie vergleichen, chatten und buchen. Keine Buchungsgebühr, und Sie bezahlen Ihren Fahrer, nicht uns.",
+    "points": [
+      "Angebote von Touristenfahrern, Chauffeur-Guides und Nationalen Guides",
+      "Tagespreise decken 120–150 km pro Tag inselweit ab",
+      "Chatten Sie mit Fahrern, bevor Sie sich festlegen – Ihre Kontaktdaten bleiben privat",
+      "Nehmen Sie ein Angebot an, und dieser Preis ist für die vereinbarte Reiseroute festgeschrieben"
+    ],
+    "stat1Value": "30 Min.",
+    "stat1Label": "Erstes Angebot, typischerweise",
+    "stat2Label": "Angebote pro Anfrage",
+    "stat3Value": "GRATIS",
+    "stat3Label": "Keine Buchungsgebühr"
+  },
+  "errors": {
+    "dates": "Wählen Sie Ihr Start- und Enddatum.",
+    "endAfterStart": "Das Enddatum muss nach dem Startdatum liegen.",
+    "startPast": "Das Startdatum darf nicht in der Vergangenheit liegen.",
+    "allFields": "Bitte füllen Sie alle Felder aus.",
+    "tooLong": "Die Details zur Reiseroute dürfen höchstens {max} Zeichen lang sein.",
+    "adults": "Bitte geben Sie mindestens einen erwachsenen Reisenden an."
+  },
+  "form": {
+    "title": "Fordern Sie Ihre Angebote an",
+    "intro": "Dauert etwa eine Minute. Im nächsten Schritt melden Sie sich an oder erstellen ein kostenloses Konto – Sie müssen nichts doppelt ausfüllen.",
+    "startDate": "Startdatum",
+    "endDate": "Enddatum",
+    "pickup": "Abholort",
+    "dropoff": "Zielort",
+    "placePlaceholder": "Stadt, Hotel oder Flughafen",
+    "adults": "Erwachsene",
+    "children": "Kinder",
+    "country": "Wohnsitzland",
+    "countryPlaceholder": "z. B. Deutschland",
+    "limit": "Anzahl der Angebote begrenzen",
+    "optional": "(optional)",
+    "noLimit": "Keine Begrenzung",
+    "limitHelp": "Wir nehmen keine weiteren Angebote mehr an, sobald so viele Fahrer geantwortet haben.",
+    "driverType": "Fahrertyp",
+    "allDrivers": "Alle Fahrer",
+    "touristOnly": "Nur Touristenfahrer",
+    "chauffeurOnly": "Nur Chauffeur-Guides",
+    "driverTypeHelp": "Wenn Sie dies einschränken, können nur Fahrer mit dieser von der SLTDA verifizierten Lizenz ein Angebot abgeben – Sie erhalten also möglicherweise weniger Angebote.",
+    "notes": "Details zur Reiseroute",
+    "notesPlaceholder": "Orte, die Sie sehen möchten, Flugzeiten, Kinder oder zusätzliches Gepäck. Alles, was den Fahrern hilft, ein genaues Angebot zu machen.",
+    "noContact": "Bitte geben Sie hier keine Telefonnummern oder E-Mail-Adressen an – wir teilen die Kontaktdaten, sobald Sie ein Angebot annehmen und Ihre Buchung bestätigt ist.",
+    "next": "Weiter",
+    "footnote": "Kostenlose Anfrage · Keine Buchungsgebühr · Bezahlung direkt an den Fahrer"
+  },
+  "how": {
+    "title": "So funktioniert es – in drei Schritten",
+    "lead": "Es gibt keinen Schritt des Suchens und Ratens. Sie beschreiben die Reise einmal, und Fahrer, die an Ihren Reisedaten frei sind, kommen mit einem Preis auf Sie zu. Zu keinem Zeitpunkt wird etwas berechnet – wenn Sie ein Angebot annehmen, bezahlen Sie diesen Fahrer direkt, am ersten Tag der Reise.",
+    "step1": {
+      "title": "Beschreiben Sie Ihre Reise einmal",
+      "body": "Reisedaten, Abholort, wie viele Sie sind und eine grobe Route. Wenn etwas noch nicht feststeht, sagen Sie es – die Fahrer schlagen dann Alternativen vor, statt zu raten.",
+      "meta": "Dauert etwa eine Minute"
+    },
+    "step2": {
+      "title": "Fahrer schicken Ihnen Angebote",
+      "body": "Ihre Anfrage geht an freigegebene Fahrer auf der ganzen Insel. Jedes Angebot zeigt das Fahrzeug, den Fahrer, seine Bewertung und einen festen Tagespreis für Ihre Reiseroute.",
+      "meta": "Ihre Kontaktdaten bleiben privat"
+    },
+    "step3": {
+      "title": "Chatten, vergleichen und buchen",
+      "body": "Stellen Sie Fragen im Chat, passen Sie den Plan an und nehmen Sie dann das passende Angebot an. Keine Karte nötig – Sie bezahlen Ihren Fahrer direkt, wenn Sie sich am ersten Tag treffen.",
+      "meta": "Zu keinem Zeitpunkt eine Buchungsgebühr"
+    }
+  },
+  "types": {
+    "title": "Welchen Fahrertyp brauchen Sie?",
+    "lead": "In Sri Lanka gibt es drei unterschiedliche Rollen, und Buchungsseiten verwenden die Begriffe oft ungenau. Der Unterschied liegt in der Lizenz: Die Sri Lanka Tourism Development Authority bildet Chauffeur-Guides (offiziell: Chauffeur Guide Lecturer) und Nationale Guides (offiziell: National Guide Lecturer) aus und zertifiziert sie, während ein Touristenfahrer (Tourist Driver) einen gewöhnlichen Führerschein besitzt. Die Fahrer auf dieser Website reichen ihre Lizenz zur Prüfung ein, und der Typ, den sie besitzen, wird in ihrem Profil angezeigt.",
+    "bestFor": "Ideal für: {text}",
+    "touristDriver": {
+      "body": "Besitzt einen gewöhnlichen Führerschein, fährt Ihre Reiseroute, kümmert sich um die Organisation und weiß, wo man anhält, isst und übernachtet.",
+      "bestFor": "Strandurlaube, Transfers und Reisende, die sich gern selbst informieren"
+    },
+    "chauffeurGuideLecturer": {
+      "body": "Von der Sri Lanka Tourism Development Authority lizenziert – fährt also und erklärt Ihnen auch die Sehenswürdigkeiten, die Sie besuchen.",
+      "bestFor": "Die meisten zweiwöchigen Reiserouten – eine Person für die ganze Reise"
+    },
+    "nationalGuideLecturer": {
+      "body": "Die höchste Guide-Qualifikation der SLTDA, mit umfassender historischer und kultureller Erläuterung.",
+      "bestFor": "Geschichtsorientierte Reisen und Gruppen mit besonderen Interessen"
+    },
+    "readMore": "Den vollständigen Vergleich lesen, einschließlich der Kosten für jeden Typ →"
+  },
+  "rates": {
+    "title": "Was ein Auto mit Fahrer in Sri Lanka kostet",
+    "lead": "Dies ist keine veröffentlichte Preisliste – die Fahrer legen ihre Preise selbst fest. Die folgende Tabelle basiert auf den Fahrzeugen, die derzeit auf carwithdriver.lk angeboten werden, nach Größe gruppiert, und zeigt für jede Klasse den typischen mittleren Bereich der Preisspanne.",
+    "fromListings": "AUS {count} AKTUELLEN INSERATEN",
+    "updated": "Wird automatisch aktualisiert, wenn Fahrer ihre Preise ändern",
+    "caption": "Typischer Tagespreis in USD pro Fahrzeug, aus aktuellen Inseraten",
+    "colClass": "Fahrzeugklasse",
+    "colSeats": "Sitzplätze",
+    "colPerDay": "Typisch pro Tag",
+    "colListings": "Inserate",
+    "example": "z. B. {model}",
+    "note": "Die Preise decken {low}–{high} km pro Tag inselweit ab – so viel kommt bei einem Reisetag mit Fahrer und Guide in der Regel zusammen. Längere Tage und Reisedaten in der Hochsaison von Dezember bis Januar liegen am oberen Ende der jeweiligen Spanne.",
+    "estimate": "Ihre eigene Reise schätzen →",
+    "loading": "Aktuelle Preise werden geladen.",
+    "browseFleet": "Fahrzeuge ansehen →"
+  },
+  "included": {
+    "title": "Was Ihr Angebot umfasst",
+    "lead": "Die Inserate auf dieser Website geben an, was ihr Preis abdeckt, sodass die Angebote, die Sie vergleichen, wirklich vergleichbar sind. Manches ist fast überall enthalten, anderes hängt vom Fahrer ab – prüfen Sie es daher im Angebot, bevor Sie es annehmen.",
+    "always": "IN FAST JEDEM ANGEBOT ENTHALTEN",
+    "kmPerDay": "{low}–{high} km pro Tag",
+    "varies": "JE NACH INSERAT UNTERSCHIEDLICH – PRÜFEN SIE DAS ANGEBOT",
+    "notIncluded": [
+      "Eintrittskarten – Sigiriya, Dambulla, der Zahntempel",
+      "Safari-Jeeps in Yala, Udawalawe und Minneriya",
+      "Ihre eigene Unterkunft, Verpflegung und Getränke",
+      "Trinkgeld für Ihren Fahrer – üblich, aber nie erwartet"
+    ]
+  },
+  "recommended": {
+    "title": "Empfohlene Fahrer",
+    "lead": "Einige der erfahrensten Fahrer auf der Plattform. Sie müssen keinen auswählen, um Angebote anzufordern – Ihre Anfrage geht ohnehin inselweit hinaus –, aber es lohnt sich zu sehen, welche Art von Fahrer Ihnen antworten wird.",
+    "reviews": {
+      "one": "{count} Bewertung",
+      "other": "{count} Bewertungen"
+    },
+    "yearsDriving": {
+      "one": "{count} Jahr Fahrpraxis",
+      "other": "{count} Jahre Fahrpraxis"
+    },
+    "vehiclesFrom": "{count} FAHRZEUGE · AB",
+    "from": "AB",
+    "quote": "Auf Anfrage",
+    "perDay": "/Tag",
+    "viewDriver": "Fahrer ansehen",
+    "browseAll": "Alle Fahrer ansehen →"
+  },
+  "why": {
+    "title": "Warum über carwithdriver.lk anfragen",
+    "lead": "Wir sind ein srilankischer Marktplatz, kein ausländischer Wiederverkäufer. Fahrer inserieren selbst, legen ihre Preise selbst fest und behalten den vollen Fahrpreis – kein Reiseveranstalter verdient mit, und die Person, die Ihre Nachricht beantwortet, ist die Person, die Sie in der Ankunftshalle abholt.",
+    "middleman": {
+      "title": "Sie bezahlen den Fahrer, keinen Vermittler",
+      "body": "Fahrer inserieren selbst, legen ihren Preis selbst fest und behalten den vollen Fahrpreis. Es gibt keinen Agenturaufschlag, deshalb liegen die Angebote hier unter den Preisen von Reiseveranstaltern für dieselbe Route."
+    },
+    "locked": {
+      "title": "Der Preis ist fest, sobald Sie annehmen",
+      "body": "Wenn Sie ein Angebot annehmen, wird dieser Gesamtbetrag für die vereinbarte Reiseroute festgeschrieben. Der Preis kann danach nicht erhöht werden, und die Reisedaten sind an das Angebot gebunden."
+    },
+    "private": {
+      "title": "Ihre Daten bleiben privat",
+      "body": "Fahrer sehen Ihre Reiseroute, nicht Ihre Telefonnummer oder E-Mail-Adresse. Kontaktdaten werden erst ausgetauscht, wenn Sie ein Angebot annehmen und die Buchung bestätigt ist."
+    },
+    "licences": {
+      "title": "Lizenzen werden von unserem Team geprüft",
+      "body": "Fahrer reichen ihre Fahrerlizenz zur Prüfung durch einen Administrator ein, bevor ihr Profil freigegeben wird, und der Lizenztyp, den sie besitzen, wird in ihrem Profil angezeigt."
+    },
+    "reviews": {
+      "title": "Bewertungen stammen von echten Reisen",
+      "body": "Reisende können nur eine Buchung bewerten, die sie tatsächlich über die Plattform vorgenommen haben, und erst nach dem Ende der Reise."
+    },
+    "support": {
+      "title": "Support mit Sitz in Sri Lanka",
+      "body": "Wenn sich Pläne während der Reise ändern oder ein Fahrzeug Probleme hat, ist unser Team in derselben Zeitzone, in der Sie reisen, und kann Ihren Fahrer direkt erreichen."
+    }
+  },
+  "faq": {
+    "title": "Häufig gestellte Fragen",
+    "contact": "Sind Sie sich bei etwas noch unsicher? Schreiben Sie an <email>hello@carwithdriver.lk</email> oder rufen Sie <phone>+94 76 3021 483</phone> an.",
+    "cost": {
+      "q": "Was kostet es, in Sri Lanka ein Auto mit Fahrer zu mieten?",
+      "a": "Das hängt vom Fahrzeug und der Dauer Ihrer Reise ab – die Fahrer legen ihre Preise selbst fest. Die obige Tabelle basiert auf den aktuellen Inseraten auf dieser Website, sie zeigt also, was die Fahrer tatsächlich verlangen, und keine veröffentlichte Preisliste. Für einen Betrag, der auf Ihrer eigenen Route und Ihren Reisedaten basiert, nutzen Sie den Reisekostenrechner."
+    },
+    "fee": {
+      "q": "Gibt es eine Buchungsgebühr?",
+      "a": "Nein. Angebote anfordern, Angebote vergleichen und mit Fahrern chatten ist völlig kostenlos, und wir schlagen weder eine Buchungsgebühr noch eine Servicegebühr auf den Preis des Fahrers auf. Der Preis, den Sie annehmen, ist der Preis, den Sie bezahlen."
+    },
+    "pay": {
+      "q": "Wie und wann bezahle ich?",
+      "a": "Sie bezahlen Ihren Fahrer direkt, wenn Sie sich am ersten Tag der Reise treffen – auf dieser Website werden keine Kartendaten erfasst, und über die Plattform wird keine Anzahlung erhoben. Vereinbaren Sie alles Ungewöhnliche vorher mit Ihrem Fahrer im Chat, damit es dokumentiert ist."
+    },
+    "difference": {
+      "q": "Was ist der Unterschied zwischen einem Touristenfahrer und einem Chauffeur-Guide?",
+      "a": "Ein Touristenfahrer besitzt einen gewöhnlichen Führerschein und fährt Ihre Reiseroute. Ein Chauffeur-Guide (Chauffeur Guide Lecturer) ist von der Sri Lanka Tourism Development Authority lizenziert und kann Ihnen auch die Sehenswürdigkeiten erklären, die Sie besuchen. Ein Nationaler Guide (National Guide Lecturer) besitzt die höchste Qualifikation der SLTDA und bietet umfassende historische Erläuterungen."
+    },
+    "fuel": {
+      "q": "Sind Kraftstoff und Kilometer inklusive?",
+      "a": "Fast jedes Inserat enthält Kraftstoff und Versicherung, und die Tagespreise decken 120–150 km pro Tag inselweit ab – so viel kommt bei einem Reisetag mit Fahrer und Guide in der Regel zusammen. Jedes Angebot führt genau auf, was es enthält, prüfen Sie es also, bevor Sie annehmen."
+    },
+    "meals": {
+      "q": "Sind Verpflegung und Unterkunft des Fahrers inklusive?",
+      "a": "Bei vielen Inseraten ja, aber nicht bei allen – das ist je nach Fahrer unterschiedlich und wird daher in jedem Inserat und in dem Angebot angegeben, das Sie erhalten. Sie werden nie gebeten, selbst ein Hotelzimmer für Ihren Fahrer zu buchen; wo es inklusive ist, sind diese Kosten bereits im Tagespreis enthalten."
+    },
+    "howLong": {
+      "q": "Wie lange dauert es, bis ich Angebote erhalte?",
+      "a": "Ihre Anfrage geht an freigegebene Fahrer, sobald Sie sie absenden, und Sie erhalten für jedes neue Angebot eine E-Mail und eine Push-Benachrichtigung. Anfragen, die nachts nach srilankischer Zeit gesendet werden, werden in der Regel am nächsten Morgen beantwortet."
+    },
+    "change": {
+      "q": "Kann ich meine Reiseroute nach der Buchung ändern?",
+      "a": "Ja. Kleine Änderungen unterwegs – einen Strand tauschen, einen Tempel hinzufügen, eine Abfahrtszeit verschieben – sind normalerweise kein Problem. Wenn eine Änderung zusätzliche Fahrtage oder viel Strecke bedeutet, vereinbaren Sie den angepassten Preis vor der Reise mit Ihrem Fahrer im Chat, damit er dokumentiert ist."
+    },
+    "wrong": {
+      "q": "Was ist, wenn während meiner Reise etwas schiefgeht?",
+      "a": "Schreiben Sie an hello@carwithdriver.lk oder rufen Sie +94 76 3021 483 an. Jede Nachricht und jedes Angebot wird gespeichert, sodass es immer einen Nachweis darüber gibt, was mit Ihrem Fahrer vereinbart wurde."
+    }
+  },
+  "cta": {
+    "title": "Möchten Sie wissen, was Ihre Reise wirklich kostet?",
+    "body": "Senden Sie eine einzige Anfrage, und lassen Sie die Fahrer auf Sie zukommen. Kostenlos, unverbindlich, und Ihre Kontaktdaten bleiben privat, bis Sie ein Angebot annehmen.",
+    "request": "Kostenlose Angebote anfordern",
+    "estimate": "Selbst schätzen"
+  }
+}

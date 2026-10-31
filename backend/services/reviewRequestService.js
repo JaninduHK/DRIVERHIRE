@@ -100,6 +100,8 @@ export const sendReviewRequestForBooking = async (booking) => {
     driverName: booking.driver?.name,
     vehicleModel: booking.vehicle?.model,
     tripDates: formatTripDates(booking.startDate, booking.endDate),
+    startDate: booking.startDate,
+    endDate: booking.endDate,
     reviewUrl: buildAppUrl(`/review/${token}`),
   });
 

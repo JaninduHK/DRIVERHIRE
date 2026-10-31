@@ -1,0 +1,59 @@
+{
+  "title": "Finden Sie Ihr Fahrzeug",
+  "searchPlaceholder": "Modell, Fahrer oder Stadt",
+  "loadError": "Fahrzeuge konnten nicht geladen werden.",
+  "loadErrorTitle": "Fahrzeuge konnten nicht geladen werden",
+  "tryAgain": "Erneut versuchen",
+  "loading": "Wird geladen…",
+  "count": {
+    "one": "{count} Fahrzeug",
+    "other": "{count} Fahrzeuge"
+  },
+  "clearFilters": "Filter zurücksetzen",
+  "clear": "Entfernen",
+  "emptyTitle": "Noch keine Fahrzeuge passen zu Ihren Filtern",
+  "emptyBody": "Passen Sie Ihre Suche an oder schauen Sie bald wieder vorbei – es kommen regelmäßig neue Inserate hinzu.",
+  "chips": {
+    "dates": "Reisedaten",
+    "seats": "Sitzplätze",
+    "seatsActive": "{count}+ Sitzplätze",
+    "price": "Preis",
+    "rating": "Bewertung",
+    "sort": "Sortieren"
+  },
+  "card": {
+    "seats": {
+      "one": "{count} Sitzplatz",
+      "other": "{count} Sitzplätze"
+    },
+    "vehicle": "Fahrzeug",
+    "perDay": "pro Tag",
+    "by": "Von",
+    "approvedDriver": "Freigegebener Fahrer",
+    "view": "Ansehen"
+  },
+  "filters": {
+    "title": "Filter",
+    "clearAll": "Alle entfernen",
+    "tripDates": "Reisedaten",
+    "start": "Beginn",
+    "end": "Ende",
+    "seats": "Sitzplätze",
+    "budget": "Budget pro Tag",
+    "min": "Min.",
+    "max": "Max.",
+    "rating": "Bewertung",
+    "sortBy": "Sortieren nach",
+    "reset": "Zurücksetzen",
+    "show": {
+      "one": "{count} Fahrzeug anzeigen",
+      "other": "{count} Fahrzeuge anzeigen"
+    },
+    "any": "Beliebig",
+    "under40": "Unter $40",
+    "recommended": "Empfohlen",
+    "priceAsc": "Preis: aufsteigend",
+    "priceDesc": "Preis: absteigend",
+    "topRated": "Bestbewertet"
+  }
+}

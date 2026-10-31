@@ -1,0 +1,15 @@
+{
+  "expiry": {
+    "expired": "Dieses Angebot ist abgelaufen",
+    "days": "Läuft in {count} Tagen ab",
+    "tomorrow": "Läuft morgen ab",
+    "hours": {
+      "one": "Läuft in {count} Stunde ab",
+      "other": "Läuft in {count} Stunden ab"
+    },
+    "minutes": {
+      "one": "Läuft in {count} Minute ab",
+      "other": "Läuft in {count} Minuten ab"
+    }
+  }
+}

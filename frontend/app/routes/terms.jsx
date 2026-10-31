@@ -1,11 +1,12 @@
-import { buildMeta } from '../lib/seo.js';
+import { buildMeta, metaLocale } from '../lib/seo.js';
 
-export function meta() {
+export function meta({ location }) {
+  const { locale, t } = metaLocale(location);
   return buildMeta({
-    title: "Terms & Conditions | Car with Driver LK",
-    description:
-      "The terms and conditions for using Car with Driver LK to book private drivers in Sri Lanka.",
-    path: "/terms",
+    title: t('meta.terms.title'),
+    description: t('meta.terms.description'),
+    path: '/terms',
+    locale,
   });
 }
 

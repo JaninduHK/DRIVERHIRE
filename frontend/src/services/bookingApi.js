@@ -1,3 +1,4 @@
+import { localizeServerMessage } from '../i18n/serverMessages.js';
 import { API_BASE_URL } from '../constants/api.js';
 import { getStoredToken, handleSessionExpired } from './authToken.js';
 
@@ -37,7 +38,7 @@ const parseError = async (response) => {
 const authHeaders = () => {
   const token = getStoredToken();
   if (!token) {
-    throw new Error('Please sign in to continue.');
+    throw new Error(localizeServerMessage('Please sign in to continue.'));
   }
   return {
     Authorization: `Bearer ${token}`,
@@ -61,7 +62,7 @@ const request = async (path, options = {}) => {
   try {
     response = await withTimeout(fetchPromise);
   } catch (error) {
-    throw new Error(error?.message || 'Network error');
+    throw new Error(localizeServerMessage(error?.message || 'Network error'));
   }
 
   if (!response.ok) {
@@ -69,7 +70,7 @@ const request = async (path, options = {}) => {
     if (response.status === 401) {
       handleSessionExpired(message);
     }
-    throw new Error(message);
+    throw new Error(localizeServerMessage(message));
   }
 
   return safeJson(response);
@@ -105,7 +106,7 @@ export const cancelTravelerBooking = (bookingId, reason = '') =>
 
 export const submitBookingReview = (bookingId, { rating, title, comment, images } = {}) => {
   if (!bookingId) {
-    return Promise.reject(new Error('Booking identifier is required to submit a review.'));
+    return Promise.reject(new Error(localizeServerMessage('Booking identifier is required to submit a review.')));
   }
   // Send multipart only when photos are attached; otherwise keep the lightweight JSON path.
   if (Array.isArray(images) && images.length > 0) {

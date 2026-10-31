@@ -3,7 +3,9 @@ import { AlertTriangle, Loader2, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { deleteOwnAccount } from '../services/profileApi.js';
 import { clearStoredToken } from '../services/authToken.js';
+import { Trans, useI18n } from '../i18n/I18nProvider.jsx';
 
+// Kept in English in every language so support can recognise it.
 const CONFIRM_WORD = 'DELETE';
 
 /**
@@ -20,6 +22,7 @@ const CONFIRM_WORD = 'DELETE';
  * showing them that paragraph would be untrue.
  */
 const DeleteAccountCard = ({ requiresPassword = false, isDriver = false }) => {
+  const { t, lp } = useI18n();
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmText, setConfirmText] = useState('');
@@ -38,22 +41,22 @@ const DeleteAccountCard = ({ requiresPassword = false, isDriver = false }) => {
     setError('');
 
     if (confirmText.trim().toUpperCase() !== CONFIRM_WORD) {
-      setError(`Type ${CONFIRM_WORD} to confirm.`);
+      setError(t('account.delete.typeWord', { word: CONFIRM_WORD }));
       return;
     }
     if (requiresPassword && !password) {
-      setError('Enter your password to confirm.');
+      setError(t('account.delete.enterPassword'));
       return;
     }
 
     setSubmitting(true);
     try {
       await deleteOwnAccount(requiresPassword ? password : undefined);
-      toast.success('Your account has been deleted.');
+      toast.success(t('account.delete.deleted'));
       clearStoredToken({ silent: true });
-      window.location.assign('/');
+      window.location.assign(lp('/'));
     } catch (err) {
-      setError(err?.message || 'Unable to delete your account right now.');
+      setError(err?.message || t('account.delete.error'));
       setSubmitting(false);
     }
   };
@@ -63,21 +66,16 @@ const DeleteAccountCard = ({ requiresPassword = false, isDriver = false }) => {
       <div className="flex items-start gap-2.5">
         <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#e11d48]" />
         <div className="min-w-0">
-          <b className="text-[16px] text-ink">Delete account</b>
+          <b className="text-[16px] text-ink">{t('account.delete.title')}</b>
           <p className="mt-1 text-[13px] leading-relaxed text-muted">
-            This removes your name, email, phone number and other personal details from the site
-            and from everything other people can see. It cannot be undone.
+            {t('account.delete.body')}
           </p>
           <p className="mt-2 text-[12.5px] leading-relaxed text-muted-soft">
-            Your past bookings are kept as anonymous records, because we are required to retain
-            payment and tax history. They will no longer be linked to you publicly.
+            {t('account.delete.bookingsKept')}
           </p>
           {isDriver ? (
             <p className="mt-2 text-[12.5px] leading-relaxed text-muted-soft">
-              Our administrators keep a private record of your name, contact details, licence and
-              trip history for 7 years, because we are legally required to account for who drove on
-              the platform. It is never shown to travellers or other drivers, and it is deleted
-              automatically once those 7 years have passed.
+              {t('account.delete.driverRecord')}
             </p>
           ) : null}
         </div>
@@ -89,14 +87,14 @@ const DeleteAccountCard = ({ requiresPassword = false, isDriver = false }) => {
           onClick={() => setOpen(true)}
           className="mt-4 inline-flex items-center gap-2 rounded-[12px] border-[1.5px] border-[#f6d5dc] bg-white px-4 py-2.5 text-[13.5px] font-bold text-[#e11d48] transition hover:bg-[#fff5f7]"
         >
-          <Trash2 className="h-4 w-4" /> Delete my account
+          <Trash2 className="h-4 w-4" /> {t('account.delete.open')}
         </button>
       ) : (
         <form onSubmit={handleDelete} className="mt-4 rounded-[14px] bg-[#fff5f7] p-4">
           {requiresPassword ? (
             <div className="mb-3">
               <label htmlFor="delete-account-password" className="text-[12.5px] font-bold text-ink-soft">
-                Your password
+                {t('account.delete.password')}
               </label>
               <input
                 id="delete-account-password"
@@ -110,7 +108,7 @@ const DeleteAccountCard = ({ requiresPassword = false, isDriver = false }) => {
           ) : null}
 
           <label htmlFor="delete-account-confirm" className="text-[12.5px] font-bold text-ink-soft">
-            Type <span className="font-extrabold text-[#e11d48]">{CONFIRM_WORD}</span> to confirm
+            <Trans k="account.delete.typeToConfirm" vars={{ word: CONFIRM_WORD }} components={{ w: <span className="font-extrabold text-[#e11d48]" /> }} />
           </label>
           <input
             id="delete-account-confirm"
@@ -129,7 +127,7 @@ const DeleteAccountCard = ({ requiresPassword = false, isDriver = false }) => {
               disabled={submitting}
               className="inline-flex items-center gap-2 rounded-[12px] bg-[#e11d48] px-4 py-2.5 text-[13.5px] font-bold text-white transition hover:bg-[#be123c] disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {submitting ? (<><Loader2 className="h-4 w-4 animate-spin" /> Deleting…</>) : 'Permanently delete'}
+              {submitting ? (<><Loader2 className="h-4 w-4 animate-spin" /> {t('account.delete.deleting')}</>) : t('account.delete.confirm')}
             </button>
             <button
               type="button"
@@ -137,7 +135,7 @@ const DeleteAccountCard = ({ requiresPassword = false, isDriver = false }) => {
               disabled={submitting}
               className="rounded-[12px] border-[1.5px] border-[#e2e8ea] bg-white px-4 py-2.5 text-[13.5px] font-bold text-ink transition hover:border-muted-soft disabled:opacity-60"
             >
-              Cancel
+              {t('account.delete.cancel')}
             </button>
           </div>
         </form>

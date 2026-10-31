@@ -1,0 +1,61 @@
+{
+  "eyebrow": "Driver directory",
+  "title": "Find your perfect driver",
+  "searchPlaceholder": "Name, perk or destination",
+  "loadError": "Unable to load drivers right now.",
+  "loading": "Loading…",
+  "loadingDrivers": "Loading drivers…",
+  "count": { "one": "{count} approved driver", "other": "{count} approved drivers" },
+  "clearFilters": "Clear filters",
+  "clear": "Clear",
+  "tryAgain": "Try again",
+  "empty": "No drivers match your search. Try a different keyword or clear filters.",
+  "perks": {
+    "englishSpeaking": "English speaking",
+    "airportMeetGreet": "Airport meet & greet",
+    "fuelIncluded": "Fuel included",
+    "mealsCovered": "Meals covered",
+    "largeLuggage": "Large luggage"
+  },
+  "options": {
+    "any": "Any",
+    "under50": "Under $50",
+    "years5": "5+ yrs",
+    "years10": "10+ yrs",
+    "chauffeurGuide": "Chauffeur Guide",
+    "recommended": "Recommended",
+    "highestRated": "Highest rated",
+    "mostExperienced": "Most experienced"
+  },
+  "chips": {
+    "perks": "Perks",
+    "perksCount": "{count} perks",
+    "price": "Price",
+    "reviews": "Reviews"
+  },
+  "card": {
+    "newGuide": "New guide",
+    "years": "{count} yrs",
+    "sriLanka": "Sri Lanka",
+    "quote": "Quote",
+    "multidayTours": "Multiday tours",
+    "reviews": "{count} reviews",
+    "noReviews": "No reviews yet",
+    "fallback": "Trusted chauffeur for bespoke Sri Lanka tours across the island.",
+    "avgDailyRate": "AVG. DAILY RATE",
+    "perDay": "/day",
+    "viewDriver": "View driver"
+  },
+  "filters": {
+    "title": "Filters",
+    "clearAll": "Clear all",
+    "whatMatters": "What matters to you",
+    "verifiedLicence": "Verified licence",
+    "avgPrice": "Avg. price per day",
+    "minRating": "Minimum rating",
+    "experience": "Experience",
+    "sortBy": "Sort by",
+    "reset": "Reset",
+    "show": { "one": "Show {count} driver", "other": "Show {count} drivers" }
+  }
+}

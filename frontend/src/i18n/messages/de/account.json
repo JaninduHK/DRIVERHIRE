@@ -1,0 +1,18 @@
+{
+  "delete": {
+    "typeWord": "Geben Sie zur Bestätigung {word} ein.",
+    "enterPassword": "Geben Sie zur Bestätigung Ihr Passwort ein.",
+    "deleted": "Ihr Konto wurde gelöscht.",
+    "error": "Ihr Konto kann gerade nicht gelöscht werden.",
+    "title": "Konto löschen",
+    "body": "Dadurch werden Ihr Name, Ihre E-Mail-Adresse, Telefonnummer und weitere persönliche Daten von der Website und aus allem entfernt, was andere sehen können. Dies kann nicht rückgängig gemacht werden.",
+    "bookingsKept": "Ihre früheren Buchungen bleiben als anonyme Datensätze erhalten, da wir Zahlungs- und Steuerunterlagen aufbewahren müssen. Sie werden öffentlich nicht mehr mit Ihnen in Verbindung gebracht.",
+    "driverRecord": "Unsere Administratoren bewahren 7 Jahre lang einen internen Datensatz mit Ihrem Namen, Ihren Kontaktdaten, Ihrer Lizenz und Ihren Fahrten auf, da wir gesetzlich nachweisen müssen, wer auf der Plattform gefahren ist. Er wird Reisenden oder anderen Fahrern nie angezeigt und nach Ablauf der 7 Jahre automatisch gelöscht.",
+    "open": "Mein Konto löschen",
+    "password": "Ihr Passwort",
+    "typeToConfirm": "Geben Sie zur Bestätigung <w>{word}</w> ein",
+    "deleting": "Wird gelöscht…",
+    "confirm": "Endgültig löschen",
+    "cancel": "Abbrechen"
+  }
+}

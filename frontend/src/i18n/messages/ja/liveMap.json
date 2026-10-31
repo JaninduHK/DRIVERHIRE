@@ -1,0 +1,42 @@
+{
+  "newGuide": "新人ガイド",
+  "years": "経験{count}年",
+  "filters": {
+    "all": "すべてのドライバー",
+    "available": "今すぐ対応可能",
+    "group": "6人乗り以上",
+    "top": "評価の高い順"
+  },
+  "chatReady": "受信箱で会話を始められます。",
+  "chatError": "現在、会話を開始できません。",
+  "online": "ライブ · オンラインのドライバー{count}名",
+  "title": "今、近くにいるドライバー",
+  "lead": "地図上のピンまたは下のカードをタップすると、ドライバーの車両、対応言語、1日あたりの料金が表示されます。そのままチャットを始められます。",
+  "mapLabel": "ドライバーマップ",
+  "listLabel": "おすすめのドライバー",
+  "recommended": "あなたへのおすすめ",
+  "ofTotal": "{total}名中{shown}名",
+  "emptyTitle": "この条件に合うドライバーはいません",
+  "emptyBody": "「すべてのドライバー」を選ぶと、地図上の全員が表示されます。",
+  "sriLanka": "スリランカ",
+  "quote": "要見積もり",
+  "multidayTours": "複数日のツアー",
+  "seats": "{count}人乗り",
+  "perDay": "1日あたり",
+  "reviews": "レビュー{count}件",
+  "sheet": {
+    "label": "ドライバーの詳細",
+    "close": "閉じる",
+    "basedIn": "拠点",
+    "experience": "経験",
+    "reviews": "レビュー",
+    "vehicles": "車両数",
+    "vehicle": "車両",
+    "seatsVary": "座席数は車両により異なります",
+    "goodToKnow": "知っておきたいこと",
+    "perDay": "/ 日",
+    "viewProfile": "プロフィールを見る",
+    "opening": "チャットを開いています…",
+    "chatWith": "{name}さんとチャット"
+  }
+}

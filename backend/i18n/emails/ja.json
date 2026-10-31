@@ -1,0 +1,376 @@
+{
+  "common": {
+    "hi": "{name}様",
+    "there": "お客",
+    "driver": "ドライバー",
+    "aDriver": "ドライバー",
+    "yourDriver": "担当ドライバー",
+    "YourDriver": "担当ドライバー",
+    "yourTrip": "ご旅行",
+    "tbd": "未定",
+    "dateRange": "{start}〜{end}",
+    "adults": {
+      "other": "大人{count}名"
+    },
+    "days": {
+      "other": "{count}日間"
+    },
+    "reviews": {
+      "other": "レビュー{count}件"
+    },
+    "offers": {
+      "other": "{count}件の見積もり"
+    },
+    "newOffers": {
+      "other": "新しい見積もり{count}件"
+    },
+    "drivers": {
+      "other": "{count}人のドライバー"
+    },
+    "viewOfferAndChat": "見積もりを見てチャットする",
+    "viewMyRequest": "依頼内容を見る",
+    "viewBooking": "予約を見る",
+    "status": {
+      "pending": "保留中",
+      "confirmed": "確定",
+      "cancelled": "キャンセル済み",
+      "rejected": "辞退",
+      "completed": "完了"
+    }
+  },
+  "footer": {
+    "support": "このメールにご返信いただければ、スリランカのチームからご連絡いたします。",
+    "replyable": "このメールへの返信は、ドライバーとのチャットに投稿されます。",
+    "noReply": "このメールは自動送信です。返信はご遠慮ください。",
+    "questions": "ご質問は WhatsApp（{whatsapp}）またはメール（{email}）までどうぞ。",
+    "lessOften": "メールが多すぎますか？<link>メールの頻度を減らす</link>。",
+    "reason": "このメールは、{brand}に有効なアカウントをお持ちの方にお送りしています。",
+    "textFooter": "予約手数料なし。前払い金なし。ご旅行の2日前まで無料でキャンセルできます。",
+    "textLessOften": "メールの頻度を減らす：{url}"
+  },
+  "reassurance": {
+    "title": "リスクなしでご予約いただけます。",
+    "points": [
+      "予約手数料なし",
+      "前払い金なし",
+      "お支払いは初日にドライバーへ",
+      "ご旅行の2日前まで無料キャンセル"
+    ],
+    "locked": "見積もりを承諾した時点で料金が確定します。"
+  },
+  "card": {
+    "newOnPlatform": "新規登録ドライバー",
+    "experience": {
+      "other": "経験{count}年"
+    },
+    "seats": "{count}席",
+    "kms": "{km} km込み",
+    "kmsThen": "{km} km込み、超過分は1 kmあたり{rate}",
+    "total": "（合計）",
+    "perDay": "1日あたり{amount}",
+    "labels": {
+      "Best value": "コスパ最良",
+      "Top rated": "高評価",
+      "Best match": "おすすめ"
+    },
+    "inclusions": {
+      "englishSpeakingDriver": "英語を話すドライバー",
+      "fuelAndInsurance": "燃料費・保険",
+      "parkingFeesAndTolls": "駐車料金・通行料すべて",
+      "meetAndGreetAtAirport": "空港でのお出迎え",
+      "driverMealsAndAccommodation": "ドライバーの食事・宿泊",
+      "allTaxes": "税金すべて"
+    }
+  },
+  "message": {
+    "subjectOfferPrice": "{sender}：ご旅行の見積もり {price}",
+    "subjectOffer": "{sender}さんから旅行の見積もりが届きました",
+    "subjectSnippet": "{sender}：「{snippet}」",
+    "subjectMessage": "{sender}さんから新しいメッセージ",
+    "sentOffer": "旅行の見積もりが届きました",
+    "sentMany": "新しいメッセージが{count}件届きました",
+    "sentOne": "新しいメッセージが届きました",
+    "about": "（{model}について）",
+    "on": "{brand}で{sender}さんから{about}{action}。",
+    "replyDirect": "このメールに返信すると、{sender}さんに直接お返事できます。返信はそのままチャットに届きます。",
+    "replyDashboard": "マイページから返信して、やり取りを続けましょう。",
+    "titleOffer": "新しい旅行の見積もり",
+    "titleMany": "新しいメッセージが届いています",
+    "titleOne": "新しいメッセージが届いています",
+    "preheaderReply": "このメールに返信すると、{sender}さんに直接お返事できます。",
+    "preheaderOffer": "{brand}で{sender}さんから旅行の見積もりが届きました",
+    "preheaderMessage": "{brand}で{sender}さんからメッセージが届きました",
+    "actionOffer": "見積もりを見てチャットする",
+    "actionReply": "チャットで返信する",
+    "textBody": "{sender}さんから{action}。",
+    "textReplyOrOpen": "このメールに返信するか、マイページを開いて返信してください。",
+    "textOpen": "マイページを開いて返信してください。",
+    "senderVia": "{sender}（{brand}経由）",
+    "yourContact": "お相手"
+  },
+  "received": {
+    "title": "旅行の見積もり依頼を公開しました",
+    "preheader": "ただいまドライバーに通知しています。今後の流れをご案内します。",
+    "body": "<strong>{route}</strong>（{dates}、{adults}）のご依頼を、スリランカ全土の認証済みドライバーに送信しました。",
+    "nextTitle": "<strong>今後の流れ</strong>",
+    "steps": [
+      "ドライバーから見積もりが届きます。最初の1時間以内に届くことも多くあります。",
+      "最初の見積もりはすぐにメールでお知らせし、その後はまとめてお送りするので受信トレイがあふれません。",
+      "どのドライバーともチャットでき、比べたうえで気に入ったドライバーを予約できます。"
+    ],
+    "favour": "<strong>ひとつお願いがあります：</strong>見積もりを確実にお届けできるよう、{email}を連絡先に追加するか、このメールをメインの受信トレイに移動してください。",
+    "subject": "スリランカ旅行の見積もり依頼を公開しました",
+    "text": "{route}（{dates}）のご依頼を、スリランカ全土の認証済みドライバーに送信しました。\n\n今後の流れ：\n1. ドライバーから見積もりが届きます。最初の1時間以内に届くことも多くあります。\n2. 最初の見積もりはすぐにメールでお知らせし、その後はまとめてお送りします。\n3. どのドライバーともチャットでき、比べたうえで気に入ったドライバーを予約できます。\n\n依頼内容を見る：{url}"
+  },
+  "first": {
+    "title": "最初の見積もりが届きました",
+    "ratingFrom": "★ {rating}（{reviews}）",
+    "more": "ほかのドライバーも返信しています。",
+    "body": "<strong>{route}</strong>のご旅行に、{driver}さんから最初の見積もりが届きました。通常、この後数時間のうちにほかのドライバーからも返信があります。受信トレイがあふれないよう、まとめてお知らせします。",
+    "replyAsk": "このメールに返信すると、{driver}さんに質問できます。返信はそのままチャットに届きます。",
+    "text": "{route}のご旅行に、{driver}さんから最初の見積もりが届きました：{details}。",
+    "viewOffer": "見積もりを見る：{url}",
+    "subject": "{driver}：{route}のご旅行に{price}"
+  },
+  "digest": {
+    "digest1": {
+      "subjectTop": "{total}人のドライバーから返信 — {route}のおすすめ{shown}件",
+      "subjectAll": "{route}のご依頼に{drivers}から返信がありました",
+      "titleOne": "スリランカをご案内したいドライバーがいます",
+      "titleMany": "{total}人のドライバーがスリランカをご案内したいと申し出ています",
+      "introTop": "<strong>{route}</strong>のご旅行（{dates}）に、{total}人のドライバーが申し出ています。すべてを比べる手間を省けるよう、まず見ていただきたい{shown}件をご紹介します。",
+      "introOne": "<strong>{route}</strong>のご旅行（{dates}）に、ドライバーが申し出ています。",
+      "introMany": "<strong>{route}</strong>のご旅行（{dates}）に、{total}人のドライバーが申し出ています。",
+      "outro": "どれを選べばよいか迷っていますか？ご質問をこのメールにご返信いただければ、スリランカのチームが選ぶお手伝いをします。"
+    },
+    "update": {
+      "subject": "{route}のご旅行に{fresh}",
+      "title": "前回のメール以降に{fresh}",
+      "introOne": "<strong>{route}</strong>のご旅行に、別のドライバーから見積もりが届きました。現在、予約できる{total}があります。",
+      "introMany": "<strong>{route}</strong>のご旅行に、さらに{count}人のドライバーから見積もりが届きました。現在、予約できる{total}があります。",
+      "outro": "どれを選べばよいか迷っていますか？ご質問をこのメールにご返信いただければ、スリランカのチームが選ぶお手伝いをします。"
+    },
+    "digest2": {
+      "subject": "{route}のご旅行、まだご検討中ですか？",
+      "title": "ご旅行をまだご検討中ですか？",
+      "intro": "<strong>{route}</strong>のご依頼には、まだ予約できる{total}があります。何か気になる点があれば教えてください。推測ではなく、お困りごとに合わせてご案内します。",
+      "outro": "決める前にご質問はありますか？このメールにご返信いただければ、スリランカのチームがお手伝いします。"
+    },
+    "approaching": {
+      "subject": "ご旅行まであと{days}日 — ドライバーがまだ予約されていません",
+      "title": "あと{days}日、ドライバーはまだ予約されていません",
+      "intro": "<strong>{route}</strong>のご旅行は{start}に始まります。{total}が届いており、予約は1分で完了します。",
+      "outro": "決める前にご質問はありますか？このメールにご返信いただければ、スリランカのチームがお手伝いします。"
+    },
+    "expiring": {
+      "subject": "{driver}さんの{price}の見積もりは明日期限切れになります",
+      "title": "明日期限切れになる見積もりがあります",
+      "intro": "<strong>{route}</strong>のご旅行への{driver}さんの{price}の見積もりは、1日以内に期限切れになります。その後はドライバーが新しい見積もりを送る必要があり、料金が変わる可能性があります。",
+      "outro": "決める前にご質問はありますか？このメールにご返信いただければ、スリランカのチームがお手伝いします。"
+    },
+    "preheaderFrom": "{price}から。",
+    "preheader": "予約手数料なし、お支払いは初日にドライバーへ。",
+    "peak": "ご旅行の日程はハイシーズンにあたり、ドライバーの予定が早めに埋まります。",
+    "seeAll": "{total}件の見積もりをすべて見る",
+    "compareAll": "{total}件の見積もりをすべて比べる",
+    "openOffer": "見積もりを開く",
+    "text": "マイページで比べて予約できます：{url}",
+    "why": {
+      "title": "何がご予約の妨げになっていますか？",
+      "price": "料金が思っていたより高い",
+      "dates": "日程がまだ決まっていない",
+      "choice": "ドライバーを選べない",
+      "booked": "別の手段で予約した"
+    }
+  },
+  "expired": {
+    "title": "見積もりの有効期限が切れました",
+    "preheader": "{route}の最新料金をワンステップで受け取れます。",
+    "body": "<strong>{route}</strong>のご旅行（{dates}）にドライバーから届いた見積もりは有効期限が切れたため、このままではご予約いただけません。",
+    "repost": "このご旅行をまだご検討中ですか？同じ依頼をもう一度公開すると、ドライバーから最新の料金が届きます。入力は不要です。",
+    "noRepost": "このご旅行をまだご検討中ですか？下のいずれかのドライバーとのチャットを開き、<strong>新しい見積もりを依頼</strong>をタップしてください。",
+    "preferDriver": "下のドライバーの中に気になる方がいますか？<link>メッセージ</link>を開き、そのドライバーとのチャットで<strong>新しい見積もりを依頼</strong>をタップしてください。",
+    "actionRepost": "この依頼をもう一度公開する",
+    "actionNew": "新しい見積もりを依頼する",
+    "text": "{route}のご旅行の見積もりは有効期限が切れました。",
+    "textRepost": "同じ依頼をもう一度公開する：{url}",
+    "textAsk": "または、メッセージからドライバーに新しい見積もりを依頼できます：{url}",
+    "subject": "{route}の見積もりの有効期限が切れました"
+  },
+  "noOffers": {
+    "title": "最初の見積もりをお待ちいただいています",
+    "preheader": "ルートや日程によっては時間がかかることがあります。役立つ方法をご紹介します。",
+    "body": "<strong>{route}</strong>のご旅行（{dates}）には、まだドライバーから見積もりが届いていません。ルートや日程によっては時間がかかることがあり、ご依頼はすべての認証済みドライバーに公開されたままです。",
+    "helpTitle": "<strong>多くの場合に役立つ2つのこと</strong>",
+    "help": [
+      "詳細を追加する：訪れたい場所、人数と荷物、日程に融通がきくかどうか。",
+      "WhatsApp（{whatsapp}）でご連絡いただければ、ドライバーにご依頼をご案内します。"
+    ],
+    "willEmail": "最初の見積もりが届きしだい、メールでお知らせします。",
+    "text": "{route}のご旅行には、まだドライバーから見積もりが届いていません。ルートや日程によっては時間がかかることがあり、ご依頼は公開されたままです。\n\nご依頼に詳細を追加するか、WhatsApp（{whatsapp}）でご連絡いただくと効果的です。\n\n依頼内容を見る：{url}",
+    "subject": "{route}のご旅行にまだ見積もりがありません — 役立つ方法"
+  },
+  "reminder": {
+    "from": "{date}から",
+    "viewOffer": "見積もりを見る",
+    "titleOne": "見積もりはまだ有効です",
+    "titleMany": "{count}件の見積もりがまだ有効です",
+    "preheader": "{price}{model}。予約手数料なし、前払い金なし。",
+    "bodyOne": "{driver}さんから、まだ開いていない見積もりが届いています。",
+    "bodyMany": "まだ開いていない見積もりが{count}件あります。",
+    "actionOne": "見積もりを見る",
+    "actionMany": "見積もりを見る",
+    "subjectOne": "{driver}さんの{price}の見積もりはまだ有効です",
+    "subjectOneDate": "{driver}さんの{date}出発・{price}の見積もりはまだ有効です",
+    "subjectMany": "{count}件の見積もりがお待ちしています"
+  },
+  "preTrip": {
+    "title": "ご旅行は{date}に始まります",
+    "preheader": "{driver}さんがお迎えに上がります。ご準備いただきたいものをご案内します。",
+    "preheaderAt": "{driver}さんが{place}でお迎えに上がります。ご準備いただきたいものをご案内します。",
+    "away": "<strong>{driver}</strong>さんとのご旅行まであと3日です。",
+    "dates": "<strong>日程：</strong>{value}",
+    "pickup": "<strong>乗車地：</strong>{value}",
+    "vehicle": "<strong>車両：</strong>{value}",
+    "phone": "<strong>ドライバーの電話番号：</strong>{value}",
+    "total": "<strong>合計：</strong>{value}（初日にドライバーへお支払い）",
+    "readyTitle": "<strong>ご準備いただくもの</strong>",
+    "flightKnown": "便名（{flight}）は予約に登録されています。変更があればドライバーにお知らせください。",
+    "flightUnknown": "便名と到着時刻（チャットでドライバーにお送りください）。",
+    "payment": "ドライバーと取り決めたとおりのお支払い。",
+    "meeting": "ドライバーと確認したお迎えの時刻と正確な待ち合わせ場所。",
+    "changed": "ご予定が変わりましたか？開始日の2日以上前のキャンセルは無料です。2日以内の場合は、合計の50%をドライバーにお支払いいただきます。",
+    "action": "予約を見る",
+    "text": "{driver}さんとのご旅行は{date}に始まります。",
+    "textPickup": "乗車地：{value}",
+    "textPhone": "ドライバーの電話番号：{value}",
+    "textView": "予約を見る：{url}",
+    "subject": "3日後：{driver}さんがお迎えに上がります",
+    "subjectAt": "3日後：{driver}さんが{place}でお迎えに上がります"
+  },
+  "booking": {
+    "aVehicle": "車両",
+    "calendarTitle": "{driver}さんとのスリランカ旅行",
+    "calendarDetails": "{model}。{brand}で予約：{url}",
+    "confirmedBody": "ご予約が確定しました。<strong>{driver}</strong>さんに通知済みで、{date}にお迎えに上がります。",
+    "confirmedBodyAt": "ご予約が確定しました。<strong>{driver}</strong>さんに通知済みで、{date}に{place}でお迎えに上がります。",
+    "phone": "電話番号：",
+    "dates": "日程：",
+    "total": "合計：",
+    "sendFlight": "お迎えの計画を立てられるよう、チャットでドライバーに便名と到着時刻をお送りください。",
+    "ifChange": "<strong>ご予定が変わった場合</strong>",
+    "cancellation": [
+      "開始日の2日より前：キャンセル無料、お支払いは不要です。",
+      "開始日の2日以内：合計の50%をドライバーにお支払いいただきます。",
+      "旅行開始後：終了した日数分の全額と、残りの日数分の50%。"
+    ],
+    "calendar": "このご旅行を Google カレンダーに追加",
+    "pendingBody": "{model}のご依頼をドライバーに送信しました。",
+    "tripDates": "<strong>旅行日程：</strong>{value}",
+    "totalEstimate": "<strong>合計（概算）：</strong>{value}",
+    "statusLine": "<strong>ステータス：</strong>{value}",
+    "pendingNext": "ドライバーが依頼を承諾または変更すると、メールでお知らせします。",
+    "titleConfirmed": "ご旅行の予約が完了しました",
+    "titlePending": "予約リクエストを受け付けました",
+    "preheaderConfirmed": "{driver}さんの連絡先、含まれる内容、キャンセル方法をご案内します。",
+    "preheaderPending": "{model}のご依頼をお送りしました。",
+    "textConfirmed": "{driver}さん（{model}）とのご予約が確定しました。",
+    "textPhone": "ドライバーの電話番号：{value}",
+    "textPending": "{model}の予約リクエストを送信しました。",
+    "textDates": "日程：{value}",
+    "textTotal": "合計：{value}",
+    "textStatus": "ステータス：{value}",
+    "textCancellation": "キャンセルについて：",
+    "textView": "予約を見る：{url}",
+    "subjectConfirmed": "予約完了：{date}に{driver}さんがお迎えに上がります",
+    "subjectPending": "{model}の予約リクエストを受け付けました"
+  },
+  "status": {
+    "titleConfirmed": "ご旅行が確定しました",
+    "titleRejected": "予約が辞退されました",
+    "titleCancelled": "予約がキャンセルされました",
+    "titleUpdated": "予約が更新されました",
+    "yourBooking": "ご予約",
+    "theBooking": "ご予約",
+    "booking": "予約",
+    "preheader": "{model}：ステータスが「{status}」になりました。",
+    "body": "{model}：ステータスが「<strong>{status}</strong>」になりました。",
+    "tripDates": "<strong>旅行日程：</strong>{value}",
+    "total": "<strong>合計：</strong>{value}",
+    "follow": "確認したいことがあれば、チャットを開いてください。",
+    "text": "{model}：ステータスが「{status}」になりました。",
+    "textDates": "日程：{value}",
+    "textTotal": "合計：{value}",
+    "textVisit": "詳細はマイページでご確認ください。",
+    "subject": "{model}の予約更新：{status}"
+  },
+  "review": {
+    "title": "{driver}さんとのご旅行はいかがでしたか？",
+    "preheader": "{driver}さんとのご旅行について、ほかの旅行者に教えてください",
+    "yourVehicle": "お選びいただいた車両",
+    "hope": "{driver}さんとの{vehicle}でのご旅行をお楽しみいただけたなら幸いです。",
+    "hopeDates": "{driver}さんとの{vehicle}でのご旅行（{dates}）をお楽しみいただけたなら幸いです。",
+    "ask": "1分ほどでドライバーを評価していただけますか？レビューはほかの旅行者が安心して選ぶ助けになり、ドライバーにとっても大きな励みになります。",
+    "noSignIn": "ログインは不要です。下のボタンからレビューフォームが直接開きます。",
+    "action": "レビューを書く",
+    "text": "{driver}さんとのご旅行をお楽しみいただけたなら幸いです。",
+    "textDates": "{driver}さんとのご旅行（{dates}）をお楽しみいただけたなら幸いです。",
+    "textLink": "レビューはこちら：{url}",
+    "textThanks": "{brand}をご利用いただきありがとうございました。",
+    "subject": "{driver}さんとのご旅行はいかがでしたか？"
+  },
+  "pages": {
+    "invalidTitle": "このリンクは無効です",
+    "invalidBody": "コピーの際に途中で切れた可能性があります。メールからもう一度リンクを開いてください。",
+    "failedTitle": "問題が発生しました",
+    "failedBody": "現在保存できませんでした。数分後にもう一度リンクをお試しください。",
+    "prefs": {
+      "title": "メールの設定",
+      "all": "見積もりが届くたびに",
+      "allHint": "ドライバーから見積もりが届くたびにメールを1通お送りします。",
+      "summary": "まとめて、1日1回まで（おすすめ）",
+      "summaryHint": "最初の見積もりはすぐに、その後はおすすめを1通のメールにまとめてお送りします。",
+      "essential": "ドライバーからのメッセージと予約に関するものだけ",
+      "essentialHint": "見積もりのお知らせやリマインダーは送りません。見積もりはすべてマイページで確認できます。",
+      "saved": "保存しました。今後はこの設定が適用されます。",
+      "intro": "ドライバーからの見積もりについて、メールを送る頻度を選んでください。",
+      "save": "設定を保存",
+      "always": "どれを選んでも、やり取り中のドライバーからのメッセージと予約に関するメールは必ずお届けします。"
+    },
+    "answer": {
+      "title": "何がご予約の妨げになっていますか？",
+      "intro": "ご回答いただくと、リマインダーの代わりに役立つ情報をお送りできます。",
+      "send": "回答を送信",
+      "openDashboard": "マイページを開く",
+      "priceTitle": "お知らせいただきありがとうございます",
+      "priceBody": "料金はドライバーが自分で決めており、調整できることもよくあります。距離を減らす、車両を変える、ルートを短くすることで合計額が下がる場合があります。ご予算を添えてドライバーにメッセージを送り、相談してみてください。",
+      "datesTitle": "ご心配なく、ゆっくりご検討ください",
+      "datesUntil": "{date}まで、このご依頼に関するリマインダーはお送りしません。ご依頼と見積もりはマイページに残ります。",
+      "datesForNow": "当面、このご依頼に関するリマインダーはお送りしません。ご依頼と見積もりはマイページに残ります。",
+      "choiceTitle": "選ぶお手伝いをします",
+      "choiceBody": "このご依頼に関するメールのいずれかにご返信いただくか、WhatsApp（+94 76 3021 483）でご連絡いただければ、スリランカのチームが一緒に見積もりを確認します。",
+      "bookedTitle": "ありがとうございます。ご依頼を締め切りました",
+      "bookedBody": "ドライバーからの見積もりは届かなくなり、リマインダーもお送りしません。よいご旅行を。"
+    },
+    "repost": {
+      "alreadyTitle": "すでに再公開済みです",
+      "alreadyBody": "このご依頼はすでにドライバーに再送信されています。新しい見積もりはメールとマイページに届きます。",
+      "openRequests": "見積もり依頼を開く",
+      "title": "このご依頼を再公開しますか？",
+      "adults": {
+        "other": "大人{count}名"
+      },
+      "children": {
+        "other": "子ども{count}名"
+      },
+      "body": "同じご依頼をドライバーに再送信し、最新の料金をお届けします。先に内容を変更したい場合は、マイページから新しいご依頼を投稿してください。",
+      "button": "再公開する",
+      "liveTitle": "ご依頼を再公開しました",
+      "liveBody": "ただいまドライバーに通知しています。最初の見積もりはすぐにメールでお知らせし、残りはまとめてお送りします。",
+      "notTitle": "再公開されませんでした",
+      "problemAlready": "このご依頼はすでにドライバーに再送信されています。",
+      "problemPast": "このご依頼の開始日が過ぎているため、このままでは再公開できません。マイページから新しい日程でご依頼を投稿してください。",
+      "problemNotOpen": "このご依頼にはすでに予約があるため、再公開されませんでした。"
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "buckets": {
+    "sedan": {
+      "label": "Berlina",
+      "seats": "1-3 posti"
+    },
+    "mpv": {
+      "label": "Monovolume",
+      "seats": "4-6 posti"
+    },
+    "van": {
+      "label": "Van",
+      "seats": "7-10 posti"
+    },
+    "coach": {
+      "label": "Minibus",
+      "seats": "11+ posti"
+    },
+    "flex": {
+      "label": "Flessibile / non specificato",
+      "seats": ""
+    }
+  },
+  "inclusions": {
+    "fuelAndInsurance": "Carburante e assicurazione",
+    "driverMealsAndAccommodation": "Pasti e alloggio dell'autista",
+    "meetAndGreetAtAirport": "Accoglienza in aeroporto",
+    "englishSpeakingDriver": "Autista che parla inglese",
+    "parkingFeesAndTolls": "Parcheggi e pedaggi",
+    "allTaxes": "Tutte le tasse"
+  }
+}

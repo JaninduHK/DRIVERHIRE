@@ -1,5 +1,6 @@
 import { Check, X } from 'lucide-react';
 import { OFFER_INCLUSIONS } from '../constants/offerInclusions.js';
+import { useI18n } from '../i18n/I18nProvider.jsx';
 
 /**
  * The six offer inclusions as a tick/cross list: green tick for what the driver
@@ -10,12 +11,13 @@ import { OFFER_INCLUSIONS } from '../constants/offerInclusions.js';
  * wrongly read as "nothing included".
  */
 export const OfferInclusionList = ({ inclusions, className = '' }) => {
+  const { t } = useI18n();
   if (!Array.isArray(inclusions)) {
     return null;
   }
   return (
     <ul className={`m-0 grid list-none gap-1 p-0 ${className}`}>
-      {OFFER_INCLUSIONS.map(({ key, label }) => {
+      {OFFER_INCLUSIONS.map(({ key }) => {
         const included = inclusions.includes(key);
         return (
           <li key={key} className={`flex items-start gap-1.5 text-[12.5px] leading-snug ${included ? 'font-semibold text-ink' : 'text-muted-soft'}`}>
@@ -25,8 +27,8 @@ export const OfferInclusionList = ({ inclusions, className = '' }) => {
               <X className="mt-[1px] h-4 w-4 flex-none text-rose-500" strokeWidth={2.5} aria-hidden="true" />
             )}
             <span>
-              {label}
-              <span className="sr-only">{included ? ' (included)' : ' (not included)'}</span>
+              {t(`common.inclusions.${key}`)}
+              <span className="sr-only">{included ? ` ${t('chat.included')}` : ` ${t('chat.notIncluded')}`}</span>
             </span>
           </li>
         );

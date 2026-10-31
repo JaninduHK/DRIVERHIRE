@@ -1,0 +1,102 @@
+{
+  "logoAlt": "Car with Driver LK logo",
+  "nav": {
+    "home": "Home",
+    "vehicles": "Vehicles",
+    "drivers": "Drivers",
+    "liveMap": "Live map",
+    "tripCost": "Trip Cost",
+    "getQuotes": "Get Quotes",
+    "myVehicles": "My Vehicles",
+    "myBookings": "My Bookings",
+    "messages": "Messages",
+    "myEarnings": "My Earnings",
+    "myAvailability": "My Availability",
+    "myProfile": "My Profile",
+    "overview": "Overview",
+    "myRequests": "My Requests",
+    "settings": "Settings",
+    "roleDriver": "Driver",
+    "roleAdmin": "Admin",
+    "roleTraveller": "Traveller",
+    "toggle": "Toggle navigation",
+    "dashboard": "Dashboard",
+    "login": "Login",
+    "register": "Register",
+    "closeMenu": "Close menu",
+    "tourBriefs": "Tour Briefs",
+    "driverMenu": "Driver menu",
+    "travellerMenu": "Traveller menu",
+    "goToDashboard": "Go to dashboard"
+  },
+  "footer": {
+    "homeLabel": "Car with Driver home",
+    "tagline": "Vetted drivers and modern vehicles for travellers exploring Sri Lanka. Five-star journeys, island-wide.",
+    "travellers": "Travellers",
+    "drivers": "Drivers",
+    "help": "Help",
+    "browseVehicles": "Browse Vehicles",
+    "featuredDrivers": "Featured Drivers",
+    "myQuoteRequests": "My Quote Requests",
+    "chatMessages": "Chat Messages",
+    "applyAsDriver": "Apply as a Driver",
+    "driverGuide": "Driver Guide",
+    "driverTerms": "Driver Terms",
+    "driverPortal": "Driver Portal",
+    "contactSupport": "Contact Support",
+    "safetyPromise": "Safety Promise",
+    "privacyPolicy": "Privacy Policy",
+    "terms": "Terms & Conditions",
+    "rights": "All rights reserved.",
+    "about": "About",
+    "blog": "Blog",
+    "contact": "Contact"
+  },
+  "language": {
+    "choose": "Choose language"
+  },
+  "error": {
+    "notFoundTitle": "This page could not be found",
+    "title": "Something went wrong",
+    "notFoundBody": "The page you are looking for does not exist or has moved.",
+    "body": "An unexpected error occurred. Please try again.",
+    "backHome": "Back to home"
+  },
+  "features": {
+    "englishSpeakingDriver": "English-speaking driver",
+    "meetAndGreetAtAirport": "Meet & greet at airport",
+    "fuelAndInsurance": "Fuel and insurance included",
+    "driverMealsAndAccommodation": "Driver meals & accommodation",
+    "parkingFeesAndTolls": "Parking fees & tolls",
+    "allTaxes": "All taxes covered"
+  },
+  "inclusions": {
+    "englishSpeakingDriver": "English-speaking driver",
+    "fuelAndInsurance": "Fuel and insurance",
+    "parkingFeesAndTolls": "All parking charges and tolls",
+    "meetAndGreetAtAirport": "Airport meet & greet",
+    "driverMealsAndAccommodation": "Driver's meals & accommodation",
+    "allTaxes": "All taxes"
+  },
+  "licenseTypes": {
+    "touristDriver": "Tourist Driver",
+    "chauffeurGuideLecturer": "Chauffeur Guide Lecturer",
+    "nationalGuideLecturer": "National Guide Lecturer"
+  },
+  "photos": {
+    "view": "View review photo",
+    "reviewPhoto": "Review photo",
+    "delete": "Delete photo",
+    "close": "Close",
+    "previous": "Previous photo",
+    "next": "Next photo"
+  },
+  "badges": {
+    "englishSpeakingDriver": "English speaking",
+    "meetAndGreetAtAirport": "Airport meet & greet",
+    "fuelAndInsurance": "Fuel & insurance included",
+    "driverMealsAndAccommodation": "Meals & accommodation covered",
+    "parkingFeesAndTolls": "Parking & tolls covered",
+    "allTaxes": "All taxes included"
+  }
+}

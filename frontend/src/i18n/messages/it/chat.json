@@ -1,0 +1,93 @@
+{
+  "read": "Letto",
+  "sent": "Inviato",
+  "close": "Chiudi",
+  "included": "(incluso)",
+  "notIncluded": "(non incluso)",
+  "brief": {
+    "label": "Richiesta di preventivo",
+    "adults": {
+      "one": "{count} adulto",
+      "other": "{count} adulti"
+    },
+    "children": {
+      "one": "{count} bambino",
+      "other": "{count} bambini"
+    },
+    "readLess": "Mostra meno",
+    "readMore": "Mostra di più"
+  },
+  "booking": {
+    "title": "Dettagli della prenotazione",
+    "traveller": "Viaggiatore",
+    "name": "Nome",
+    "email": "Email",
+    "phone": "Telefono",
+    "trip": "Viaggio",
+    "dates": "Date",
+    "days": "Giorni",
+    "dayCount": {
+      "one": "{count} giorno",
+      "other": "{count} giorni"
+    },
+    "vehicle": "Veicolo",
+    "route": "Partenza e arrivo",
+    "startPoint": "Punto di partenza",
+    "endPoint": "Punto di arrivo",
+    "flight": "Volo",
+    "flightNumber": "Numero di volo",
+    "arrival": "Orario di arrivo",
+    "departure": "Orario di partenza",
+    "included": "Incluso nell'offerta",
+    "notes": "Note ed extra",
+    "status": {
+      "pending": "in attesa",
+      "confirmed": "confermata",
+      "cancelled": "annullata",
+      "rejected": "rifiutata"
+    }
+  },
+  "photos": {
+    "vehicle": "Veicolo",
+    "view": "Vedi la foto di {name}",
+    "viewNumbered": "Vedi la foto {n} di {name}",
+    "numbered": "{name}, foto {n}"
+  },
+  "profile": {
+    "missing": "Mancano le informazioni sull'autista.",
+    "loadError": "Impossibile caricare il profilo dell'autista.",
+    "linkCopied": "Link del profilo copiato.",
+    "copyFailed": "Impossibile copiare il link.",
+    "title": "Profilo dell'autista",
+    "copyLink": "Copia il link del profilo",
+    "newDriver": "Nuovo autista",
+    "reviews": {
+      "one": "{count} recensione",
+      "other": "{count} recensioni"
+    },
+    "sriLanka": "Sri Lanka",
+    "loading": "Caricamento del profilo dell'autista…",
+    "notFound": "Questo profilo di autista non è stato trovato.",
+    "years": "{count} anni",
+    "experience": "Esperienza",
+    "rating": "Valutazione",
+    "vehicles": "Veicoli",
+    "about": "Su {name}",
+    "noBio": "{name} non ha ancora aggiunto una presentazione.",
+    "location": "Località",
+    "memberSince": "Iscritto dal",
+    "vehiclesCount": "Veicoli ({count})",
+    "noVehicles": "Nessun veicolo disponibile al momento.",
+    "inThisChat": "IN QUESTA CHAT",
+    "seats": "{count} posti",
+    "perDay": "AL GIORNO",
+    "reviewsTitle": "Recensioni",
+    "loadingReviews": "Caricamento delle recensioni…",
+    "noReviews": "Ancora nessuna recensione. Sii il primo a scoprire lo Sri Lanka con questo autista e a raccontare la tua esperienza.",
+    "traveller": "Viaggiatore",
+    "showFewer": "Mostra meno recensioni",
+    "readAll": "Leggi tutte le {count} recensioni",
+    "tripDetails": "Dettagli del viaggio",
+    "backToChat": "Torna alla chat"
+  }
+}

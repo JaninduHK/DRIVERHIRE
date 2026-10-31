@@ -5,6 +5,7 @@
 // shape as the one below; nothing else needs to change.
 
 import shaggyPhoto from '../assets/shaggy.jpg';
+import { BLOG_TRANSLATIONS } from './blogTranslations.js';
 
 export const CATEGORIES = ['All', 'Costs', 'Routes', 'Itineraries', 'Driving', 'Planning'];
 
@@ -148,11 +149,36 @@ export const BLOG_POSTS = [
   },
 ];
 
-export const getPostBySlug = (slug) => BLOG_POSTS.find((post) => post.slug === slug) || null;
-
-export const getRelatedPosts = (post, limit = 3) => {
-  if (post?.related?.length) {
-    return post.related.map((slug) => getPostBySlug(slug)).filter(Boolean).slice(0, limit);
+// A translated post keeps the English structure (slug, images, dates, links) and
+// replaces only its text. Arrays are replaced whole, objects merged key by key.
+const mergeText = (base, override) => {
+  if (override === undefined || override === null) return base;
+  if (Array.isArray(base) && Array.isArray(override)) {
+    return base.map((item, index) => mergeText(item, override[index]));
   }
-  return BLOG_POSTS.filter((p) => p.slug !== post?.slug).slice(0, limit);
+  if (base && typeof base === 'object' && typeof override === 'object') {
+    const out = { ...base };
+    for (const key of Object.keys(override)) out[key] = mergeText(base[key], override[key]);
+    return out;
+  }
+  return override;
+};
+
+export const localizePost = (post, locale = 'en') => {
+  const override = post && BLOG_TRANSLATIONS[locale]?.[post.slug];
+  return override ? mergeText(post, override) : post;
+};
+
+export const getLocalizedPosts = (locale = 'en') => BLOG_POSTS.map((post) => localizePost(post, locale));
+
+export const getPostBySlug = (slug, locale = 'en') =>
+  localizePost(BLOG_POSTS.find((post) => post.slug === slug) || null, locale);
+
+export const getRelatedPosts = (post, limit = 3, locale = 'en') => {
+  if (post?.related?.length) {
+    return post.related.map((slug) => getPostBySlug(slug, locale)).filter(Boolean).slice(0, limit);
+  }
+  return BLOG_POSTS.filter((p) => p.slug !== post?.slug)
+    .slice(0, limit)
+    .map((p) => localizePost(p, locale));
 };

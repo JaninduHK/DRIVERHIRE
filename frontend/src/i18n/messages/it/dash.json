@@ -1,0 +1,345 @@
+{
+  "traveller": "Viaggiatore",
+  "travellerLower": "viaggiatore",
+  "driver": "Autista",
+  "browseVehicles": "Vedi i veicoli",
+  "tryAgain": "Riprova",
+  "retry": "Riprova",
+  "back": "Indietro",
+  "close": "Chiudi",
+  "saving": "Salvataggio…",
+  "saveChanges": "Salva le modifiche",
+  "message": "Messaggio",
+  "viewOffer": "Vedi l'offerta",
+  "viewOffers": "Vedi le offerte",
+  "openChat": "Apri la chat",
+  "sentOffer": "Ha inviato un'offerta",
+  "conversationStarted": "Conversazione avviata.",
+  "awaitingOffers": "In attesa di offerte",
+  "offersCount": {
+    "one": "{count} offerta",
+    "other": "{count} offerte"
+  },
+  "guests": {
+    "one": "{count} ospite",
+    "other": "{count} ospiti"
+  },
+  "nav": {
+    "overview": "Panoramica",
+    "bookings": "Le mie prenotazioni",
+    "messages": "Messaggi",
+    "requests": "Le mie richieste",
+    "settings": "Impostazioni",
+    "browse-vehicles": "Veicoli",
+    "browse-drivers": "Autisti",
+    "browse-trip-cost": "Costo del viaggio"
+  },
+  "shell": {
+    "notifications": "Notifiche",
+    "openMenu": "Apri il menu",
+    "home": "Vai alla home",
+    "user": "Utente",
+    "logout": "Esci",
+    "closeMenu": "Chiudi il menu"
+  },
+  "toast": {
+    "loggedOut": "Sei uscito dal tuo account.",
+    "newOfferRequested": "Richiesta inviata. L'autista risponderà con una nuova offerta.",
+    "profileUpdated": "Profilo aggiornato.",
+    "passwordUpdated": "Password aggiornata.",
+    "briefPosted": "Richiesta di viaggio pubblicata."
+  },
+  "errors": {
+    "conversations": "Impossibile caricare le conversazioni.",
+    "messages": "Impossibile caricare i messaggi.",
+    "bookings": "Al momento non è possibile caricare le tue prenotazioni.",
+    "briefs": "Impossibile caricare le tue richieste di viaggio.",
+    "profile": "Impossibile caricare il profilo.",
+    "send": "Impossibile inviare il messaggio.",
+    "newOffer": "Impossibile richiedere una nuova offerta.",
+    "offerVehicle": "Mancano i dettagli del veicolo per questa offerta.",
+    "updateProfile": "Impossibile aggiornare il profilo.",
+    "updatePassword": "Impossibile aggiornare la password.",
+    "postBrief": "Impossibile pubblicare la richiesta di viaggio."
+  },
+  "overview": {
+    "eyebrow": "DASHBOARD VIAGGIATORE",
+    "welcome": "Bentornato, {name}",
+    "lead": "Gestisci viaggi, conversazioni e richieste in un unico posto.",
+    "upcoming": "In arrivo",
+    "completed": "Completati",
+    "totalSpent": "Totale speso",
+    "noUpcoming": "Ancora nessun viaggio in programma.",
+    "recentMessages": "Messaggi recenti",
+    "noConversationsHint": "Ancora nessuna conversazione. Scrivi a un autista dalla pagina di un veicolo.",
+    "noConversations": "Ancora nessuna conversazione.",
+    "upcomingTrips": "Prossimi viaggi",
+    "viewAll": "Vedi tutto"
+  },
+  "quoteSteps": {
+    "step1": {
+      "title": "Raccontaci il tuo viaggio",
+      "body": "Le date, dove inizi e dove finisci e quanti siete."
+    },
+    "step2": {
+      "title": "Gli autisti ti inviano offerte",
+      "body": "Ogni offerta ha un prezzo e un veicolo fissi. Ti mandiamo un'email quando ne arriva una."
+    },
+    "step3": {
+      "title": "Chatta, confronta e prenota",
+      "body": "Fai domande, confronta i prezzi e prenota quella che preferisci in Messaggi."
+    }
+  },
+  "quoteCard": {
+    "title": "Ricevi preventivi dagli autisti",
+    "body": "Pubblica il tuo viaggio una volta e lascia che autisti verificati ti mandino le loro offerte. È gratis, senza costi di prenotazione.",
+    "cta": "Richiedi preventivi"
+  },
+  "slot": {
+    "title": {
+      "one": "La tua richiesta di preventivo",
+      "other": "Le tue richieste di preventivo"
+    },
+    "body": "Gli autisti rispondono con delle offerte. Ti mandiamo un'email quando ne arriva una, e puoi confrontarle e prenotarle in Messaggi.",
+    "newRequest": "Nuova richiesta",
+    "noOffers": "Ancora nessuna offerta. Ti scriveremo appena un autista risponde.",
+    "viewAll": "Vedi tutte le {count} richieste"
+  },
+  "nextTrip": {
+    "scheduled": "In programma",
+    "inProgress": "In corso",
+    "daysAway": {
+      "one": "tra {count} giorno",
+      "other": "tra {count} giorni"
+    },
+    "upcomingTrip": "Prossimo viaggio",
+    "yourDriver": "il tuo autista",
+    "title": "Il tuo prossimo viaggio",
+    "datesToConfirm": "Date da confermare",
+    "withDriver": "con {name}"
+  },
+  "bookings": {
+    "eyebrow": "VIAGGI",
+    "loading": "Caricamento delle prenotazioni…",
+    "emptyTitle": "Ancora nessun viaggio prenotato",
+    "emptyBody": "Quando confermi un autista, il tuo itinerario appare qui.",
+    "noUpcoming": "Nessun viaggio in programma.",
+    "noCompleted": "Ancora nessun viaggio completato.",
+    "noConversation": "Ancora nessuna conversazione per questo viaggio.",
+    "toast": {
+      "updated": "Prenotazione aggiornata."
+    },
+    "errors": {
+      "bothDates": "Seleziona sia la data di inizio sia quella di fine.",
+      "validDates": "Scegli date di viaggio valide.",
+      "update": "Impossibile aggiornare la prenotazione."
+    }
+  },
+  "cancel": {
+    "title": "Annulla la prenotazione",
+    "notice": [
+      "Cancellazione gratuita fino a 2 giorni prima della data di inizio.",
+      "Se annulli entro 2 giorni dalla data di inizio, il 50% del costo totale va pagato all'autista.",
+      "Se annulli dopo la data di inizio, va pagato all'autista il 100% dei giorni effettuati e il 50% dei giorni non effettuati."
+    ],
+    "why": "Perché annulli?",
+    "explain": "Spiega il motivo",
+    "explainPlaceholder": "Questo viene condiviso con il nostro team e con il tuo autista.",
+    "keep": "Mantieni la prenotazione",
+    "cancelling": "Annullamento…",
+    "reasons": {
+      "plansChanged": "I piani di viaggio sono cambiati",
+      "betterPrice": "Ho trovato un prezzo migliore altrove",
+      "datesMoved": "Le date del viaggio sono cambiate",
+      "driverSilent": "L'autista non risponde più",
+      "driverAsked": "L'autista ha chiesto di annullare",
+      "notTravelling": "Non vado più in Sri Lanka",
+      "other": "Altro"
+    },
+    "toast": {
+      "cancelled": "Prenotazione annullata."
+    },
+    "errors": {
+      "reason": "Scegli un motivo per l'annullamento.",
+      "detail": "Spiega il motivo dell'annullamento.",
+      "cancel": "Impossibile annullare la prenotazione."
+    }
+  },
+  "form": {
+    "startDate": "Data di inizio",
+    "endDate": "Data di fine"
+  },
+  "edit": {
+    "title": "Modifica la prenotazione",
+    "offerDates": "Le date sono state confermate tramite un'offerta dell'autista. Scrivi al tuo autista per cambiare il programma.",
+    "pickup": "Partenza",
+    "pickupPlaceholder": "Hotel o punto d'incontro",
+    "dropoff": "Arrivo",
+    "dropoffPlaceholder": "Destinazione finale",
+    "flight": "Numero di volo (facoltativo)",
+    "flightPlaceholder": "es. UL 403",
+    "arrival": "Orario di arrivo",
+    "departure": "Orario di partenza",
+    "timePlaceholder": "es. {time}",
+    "special": "Richieste particolari",
+    "specialPlaceholder": "Esigenze alimentari, accessibilità – tutto ciò che il tuo autista dovrebbe sapere."
+  },
+  "review": {
+    "title": "Feedback sul viaggio",
+    "titleModel": "Recensione · {model}",
+    "adminNote": "Nota del team",
+    "rating": "Valutazione",
+    "ratings": {
+      "r5": "Fantastico",
+      "r4": "Ottimo",
+      "r3": "Buono",
+      "r2": "Discreto",
+      "r1": "Da migliorare"
+    },
+    "reviewTitle": "Titolo della recensione (facoltativo)",
+    "titlePlaceholder": "I momenti migliori del tuo viaggio",
+    "experience": "Racconta la tua esperienza",
+    "experiencePlaceholder": "Parlaci del tuo autista, del veicolo e dei momenti migliori dell'itinerario.",
+    "minChars": "Minimo 10 caratteri.",
+    "photos": "Foto (facoltative)",
+    "removePhoto": "Rimuovi foto",
+    "photosHelp": "Aggiungi fino a 4 foto del tuo viaggio.",
+    "submitting": "Invio…",
+    "submit": "Invia recensione",
+    "status": {
+      "published": "Pubblicata",
+      "declined": "Rifiutata",
+      "awaiting": "In attesa di approvazione"
+    },
+    "toast": {
+      "submitted": "Recensione inviata per la moderazione."
+    },
+    "errors": {
+      "rating": "Scegli una valutazione da 1 a 5.",
+      "tooShort": "Raccontaci qualcosa in più sulla tua esperienza (almeno 10 caratteri).",
+      "submit": "Impossibile inviare la recensione."
+    }
+  },
+  "card": {
+    "driverTbd": "Autista da assegnare",
+    "vehicleTbd": "Veicolo da confermare",
+    "seats": "{count} posti",
+    "datesTbd": "Date da confermare",
+    "datesTbdShort": "Date da definire",
+    "startsIn": {
+      "one": "Inizia tra {count} giorno",
+      "other": "Inizia tra {count} giorni"
+    },
+    "status": {
+      "pending": "in attesa",
+      "confirmed": "confermata",
+      "cancelled": "annullata",
+      "rejected": "rifiutata",
+      "completed": "completata"
+    },
+    "messageDriver": "Scrivi all'autista",
+    "details": "Dettagli",
+    "viewVehicle": "Vedi il veicolo",
+    "editDetails": "Modifica i dettagli",
+    "viewReview": "Vedi la recensione",
+    "leaveReview": "Lascia una recensione"
+  },
+  "chat": {
+    "eyebrow": "POSTA",
+    "discussing": "Riguardo a {model}",
+    "general": "Conversazione generale",
+    "loadingMessages": "Caricamento dei messaggi…",
+    "introduce": "Invia un messaggio per presentarti all'autista.",
+    "bookingConfirmed": "La tua prenotazione con questo autista è confermata",
+    "bookingWithDriver": "Hai una prenotazione con questo autista",
+    "tapForDetails": "Tocca per vedere i dettagli del viaggio",
+    "loadingConversations": "Caricamento delle conversazioni…",
+    "emptyList": "Avvia una conversazione dalla pagina di un veicolo per vederla qui.",
+    "noMatch": "Nessuna conversazione corrisponde alla ricerca.",
+    "read": "Letto",
+    "sent": "Inviato",
+    "offerAccepted": "Offerta accettata",
+    "offerExpired": "Offerta scaduta",
+    "offerDeclined": "Offerta rifiutata",
+    "latestOffer": "Ultima offerta",
+    "viewProfile": "Vedi il profilo di autista di {name}",
+    "placeholder": "Messaggio…",
+    "send": "Invia",
+    "sending": "Invio…",
+    "search": "Cerca nelle conversazioni",
+    "select": "Seleziona una conversazione per vedere i messaggi."
+  },
+  "offer": {
+    "received": "Offerta ricevuta",
+    "discount": "{name} – risparmi il {percent}%",
+    "vehicle": "Veicolo",
+    "selectedVehicle": "Veicolo selezionato",
+    "kms": "{km} km inclusi · {rate} / km extra",
+    "accept": "Accetta l'offerta",
+    "newerBelow": "Offerta più recente qui sotto",
+    "requested": "Nuova offerta richiesta",
+    "requestNew": "Richiedi una nuova offerta",
+    "declineHint": "Rispondi in chat per trattare o rifiutare.",
+    "decline": "Rifiuta"
+  },
+  "requests": {
+    "booked": "Prenotato",
+    "new": "Nuova",
+    "eyebrow": "LE MIE RICHIESTE",
+    "title": "Richieste di viaggio",
+    "subtitle": "I viaggi che hai pubblicato per ricevere offerte dagli autisti.",
+    "loading": "Caricamento delle richieste…",
+    "postNew": "Pubblica una nuova richiesta",
+    "emptyTitle": "Ancora nessuna richiesta",
+    "emptyBody": "Pubblica il tuo primo itinerario per invitare autisti verificati a mandarti offerte.",
+    "errors": {
+      "dates": "Seleziona le date del viaggio.",
+      "allFields": "Tutti i campi sono obbligatori.",
+      "adults": "Indica almeno un viaggiatore adulto."
+    },
+    "form": {
+      "reviewTitle": "Controlla e pubblica la tua richiesta",
+      "title": "Pubblica una richiesta",
+      "reviewNote": "Ecco il viaggio che hai inserito. Non è ancora stato inviato. Controlla i dettagli, cambia ciò che serve, poi pubblicalo per gli autisti.",
+      "from": "Da",
+      "fromPlaceholder": "Aeroporto di Colombo",
+      "to": "A",
+      "toPlaceholder": "Kandy",
+      "adults": "Adulti",
+      "children": "Bambini",
+      "country": "Paese di residenza",
+      "countryPlaceholder": "Italia",
+      "details": "Dettagli del viaggio",
+      "detailsPlaceholder": "Tappe imperdibili, esigenze di alloggio, lingue, ecc.",
+      "noContact": "Non inserire qui numeri di telefono o email – condivideremo i contatti quando accetterai un'offerta e la prenotazione sarà confermata.",
+      "upTo": "Fino a {count} preventivi",
+      "onlyType": "Solo {type}",
+      "nextTitle": "Cosa succede ora",
+      "nextBody": "Dopo la pubblicazione riceverai offerte dagli autisti. Potrai chattare con loro, confrontare offerte e prezzi e prenotare dalla scheda Messaggi. Riceverai un'email per ogni nuova offerta.",
+      "posting": "Pubblicazione…",
+      "postToDrivers": "Pubblica la richiesta per gli autisti",
+      "post": "Pubblica la richiesta di viaggio"
+    }
+  },
+  "settings": {
+    "mismatch": "Le nuove password non coincidono.",
+    "eyebrow": "ACCOUNT",
+    "subtitle": "Dicci come contattarti durante il viaggio.",
+    "loading": "Caricamento del profilo…",
+    "noProfile": "Nessun dato del profilo disponibile.",
+    "fullName": "Nome completo",
+    "email": "Email",
+    "emailHelp": "Devi cambiare la tua email? Contatta l'assistenza.",
+    "contact": "Numero di telefono",
+    "contactPlaceholder": "es. {example}",
+    "homeBase": "Città di residenza",
+    "homeBasePlaceholder": "Città, paese",
+    "resetPassword": "Reimposta la password",
+    "resetHelp": "Aggiorna la password per mantenere sicuro il tuo account.",
+    "currentPassword": "Password attuale",
+    "newPassword": "Nuova password",
+    "confirmPassword": "Conferma la nuova password",
+    "updating": "Aggiornamento…",
+    "updatePassword": "Aggiorna la password"
+  }
+}

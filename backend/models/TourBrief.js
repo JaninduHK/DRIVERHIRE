@@ -1,6 +1,10 @@
 import mongoose from 'mongoose';
 import { LICENSE_TYPES } from './User.js';
 
+// Languages the public site is translated into (frontend/src/i18n/locales.js),
+// English excluded: an English request stores null.
+export const BRIEF_LANGUAGES = ['de', 'fr', 'it', 'ru', 'ja'];
+
 const briefResponseSchema = new mongoose.Schema(
   {
     driver: {
@@ -94,6 +98,13 @@ const tourBriefSchema = new mongoose.Schema(
     requiredLicenseType: {
       type: String,
       enum: Object.values(LICENSE_TYPES),
+      default: null,
+    },
+    // The site language the traveller used when posting ('de', 'ja', …), so
+    // drivers know which language the traveller reads. null = English or unknown.
+    language: {
+      type: String,
+      enum: [...BRIEF_LANGUAGES, null],
       default: null,
     },
     status: {

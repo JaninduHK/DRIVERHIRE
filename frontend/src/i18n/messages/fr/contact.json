@@ -1,0 +1,59 @@
+{
+  "errors": {
+    "missing": "Veuillez indiquer votre nom, votre e-mail et votre message.",
+    "send": "Impossible d'envoyer votre demande."
+  },
+  "sent": "Votre demande a été envoyée à notre service d'assistance.",
+  "badge": "ASSISTANCE VOYAGE 24 H/24, 7 J/7",
+  "title1": "Besoin d'aide pour votre",
+  "title2": "chauffeur ou votre réservation de circuit ?",
+  "lead": "Notre équipe est là pour les touristes qui ont besoin d'aide avant, pendant ou après leur voyage au Sri Lanka : modifications, questions, problèmes ou aide pour une nouvelle réservation.",
+  "helpWith": "Nous pouvons vous aider à",
+  "helpItems": [
+    "Modifier l'heure ou le lieu de prise en charge",
+    "Mettre à jour votre itinéraire ou vos étapes",
+    "Répondre à vos questions sur les prix ou les véhicules"
+  ],
+  "responseTime": "Délai de réponse moyen",
+  "responseValue": "Moins de 3 h",
+  "responseNote": "Nous donnons la priorité aux voyageurs déjà au Sri Lanka et aux arrivées à l'aéroport.",
+  "quick": "Contact rapide pour les touristes",
+  "callNow": "Appeler l'assistance / WhatsApp maintenant",
+  "emailNow": "Envoyer les détails de réservation par e-mail",
+  "tip": "Astuce : lorsque vous nous contactez, indiquez votre numéro de réservation (si vous en avez un), vos dates de voyage et le nom sous lequel la réservation a été faite. Cela nous aide à vous répondre plus vite.",
+  "form": {
+    "title": "Dites-nous en quoi nous pouvons vous aider",
+    "lead": "Utilisez ce formulaire si vous préférez être aidé par e-mail. Nous vous répondrons avec des étapes claires et des options pour votre chauffeur ou votre circuit.",
+    "noFees": "Aucuns\nfrais de\nréservation",
+    "category": "En quoi pouvons-nous vous aider ?",
+    "select": "Choisissez une option",
+    "name": "Nom complet",
+    "namePlaceholder": "Nom figurant sur votre réservation",
+    "email": "Adresse e-mail",
+    "bookingId": "Numéro de réservation (si vous en avez un)",
+    "bookingIdPlaceholder": "#DRIVER12345 ou référence de la plateforme",
+    "message": "Expliquez votre situation",
+    "messagePlaceholder": "Indiquez vos dates de voyage, où vous êtes actuellement (ou votre lieu d'atterrissage), ce qui ne s'est pas bien passé ou ce que vous souhaitez modifier. Précisez si possible le nom du chauffeur ou le type de véhicule.",
+    "sending": "Envoi...",
+    "submit": "Envoyer la demande d'assistance",
+    "note": "Nous répondons personnellement à chaque touriste : pas de robots. Pour les problèmes urgents le jour même, nous vous conseillons d'appeler ou d'utiliser WhatsApp d'abord, puis d'envoyer ce formulaire avec les détails."
+  },
+  "categories": {
+    "change": "Modifier ou annuler une réservation existante",
+    "question": "Question sur ma prochaine réservation",
+    "problem": "Problème pendant mon voyage (chauffeur / véhicule)",
+    "urgent": "Prise en charge urgente à l'aéroport aujourd'hui / demain",
+    "quote": "Nouveau devis de circuit / chauffeur",
+    "other": "Autre chose"
+  },
+  "info": {
+    "phone": {
+      "label": "Appel / WhatsApp",
+      "hint": "Idéal pour les prises en charge urgentes à l'aéroport et les circuits du jour même"
+    },
+    "email": {
+      "label": "E-mail d'assistance",
+      "hint": "Envoyez les détails de réservation ou des captures d'écran pour une aide plus rapide"
+    }
+  }
+}

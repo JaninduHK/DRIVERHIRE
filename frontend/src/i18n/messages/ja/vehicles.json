@@ -1,0 +1,50 @@
+{
+  "title": "車両を探す",
+  "searchPlaceholder": "車種、ドライバー、または都市",
+  "loadError": "車両を読み込めませんでした。",
+  "loadErrorTitle": "車両を読み込めませんでした",
+  "tryAgain": "再試行",
+  "loading": "読み込み中…",
+  "count": "{count}台",
+  "clearFilters": "絞り込みを解除",
+  "clear": "解除",
+  "emptyTitle": "条件に合う車両はまだありません",
+  "emptyBody": "検索条件を変更するか、また後でご確認ください。新しい掲載は随時追加されています。",
+  "chips": {
+    "dates": "日程",
+    "seats": "座席数",
+    "seatsActive": "{count}人乗り以上",
+    "price": "料金",
+    "rating": "評価",
+    "sort": "並べ替え"
+  },
+  "card": {
+    "seats": "{count}人乗り",
+    "vehicle": "車両",
+    "perDay": "1日あたり",
+    "by": "ドライバー：",
+    "approvedDriver": "承認済みドライバー",
+    "view": "見る"
+  },
+  "filters": {
+    "title": "絞り込み",
+    "clearAll": "すべて解除",
+    "tripDates": "旅行日程",
+    "start": "開始",
+    "end": "終了",
+    "seats": "座席数",
+    "budget": "1日あたりの予算",
+    "min": "最小",
+    "max": "最大",
+    "rating": "評価",
+    "sortBy": "並べ替え",
+    "reset": "リセット",
+    "show": "{count}台を表示",
+    "any": "指定なし",
+    "under40": "$40未満",
+    "recommended": "おすすめ順",
+    "priceAsc": "料金の安い順",
+    "priceDesc": "料金の高い順",
+    "topRated": "評価の高い順"
+  }
+}

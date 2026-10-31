@@ -1,0 +1,163 @@
+{
+  "hero": {
+    "badge": "Vertraut durch über 1200 echte Bewertungen",
+    "title": "Mietwagen in Sri Lanka <brand>mit einem Fahrer</brand>, der die Insel kennt.",
+    "lead": "Lizenzierte Fahrer, klimatisierte Fahrzeuge und Reiserouten, die sich nach Ihren Reisedaten richten. Strände, Teeland, UNESCO-Städte – alles zu einem festen Tagespreis ohne versteckte Zusatzkosten.",
+    "planTrip": "Meine Reise planen",
+    "browse": "Fahrzeuge & Fahrer ansehen",
+    "statRate": "Tagespreis ab",
+    "statRating": "Gästebewertung",
+    "statReply": "Antwortzeit",
+    "statReplyValue": "< 1 Std."
+  },
+  "form": {
+    "title": "In wenigen Minuten Angebote von Fahrern erhalten",
+    "intro": "Nennen Sie uns die wichtigsten Eckdaten, und wir bringen Sie mit geprüften Fahrern zusammen, die Ihnen Festpreise schicken.",
+    "startDate": "Startdatum",
+    "endDate": "Enddatum",
+    "pickup": "Abholort",
+    "dropoff": "Zielort",
+    "placePlaceholder": "Stadt, Hotel oder Flughafen",
+    "travellers": "Reisende",
+    "notes": "Details zur Reiseroute",
+    "optional": "Optional",
+    "notesPlaceholder": "Orte, die Sie sehen möchten, Flugzeiten, Kinder oder zusätzliches Gepäck. Alles, was den Fahrern hilft, ein genaues Angebot zu machen.",
+    "submit": "Angebote von Fahrern einholen",
+    "footnote": "Kostenlose Anfrage · Keine Buchungsgebühr · Bezahlung direkt an den Fahrer"
+  },
+  "badges": {
+    "sltda": "Von der SLTDA lizenzierte Fahrer",
+    "coverage": "Inselweit unterwegs",
+    "priceGuarantee": "Garantie auf den gebuchten Preis",
+    "support": "Reise-Support rund um die Uhr"
+  },
+  "how": {
+    "eyebrow": "So funktioniert es",
+    "title": "Drei Schritte von der Anfrage bis zur Abholung am Flughafen",
+    "step1Title": "Reiseroute mitteilen",
+    "step1Body": "Reisedaten, Gruppengröße und die Orte auf Ihrer Liste. Eine grobe Vorstellung genügt – die Fahrer helfen Ihnen, sie zu verfeinern.",
+    "step2Title": "Echte Angebote vergleichen",
+    "step2Body": "Sehen Sie Fahrzeug, Tagespreis, Sprachen und Bewertungen nebeneinander. Schreiben Sie den Fahrern, bevor Sie sich festlegen.",
+    "step3Title": "Buchung sichern",
+    "step3Body": "Vereinbaren Sie die endgültige Reiseroute und den Preis mit Ihrem Fahrer und bestätigen Sie dann. Sie erhalten die Reisedetails schriftlich und den direkten Kontakt, bevor Sie abfliegen."
+  },
+  "fleet": {
+    "eyebrow": "Fahrzeuge für jede Reise",
+    "title": "Fahrzeuge für Mietwagenreisen auf ganz Sri Lanka",
+    "copy": "Moderne SUVs, Limousinen der Oberklasse und Vans für Gruppen – alle gewartet, mit GPS ausgestattet und mit einem zweisprachigen Fahrer.",
+    "cta": "Alle Fahrzeuge ansehen",
+    "error": "Fahrzeuge konnten nicht geladen werden.",
+    "errorCta": "Katalog öffnen",
+    "empty": "Noch keine Fahrzeuge. <link>Katalog durchsuchen</link>."
+  },
+  "vehicleTags": {
+    "bestValue": "Bestes Preis-Leistungs-Verhältnis",
+    "groupFriendly": "Ideal für Gruppen",
+    "longTours": "Lange Touren"
+  },
+  "drivers": {
+    "eyebrow": "Partnerfahrer",
+    "title": "Lernen Sie die Fahrer kennen, nach denen Reisende namentlich fragen",
+    "copy": "Überprüft, versichert und im Gastgewerbe geschult. Sie kennen die Aussichtspunkte, die historischen Stätten und die besten Cafés am Straßenrand.",
+    "cta": "Fahrerverzeichnis entdecken",
+    "error": "Fahrer konnten nicht geladen werden.",
+    "errorCta": "Verzeichnis ansehen",
+    "empty": "Noch keine Fahrer veröffentlicht. <link>Verzeichnis durchsuchen</link>."
+  },
+  "pricing": {
+    "eyebrow": "Transparente Reisekosten",
+    "title": "Ein Tagespreis. Alles Wichtige inklusive.",
+    "body": "Keine Provision obendrauf, keine Überraschungen pro Kilometer. Sie sehen den Gesamtbetrag, bevor Sie bestätigen, und bezahlen Ihren Fahrer direkt.",
+    "items": [
+      "Fahrerhonorar, Verpflegung und Unterkunft",
+      "Kraftstoff und 120–150 km pro Tag, inselweit",
+      "Vollständige Fahrzeugversicherung und Support rund um die Uhr",
+      "Empfang am Flughafen am Ankunftstag"
+    ],
+    "sampleTitle": "BEISPIEL: 6-TÄGIGE REISE · 1–3 REISENDE",
+    "rowVehicle": "Fahrzeug & Fahrer ($50 × 6 Tage)",
+    "rowFuel": "Kraftstoff & 120–150 km/Tag",
+    "rowAirport": "Abholung am Flughafen",
+    "rowFee": "Buchungsgebühr der Plattform",
+    "included": "Inklusive",
+    "total": "Geschätzte Gesamtkosten",
+    "cta": "Preis für meine eigene Reiseroute"
+  },
+  "reviews": {
+    "eyebrow": "Erfahrungen unserer Gäste",
+    "title": "4,9 von 5 bei Reisen mit Fahrer und Guide",
+    "error": "Bewertungen konnten nicht geladen werden.",
+    "empty": "Teilen Sie als Erste(r) Ihre Reise. <link>Reise planen</link>."
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "title": "Ein Auto mit Fahrer in Sri Lanka mieten",
+    "intro": "Sind Sie sich bei etwas noch unsicher? Schreiben Sie uns auf WhatsApp unter <phone>+94 76 3021 483</phone> – wir antworten in der Regel innerhalb einer Stunde.",
+    "cost": {
+      "q": "Was kostet ein Auto mit Fahrer in Sri Lanka?",
+      "a": "Die Fahrer legen ihre Preise selbst fest, daher sehen Sie eine Preisspanne. Limousinen beginnen in der Regel bei etwa $50 pro Tag, große Reise-Vans liegen bei etwa $95. Die meisten Tagespreise umfassen das Fahrzeug, den Kraftstoff, 120–150 km pro Tag inselweit sowie Verpflegung und Unterkunft des Fahrers, und jedes Inserat führt genau auf, was enthalten ist. Für einen Betrag, der auf Ihrer eigenen Route und Ihren Reisedaten basiert, nutzen Sie den Reisekostenrechner."
+    },
+    "free": {
+      "q": "Ist die Buchung kostenlos, und muss ich eine Anzahlung leisten?",
+      "a": "Die Plattform ist für Touristen vollständig kostenlos: Stöbern, Angebote, Chat und Buchung kosten Sie nichts. Es gibt weder eine Anzahlung noch eine Vorauszahlung. Sie bezahlen Ihren Fahrer direkt am ersten Tag Ihrer Reise."
+    },
+    "quotes": {
+      "q": "Wie erhalte ich Angebote für meine eigene Reiseroute?",
+      "a": "Veröffentlichen Sie Ihren Reiseplan mit Ihren Reisedaten, der Anzahl der Mitreisenden und den Orten, die Sie sehen möchten. Verfügbare Fahrer schicken Ihnen kostenlos Angebote. Sie können diese nebeneinander vergleichen, jedem Fahrer Fragen schreiben und verhandeln, bevor Sie sich festlegen."
+    },
+    "cancel": {
+      "q": "Was ist, wenn ich stornieren muss?",
+      "bullets": [
+        "Mehr als 2 Tage vor Ihrem Startdatum: kostenlose Stornierung, nichts zu bezahlen.",
+        "Innerhalb von 2 Tagen vor Ihrem Startdatum: 50 % des Gesamtbetrags gehen an den Fahrer.",
+        "Nach Beginn der Reise: 100 % für die bereits abgeschlossenen Tage plus 50 % der verbleibenden Tage."
+      ],
+      "outro": "Ihr Fahrer lehnt andere Buchungen ab, um Ihre Reisedaten freizuhalten. Schreiben Sie ihm daher, sobald sich Ihre Pläne ändern."
+    },
+    "licensed": {
+      "q": "Sind Ihre Fahrer lizenziert und versichert?",
+      "a": "Jeder Fahrer auf der Plattform ist bei der SLTDA registriert und hat eine gültige Versicherung. Führerschein- und Fahrzeugdokumente werden geprüft, bevor ein Profil online geht. Bewertungen stammen von Touristen, die tatsächlich mit diesem Fahrer gereist sind, und bleiben dauerhaft im Profil – gute wie schlechte. Lesen Sie also ein paar, bevor Sie sich entscheiden."
+    }
+  },
+  "cta": {
+    "eyebrow": "Auto mit Fahrer · Rundreisen in Sri Lanka",
+    "title": "Bereit, den passenden Fahrer für Ihre Reiseroute zu sichern?",
+    "body": "Teilen Sie uns Ihre Reisedaten, die Anzahl der Mitreisenden und Ihre Wünsche mit. Wir bringen Sie mit dem idealen Fahrzeug und Fahrer zusammen und halten Sie bis zu Ihrer Ankunft auf dem Laufenden.",
+    "quote": "Individuelles Angebot erhalten",
+    "call": "Anrufen: {phone}"
+  },
+  "card": {
+    "newGuide": "Neuer Guide",
+    "years": {
+      "one": "{count} Jahr",
+      "other": "{count} Jahre"
+    },
+    "sriLankaTrip": "Reise in Sri Lanka",
+    "quote": "Auf Anfrage",
+    "seats": {
+      "one": "{count} Sitzplatz",
+      "other": "{count} Sitzplätze"
+    },
+    "year": "Baujahr {year}",
+    "vehicleAlt": "Fahrzeug",
+    "featuredVehicle": "Empfohlenes Fahrzeug",
+    "vehicleFallback": "Komfortabel und bereit für Ausflüge in Sri Lanka, mit leistungsstarker Klimaanlage.",
+    "from": "AB",
+    "perDay": "/Tag",
+    "getQuote": "Angebot einholen",
+    "islandWide": "Inselweit",
+    "multidayTours": "Mehrtägige Touren",
+    "reviews": {
+      "one": "{count} Bewertung",
+      "other": "{count} Bewertungen"
+    },
+    "noReviews": "Noch keine Bewertungen",
+    "driverFallback": "Vertrauenswürdiger Chauffeur für individuelle Rundreisen auf ganz Sri Lanka.",
+    "avgDailyRate": "DURCHSCHN. TAGESPREIS",
+    "viewDriver": "Fahrer ansehen",
+    "readMore": "Weiterlesen",
+    "traveller": "Reisende(r)",
+    "reviewFallback": "Eine Fünf-Sterne-Reise mit Auto und Fahrer durch Sri Lanka.",
+    "tripPhoto": "Reisefoto von {name}"
+  }
+}

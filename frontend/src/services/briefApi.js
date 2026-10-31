@@ -1,3 +1,4 @@
+import { localizeServerMessage } from '../i18n/serverMessages.js';
 import { API_BASE_URL } from '../constants/api.js';
 import { getStoredToken, handleSessionExpired } from './authToken.js';
 
@@ -37,7 +38,7 @@ const parseError = async (response) => {
 const authHeaders = () => {
   const token = getStoredToken();
   if (!token) {
-    throw new Error('Please sign in to continue.');
+    throw new Error(localizeServerMessage('Please sign in to continue.'));
   }
   return {
     Authorization: `Bearer ${token}`,
@@ -61,7 +62,7 @@ const request = async (path, options = {}) => {
   try {
     response = await withTimeout(fetchPromise);
   } catch (error) {
-    throw new Error(error?.message || 'Network error');
+    throw new Error(localizeServerMessage(error?.message || 'Network error'));
   }
 
   if (!response.ok) {
@@ -69,7 +70,7 @@ const request = async (path, options = {}) => {
     if (response.status === 401) {
       handleSessionExpired(message);
     }
-    throw new Error(message);
+    throw new Error(localizeServerMessage(message));
   }
 
   return safeJson(response);
@@ -93,7 +94,7 @@ export const fetchOpenBriefs = () =>
 
 export const respondToBrief = (briefId, payload) => {
   if (!briefId) {
-    return Promise.reject(new Error('Brief identifier is required.'));
+    return Promise.reject(new Error(localizeServerMessage('Brief identifier is required.')));
   }
   return request(`/${encodeURIComponent(briefId)}/respond`, {
     method: 'POST',
@@ -111,7 +112,7 @@ export default {
 // Unauthenticated read of the public feature flags (see backend/routes/publicSettingsRoutes.js).
 export const fetchPublicSettings = async () => {
   const response = await fetch(`${API_BASE_URL}/settings/public`, { headers: { Accept: 'application/json' } });
-  if (!response.ok) throw new Error('Unable to load settings');
+  if (!response.ok) throw new Error(localizeServerMessage('Unable to load settings'));
   const data = await response.json();
   return data?.settings || {};
 };

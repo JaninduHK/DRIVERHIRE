@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from '../i18n/router.jsx';
+import { useI18n } from '../i18n/I18nProvider.jsx';
 import { CalendarDays, Car, Loader2, LogIn, Route } from 'lucide-react';
 import { fetchOfferInvite } from '../services/offerApi.js';
 import { redirectToSsoLogin } from '../services/authToken.js';
 import { OfferInclusionList } from '../components/OfferInclusions.jsx';
 
-const formatDateRange = (start, end) => {
+// English pages always showed British-style dates here ("5 Jan 2027").
+const formatDateRange = (start, end, intl = 'en-GB') => {
   if (!start || !end) return '';
   const opts = { day: 'numeric', month: 'short', year: 'numeric' };
   try {
-    const from = new Date(start).toLocaleDateString('en-GB', opts);
-    const to = new Date(end).toLocaleDateString('en-GB', opts);
+    const from = new Date(start).toLocaleDateString(intl, opts);
+    const to = new Date(end).toLocaleDateString(intl, opts);
     return from === to ? from : `${from} – ${to}`;
   } catch {
     return '';
@@ -27,10 +29,7 @@ const formatCurrency = (value, currency) => {
   }
 };
 
-const STATUS_NOTICE = {
-  accepted: 'You already accepted this offer — open your dashboard to see the booking.',
-  declined: 'This offer is no longer open.',
-};
+const STATUS_NOTICE = ['accepted', 'declined'];
 
 const Panel = ({ children }) => (
   <div className="mx-auto w-full max-w-[560px] px-4 py-10">
@@ -41,6 +40,7 @@ const Panel = ({ children }) => (
 );
 
 const OfferFromEmail = () => {
+  const { t, locale, intl, lp } = useI18n();
   const { token } = useParams();
   const [state, setState] = useState({ loading: true, invite: null, error: '' });
 
@@ -50,9 +50,9 @@ const OfferFromEmail = () => {
       const invite = await fetchOfferInvite(token);
       setState({ loading: false, invite, error: '' });
     } catch (error) {
-      setState({ loading: false, invite: null, error: error.message || 'This link could not be opened.' });
+      setState({ loading: false, invite: null, error: error.message || t('emailPages.linkError') });
     }
-  }, [token]);
+  }, [token, t]);
 
   useEffect(() => {
     load();
@@ -67,7 +67,7 @@ const OfferFromEmail = () => {
     return (
       <Panel>
         <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted">
-          <Loader2 className="h-4 w-4 animate-spin text-brand" /> Opening your offer…
+          <Loader2 className="h-4 w-4 animate-spin text-brand" /> {t('emailPages.offer.opening')}
         </div>
       </Panel>
     );
@@ -76,24 +76,24 @@ const OfferFromEmail = () => {
   if (state.error) {
     return (
       <Panel>
-        <h1 className="text-[20px] font-extrabold text-ink">We couldn&apos;t open this offer</h1>
+        <h1 className="text-[20px] font-extrabold text-ink">{t('emailPages.offer.errorTitle')}</h1>
         <p className="mt-2 text-[14px] leading-relaxed text-muted">{state.error}</p>
-        <a href="/" className="mt-5 inline-flex rounded-xl bg-brand px-5 py-3 text-[14px] font-bold text-white transition hover:bg-brand-dark">
-          Go to homepage
+        <a href={lp('/')} className="mt-5 inline-flex rounded-xl bg-brand px-5 py-3 text-[14px] font-bold text-white transition hover:bg-brand-dark">
+          {t('emailPages.goHome')}
         </a>
       </Panel>
     );
   }
 
   const { invite } = state;
-  const dates = formatDateRange(invite.startDate, invite.endDate);
+  const dates = formatDateRange(invite.startDate, invite.endDate, locale === 'en' ? 'en-GB' : intl);
   const price = formatCurrency(invite.totalPrice, invite.currency);
-  const notice = STATUS_NOTICE[invite.status];
+  const notice = STATUS_NOTICE.includes(invite.status) ? t(`emailPages.offer.status.${invite.status}`) : null;
 
   return (
     <Panel>
       <h1 className="text-[22px] font-extrabold leading-tight text-ink">
-        Trip offer from {invite.driverName}
+        {t('emailPages.offer.title', { name: invite.driverName })}
       </h1>
       {invite.vehicleModel ? (
         <p className="mt-1.5 text-[13.5px] text-muted-soft">{invite.vehicleModel}</p>
@@ -113,7 +113,7 @@ const OfferFromEmail = () => {
         {invite.totalKms ? (
           <div className="flex items-center gap-2.5 text-[14px] text-ink">
             <Route className="h-4 w-4 shrink-0 text-brand" />
-            <span>{invite.totalKms} km included</span>
+            <span>{t('emailPages.offer.kms', { km: invite.totalKms })}</span>
           </div>
         ) : null}
         {invite.vehicleModel ? (
@@ -140,10 +140,10 @@ const OfferFromEmail = () => {
         onClick={() => goToConversation(invite.conversationId)}
         className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand py-3.5 text-[15px] font-bold text-white transition hover:bg-brand-dark"
       >
-        <LogIn className="h-4 w-4" /> Log in to reply
+        <LogIn className="h-4 w-4" /> {t('emailPages.offer.login')}
       </button>
       <p className="mt-3 text-center text-[12px] text-muted-soft">
-        You&apos;ll be taken straight to this conversation once you&apos;re signed in.
+        {t('emailPages.offer.loginHelp')}
       </p>
     </Panel>
   );

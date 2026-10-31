@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import ImageLightbox from './ImageLightbox.jsx';
+import { useI18n } from '../i18n/I18nProvider.jsx';
 
 /**
  * Vehicle photos shown inside a chat offer bubble, as a row of small squares.
@@ -10,7 +11,9 @@ import ImageLightbox from './ImageLightbox.jsx';
  * fits without paging). Renders nothing when the vehicle has no photos, so older
  * offers keep their original layout.
  */
-const OfferVehicleImages = ({ images, alt = 'Vehicle', className = '' }) => {
+const OfferVehicleImages = ({ images, alt: altProp, className = '' }) => {
+  const { t } = useI18n();
+  const alt = altProp || t('chat.photos.vehicle');
   // Track failures per URL so one dead image hides itself instead of leaving a
   // broken-image icon in the row — and so the lightbox never opens on it.
   const [failed, setFailed] = useState(() => new Set());
@@ -30,12 +33,12 @@ const OfferVehicleImages = ({ images, alt = 'Vehicle', className = '' }) => {
             key={url}
             type="button"
             onClick={() => setOpenIndex(index)}
-            aria-label={list.length > 1 ? `View ${alt} photo ${index + 1}` : `View ${alt} photo`}
+            aria-label={list.length > 1 ? t('chat.photos.viewNumbered', { name: alt, n: index + 1 }) : t('chat.photos.view', { name: alt })}
             className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-[10px] border border-[#e8edf0] bg-canvas transition hover:border-brand focus:border-brand focus:outline-none"
           >
             <img
               src={url}
-              alt={list.length > 1 ? `${alt} photo ${index + 1}` : alt}
+              alt={list.length > 1 ? t('chat.photos.numbered', { name: alt, n: index + 1 }) : alt}
               loading="lazy"
               onError={() => setFailed((prev) => new Set(prev).add(url))}
               className="h-full w-full object-cover"

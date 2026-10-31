@@ -1,0 +1,123 @@
+{
+  "perDay": "/giorno",
+  "minDrive": "~{count} min di guida",
+  "hrsDrive": "~{count} ore di guida",
+  "days": {
+    "one": "{count} giorno",
+    "other": "{count} giorni"
+  },
+  "nights": {
+    "one": "{count} notte",
+    "other": "{count} notti"
+  },
+  "passengers": {
+    "one": "{count} passeggero",
+    "other": "{count} passeggeri"
+  },
+  "passengersWord": "passeggeri",
+  "step": "Passaggio {n}",
+  "summary": {
+    "estimated": "Costo stimato del viaggio",
+    "likelyRange": "Fascia probabile",
+    "totalDistance": "Distanza totale",
+    "buffer": "Tieni da parte circa {amount} come margine di flessibilità per chilometri extra o upgrade.",
+    "request": "Richiedi preventivi gratuiti agli autisti",
+    "noPayment": "Nessun pagamento ora. Gli autisti rispondono con un prezzo fisso per questo esatto itinerario."
+  },
+  "hero": {
+    "badge": "Calcolatore del costo del viaggio",
+    "title": "Costruisci il tuo itinerario in Sri Lanka e scopri il costo reale di un'auto con autista",
+    "lead": "Aggiungi le tue tappe giorno per giorno. Calcoliamo la distanza stradale tra una tappa e l'altra e stimiamo il prezzo del viaggio con le tariffe attuali degli autisti, non con una media di settore fissa.",
+    "liveFleet": "Flotta attiva",
+    "approvedVehicles": "Veicoli di autisti approvati",
+    "medianRate": "Tariffa giornaliera mediana",
+    "forPassengers": {
+      "one": "Per {count} passeggero",
+      "other": "Per {count} passeggeri"
+    },
+    "forAny": "Per qualsiasi numero di passeggeri",
+    "typicalRange": "Fascia giornaliera tipica",
+    "middle50": "Il 50% centrale dei preventivi",
+    "thisItinerary": "Questo itinerario",
+    "stops": {
+      "one": "{count} tappa",
+      "other": "{count} tappe"
+    }
+  },
+  "who": {
+    "title": "Chi viaggia",
+    "startDate": "Data di inizio",
+    "passengers": "Passeggeri"
+  },
+  "itinerary": {
+    "title": "Il tuo itinerario",
+    "lead": "Scegli una destinazione e quante notti ti fermi. Le distanze si aggiornano man mano.",
+    "arrive": "Arrivo",
+    "removeStop": "Rimuovi tappa",
+    "destination": "Destinazione",
+    "searchPlaceholder": "Cerca destinazioni…",
+    "noMatch": "Nessuna destinazione corrisponde alla ricerca.",
+    "nightsHere": "Notti qui",
+    "nightsLabel": "Notti",
+    "fewerNights": "Meno notti",
+    "moreNights": "Più notti",
+    "sameDay": "In giornata",
+    "addStop": "Aggiungi un'altra tappa",
+    "startOver": "Ricomincia"
+  },
+  "classes": {
+    "title": "Categorie di veicoli consigliate per questo itinerario",
+    "leadCount": "Prezzi basati su annunci attivi che oggi possono ospitare {count} persone, non su una tariffa base ipotetica.",
+    "leadGroup": "Prezzi basati su annunci attivi che oggi possono ospitare il tuo gruppo, non su una tariffa base ipotetica.",
+    "noneCount": "Al momento nessun veicolo attivo è adatto a {count} passeggeri. Prova con un numero inferiore di passeggeri oppure <link>richiedi direttamente i preventivi</link>: a volte gli autisti hanno veicoli non ancora presenti negli annunci pubblici.",
+    "noneAny": "Al momento nessun veicolo attivo è adatto a così tanti passeggeri. Prova con un numero inferiore di passeggeri oppure <link>richiedi direttamente i preventivi</link>: a volte gli autisti hanno veicoli non ancora presenti negli annunci pubblici.",
+    "example": "es. {model}",
+    "bestMatch": "La scelta migliore",
+    "imageAlt": "{model}: esempio di {class} presente su carwithdriver.lk",
+    "listed": {
+      "one": "{count} annuncio",
+      "other": "{count} annunci"
+    },
+    "perDayOver": "≈ {amount}/giorno per {days}",
+    "getQuotes": "Richiedi preventivi"
+  },
+  "faq": {
+    "title": "Domande frequenti",
+    "summary": "I viaggiatori con un gruppo di queste dimensioni pagano per lo più tra <b>{low} e {high} al giorno</b> per un autista privato e un veicolo, a seconda delle dimensioni dell'auto. La tariffa giornaliera copre di norma l'autista, il carburante per una giornata tipica di 120–150 km e l'alloggio e i pasti dell'autista. Biglietti d'ingresso, jeep per i safari e pedaggi autostradali si pagano di solito a parte.",
+    "popularRoutes": "Percorsi popolari che i viaggiatori calcolano qui",
+    "fuel": {
+      "q": "Il carburante è incluso nella tariffa giornaliera?",
+      "a": "Per una normale giornata di tour di circa 120–150 km, sì, nella maggior parte degli annunci: controlla il riquadro «Cosa è incluso» per vedere quanti veicoli adatti al tuo itinerario lo includono. Le lunghe giornate di trasferimento a volte prevedono invece un supplemento al chilometro."
+    },
+    "hotel": {
+      "q": "Devo pagare l'hotel e i pasti dell'autista?",
+      "a": "La maggior parte degli autisti organizza da sé alloggio e pasti nei viaggi di più giorni, e di solito questi costi sono compresi nella tariffa giornaliera anziché fatturati a parte; anche in questo caso, il riquadro delle inclusioni riflette annunci reali per la tua ricerca attuale."
+    },
+    "notIncluded": {
+      "q": "Cosa di solito non è incluso?",
+      "a": "I biglietti d'ingresso a siti come Sigiriya o il Tempio del Dente, il noleggio delle jeep per i safari nei parchi nazionali e i pedaggi autostradali si pagano di solito separatamente dalla tariffa giornaliera dell'autista."
+    },
+    "accuracy": {
+      "q": "Quanto è precisa questa stima?",
+      "a": "Si basa sulle tariffe attuali degli autisti approvati su carwithdriver.lk e sulle reali distanze stradali tra le tue tappe, non su una media di settore fissa. Il prezzo finale arriva dagli autisti stessi quando richiedi i preventivi per il tuo esatto itinerario."
+    },
+    "change": {
+      "q": "Posso modificare l'itinerario dopo la prenotazione?",
+      "a": "Le piccole modifiche di solito non sono un problema e si concordano direttamente con il tuo autista. Se aggiungi giorni o cambi molto il percorso, il tuo autista ti invia un'offerta aggiornata prima dell'inizio del viaggio."
+    }
+  },
+  "legs": {
+    "title": "Distanza per tratta",
+    "empty": "Aggiungi una seconda tappa per vedere le distanze delle tratte.",
+    "paceOk": "Ritmo comodo: circa {km} km al giorno, con tempo per le soste.",
+    "paceFast": "Sono circa {km} km al giorno. Valuta di aggiungere una notte da qualche parte, così le giornate di guida restano piacevoli."
+  },
+  "included": {
+    "title": "Cosa è incluso in questa flotta",
+    "empty": "Imposta un numero di passeggeri con almeno un veicolo adatto per vedere le percentuali reali di inclusione.",
+    "rate": {
+      "one": "<b>{label}</b>: incluso nel {percent}% del {count} veicolo adatto",
+      "other": "<b>{label}</b>: incluso nel {percent}% dei {count} veicoli adatti"
+    }
+  }
+}

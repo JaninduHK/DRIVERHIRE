@@ -1,7 +1,7 @@
 import { clientOnly } from '../lib/clientRoute.jsx';
-import { noindexMeta } from '../lib/seo.js';
+import { metaLocale, noindexMeta } from '../lib/seo.js';
 import Checkout from '../../src/pages/Checkout.jsx';
 
-export const meta = () => noindexMeta({ title: "Checkout | Car with Driver LK" });
+export const meta = ({ location }) => noindexMeta({ title: metaLocale(location).t('meta.private.checkout') });
 
 export default clientOnly(Checkout);

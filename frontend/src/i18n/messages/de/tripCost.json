@@ -1,0 +1,123 @@
+{
+  "perDay": "/Tag",
+  "minDrive": "~{count} Min. Fahrt",
+  "hrsDrive": "~{count} Std. Fahrt",
+  "days": {
+    "one": "{count} Tag",
+    "other": "{count} Tage"
+  },
+  "nights": {
+    "one": "{count} Nacht",
+    "other": "{count} Nächte"
+  },
+  "passengers": {
+    "one": "{count} Mitreisende(r)",
+    "other": "{count} Mitreisende"
+  },
+  "passengersWord": "Mitreisende",
+  "step": "Schritt {n}",
+  "summary": {
+    "estimated": "Geschätzte Reisekosten",
+    "likelyRange": "Wahrscheinliche Spanne",
+    "totalDistance": "Gesamtstrecke",
+    "buffer": "Legen Sie etwa {amount} als flexiblen Puffer für zusätzliche Kilometer oder Upgrades beiseite.",
+    "request": "Kostenlose Angebote von Fahrern anfordern",
+    "noPayment": "Jetzt keine Zahlung. Die Fahrer antworten mit einem Festpreis für genau diese Reiseroute."
+  },
+  "hero": {
+    "badge": "Reisekostenrechner",
+    "title": "Stellen Sie Ihre Sri-Lanka-Reiseroute zusammen und sehen Sie die echten Kosten für ein Auto mit Fahrer",
+    "lead": "Fügen Sie Ihre Stationen Tag für Tag hinzu. Wir berechnen die Fahrstrecke zwischen ihnen und kalkulieren die Reise mit den heutigen aktuellen Preisen der Fahrer – nicht mit einem pauschalen Branchendurchschnitt.",
+    "liveFleet": "Aktuelle Flotte",
+    "approvedVehicles": "Fahrzeuge freigegebener Fahrer",
+    "medianRate": "Mittlerer Tagespreis",
+    "forPassengers": {
+      "one": "Für {count} Mitreisende(n)",
+      "other": "Für {count} Mitreisende"
+    },
+    "forAny": "Für beliebig viele Mitreisende",
+    "typicalRange": "Typische Tagesspanne",
+    "middle50": "Mittlere 50 % der Angebote",
+    "thisItinerary": "Diese Reiseroute",
+    "stops": {
+      "one": "{count} Station",
+      "other": "{count} Stationen"
+    }
+  },
+  "who": {
+    "title": "Wer reist mit",
+    "startDate": "Startdatum",
+    "passengers": "Mitreisende"
+  },
+  "itinerary": {
+    "title": "Ihre Reiseroute",
+    "lead": "Wählen Sie ein Reiseziel und wie viele Nächte Sie bleiben. Die Entfernungen werden dabei laufend aktualisiert.",
+    "arrive": "Ankunft",
+    "removeStop": "Station entfernen",
+    "destination": "Reiseziel",
+    "searchPlaceholder": "Reiseziele suchen…",
+    "noMatch": "Kein Reiseziel passt zu dieser Suche.",
+    "nightsHere": "Nächte hier",
+    "nightsLabel": "Nächte",
+    "fewerNights": "Weniger Nächte",
+    "moreNights": "Mehr Nächte",
+    "sameDay": "Am selben Tag",
+    "addStop": "Weitere Station hinzufügen",
+    "startOver": "Neu beginnen"
+  },
+  "classes": {
+    "title": "Empfohlene Fahrzeugklassen für diese Reiseroute",
+    "leadCount": "Berechnet aus aktuellen Inseraten mit Platz für {count} Personen – nicht aus einem angenommenen Grundpreis.",
+    "leadGroup": "Berechnet aus aktuellen Inseraten mit Platz für Ihre Gruppe – nicht aus einem angenommenen Grundpreis.",
+    "noneCount": "Derzeit passt kein aktuelles Fahrzeug zu {count} Mitreisenden. Versuchen Sie eine geringere Anzahl oder <link>fordern Sie direkt Angebote an</link> – Fahrer haben manchmal Fahrzeuge, die noch nicht in den öffentlichen Inseraten stehen.",
+    "noneAny": "Derzeit passt kein aktuelles Fahrzeug zu so vielen Mitreisenden. Versuchen Sie eine geringere Anzahl oder <link>fordern Sie direkt Angebote an</link> – Fahrer haben manchmal Fahrzeuge, die noch nicht in den öffentlichen Inseraten stehen.",
+    "example": "z. B. {model}",
+    "bestMatch": "Beste Wahl",
+    "imageAlt": "{model} – Beispiel für {class} auf carwithdriver.lk",
+    "listed": {
+      "one": "{count} Inserat",
+      "other": "{count} Inserate"
+    },
+    "perDayOver": "≈ {amount}/Tag über {days}",
+    "getQuotes": "Angebote einholen"
+  },
+  "faq": {
+    "title": "Häufig gestellte Fragen",
+    "summary": "Reisende mit dieser Gruppengröße zahlen meist zwischen <b>{low} und {high} pro Tag</b> für einen privaten Fahrer und ein Fahrzeug, je nach Größe des Autos. Der Tagespreis umfasst normalerweise den Fahrer, Kraftstoff für einen typischen Tag mit 120–150 km sowie Unterkunft und Verpflegung des Fahrers. Eintrittskarten, Safari-Jeeps und Autobahnmaut werden in der Regel separat bezahlt.",
+    "popularRoutes": "Beliebte Routen, die Reisende hier berechnen",
+    "fuel": {
+      "q": "Ist Kraftstoff im Tagespreis enthalten?",
+      "a": "Bei einem normalen Reisetag von etwa 120–150 km ja, bei den meisten Inseraten – im Bereich „Was enthalten ist“ sehen Sie, wie viele Fahrzeuge, die zu Ihrer Reiseroute passen, ihn enthalten. Bei langen Transfertagen wird stattdessen manchmal ein Aufpreis pro Kilometer berechnet."
+    },
+    "hotel": {
+      "q": "Muss ich für Hotel und Verpflegung des Fahrers bezahlen?",
+      "a": "Die meisten Fahrer organisieren ihre Unterkunft und Verpflegung bei mehrtägigen Reisen selbst, und diese Kosten sind üblicherweise im Tagespreis enthalten, statt separat berechnet zu werden – auch hier zeigt der Bereich zu den Inklusivleistungen echte Inserate für Ihre aktuelle Suche."
+    },
+    "notIncluded": {
+      "q": "Was ist normalerweise nicht enthalten?",
+      "a": "Eintrittskarten für Sehenswürdigkeiten wie Sigiriya oder den Zahntempel, die Miete von Safari-Jeeps in Nationalparks und Autobahnmaut werden in der Regel getrennt vom Tagespreis des Fahrers bezahlt."
+    },
+    "accuracy": {
+      "q": "Wie genau ist diese Schätzung?",
+      "a": "Sie basiert auf den aktuellen Preisen freigegebener Fahrer auf carwithdriver.lk und den echten Straßenentfernungen zwischen Ihren Stationen – nicht auf einem pauschalen Branchendurchschnitt. Die endgültigen Preise kommen von den Fahrern selbst, sobald Sie Angebote für Ihre genaue Reiseroute anfordern."
+    },
+    "change": {
+      "q": "Kann ich die Reiseroute nach der Buchung ändern?",
+      "a": "Kleine Änderungen sind normalerweise kein Problem und werden direkt mit Ihrem Fahrer vereinbart. Wenn Sie Tage hinzufügen oder die Route deutlich ändern, schickt Ihnen Ihr Fahrer vor Reisebeginn ein aktualisiertes Angebot."
+    }
+  },
+  "legs": {
+    "title": "Entfernung je Etappe",
+    "empty": "Fügen Sie eine zweite Station hinzu, um die Entfernungen der Etappen zu sehen.",
+    "paceOk": "Angenehmes Tempo – etwa {km} km pro Tag, mit Zeit für Stopps.",
+    "paceFast": "Das sind etwa {km} km pro Tag. Erwägen Sie, irgendwo eine Nacht hinzuzufügen, damit die Fahrtage angenehm bleiben."
+  },
+  "included": {
+    "title": "Was bei dieser Flotte enthalten ist",
+    "empty": "Geben Sie eine Personenzahl an, für die es mindestens ein passendes Fahrzeug gibt, um echte Inklusivquoten zu sehen.",
+    "rate": {
+      "one": "<b>{label}</b> – enthalten bei {percent} % des {count} passenden Fahrzeugs",
+      "other": "<b>{label}</b> – enthalten bei {percent} % der {count} passenden Fahrzeuge"
+    }
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "eyebrow": "Annuaire des chauffeurs",
+  "title": "Trouvez le chauffeur idéal",
+  "searchPlaceholder": "Nom, service ou destination",
+  "loadError": "Impossible de charger les chauffeurs pour le moment.",
+  "loading": "Chargement…",
+  "loadingDrivers": "Chargement des chauffeurs…",
+  "count": {
+    "one": "{count} chauffeur approuvé",
+    "other": "{count} chauffeurs approuvés"
+  },
+  "clearFilters": "Effacer les filtres",
+  "clear": "Effacer",
+  "tryAgain": "Réessayer",
+  "empty": "Aucun chauffeur ne correspond à votre recherche. Essayez un autre mot-clé ou effacez les filtres.",
+  "perks": {
+    "englishSpeaking": "Parle anglais",
+    "airportMeetGreet": "Accueil à l'aéroport",
+    "fuelIncluded": "Carburant inclus",
+    "mealsCovered": "Repas couverts",
+    "largeLuggage": "Gros bagages"
+  },
+  "options": {
+    "any": "Tous",
+    "under50": "Moins de $50",
+    "years5": "5 ans et +",
+    "years10": "10 ans et +",
+    "chauffeurGuide": "Chauffeur-guide",
+    "recommended": "Recommandés",
+    "highestRated": "Les mieux notés",
+    "mostExperienced": "Les plus expérimentés"
+  },
+  "chips": {
+    "perks": "Services",
+    "perksCount": {
+      "one": "{count} service",
+      "other": "{count} services"
+    },
+    "price": "Prix",
+    "reviews": "Avis"
+  },
+  "card": {
+    "newGuide": "Nouveau guide",
+    "years": {
+      "one": "{count} an",
+      "other": "{count} ans"
+    },
+    "sriLanka": "Sri Lanka",
+    "quote": "Sur devis",
+    "multidayTours": "Circuits de plusieurs jours",
+    "reviews": {
+      "one": "{count} avis",
+      "other": "{count} avis"
+    },
+    "noReviews": "Pas encore d'avis",
+    "fallback": "Un chauffeur de confiance pour des circuits sur mesure dans tout le Sri Lanka.",
+    "avgDailyRate": "TARIF JOURNALIER MOYEN",
+    "perDay": "/jour",
+    "viewDriver": "Voir le chauffeur"
+  },
+  "filters": {
+    "title": "Filtres",
+    "clearAll": "Tout effacer",
+    "whatMatters": "Ce qui compte pour vous",
+    "verifiedLicence": "Licence vérifiée",
+    "avgPrice": "Prix moyen par jour",
+    "minRating": "Note minimale",
+    "experience": "Expérience",
+    "sortBy": "Trier par",
+    "reset": "Réinitialiser",
+    "show": {
+      "one": "Afficher {count} chauffeur",
+      "other": "Afficher {count} chauffeurs"
+    }
+  }
+}

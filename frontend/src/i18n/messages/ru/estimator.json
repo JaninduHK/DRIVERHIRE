@@ -1,0 +1,32 @@
+{
+  "buckets": {
+    "sedan": {
+      "label": "Седан",
+      "seats": "1-3 места"
+    },
+    "mpv": {
+      "label": "Минивэн",
+      "seats": "4-6 мест"
+    },
+    "van": {
+      "label": "Микроавтобус",
+      "seats": "7-10 мест"
+    },
+    "coach": {
+      "label": "Мини-автобус",
+      "seats": "11+ мест"
+    },
+    "flex": {
+      "label": "Гибко / не указано",
+      "seats": ""
+    }
+  },
+  "inclusions": {
+    "fuelAndInsurance": "Топливо и страховка",
+    "driverMealsAndAccommodation": "Питание и проживание водителя",
+    "meetAndGreetAtAirport": "Встреча в аэропорту",
+    "englishSpeakingDriver": "Англоговорящий водитель",
+    "parkingFeesAndTolls": "Парковка и платные дороги",
+    "allTaxes": "Все налоги"
+  }
+}

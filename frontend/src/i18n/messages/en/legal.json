@@ -1,0 +1,141 @@
+{
+  "englishPrevails": "This is a translation provided for convenience. If it differs from the <link>English version</link>, the English version applies.",
+  "terms": {
+    "eyebrow": "Terms & Conditions",
+    "title": "Your agreement with Car With Driver LK",
+    "intro": "Effective date: {date}",
+    "sections": [
+      {
+        "title": "1. Using our platform",
+        "paragraphs": [
+          "By creating an account or booking a driver, you agree to these Terms. You must be at least 18 and provide accurate information. We may suspend accounts for fraud, abuse, unsafe behaviour, or violating these Terms."
+        ]
+      },
+      {
+        "title": "2. Bookings and payments",
+        "items": [
+          "Pricing: Drivers set rates. Platform-wide discounts reduce the payable total shown at checkout.",
+          "Payment: Travellers pay the driver directly unless specified otherwise. Commission is deducted from driver earnings.",
+          "Changes/cancellations: Follow the instructions in your booking emails or message the driver. Some trips may be non-refundable after start.",
+          "Conflicts: Contact support if a driver or traveller needs to amend or resolve an issue."
+        ]
+      },
+      {
+        "title": "3. Driver responsibilities",
+        "items": [
+          "Maintain valid licences, insurance, and roadworthy vehicles.",
+          "Keep profile, availability, and pricing accurate; reply promptly to travellers.",
+          "Honor accepted bookings and communicate early if emergencies arise."
+        ]
+      },
+      {
+        "title": "4. Traveller responsibilities",
+        "items": [
+          "Provide accurate trip details, pickup/drop points, and flight times if applicable.",
+          "Treat drivers respectfully and follow local laws and safety instructions.",
+          "Pay the agreed amount to the driver on time, factoring any discounts shown during checkout."
+        ]
+      },
+      {
+        "title": "5. Safety and conduct",
+        "paragraphs": [
+          "We may remove users for harassment, discrimination, dangerous driving, fraud, or misuse of the platform. Report concerns to support@carwithdriver.lk with trip details."
+        ]
+      },
+      {
+        "title": "6. Content and reviews",
+        "paragraphs": [
+          "Reviews must be truthful and respectful. We may moderate or remove content that is abusive, misleading, or violates laws or these Terms."
+        ]
+      },
+      {
+        "title": "7. Liability",
+        "paragraphs": [
+          "Car With Driver LK connects travellers and drivers. We are not the employer of drivers nor the operator of vehicles. To the fullest extent permitted by law, we are not liable for indirect or incidental damages arising from trips or platform use."
+        ]
+      },
+      {
+        "title": "8. Changes to terms",
+        "paragraphs": [
+          "We may update these Terms for legal, security, or product reasons. Continued use after updates means you accept the new Terms. We will note the effective date above."
+        ]
+      },
+      {
+        "title": "9. Contact",
+        "paragraphs": [
+          "Questions about these Terms? Email <email>hello@carwithdriver.lk</email> or call +94 76 302 1483."
+        ]
+      }
+    ]
+  },
+  "privacy": {
+    "eyebrow": "Privacy Policy",
+    "title": "How Car With Driver LK protects your data",
+    "intro": "Effective date: {date}. We explain what we collect, why we collect it, and the controls you have.",
+    "sections": [
+      {
+        "title": "Information we collect",
+        "items": [
+          "Account details: name, email, phone, and password (hashed).",
+          "Driver profile: description, vehicle info, live location label/coordinates (if shared), and uploaded images.",
+          "Booking data: trip dates, start/end points, flight details, traveller messages, and payment notes.",
+          "Usage data: device/browser info, pages viewed, and analytics events to improve reliability."
+        ]
+      },
+      {
+        "title": "How we use your information",
+        "items": [
+          "To create and manage traveller, driver, and admin accounts.",
+          "To process bookings, quotes, messages, and support requests.",
+          "To verify drivers, publish vehicles, and display live map pins when drivers opt-in.",
+          "To send transactional emails (verification, booking updates, approvals) and critical service notices.",
+          "To improve safety, detect fraud/abuse, and comply with legal obligations."
+        ]
+      },
+      {
+        "title": "Sharing and disclosures",
+        "items": [
+          "With drivers and travellers involved in a booking or message thread.",
+          "With service providers (hosting, email, analytics, payment gateways) bound by confidentiality.",
+          "When required by law, to protect safety, or to enforce our Terms & Conditions.",
+          "We do not sell personal data."
+        ]
+      },
+      {
+        "title": "Data retention and security",
+        "items": [
+          "Passwords are hashed; uploads are stored securely with access controls.",
+          "We keep data for as long as needed to provide the service and meet legal requirements, then delete or anonymize it.",
+          "Access to admin tools is restricted and logged."
+        ]
+      },
+      {
+        "title": "Your choices",
+        "items": [
+          "Update or delete your profile information inside your account or by contacting support.",
+          "Drivers can clear live location at any time from the profile page.",
+          "Unsubscribe from marketing (if enabled) via the email footer; transactional emails will still be sent.",
+          "Request access, correction, or deletion by emailing support@carwithdriver.lk."
+        ]
+      },
+      {
+        "title": "Children",
+        "paragraphs": [
+          "Our services are not directed to children under 16. If we learn we collected such data, we will delete it."
+        ]
+      },
+      {
+        "title": "Changes to this policy",
+        "paragraphs": [
+          "We may update this policy for clarity or compliance. We will post updates here and adjust the effective date."
+        ]
+      },
+      {
+        "title": "Contact us",
+        "paragraphs": [
+          "Email <email>hello@carwithdriver.lk</email> or call +94 76 302 1483 for privacy questions or requests."
+        ]
+      }
+    ]
+  }
+}

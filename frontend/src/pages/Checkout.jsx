@@ -1,5 +1,7 @@
+import { localizeServerMessage } from '../i18n/serverMessages.js';
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from '../i18n/router.jsx';
+import { Trans, useI18n } from '../i18n/I18nProvider.jsx';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -18,13 +20,18 @@ import { fetchVehicleDetails, checkVehicleAvailability, createVehicleBooking } f
 import { fetchOffer } from '../services/chatApi.js';
 import { OfferInclusionList } from '../components/OfferInclusions.jsx';
 
+// The English label is what the driver receives in the booking notes; the
+// traveller sees checkout.extras.<key>.
 const EXTRAS = [
-  'Child seat',
-  'Extra luggage space',
-  'English-speaking guide',
-  'Wheelchair access',
-  'Airport meet & greet',
+  { key: 'childSeat', label: 'Child seat' },
+  { key: 'luggage', label: 'Extra luggage space' },
+  { key: 'guide', label: 'English-speaking guide' },
+  { key: 'wheelchair', label: 'Wheelchair access' },
+  { key: 'meetGreet', label: 'Airport meet & greet' },
 ];
+
+// Dates follow the page language; set once per render (fixed per page load).
+let DATE_LOCALE = 'en-US';
 
 // Matches Booking.specialRequests's maxlength in backend/models/Booking.js. Selected
 // extras get prepended to whatever's typed here before submit, so the real limit on
@@ -58,14 +65,14 @@ const formatDateLabel = (value) => {
   if (Number.isNaN(date.getTime())) {
     return null;
   }
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString(DATE_LOCALE, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   });
 };
 
-const formatDateRange = (start, end) => {
+const formatDateRange = (start, end, t) => {
   const startLabel = formatDateLabel(start);
   const endLabel = formatDateLabel(end);
   if (!startLabel || !endLabel) {
@@ -74,7 +81,7 @@ const formatDateRange = (start, end) => {
   if (startLabel === endLabel) {
     return startLabel;
   }
-  return `${startLabel} to ${endLabel}`;
+  return t('checkout.dateRange', { start: startLabel, end: endLabel });
 };
 
 const toDateInputValue = (value) => {
@@ -102,6 +109,8 @@ const calculateTripDays = (start, end) => {
 };
 
 const Checkout = () => {
+  const { t, intl } = useI18n();
+  DATE_LOCALE = intl;
   const { vehicleId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -140,7 +149,7 @@ const Checkout = () => {
   // own notes — computed once here so the on-screen counter and the submit guard can't
   // drift apart from what's really submitted.
   const combinedNotes = useMemo(() => {
-    const chosenExtras = EXTRAS.filter((label) => selectedExtras[label]);
+    const chosenExtras = EXTRAS.filter(({ label }) => selectedExtras[label]).map(({ label }) => label);
     return [
       chosenExtras.length ? `Requested extras: ${chosenExtras.join(', ')}` : '',
       formState.specialRequests.trim(),
@@ -188,7 +197,7 @@ const Checkout = () => {
       setVehicleState({
         vehicle: null,
         loading: false,
-        error: 'Vehicle identifier is missing. Return to the catalog and try again.',
+        error: t('checkout.errors.missingId'),
       });
       return;
     }
@@ -209,7 +218,7 @@ const Checkout = () => {
           setVehicleState({
             vehicle: null,
             loading: false,
-            error: 'Vehicle not found.',
+            error: t('checkout.errors.notFound'),
           });
           return;
         }
@@ -226,14 +235,14 @@ const Checkout = () => {
         setVehicleState({
           vehicle: null,
           loading: false,
-          error: error?.message || 'Unable to load vehicle details.',
+          error: error?.message || t('checkout.errors.loadVehicle'),
         });
       });
 
     return () => {
       cancelled = true;
     };
-  }, [vehicleId]);
+  }, [vehicleId, t]);
 
   useEffect(() => {
     if (!queryParams.offerId) {
@@ -260,7 +269,7 @@ const Checkout = () => {
         if (!offer) {
           setOfferState({
             loading: false,
-            error: 'Offer details were not found. Please request a new offer from your driver.',
+            error: t('checkout.errors.offerNotFound'),
             offer: null,
           });
           return;
@@ -270,8 +279,7 @@ const Checkout = () => {
         if (vehicleId && offerVehicleId && offerVehicleId !== vehicleId) {
           setOfferState({
             loading: false,
-            error:
-              'This offer belongs to a different vehicle. Open checkout from the original conversation to continue.',
+            error: t('checkout.errors.offerOtherVehicle'),
             offer: null,
           });
           return;
@@ -288,7 +296,7 @@ const Checkout = () => {
         }
         setOfferState({
           loading: false,
-          error: error?.message || 'Unable to load offer details.',
+          error: error?.message || t('checkout.errors.loadOffer'),
           offer: null,
         });
       });
@@ -296,7 +304,7 @@ const Checkout = () => {
     return () => {
       cancelled = true;
     };
-  }, [queryParams.offerId, vehicleId]);
+  }, [queryParams.offerId, vehicleId, t]);
 
   useEffect(() => {
     if (!vehicleId) {
@@ -314,14 +322,14 @@ const Checkout = () => {
           quote: null,
           error:
             offerState.error ||
-            'This offer does not include valid travel dates. Request a fresh offer from your driver.',
+            t('checkout.errors.offerNoDates'),
         });
       } else {
         setAvailabilityState({
           loading: false,
           available: false,
           quote: null,
-          error: 'Select your travel dates from the vehicle page to continue.',
+          error: t('checkout.errors.selectDates'),
         });
       }
       return;
@@ -357,7 +365,7 @@ const Checkout = () => {
             error:
               typeof response?.reason === 'string' && response.reason.trim()
                 ? response.reason
-                : 'This vehicle is not available for the selected dates.',
+                : t('checkout.errors.notAvailable'),
           });
         }
       })
@@ -369,14 +377,14 @@ const Checkout = () => {
           loading: false,
           available: false,
           quote: null,
-          error: error?.message || 'Unable to verify availability right now.',
+          error: error?.message || t('checkout.errors.availability'),
         });
       });
 
     return () => {
       cancelled = true;
     };
-  }, [vehicleId, bookingDates.start, bookingDates.end, hasDates, queryParams.offerId, offerState.loading, offerState.error]);
+  }, [vehicleId, bookingDates.start, bookingDates.end, hasDates, queryParams.offerId, offerState.loading, offerState.error, t]);
 
   const handleInputChange = (field) => (event) => {
     const value = event.target.value;
@@ -399,7 +407,7 @@ const Checkout = () => {
       setBookingFeedback({
         success: false,
         message: '',
-        error: 'Select your travel dates before confirming the booking.',
+        error: t('checkout.errors.datesBeforeConfirm'),
       });
       return;
     }
@@ -412,7 +420,7 @@ const Checkout = () => {
       setBookingFeedback({
         success: false,
         message: '',
-        error: 'Full name, email, and phone number are required.',
+        error: t('checkout.errors.required'),
       });
       return;
     }
@@ -421,7 +429,7 @@ const Checkout = () => {
       setBookingFeedback({
         success: false,
         message: '',
-        error: 'These dates are no longer available. Please pick a different range.',
+        error: t('checkout.errors.noLongerAvailable'),
       });
       return;
     }
@@ -430,7 +438,7 @@ const Checkout = () => {
       setBookingFeedback({
         success: false,
         message: '',
-        error: `Your notes (including any selected extras) must be ${SPECIAL_REQUESTS_MAX} characters or fewer — currently ${combinedNotes.length}.`,
+        error: t('checkout.errors.notesTooLong', { max: SPECIAL_REQUESTS_MAX, current: combinedNotes.length }),
       });
       return;
     }
@@ -465,8 +473,8 @@ const Checkout = () => {
         setBookingResult(data.booking || null);
         const successMessage =
           typeof data?.message === 'string' && data.message.trim()
-            ? data.message
-            : 'Your booking has been confirmed.';
+            ? localizeServerMessage(data.message)
+            : t('checkout.confirmed');
         setBookingFeedback({
           success: true,
           message: successMessage,
@@ -475,7 +483,7 @@ const Checkout = () => {
         toast.success(successMessage);
       })
       .catch((error) => {
-        const message = error?.message || 'Unable to confirm booking right now.';
+        const message = error?.message || t('checkout.errors.confirm');
         setBookingFeedback({
           success: false,
           message: '',
@@ -493,8 +501,8 @@ const Checkout = () => {
     availabilityState;
 
   const coverImage = Array.isArray(vehicle?.images) ? vehicle.images[0] : null;
-  const vehicleModel = vehicle?.model || 'Selected vehicle';
-  const driverName = vehicle?.driver?.name || 'Your driver';
+  const vehicleModel = vehicle?.model || t('checkout.selectedVehicle');
+  const driverName = vehicle?.driver?.name || t('checkout.yourDriver');
 
   const effectiveStartDate = offerState.offer?.startDate || bookingDates.start;
   const effectiveEndDate = offerState.offer?.endDate || bookingDates.end;
@@ -540,14 +548,14 @@ const Checkout = () => {
   const payLabel = payableTotal || totalPrice || '—';
 
   const tripDateRange = useMemo(
-    () => formatDateRange(effectiveStartDate, effectiveEndDate),
-    [effectiveStartDate, effectiveEndDate]
+    () => formatDateRange(effectiveStartDate, effectiveEndDate, t),
+    [effectiveStartDate, effectiveEndDate, t]
   );
 
   const totalDaysLabel = useMemo(() => {
     const days = calculateTripDays(effectiveStartDate, effectiveEndDate);
-    return days > 0 ? `${days} day${days > 1 ? 's' : ''}` : '';
-  }, [effectiveStartDate, effectiveEndDate]);
+    return days > 0 ? t('checkout.days', { count: days }) : '';
+  }, [effectiveStartDate, effectiveEndDate, t]);
 
   const offerExtras = offerState.offer
     ? {
@@ -575,10 +583,10 @@ const Checkout = () => {
   if (vehicleError || !vehicle) {
     return (
       <GuardShell
-        title="We hit a bump"
-        message={vehicleError || 'We could not load this vehicle. Please start over from the catalog.'}
-        primary={{ to: '/vehicles', label: 'Browse vehicles' }}
-        secondary={{ to: '/', label: 'Back home' }}
+        title={t('checkout.guard.bumpTitle')}
+        message={vehicleError || t('checkout.guard.bumpBody')}
+        primary={{ to: '/vehicles', label: t('checkout.guard.browse') }}
+        secondary={{ to: '/', label: t('checkout.guard.home') }}
       />
     );
   }
@@ -586,10 +594,10 @@ const Checkout = () => {
   if (queryParams.offerId && offerState.error) {
     return (
       <GuardShell
-        title="We couldn't load this offer"
+        title={t('checkout.guard.offerTitle')}
         message={offerState.error}
-        primary={{ to: vehicleId ? `/vehicles/${vehicleId}` : '/vehicles', label: 'Browse vehicles' }}
-        secondary={{ to: '/dashboard', label: 'Return to messages' }}
+        primary={{ to: vehicleId ? `/vehicles/${vehicleId}` : '/vehicles', label: t('checkout.guard.browse') }}
+        secondary={{ to: '/dashboard', label: t('checkout.guard.messages') }}
       />
     );
   }
@@ -597,9 +605,9 @@ const Checkout = () => {
   if (!hasDates) {
     return (
       <GuardShell
-        title="Choose your travel dates"
-        message="Please return to the vehicle page and select your travel dates to continue to checkout."
-        primary={{ to: vehicleId ? `/vehicles/${vehicleId}` : '/vehicles', label: 'Choose dates' }}
+        title={t('checkout.guard.datesTitle')}
+        message={t('checkout.guard.datesBody')}
+        primary={{ to: vehicleId ? `/vehicles/${vehicleId}` : '/vehicles', label: t('checkout.guard.chooseDates') }}
       />
     );
   }
@@ -608,21 +616,21 @@ const Checkout = () => {
   const summaryRows = (
     <>
     <dl className="m-0 grid gap-[9px] text-[13.5px]">
-      {totalPrice ? <SummaryRow label="Estimated total" value={totalPrice} /> : null}
+      {totalPrice ? <SummaryRow label={t('checkout.summary.estimatedTotal')} value={totalPrice} /> : null}
       {discountAmount ? (
-        <SummaryRow label={discountSource?.name ? `${discountSource.name} discount` : 'Discount'} value={`-${discountAmount}`} green />
+        <SummaryRow label={discountSource?.name ? t('checkout.summary.namedDiscount', { name: discountSource.name }) : t('checkout.summary.discount')} value={`-${discountAmount}`} green />
       ) : null}
-      {pricePerDay ? <SummaryRow label="Rate per day" value={pricePerDay} /> : null}
+      {pricePerDay ? <SummaryRow label={t('checkout.summary.ratePerDay')} value={pricePerDay} /> : null}
       {offerExtras && typeof offerExtras.totalKms === 'number' ? (
-        <SummaryRow label="Included distance" value={`${offerExtras.totalKms} km`} />
+        <SummaryRow label={t('checkout.summary.includedDistance')} value={`${offerExtras.totalKms} km`} />
       ) : null}
       {offerExtras && typeof offerExtras.pricePerExtraKm === 'number' ? (
-        <SummaryRow label="Extra kilometres" value={`${formatRate(offerExtras.pricePerExtraKm)} per km`} />
+        <SummaryRow label={t('checkout.summary.extraKm')} value={t('checkout.summary.perKm', { rate: formatRate(offerExtras.pricePerExtraKm) })} />
       ) : null}
     </dl>
     {Array.isArray(offerExtras?.inclusions) ? (
       <div className="mt-3.5 border-t border-[#eef2f0] pt-3.5">
-        <p className="mb-1.5 text-[12.5px] font-bold text-ink">Included in this offer</p>
+        <p className="mb-1.5 text-[12.5px] font-bold text-ink">{t('checkout.summary.includedInOffer')}</p>
         <OfferInclusionList inclusions={offerExtras.inclusions} />
       </div>
     ) : null}
@@ -639,34 +647,33 @@ const Checkout = () => {
             onClick={() => navigate(-1)}
             className="inline-flex min-h-[44px] items-center gap-2 rounded-[11px] border border-[#e5ebe8] bg-white px-3.5 text-sm font-bold text-ink transition hover:border-muted-soft"
           >
-            <ArrowLeft className="h-4 w-4" /> Back to offer
+            <ArrowLeft className="h-4 w-4" /> {t('checkout.backToOffer')}
           </button>
           <ol className="m-0 flex items-center gap-2 overflow-x-auto p-0 text-[12.5px] font-bold text-muted-soft">
             <li className="flex items-center gap-1.5 whitespace-nowrap">
               <span className="grid h-5 w-5 place-items-center rounded-full bg-brand text-white">
                 <Check className="h-3 w-3" strokeWidth={3} />
               </span>
-              Quote agreed
+              {t('checkout.steps.agreed')}
             </li>
             <span className="text-[#cfd8dd]">›</span>
             <li className="flex items-center gap-1.5 whitespace-nowrap text-ink">
               <span className="grid h-5 w-5 place-items-center rounded-full bg-ink text-[11px] font-extrabold text-[#7fd9a8]">2</span>
-              Your details
+              {t('checkout.steps.details')}
             </li>
             <span className="text-[#cfd8dd]">›</span>
             <li className="flex items-center gap-1.5 whitespace-nowrap">
               <span className="grid h-5 w-5 place-items-center rounded-full bg-[#e9efec] text-[11px] font-extrabold text-muted-soft">3</span>
-              Driver confirms
+              {t('checkout.steps.confirms')}
             </li>
           </ol>
         </div>
 
         <h1 className="mt-[clamp(16px,2.4vw,26px)] max-w-[16ch] text-[clamp(26px,3.4vw,38px)] font-extrabold leading-[1.1] tracking-[-.028em]">
-          Confirm your booking
+          {t('checkout.title')}
         </h1>
         <p className="mt-2.5 max-w-[60ch] text-[clamp(14.5px,1.3vw,16px)] leading-[1.6] text-muted">
-          {driverName} has locked in your price. Share a few travel details and they will confirm by email within the
-          hour. Nothing is charged today.
+          {t('checkout.lead', { name: driverName })}
         </p>
 
         <div className="mt-[clamp(18px,2.4vw,28px)] grid items-start gap-[clamp(14px,2.2vw,26px)] lg:grid-cols-[minmax(0,1.55fr)_minmax(300px,1fr)]">
@@ -684,7 +691,7 @@ const Checkout = () => {
                 <span className="block truncate text-[14.5px] font-extrabold tracking-[-.01em]">
                   {vehicleModel}{totalDaysLabel ? `, ${totalDaysLabel}` : ''}
                 </span>
-                <span className="block text-[12.5px] font-semibold text-muted">{tripDateRange || 'Trip dates'}</span>
+                <span className="block text-[12.5px] font-semibold text-muted">{tripDateRange || t('checkout.tripDates')}</span>
               </span>
               <span className="flex flex-shrink-0 items-center gap-2">
                 <span className="text-[15.5px] font-extrabold text-brand-dark">{payLabel}</span>
@@ -694,11 +701,11 @@ const Checkout = () => {
             <div className="px-4 pb-4">
               <div className="border-t border-[#eef2f0] pt-3.5">{summaryRows}</div>
               <div className="mt-2.5 flex items-center justify-between gap-3 border-t border-dashed border-[#dfe7e3] pt-2.5 text-[14px] font-extrabold">
-                <span>You pay the driver</span>
+                <span>{t('checkout.youPay')}</span>
                 <span className="text-brand-dark">{payLabel}</span>
               </div>
               {offerReference ? (
-                <p className="mt-3 text-[12.5px] leading-[1.55] text-muted">Offer reference {offerReference}, price fixed by your driver.</p>
+                <p className="mt-3 text-[12.5px] leading-[1.55] text-muted">{t('checkout.offerRef', { ref: offerReference })}</p>
               ) : null}
             </div>
           </details>
@@ -712,31 +719,31 @@ const Checkout = () => {
                   <div>
                     <h2 className="text-[18px] font-extrabold text-ink">
                       {bookingResult.status === 'confirmed'
-                        ? `Booking confirmed for ${vehicleModel}`
-                        : `Booking request sent for ${vehicleModel}`}
+                        ? t('checkout.result.confirmedTitle', { model: vehicleModel })
+                        : t('checkout.result.sentTitle', { model: vehicleModel })}
                     </h2>
                     <p className="mt-1 text-[14px] leading-relaxed text-ink-soft">
                       {bookingResult.status === 'confirmed'
-                        ? `Your booking is confirmed — ${driverName} has agreed to your trip and will meet you as arranged. No further confirmation needed.`
-                        : `${driverName} will review your request and confirm by email shortly.`}
+                        ? t('checkout.result.confirmedBody', { name: driverName })
+                        : t('checkout.result.sentBody', { name: driverName })}
                     </p>
                   </div>
                 </div>
                 <ul className="mt-4 grid gap-1.5 border-t border-brand/20 pt-4 text-[13.5px] font-semibold text-ink-soft">
-                  {tripDateRange ? <li>Trip dates: {tripDateRange}</li> : null}
-                  {totalDaysLabel ? <li>Trip length: {totalDaysLabel}</li> : null}
-                  {totalPrice ? <li>Estimated total: {totalPrice}</li> : null}
+                  {tripDateRange ? <li>{t('checkout.result.dates', { value: tripDateRange })}</li> : null}
+                  {totalDaysLabel ? <li>{t('checkout.result.length', { value: totalDaysLabel })}</li> : null}
+                  {totalPrice ? <li>{t('checkout.result.total', { value: totalPrice })}</li> : null}
                   {discountAmount ? (
-                    <li>{bookingResult?.commissionDiscountLabel ? `${bookingResult.commissionDiscountLabel} discount` : 'Discount'}: -{discountAmount}</li>
+                    <li>{bookingResult?.commissionDiscountLabel ? t('checkout.summary.namedDiscount', { name: bookingResult.commissionDiscountLabel }) : t('checkout.summary.discount')}: -{discountAmount}</li>
                   ) : null}
-                  {payableTotal ? <li className="font-extrabold text-brand-dark">You pay the driver: {payableTotal}</li> : null}
+                  {payableTotal ? <li className="font-extrabold text-brand-dark">{t('checkout.result.pay', { value: payableTotal })}</li> : null}
                 </ul>
                 <div className="mt-5 flex flex-wrap gap-2.5">
                   <Link to="/dashboard" className="rounded-[13px] bg-brand px-5 py-3 text-[14px] font-bold text-white transition hover:bg-brand-dark">
-                    View my trips
+                    {t('checkout.result.viewTrips')}
                   </Link>
                   <Link to="/vehicles" className="rounded-[13px] border border-[#e5ebe8] bg-white px-5 py-3 text-[14px] font-bold text-ink transition hover:border-muted-soft">
-                    Explore more vehicles
+                    {t('checkout.result.explore')}
                   </Link>
                 </div>
               </div>
@@ -746,22 +753,22 @@ const Checkout = () => {
               <fieldset disabled={formDisabled} className="grid gap-[clamp(12px,1.6vw,16px)] border-0 p-0">
                 {/* Section 1 */}
                 <section className={cardCls}>
-                  <SectionHead title="Who is travelling" step="Step 1 of 3" />
+                  <SectionHead title={t('checkout.form.who')} step={t('checkout.form.step', { n: 1 })} />
                   <div className="mt-4 grid gap-3.5">
                     <label className="block">
-                      <span className={fieldLabelCls}>Full name</span>
-                      <input type="text" autoComplete="name" value={formState.fullName} onChange={handleInputChange('fullName')} placeholder="Alex Traveler" className={fieldCls} required />
+                      <span className={fieldLabelCls}>{t('checkout.form.fullName')}</span>
+                      <input type="text" autoComplete="name" value={formState.fullName} onChange={handleInputChange('fullName')} placeholder={t('checkout.form.namePlaceholder')} className={fieldCls} required />
                     </label>
                     <div className="grid gap-3.5 sm:grid-cols-2">
                       <label className="block">
-                        <span className={fieldLabelCls}>Email address</span>
+                        <span className={fieldLabelCls}>{t('checkout.form.email')}</span>
                         <input type="email" autoComplete="email" value={formState.email} onChange={handleInputChange('email')} placeholder="alex@example.com" className={fieldCls} required />
-                        <span className="mt-[7px] block text-[12.5px] text-muted-soft">Your confirmation and driver contact go here.</span>
+                        <span className="mt-[7px] block text-[12.5px] text-muted-soft">{t('checkout.form.emailHelp')}</span>
                       </label>
                       <label className="block">
-                        <span className={fieldLabelCls}>Phone / WhatsApp</span>
+                        <span className={fieldLabelCls}>{t('checkout.form.phone')}</span>
                         <input type="tel" autoComplete="tel" value={formState.phoneNumber} onChange={handleInputChange('phoneNumber')} placeholder="+94 70 000 0000" className={fieldCls} required />
-                        <span className="mt-[7px] block text-[12.5px] text-muted-soft">So your driver can reach you on arrival day.</span>
+                        <span className="mt-[7px] block text-[12.5px] text-muted-soft">{t('checkout.form.phoneHelp')}</span>
                       </label>
                     </div>
                   </div>
@@ -769,32 +776,32 @@ const Checkout = () => {
 
                 {/* Section 2 */}
                 <section className={cardCls}>
-                  <SectionHead title="Pick-up & drop-off" step="Step 2 of 3" />
+                  <SectionHead title={t('checkout.form.route')} step={t('checkout.form.step', { n: 2 })} />
                   <div className="mt-4 grid gap-3.5 sm:grid-cols-2">
                     <label className="block">
-                      <span className={fieldLabelCls}>Start point</span>
-                      <input type="text" value={formState.startPoint} onChange={handleInputChange('startPoint')} placeholder="Colombo Airport" className={fieldCls} required />
+                      <span className={fieldLabelCls}>{t('checkout.form.start')}</span>
+                      <input type="text" value={formState.startPoint} onChange={handleInputChange('startPoint')} placeholder={t('checkout.form.startPlaceholder')} className={fieldCls} required />
                     </label>
                     <label className="block">
-                      <span className={fieldLabelCls}>End point</span>
-                      <input type="text" value={formState.endPoint} onChange={handleInputChange('endPoint')} placeholder="Galle Fort" className={fieldCls} required />
+                      <span className={fieldLabelCls}>{t('checkout.form.end')}</span>
+                      <input type="text" value={formState.endPoint} onChange={handleInputChange('endPoint')} placeholder={t('checkout.form.endPlaceholder')} className={fieldCls} required />
                     </label>
                   </div>
                   <div className="mt-4 border-t border-[#eef2f0] pt-4">
                     <p className="mb-3 text-[12.5px] font-bold text-muted">
-                      Flying in? Add flight details so your driver waits at the right time <span className="font-semibold text-[#a3b0bb]">(optional)</span>
+                      {t('checkout.form.flyingIn')} <span className="font-semibold text-[#a3b0bb]">{t('checkout.form.optionalParen')}</span>
                     </p>
                     <div className="grid gap-3.5 sm:grid-cols-3">
                       <label className="block">
-                        <span className={fieldLabelCls}>Flight number</span>
+                        <span className={fieldLabelCls}>{t('checkout.form.flight')}</span>
                         <input type="text" value={formState.flightNumber} onChange={handleInputChange('flightNumber')} placeholder="UL 504" className={fieldCls} />
                       </label>
                       <label className="block">
-                        <span className={fieldLabelCls}>Arrival time</span>
+                        <span className={fieldLabelCls}>{t('checkout.form.arrival')}</span>
                         <input type="text" value={formState.arrivalTime} onChange={handleInputChange('arrivalTime')} placeholder="09:30 AM" className={fieldCls} />
                       </label>
                       <label className="block">
-                        <span className={fieldLabelCls}>Departure time</span>
+                        <span className={fieldLabelCls}>{t('checkout.form.departure')}</span>
                         <input type="text" value={formState.departureTime} onChange={handleInputChange('departureTime')} placeholder="08:00 PM" className={fieldCls} />
                       </label>
                     </div>
@@ -803,20 +810,20 @@ const Checkout = () => {
 
                 {/* Section 3 */}
                 <section className={cardCls}>
-                  <SectionHead title="Anything to prepare?" step="Step 3 of 3" />
+                  <SectionHead title={t('checkout.form.prepare')} step={t('checkout.form.step', { n: 3 })} />
                   <div className="mt-4 flex flex-wrap gap-2">
-                    {EXTRAS.map((label) => {
+                    {EXTRAS.map(({ key, label }) => {
                       const active = Boolean(selectedExtras[label]);
                       return (
                         <button
-                          key={label}
+                          key={key}
                           type="button"
                           onClick={() => toggleExtra(label)}
                           className={`min-h-[44px] rounded-full border-[1.5px] px-4 text-[13.5px] font-bold transition ${
                             active ? 'border-brand bg-[#eef7f2] text-brand-dark' : 'border-[#e5ebe8] bg-white text-ink-soft hover:border-muted-soft'
                           }`}
                         >
-                          {label}
+                          {t(`checkout.extras.${key}`)}
                         </button>
                       );
                     })}
@@ -824,7 +831,7 @@ const Checkout = () => {
                   <label className="mt-4 block">
                     <span className="mb-[7px] flex items-center justify-between gap-2 text-[12.5px] font-bold text-ink-soft">
                       <span>
-                        Notes for your driver <span className="font-semibold text-[#a3b0bb]">Optional</span>
+                        {t('checkout.form.notes')} <span className="font-semibold text-[#a3b0bb]">{t('checkout.form.optional')}</span>
                       </span>
                       <span className={combinedNotes.length > SPECIAL_REQUESTS_MAX ? 'text-red-600' : 'text-[#a3b0bb]'}>
                         {combinedNotes.length}/{SPECIAL_REQUESTS_MAX}
@@ -834,12 +841,12 @@ const Checkout = () => {
                       rows="3"
                       value={formState.specialRequests}
                       onChange={handleInputChange('specialRequests')}
-                      placeholder="Extra stops, dietary needs, hotel names you already booked, anything that helps your driver plan."
+                      placeholder={t('checkout.form.notesPlaceholder')}
                       className={`${fieldCls} min-h-[auto] resize-y leading-[1.55]`}
                     />
                     {selectedExtras && Object.values(selectedExtras).some(Boolean) ? (
                       <span className="mt-1.5 block text-[11.5px] text-muted-soft">
-                        Your selected extras above count toward this limit too.
+                        {t('checkout.form.extrasCount')}
                       </span>
                     ) : null}
                   </label>
@@ -852,16 +859,16 @@ const Checkout = () => {
                   <AlertTriangle className="mt-0.5 h-[18px] w-[18px] flex-shrink-0 text-[#b8801f]" />
                   <p className="text-[13.5px] font-semibold leading-[1.55] text-[#7a5a15]">
                     {availabilityError}{' '}
-                    <Link to={vehicleId ? `/vehicles/${vehicleId}` : '/vehicles'} className="text-brand-dark underline">
-                      change your dates
-                    </Link>{' '}
-                    first.
+                    <Trans
+                      k="checkout.changeDates"
+                      components={{ link: <Link to={vehicleId ? `/vehicles/${vehicleId}` : '/vehicles'} className="text-brand-dark underline" /> }}
+                    />
                   </p>
                 </div>
               ) : null}
               {availabilityLoading ? (
                 <p className="flex items-center gap-2 text-[13px] font-semibold text-muted">
-                  <Loader2 className="h-4 w-4 animate-spin text-brand" /> Checking availability…
+                  <Loader2 className="h-4 w-4 animate-spin text-brand" /> {t('checkout.checking')}
                 </p>
               ) : null}
               {bookingFeedback.error ? (
@@ -875,10 +882,10 @@ const Checkout = () => {
                   disabled={formDisabled}
                   className="inline-flex min-h-[52px] items-center justify-center gap-2 rounded-[13px] bg-brand px-[30px] text-[15.5px] font-bold text-white shadow-[0_12px_26px_-14px_rgba(16,163,90,.75)] transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Sending…</> : 'Send booking request'}
+                  {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> {t('checkout.sending')}</> : t('checkout.send')}
                 </button>
                 <p className="max-w-[34ch] text-[13px] leading-[1.5] text-muted">
-                  No card needed now. You pay <strong className="text-ink">{payLabel}</strong> to your driver when you meet on day one.
+                  <Trans k="checkout.noCard" vars={{ amount: payLabel }} components={{ b: <strong className="text-ink" /> }} />
                 </p>
               </div>
             </form>
@@ -895,7 +902,7 @@ const Checkout = () => {
                 )}
               </div>
               <div className="p-5">
-                <h2 className="text-[18px] font-extrabold tracking-[-.015em]">Trip summary</h2>
+                <h2 className="text-[18px] font-extrabold tracking-[-.015em]">{t('checkout.summary.title')}</h2>
                 <div className="mt-3.5 grid gap-[11px] text-[14px]">
                   <div className="flex items-start gap-2.5"><Car className="mt-0.5 h-[17px] w-[17px] flex-shrink-0 text-brand" /><span className="font-bold">{vehicleModel}</span></div>
                   {tripDateRange ? (
@@ -908,21 +915,21 @@ const Checkout = () => {
                 </div>
                 <div className="mt-4 border-t border-[#eef2f0] pt-3.5">{summaryRows}</div>
                 <div className="mt-3.5 flex items-baseline justify-between gap-3 rounded-[14px] bg-[#eef7f2] px-4 py-3.5">
-                  <span className="text-[13.5px] font-extrabold">You pay the driver</span>
+                  <span className="text-[13.5px] font-extrabold">{t('checkout.youPay')}</span>
                   <span className="text-[21px] font-extrabold tracking-[-.02em] text-brand-dark">{payLabel}</span>
                 </div>
               </div>
             </section>
 
             <section className="rounded-[20px] border border-[#e5ebe8] bg-white px-5 py-[18px]">
-              <h3 className="text-[14.5px] font-extrabold">What happens next</h3>
+              <h3 className="text-[14.5px] font-extrabold">{t('checkout.next.title')}</h3>
               <ul className="mt-3 grid list-none gap-[11px] p-0">
-                <NextItem icon={Mail}>Email confirmation lands right away.</NextItem>
-                <NextItem icon={MessageSquare}>Your driver replies in chat within an hour.</NextItem>
-                <NextItem icon={ShieldCheck}>Price stays fixed{offerReference ? `, offer ref ${offerReference}` : ''}.</NextItem>
+                <NextItem icon={Mail}>{t('checkout.next.email')}</NextItem>
+                <NextItem icon={MessageSquare}>{t('checkout.next.reply')}</NextItem>
+                <NextItem icon={ShieldCheck}>{offerReference ? t('checkout.next.fixedRef', { ref: offerReference }) : t('checkout.next.fixed')}</NextItem>
               </ul>
               <p className="mt-3.5 border-t border-[#eef2f0] pt-3 text-[12.5px] leading-[1.55] text-muted">
-                Free cancellation until 2 days before your trip starts.
+                {t('checkout.next.cancel')}
               </p>
             </section>
           </aside>
@@ -933,7 +940,7 @@ const Checkout = () => {
       {!bookingResult ? (
         <div className="sticky bottom-0 z-20 flex items-center gap-3 border-t border-[#e5ebe8] bg-white/95 px-3.5 py-2.5 pb-[calc(11px+env(safe-area-inset-bottom))] backdrop-blur lg:hidden">
           <span className="flex-shrink-0 leading-[1.25]">
-            <span className="block text-[11px] font-bold uppercase tracking-[.04em] text-muted-soft">Pay driver</span>
+            <span className="block text-[11px] font-bold uppercase tracking-[.04em] text-muted-soft">{t('checkout.payDriver')}</span>
             <span className="block text-[18px] font-extrabold text-brand-dark">{payLabel}</span>
           </span>
           <button
@@ -942,7 +949,7 @@ const Checkout = () => {
             disabled={formDisabled}
             className="flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-[13px] bg-brand text-[15.5px] font-bold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Sending…</> : 'Send booking request'}
+            {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> {t('checkout.sending')}</> : t('checkout.send')}
           </button>
         </div>
       ) : null}

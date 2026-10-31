@@ -1,0 +1,86 @@
+{
+  "notFound": "Fahrzeug nicht gefunden.",
+  "notFoundBody": "Dieses Fahrzeug wurde nicht gefunden.",
+  "loadError": "Fahrzeugdetails konnten nicht geladen werden.",
+  "reviewsError": "Bewertungen können gerade nicht geladen werden.",
+  "reviewsAll": "Alle",
+  "loading": "Fahrzeug wird geladen…",
+  "errorTitle": "Da ist etwas schiefgelaufen",
+  "browseVehicles": "Fahrzeuge ansehen",
+  "home": "Startseite",
+  "pickupAfterConfirmation": "Abholort wird nach der Bestätigung mitgeteilt",
+  "approvedDriver": "Freigegebener Fahrer",
+  "memberSince": "Mitglied seit {date}",
+  "verifiedDriver": "Verifizierter Fahrer",
+  "specs": {
+    "seats": "Sitzplätze",
+    "year": "Baujahr",
+    "rating": "Bewertung",
+    "payment": "Bezahlung",
+    "onArrival": "Bei Ankunft"
+  },
+  "availability": {
+    "missingVehicle": "Fahrzeuginformationen fehlen. Bitte versuchen Sie es erneut über den Katalog.",
+    "selectDates": "Wählen Sie Start- und Enddatum, um die Verfügbarkeit zu prüfen.",
+    "endAfterStart": "Das Enddatum muss nach dem Startdatum liegen.",
+    "startPast": "Das Startdatum darf nicht in der Vergangenheit liegen.",
+    "freeDays": {
+      "one": "Gute Nachricht! Frei für Ihre {count}-tägige Reise.",
+      "other": "Gute Nachricht! Frei für Ihre {count}-tägige Reise."
+    },
+    "free": "Gute Nachricht! Dieses Fahrzeug ist an Ihren Reisedaten frei.",
+    "notAvailable": "Dieses Fahrzeug ist an den gewählten Daten nicht verfügbar.",
+    "checkError": "Die Verfügbarkeit konnte nicht geprüft werden. Bitte versuchen Sie es gleich noch einmal."
+  },
+  "chat": {
+    "missingDriver": "Für dieses Fahrzeug fehlen Fahrerinformationen.",
+    "ready": "Die Unterhaltung ist in Ihrem Posteingang bereit.",
+    "error": "Eine Unterhaltung kann gerade nicht gestartet werden."
+  },
+  "back": "Zurück",
+  "save": "Merken",
+  "share": "Teilen",
+  "previousPhoto": "Vorheriges Foto",
+  "nextPhoto": "Nächstes Foto",
+  "yourTrip": "Ihre Reise",
+  "included": "Was enthalten ist",
+  "about": "Über dieses Fahrzeug",
+  "yourDriver": "Ihr Fahrer",
+  "reviews": "Bewertungen",
+  "reviewCount": {
+    "one": "{count} Bewertung",
+    "other": "{count} Bewertungen"
+  },
+  "quote": "Auf Anfrage",
+  "perDayShort": "/Tag",
+  "allIn": "alles inklusive",
+  "bookNow": "Jetzt buchen",
+  "checkAvailability": "Verfügbarkeit prüfen",
+  "backToVehicles": "Zurück zu den Fahrzeugen",
+  "noImages": "Noch keine Bilder hochgeladen",
+  "booking": {
+    "limitedOffer": "Zeitlich begrenztes Angebot – sparen Sie {percent} % bei diesem Fahrzeug",
+    "requestQuote": "Angebot anfragen",
+    "perDay": "/ Tag",
+    "saveThisTrip": "Sparen Sie {percent} % bei dieser Reise",
+    "start": "Beginn",
+    "end": "Ende",
+    "travellers": "Reisende",
+    "fewer": "Weniger Reisende",
+    "more": "Mehr Reisende",
+    "checking": "Wird geprüft…",
+    "dayTrip": "{count}-tägige Reise",
+    "discount": "Rabatt",
+    "payDriver": "An Ihren Fahrer zu zahlen",
+    "licenseVerified": "{license} verifiziert",
+    "identityVerified": "Identität & Lizenz verifiziert",
+    "payOnArrival": "Bezahlung an den Fahrer bei Ankunft",
+    "freeCancellation": "Kostenlose Stornierung bis 2 Tage vor Ihrer Reise"
+  },
+  "driver": {
+    "rating": "Bewertung {rating}",
+    "starting": "Wird gestartet…",
+    "message": "Nachricht",
+    "viewProfile": "Profil ansehen"
+  }
+}

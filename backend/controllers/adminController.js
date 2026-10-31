@@ -227,6 +227,7 @@ const shapeBrief = (brief) => ({
   country: brief.country,
   maxOffers: brief.maxOffers ?? null,
   requiredLicenseType: brief.requiredLicenseType ?? null,
+  language: brief.language ?? null,
   status: brief.status,
   offersCount: brief.offersCount ?? brief.responses.length,
   responses: (brief.responses || []).map((response) => ({

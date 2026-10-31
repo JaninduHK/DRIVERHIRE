@@ -1,0 +1,46 @@
+{
+  "linkError": "Ce lien n'a pas pu être ouvert.",
+  "goHome": "Aller à l'accueil",
+  "backHome": "Retour à l'accueil",
+  "offer": {
+    "opening": "Ouverture de votre offre…",
+    "errorTitle": "Nous n'avons pas pu ouvrir cette offre",
+    "status": {
+      "accepted": "Vous avez déjà accepté cette offre – ouvrez votre tableau de bord pour voir la réservation.",
+      "declined": "Cette offre n'est plus disponible."
+    },
+    "title": "Offre de voyage de {name}",
+    "kms": "{km} km inclus",
+    "login": "Se connecter pour répondre",
+    "loginHelp": "Une fois connecté, vous arriverez directement dans cette conversation."
+  },
+  "review": {
+    "opening": "Ouverture de votre avis…",
+    "errorTitle": "Nous n'avons pas pu ouvrir cet avis",
+    "errors": {
+      "rating": "Veuillez choisir une note en étoiles.",
+      "tooShort": "Merci d'en dire un peu plus (au moins 10 caractères).",
+      "submit": "Impossible d'envoyer votre avis pour le moment."
+    },
+    "thanksTitle": "Merci pour votre avis",
+    "thanksBody": "Il apparaîtra sur le site dès que notre équipe l'aura validé.",
+    "title": "Comment s'est passé votre voyage avec {name} ?",
+    "yourTrip": "Votre voyage",
+    "rating": "Votre note",
+    "stars": {
+      "one": "{count} étoile",
+      "other": "{count} étoiles"
+    },
+    "titleLabel": "Titre",
+    "optional": "(facultatif)",
+    "titlePlaceholder": "ex. Excellent chauffeur, très ponctuel",
+    "comment": "Votre avis",
+    "commentPlaceholder": "Qu'avez-vous remarqué chez le chauffeur, le véhicule et pendant le voyage ?",
+    "photos": "Photos",
+    "removePhoto": "Supprimer la photo",
+    "photosHelp": "Ajoutez jusqu'à {count} photos de votre voyage.",
+    "submitting": "Envoi…",
+    "submit": "Envoyer l'avis",
+    "checked": "Votre avis est vérifié par notre équipe avant d'apparaître sur le site."
+  }
+}

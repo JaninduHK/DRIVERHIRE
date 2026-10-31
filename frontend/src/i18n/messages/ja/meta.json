@@ -1,0 +1,75 @@
+{
+  "home": {
+    "title": "スリランカで車付きの専属ドライバーを手配 | Car with Driver LK",
+    "description": "スリランカでSLTDA登録の専属ドライバーを車ごと予約。英語を話すショーファーガイド、明確な1日あたりの料金、島内全域のツアーを比較し、数分で無料の見積もりを受け取れます。"
+  },
+  "vehicles": {
+    "title": "スリランカ全土を巡るドライバー付きの車 | Car with Driver LK",
+    "description": "英語を話す専属ドライバー付きのスリランカの車を探す。セダン、バン、SUVを明確な1日あたりの料金で。燃料費・保険込み。無料で見積もりを依頼できます。"
+  },
+  "vehicle": {
+    "notFoundTitle": "車両が見つかりません | Car with Driver LK",
+    "notFoundDescription": "この車両は見つかりませんでした。",
+    "title": "{model}と専属ドライバー（スリランカ） | Car with Driver LK",
+    "description": "スリランカで英語を話す専属ドライバー付きの{model}を手配。{seats}人乗り、燃料費・保険込みで1日${price}から。"
+  },
+  "drivers": {
+    "title": "スリランカのSLTDA登録の専属ドライバー | Car with Driver LK",
+    "description": "スリランカ全土を巡る、認証済みの専属ショーファーガイドを探す。経験、対応言語、車両、1日あたりの料金を比較し、仲介なしで直接予約できます。"
+  },
+  "driver": {
+    "notFoundTitle": "ドライバーが見つかりません | Car with Driver LK",
+    "notFoundDescription": "このドライバーのプロフィールは見つかりませんでした。",
+    "title": "{name} — スリランカの専属ドライバー | Car with Driver LK",
+    "intro": "スリランカのSLTDA登録の専属ドライバー、{name}さんを予約。",
+    "introBased": "{location}を拠点とする、スリランカのSLTDA登録の専属ドライバー、{name}さんを予約。",
+    "experience": "経験{count}年以上",
+    "reviews": "旅行者のレビュー{count}件",
+    "fromPrice": "ドライバー付きの車は1日${price}から",
+    "separator": "、",
+    "bookDirect": "仲介なしで直接予約できます。"
+  },
+  "liveMap": {
+    "title": "ライブドライバーマップ | スリランカで近くのドライバーを探す | Car with Driver LK",
+    "description": "スリランカのライブマップで近くの専属ドライバーを確認。車両、評価、1日あたりの料金を比較して、そのままチャットを始められます。仲介なし、予約手数料なし。"
+  },
+  "about": {
+    "title": "Car with Driver LKについて | スリランカの専属ドライバー",
+    "description": "Car with Driver LKは、旅行者とスリランカ全土のSLTDA登録の専属ドライバーをつなぎます。明確な料金、認証済みのショーファーガイド、直接予約。"
+  },
+  "getQuotes": {
+    "title": "スリランカのドライバー付きの車の見積もり — 無料で比較 | Car with Driver LK",
+    "description": "日程とルートを伝えるだけで、審査済みのスリランカのドライバーとSLTDAのショーファーガイドから無料の見積もりが届きます。見積もりを比較し、直接チャットし、ドライバーへお支払い。予約手数料はかかりません。"
+  },
+  "blog": {
+    "title": "地元のドライバーが書くスリランカ旅行ガイド | Car with Driver LK",
+    "description": "実際にルートを走るドライバーによるスリランカ旅行ガイド。旅行費用、旅程、道路状況、地元のアドバイスをcarwithdriver.lkからお届けします。"
+  },
+  "article": {
+    "notFoundTitle": "記事が見つかりません | Car with Driver LK",
+    "notFoundDescription": "この記事は見つかりませんでした。",
+    "title": "{title} | Car with Driver LK"
+  },
+  "contact": {
+    "title": "Car with Driver LKへのお問い合わせ",
+    "description": "スリランカでの専属ドライバーの予約のお手伝い、提携のご相談、旅行中のサポートについては、Car with Driver LKまでお問い合わせください。"
+  },
+  "tripCost": {
+    "title": "スリランカ旅行費用計算ツール | 旅程を計画 | Car with Driver LK",
+    "description": "スリランカの旅程を1日ずつ組み立てて、ドライバーの最新料金から実際の費用の概算を確認。お客様のルートに合わせた距離、運転時間、車両クラス別の料金がわかります。"
+  },
+  "privacy": {
+    "title": "プライバシーポリシー | Car with Driver LK",
+    "description": "Car with Driver LKによる個人情報の収集、利用、保護について。"
+  },
+  "terms": {
+    "title": "利用規約 | Car with Driver LK",
+    "description": "スリランカで専属ドライバーを予約するためのCar with Driver LKの利用規約。"
+  },
+  "private": {
+    "dashboard": "マイページ | Car with Driver LK",
+    "checkout": "予約手続き | Car with Driver LK",
+    "offer": "旅行の見積もり | Car with Driver LK",
+    "review": "レビューを書く | Car with Driver LK"
+  }
+}

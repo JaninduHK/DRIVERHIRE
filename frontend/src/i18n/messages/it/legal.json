@@ -1,0 +1,141 @@
+{
+  "englishPrevails": "Questa traduzione è fornita per comodità. In caso di differenze rispetto alla <link>versione inglese</link>, prevale la versione inglese.",
+  "terms": {
+    "eyebrow": "Termini e condizioni",
+    "title": "Il tuo accordo con Car With Driver LK",
+    "intro": "Data di entrata in vigore: {date}",
+    "sections": [
+      {
+        "title": "1. Uso della nostra piattaforma",
+        "paragraphs": [
+          "Creando un account o prenotando un autista, accetti i presenti Termini. Devi avere almeno 18 anni e fornire informazioni corrette. Possiamo sospendere gli account in caso di frode, abuso, comportamento non sicuro o violazione dei presenti Termini."
+        ]
+      },
+      {
+        "title": "2. Prenotazioni e pagamenti",
+        "items": [
+          "Prezzi: le tariffe sono stabilite dagli autisti. Gli sconti validi su tutta la piattaforma riducono il totale da pagare mostrato al momento del checkout.",
+          "Pagamento: i viaggiatori pagano direttamente l'autista, salvo diversa indicazione. La commissione viene detratta dai guadagni dell'autista.",
+          "Modifiche/cancellazioni: segui le istruzioni contenute nelle email di prenotazione o scrivi all'autista. Alcuni viaggi potrebbero non essere rimborsabili dopo l'inizio.",
+          "Controversie: contatta l'assistenza se un autista o un viaggiatore deve modificare qualcosa o risolvere un problema."
+        ]
+      },
+      {
+        "title": "3. Responsabilità degli autisti",
+        "items": [
+          "Mantenere licenze e assicurazioni valide e veicoli idonei alla circolazione.",
+          "Mantenere aggiornati profilo, disponibilità e prezzi; rispondere tempestivamente ai viaggiatori.",
+          "Rispettare le prenotazioni accettate e avvisare per tempo in caso di emergenze."
+        ]
+      },
+      {
+        "title": "4. Responsabilità dei viaggiatori",
+        "items": [
+          "Fornire dettagli di viaggio corretti, i luoghi di partenza e arrivo e, se applicabile, gli orari dei voli.",
+          "Trattare gli autisti con rispetto e rispettare le leggi locali e le istruzioni di sicurezza.",
+          "Pagare puntualmente all'autista l'importo concordato, tenendo conto degli eventuali sconti mostrati al checkout."
+        ]
+      },
+      {
+        "title": "5. Sicurezza e comportamento",
+        "paragraphs": [
+          "Possiamo escludere gli utenti per molestie, discriminazione, guida pericolosa, frode o uso improprio della piattaforma. Segnala eventuali problemi a support@carwithdriver.lk indicando i dettagli del viaggio."
+        ]
+      },
+      {
+        "title": "6. Contenuti e recensioni",
+        "paragraphs": [
+          "Le recensioni devono essere veritiere e rispettose. Possiamo moderare o rimuovere contenuti offensivi, ingannevoli o che violano la legge o i presenti Termini."
+        ]
+      },
+      {
+        "title": "7. Responsabilità",
+        "paragraphs": [
+          "Car With Driver LK mette in contatto viaggiatori e autisti. Non siamo il datore di lavoro degli autisti né l'operatore dei veicoli. Nella misura massima consentita dalla legge, non siamo responsabili per danni indiretti o incidentali derivanti dai viaggi o dall'uso della piattaforma."
+        ]
+      },
+      {
+        "title": "8. Modifiche ai termini",
+        "paragraphs": [
+          "Possiamo aggiornare i presenti Termini per motivi legali, di sicurezza o legati al prodotto. Continuare a usare la piattaforma dopo un aggiornamento significa accettare i nuovi Termini. Indicheremo la data di entrata in vigore qui sopra."
+        ]
+      },
+      {
+        "title": "9. Contatti",
+        "paragraphs": [
+          "Domande su questi Termini? Scrivi a <email>hello@carwithdriver.lk</email> o chiama il +94 76 302 1483."
+        ]
+      }
+    ]
+  },
+  "privacy": {
+    "eyebrow": "Informativa sulla privacy",
+    "title": "Come Car With Driver LK protegge i tuoi dati",
+    "intro": "Data di entrata in vigore: {date}. Spieghiamo quali dati raccogliamo, perché li raccogliamo e quali strumenti di controllo hai a disposizione.",
+    "sections": [
+      {
+        "title": "Informazioni che raccogliamo",
+        "items": [
+          "Dati dell'account: nome, email, telefono e password (in forma hash).",
+          "Profilo dell'autista: descrizione, informazioni sul veicolo, etichetta/coordinate della posizione in tempo reale (se condivisa) e immagini caricate.",
+          "Dati di prenotazione: date del viaggio, punti di partenza e arrivo, dettagli dei voli, messaggi dei viaggiatori e note sui pagamenti.",
+          "Dati di utilizzo: informazioni su dispositivo/browser, pagine visitate ed eventi di analisi per migliorare l'affidabilità."
+        ]
+      },
+      {
+        "title": "Come usiamo le tue informazioni",
+        "items": [
+          "Per creare e gestire gli account di viaggiatori, autisti e amministratori.",
+          "Per gestire prenotazioni, preventivi, messaggi e richieste di assistenza.",
+          "Per verificare gli autisti, pubblicare i veicoli e mostrare i segnaposto sulla mappa in tempo reale quando gli autisti acconsentono.",
+          "Per inviare email transazionali (verifica, aggiornamenti delle prenotazioni, approvazioni) e comunicazioni di servizio importanti.",
+          "Per migliorare la sicurezza, individuare frodi/abusi e adempiere agli obblighi di legge."
+        ]
+      },
+      {
+        "title": "Condivisione e comunicazione",
+        "items": [
+          "Con gli autisti e i viaggiatori coinvolti in una prenotazione o in una conversazione.",
+          "Con fornitori di servizi (hosting, email, analisi, gateway di pagamento) vincolati alla riservatezza.",
+          "Quando richiesto dalla legge, per tutelare la sicurezza o per far rispettare i nostri Termini e condizioni.",
+          "Non vendiamo dati personali."
+        ]
+      },
+      {
+        "title": "Conservazione e sicurezza dei dati",
+        "items": [
+          "Le password sono conservate in forma hash; i file caricati sono archiviati in modo sicuro con controlli di accesso.",
+          "Conserviamo i dati per il tempo necessario a fornire il servizio e a rispettare gli obblighi di legge, poi li eliminiamo o li rendiamo anonimi.",
+          "L'accesso agli strumenti di amministrazione è limitato e registrato."
+        ]
+      },
+      {
+        "title": "Le tue scelte",
+        "items": [
+          "Aggiorna o elimina le informazioni del tuo profilo dal tuo account o contattando l'assistenza.",
+          "Gli autisti possono cancellare la propria posizione in tempo reale in qualsiasi momento dalla pagina del profilo.",
+          "Annulla l'iscrizione alle email di marketing (se attive) tramite il piè di pagina dell'email; le email transazionali continueranno a essere inviate.",
+          "Richiedi l'accesso, la rettifica o la cancellazione scrivendo a support@carwithdriver.lk."
+        ]
+      },
+      {
+        "title": "Minori",
+        "paragraphs": [
+          "I nostri servizi non sono rivolti a minori di 16 anni. Se scopriamo di aver raccolto tali dati, li elimineremo."
+        ]
+      },
+      {
+        "title": "Modifiche alla presente informativa",
+        "paragraphs": [
+          "Possiamo aggiornare la presente informativa per maggiore chiarezza o per conformità. Pubblicheremo gli aggiornamenti qui e modificheremo la data di entrata in vigore."
+        ]
+      },
+      {
+        "title": "Contattaci",
+        "paragraphs": [
+          "Scrivi a <email>hello@carwithdriver.lk</email> o chiama il +94 76 302 1483 per domande o richieste sulla privacy."
+        ]
+      }
+    ]
+  }
+}

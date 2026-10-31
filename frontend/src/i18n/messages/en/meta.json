@@ -1,0 +1,75 @@
+{
+  "home": {
+    "title": "Hire a Private Driver with Car in Sri Lanka | Car with Driver LK",
+    "description": "Book an SLTDA-registered private driver with a car in Sri Lanka. Compare English-speaking chauffeur-guides, transparent daily rates and island-wide tours, with free quotes in minutes."
+  },
+  "vehicles": {
+    "title": "Cars with Driver for Island-Wide Travel in Sri Lanka | Car with Driver LK",
+    "description": "Browse cars with an English-speaking private driver in Sri Lanka — sedans, vans and SUVs with transparent daily rates, fuel and insurance included. Get free quotes."
+  },
+  "vehicle": {
+    "notFoundTitle": "Vehicle not found | Car with Driver LK",
+    "notFoundDescription": "This vehicle could not be found.",
+    "title": "{model} with Private Driver in Sri Lanka | Car with Driver LK",
+    "description": "Hire a {model} with an English-speaking private driver in Sri Lanka. {seats} seats, fuel and insurance included, from ${price}/day."
+  },
+  "drivers": {
+    "title": "Hire SLTDA-Registered Private Drivers in Sri Lanka | Car with Driver LK",
+    "description": "Browse verified private chauffeur-guides for island-wide travel in Sri Lanka. Compare experience, languages, vehicles and daily rates, then book direct with no middleman."
+  },
+  "driver": {
+    "notFoundTitle": "Driver not found | Car with Driver LK",
+    "notFoundDescription": "This driver profile could not be found.",
+    "title": "{name} — Private Chauffeur in Sri Lanka | Car with Driver LK",
+    "intro": "Hire {name}, an SLTDA-registered private driver in Sri Lanka.",
+    "introBased": "Hire {name}, an SLTDA-registered private driver in Sri Lanka based in {location}.",
+    "experience": "{count}+ years' experience",
+    "reviews": "{count} traveller reviews",
+    "fromPrice": "cars with driver from ${price}/day",
+    "separator": ", ",
+    "bookDirect": "Book direct with no middleman."
+  },
+  "liveMap": {
+    "title": "Live Driver Map | Find Drivers Near You in Sri Lanka | Car with Driver LK",
+    "description": "See private drivers near you on a live map of Sri Lanka. Compare vehicles, ratings and daily rates, then start a chat — no middleman, no booking fees."
+  },
+  "about": {
+    "title": "About Car with Driver LK | Private Drivers in Sri Lanka",
+    "description": "Car with Driver LK connects travellers with SLTDA-registered private drivers across Sri Lanka — transparent pricing, verified chauffeur-guides and direct booking."
+  },
+  "getQuotes": {
+    "title": "Sri Lanka Car with Driver Quotes — Compare Free Offers | Car with Driver LK",
+    "description": "Share your dates and route and get free quotes from vetted Sri Lankan drivers and SLTDA chauffeur guides. Compare offers, chat direct, pay your driver — no booking fee."
+  },
+  "blog": {
+    "title": "Sri Lanka travel guides, written by local drivers | Car with Driver LK",
+    "description": "Sri Lanka travel guides from the drivers who actually drive the routes — trip costs, itineraries, road conditions and local advice from carwithdriver.lk."
+  },
+  "article": {
+    "notFoundTitle": "Article not found | Car with Driver LK",
+    "notFoundDescription": "This article could not be found.",
+    "title": "{title} | Car with Driver LK"
+  },
+  "contact": {
+    "title": "Contact Car with Driver LK",
+    "description": "Get in touch with Car with Driver LK for help booking a private driver in Sri Lanka, partnership enquiries, or support with your trip."
+  },
+  "tripCost": {
+    "title": "Sri Lanka Trip Cost Calculator | Plan Your Itinerary | Car with Driver LK",
+    "description": "Build a day-by-day Sri Lanka itinerary and get a real cost estimate from live driver rates — distances, driving time, and per-vehicle-class pricing for your exact route."
+  },
+  "privacy": {
+    "title": "Privacy Policy | Car with Driver LK",
+    "description": "How Car with Driver LK collects, uses and protects your personal information."
+  },
+  "terms": {
+    "title": "Terms & Conditions | Car with Driver LK",
+    "description": "The terms and conditions for using Car with Driver LK to book private drivers in Sri Lanka."
+  },
+  "private": {
+    "dashboard": "Your dashboard | Car with Driver LK",
+    "checkout": "Checkout | Car with Driver LK",
+    "offer": "Your trip offer | Car with Driver LK",
+    "review": "Leave a review | Car with Driver LK"
+  }
+}

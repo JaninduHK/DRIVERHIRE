@@ -24,6 +24,7 @@ import { DashboardSidebar, DriverDrawer, MobileHeader, Sheet } from '../componen
 import ContactWarning from '../components/ContactWarning.jsx';
 import { OfferInclusionPicker } from '../components/OfferInclusions.jsx';
 import { Avatar } from '../components/dashboard/primitives.jsx';
+import { travellerLanguageLabel } from '../i18n/languageLabel.js';
 
 const NAV_ITEMS = [
   { id: 'overview', label: 'Overview', icon: User2, href: '/portal/driver' },
@@ -437,6 +438,11 @@ const TourBriefsBoard = () => {
                             <MapPin className="h-3.5 w-3.5 text-muted-soft" />
                             {brief.country}
                           </span>
+                          {travellerLanguageLabel(brief.language) ? (
+                            <span className="inline-flex items-center gap-1.5 text-ink" title="The language the traveller used on the website">
+                              Language: {travellerLanguageLabel(brief.language)}
+                            </span>
+                          ) : null}
                           <span className="inline-flex items-center gap-1.5">
                             <MessageCircle className="h-3.5 w-3.5 text-muted-soft" />
                             {brief.offersCount} {offerLabel}

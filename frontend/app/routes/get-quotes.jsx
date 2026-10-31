@@ -1,7 +1,7 @@
 import { fetchVehicles } from '../../src/services/vehicleCatalogApi.js';
 import { fetchDriverProfile } from '../../src/services/driverDirectoryApi.js';
 import { fetchPublicSettings } from '../../src/services/briefApi.js';
-import { buildMeta } from '../lib/seo.js';
+import { buildMeta, metaLocale } from '../lib/seo.js';
 
 // Hand-picked drivers surfaced on this page. Their details are always fetched
 // live, so a rate, rating or vehicle count here can never drift from the profile.
@@ -44,12 +44,13 @@ export async function loader() {
   };
 }
 
-export function meta() {
+export function meta({ location }) {
+  const { locale, t } = metaLocale(location);
   return buildMeta({
-    title: 'Sri Lanka Car with Driver Quotes — Compare Free Offers | Car with Driver LK',
-    description:
-      'Share your dates and route and get free quotes from vetted Sri Lankan drivers and SLTDA chauffeur guides. Compare offers, chat direct, pay your driver — no booking fee.',
+    title: t('meta.getQuotes.title'),
+    description: t('meta.getQuotes.description'),
     path: '/get-quotes',
+    locale,
   });
 }
 

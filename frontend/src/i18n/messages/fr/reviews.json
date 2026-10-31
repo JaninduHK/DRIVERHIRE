@@ -1,0 +1,17 @@
+{
+  "count": {
+    "one": "{count} avis",
+    "other": "{count} avis"
+  },
+  "sort": {
+    "newest": "Plus récents",
+    "highest": "Mieux notés",
+    "lowest": "Moins bien notés",
+    "oldest": "Plus anciens"
+  },
+  "loading": "Chargement des avis…",
+  "tryAgain": "Réessayer",
+  "empty": "Pas encore d'avis. Soyez le premier à découvrir le Sri Lanka avec {name} et à partager votre histoire.",
+  "traveller": "Voyageur",
+  "recentTrip": "Voyage récent"
+}

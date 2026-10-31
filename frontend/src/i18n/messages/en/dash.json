@@ -1,0 +1,345 @@
+{
+  "traveller": "Traveller",
+  "travellerLower": "traveller",
+  "driver": "Driver",
+  "browseVehicles": "Browse vehicles",
+  "tryAgain": "Try again",
+  "retry": "Retry",
+  "back": "Back",
+  "close": "Close",
+  "saving": "Saving…",
+  "saveChanges": "Save changes",
+  "message": "Message",
+  "viewOffer": "View offer",
+  "viewOffers": "View offers",
+  "openChat": "Open chat",
+  "sentOffer": "Sent an offer",
+  "conversationStarted": "Conversation started.",
+  "awaitingOffers": "Awaiting offers",
+  "offersCount": {
+    "one": "{count} offer",
+    "other": "{count} offers"
+  },
+  "guests": {
+    "one": "{count} guest",
+    "other": "{count} guests"
+  },
+  "nav": {
+    "overview": "Overview",
+    "bookings": "My Bookings",
+    "messages": "Messages",
+    "requests": "My Requests",
+    "settings": "Settings",
+    "browse-vehicles": "Vehicles",
+    "browse-drivers": "Drivers",
+    "browse-trip-cost": "Trip Cost"
+  },
+  "shell": {
+    "notifications": "Notifications",
+    "openMenu": "Open menu",
+    "home": "Go to home",
+    "user": "User",
+    "logout": "Logout",
+    "closeMenu": "Close menu"
+  },
+  "toast": {
+    "loggedOut": "You have been logged out.",
+    "newOfferRequested": "Request sent. The driver will reply with a new offer.",
+    "profileUpdated": "Profile updated.",
+    "passwordUpdated": "Password updated.",
+    "briefPosted": "Tour brief posted."
+  },
+  "errors": {
+    "conversations": "Unable to load conversations.",
+    "messages": "Unable to load messages.",
+    "bookings": "Unable to load your bookings right now.",
+    "briefs": "Unable to load your tour briefs.",
+    "profile": "Unable to load profile.",
+    "send": "Unable to send message.",
+    "newOffer": "Unable to request a new offer.",
+    "offerVehicle": "Vehicle details are missing for this offer.",
+    "updateProfile": "Unable to update profile.",
+    "updatePassword": "Unable to update password.",
+    "postBrief": "Unable to post tour brief."
+  },
+  "overview": {
+    "eyebrow": "TRAVELLER DASHBOARD",
+    "welcome": "Welcome back, {name}",
+    "lead": "Manage your trips, conversations, and requests all in one place.",
+    "upcoming": "Upcoming",
+    "completed": "Completed",
+    "totalSpent": "Total spent",
+    "noUpcoming": "No upcoming trips yet.",
+    "recentMessages": "Recent messages",
+    "noConversationsHint": "No conversations yet. Message a driver from a vehicle page.",
+    "noConversations": "No conversations yet.",
+    "upcomingTrips": "Upcoming trips",
+    "viewAll": "View all"
+  },
+  "quoteSteps": {
+    "step1": {
+      "title": "Tell us about your trip",
+      "body": "Dates, where you start and end, and how many of you are travelling."
+    },
+    "step2": {
+      "title": "Drivers send you offers",
+      "body": "Each offer has a fixed price and vehicle. We email you when one arrives."
+    },
+    "step3": {
+      "title": "Chat, compare and book",
+      "body": "Ask questions, compare prices, and book the one you like in Messages."
+    }
+  },
+  "quoteCard": {
+    "title": "Get quotes from drivers",
+    "body": "Post your trip once and let vetted drivers come to you with offers. It is free, with no booking fee.",
+    "cta": "Request quotes"
+  },
+  "slot": {
+    "title": {
+      "one": "Your quote request",
+      "other": "Your quote requests"
+    },
+    "body": "Drivers reply with offers. We email you when one arrives, and you can compare and book them in Messages.",
+    "newRequest": "New request",
+    "noOffers": "No offers yet. We will email you as soon as a driver replies.",
+    "viewAll": "View all {count} requests"
+  },
+  "nextTrip": {
+    "scheduled": "Scheduled",
+    "inProgress": "In progress",
+    "daysAway": {
+      "one": "{count} day away",
+      "other": "{count} days away"
+    },
+    "upcomingTrip": "Upcoming trip",
+    "yourDriver": "your driver",
+    "title": "Your next trip",
+    "datesToConfirm": "Dates to confirm",
+    "withDriver": "with {name}"
+  },
+  "bookings": {
+    "eyebrow": "TRIPS",
+    "loading": "Loading your bookings…",
+    "emptyTitle": "No trips booked yet",
+    "emptyBody": "When you confirm a driver your itinerary appears here.",
+    "noUpcoming": "No upcoming trips.",
+    "noCompleted": "No completed trips yet.",
+    "noConversation": "No conversation for this trip yet.",
+    "toast": {
+      "updated": "Booking updated."
+    },
+    "errors": {
+      "bothDates": "Please select both start and end dates.",
+      "validDates": "Choose valid travel dates.",
+      "update": "Unable to update booking."
+    }
+  },
+  "cancel": {
+    "title": "Cancel booking",
+    "notice": [
+      "Free to cancel up to 2 days before start date.",
+      "50% of total cost to be paid to driver if cancelling within 2 days of start date.",
+      "100% of completed days and 50% of uncompleted days to be paid to driver if cancelling after start date."
+    ],
+    "why": "Why are you cancelling?",
+    "explain": "Explain the reason",
+    "explainPlaceholder": "This is shared with our team and your driver.",
+    "keep": "Keep booking",
+    "cancelling": "Cancelling…",
+    "reasons": {
+      "plansChanged": "Travel plans changed",
+      "betterPrice": "Found a better price elsewhere",
+      "datesMoved": "Trip dates moved",
+      "driverSilent": "Driver stopped responding",
+      "driverAsked": "Driver asked to cancel",
+      "notTravelling": "No longer travelling to Sri Lanka",
+      "other": "Something else"
+    },
+    "toast": {
+      "cancelled": "Booking cancelled."
+    },
+    "errors": {
+      "reason": "Please choose a reason for cancelling.",
+      "detail": "Please explain the reason for cancelling.",
+      "cancel": "Unable to cancel booking."
+    }
+  },
+  "form": {
+    "startDate": "Start date",
+    "endDate": "End date"
+  },
+  "edit": {
+    "title": "Update booking",
+    "offerDates": "Dates were confirmed through a driver offer. Message your driver to change the schedule.",
+    "pickup": "Pickup",
+    "pickupPlaceholder": "Hotel or meeting point",
+    "dropoff": "Drop-off",
+    "dropoffPlaceholder": "Final destination",
+    "flight": "Flight number (optional)",
+    "flightPlaceholder": "e.g. UL 403",
+    "arrival": "Arrival time",
+    "departure": "Departure time",
+    "timePlaceholder": "e.g. {time}",
+    "special": "Special requests",
+    "specialPlaceholder": "Dietary needs, accessibility notes, anything your driver should know."
+  },
+  "review": {
+    "title": "Trip feedback",
+    "titleModel": "Review · {model}",
+    "adminNote": "Admin note",
+    "rating": "Rating",
+    "ratings": {
+      "r5": "Amazing",
+      "r4": "Great",
+      "r3": "Good",
+      "r2": "Okay",
+      "r1": "Needs improvement"
+    },
+    "reviewTitle": "Review title (optional)",
+    "titlePlaceholder": "Highlights from your trip",
+    "experience": "Share your experience",
+    "experiencePlaceholder": "Tell us about your driver, vehicle, and itinerary highlights.",
+    "minChars": "Minimum 10 characters.",
+    "photos": "Photos (optional)",
+    "removePhoto": "Remove photo",
+    "photosHelp": "Add up to 4 photos from your trip.",
+    "submitting": "Submitting…",
+    "submit": "Submit review",
+    "status": {
+      "published": "Published",
+      "declined": "Declined",
+      "awaiting": "Awaiting approval"
+    },
+    "toast": {
+      "submitted": "Review submitted for moderation."
+    },
+    "errors": {
+      "rating": "Please choose a rating between 1 and 5.",
+      "tooShort": "Tell us a bit more about your experience (at least 10 characters).",
+      "submit": "Unable to submit review."
+    }
+  },
+  "card": {
+    "driverTbd": "Driver to be assigned",
+    "vehicleTbd": "Vehicle to be confirmed",
+    "seats": "{count} seats",
+    "datesTbd": "Dates to be confirmed",
+    "datesTbdShort": "Dates TBD",
+    "startsIn": {
+      "one": "Starts in {count} day",
+      "other": "Starts in {count} days"
+    },
+    "status": {
+      "pending": "pending",
+      "confirmed": "confirmed",
+      "cancelled": "cancelled",
+      "rejected": "rejected",
+      "completed": "completed"
+    },
+    "messageDriver": "Message driver",
+    "details": "Details",
+    "viewVehicle": "View vehicle",
+    "editDetails": "Edit details",
+    "viewReview": "View review",
+    "leaveReview": "Leave a review"
+  },
+  "chat": {
+    "eyebrow": "INBOX",
+    "discussing": "Discussing {model}",
+    "general": "General conversation",
+    "loadingMessages": "Loading messages…",
+    "introduce": "Send a message to introduce yourself to the driver.",
+    "bookingConfirmed": "Your booking with this driver is confirmed",
+    "bookingWithDriver": "You have a booking with this driver",
+    "tapForDetails": "Tap to view your trip details",
+    "loadingConversations": "Loading conversations…",
+    "emptyList": "Start a conversation from a vehicle page to see it here.",
+    "noMatch": "No conversations match your search.",
+    "read": "Read",
+    "sent": "Sent",
+    "offerAccepted": "Offer accepted",
+    "offerExpired": "Offer expired",
+    "offerDeclined": "Offer declined",
+    "latestOffer": "Latest offer",
+    "viewProfile": "View {name}'s driver profile",
+    "placeholder": "Message…",
+    "send": "Send",
+    "sending": "Sending…",
+    "search": "Search conversations",
+    "select": "Select a conversation to view messages."
+  },
+  "offer": {
+    "received": "Offer received",
+    "discount": "{name} — save {percent}%",
+    "vehicle": "Vehicle",
+    "selectedVehicle": "Selected vehicle",
+    "kms": "{km} km included · {rate} / extra km",
+    "accept": "Accept offer",
+    "newerBelow": "Newer offer below",
+    "requested": "New offer requested",
+    "requestNew": "Request new offer",
+    "declineHint": "Reply in the chat to negotiate or decline.",
+    "decline": "Decline"
+  },
+  "requests": {
+    "booked": "Booked",
+    "new": "New",
+    "eyebrow": "MY REQUESTS",
+    "title": "Tour Requests",
+    "subtitle": "Trips you've posted for drivers to bid on.",
+    "loading": "Loading your requests…",
+    "postNew": "Post a new request",
+    "emptyTitle": "No requests yet",
+    "emptyBody": "Post your first itinerary to invite vetted drivers to respond with offers.",
+    "errors": {
+      "dates": "Please select travel dates.",
+      "allFields": "All fields are required.",
+      "adults": "Please specify at least one adult traveller."
+    },
+    "form": {
+      "reviewTitle": "Review and post your request",
+      "title": "Post a request",
+      "reviewNote": "Here is the trip you entered. It has not been sent yet. Check the details, change anything you need, then post it to drivers.",
+      "from": "From",
+      "fromPlaceholder": "Colombo airport",
+      "to": "To",
+      "toPlaceholder": "Kandy",
+      "adults": "Adults",
+      "children": "Children",
+      "country": "Country of residence",
+      "countryPlaceholder": "United Kingdom",
+      "details": "Trip details",
+      "detailsPlaceholder": "Must-see stops, accommodation needs, languages, etc.",
+      "noContact": "Please don't include phone numbers or emails here — we'll share contact details once you accept an offer and your booking is confirmed.",
+      "upTo": "Up to {count} quotes",
+      "onlyType": "{type}s only",
+      "nextTitle": "What happens next",
+      "nextBody": "After posting, you will receive offers from drivers. You can chat with them, compare offers and prices, and book from the Messages tab. You will get an email each time you receive a new offer.",
+      "posting": "Posting…",
+      "postToDrivers": "Post request to drivers",
+      "post": "Post tour brief"
+    }
+  },
+  "settings": {
+    "mismatch": "New passwords do not match.",
+    "eyebrow": "ACCOUNT",
+    "subtitle": "Tell us how to reach you while you travel.",
+    "loading": "Loading profile…",
+    "noProfile": "No profile details available.",
+    "fullName": "Full name",
+    "email": "Email",
+    "emailHelp": "Need to change your email? Contact support.",
+    "contact": "Contact number",
+    "contactPlaceholder": "e.g. {example}",
+    "homeBase": "Home base",
+    "homeBasePlaceholder": "City, country",
+    "resetPassword": "Reset password",
+    "resetHelp": "Update your password to keep your account secure.",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "updating": "Updating…",
+    "updatePassword": "Update password"
+  }
+}

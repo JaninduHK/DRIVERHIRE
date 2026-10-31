@@ -11,7 +11,8 @@ export default {
     extend: {
       // carwithdriver.lk dashboard redesign tokens (direction 1a "Clean cards")
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', ...defaultTheme.fontFamily.sans],
+        // Noto fonts fill in Cyrillic and Japanese (loaded only on /ru and /ja pages).
+        sans: ['"Plus Jakarta Sans"', '"Noto Sans"', '"Noto Sans JP"', ...defaultTheme.fontFamily.sans],
       },
       colors: {
         // Values come from CSS custom properties (see src/index.css :root) so

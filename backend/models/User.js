@@ -243,6 +243,14 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // The website language a traveller last used ('de', 'ja', …; null = English).
+    // Their emails are written in it. Set from the page they use, so it follows
+    // them if they switch language.
+    language: {
+      type: String,
+      enum: ['en', 'de', 'fr', 'it', 'ru', 'ja', null],
+      default: null,
+    },
   },
   {
     timestamps: true,

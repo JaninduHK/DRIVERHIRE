@@ -1,5 +1,5 @@
 import { fetchVehicleDetails } from '../../src/services/vehicleCatalogApi.js';
-import { buildMeta, isVehicleIndexable } from '../lib/seo.js';
+import { buildMeta, isVehicleIndexable, metaLocale } from '../lib/seo.js';
 
 export async function loader({ params }) {
   const { vehicleId } = params;
@@ -16,20 +16,27 @@ export async function loader({ params }) {
   return { vehicle };
 }
 
-export function meta({ data }) {
+export function meta({ data, location }) {
+  const { locale, t } = metaLocale(location);
   const vehicle = data?.vehicle;
   if (!vehicle) {
     return buildMeta({
-      title: 'Vehicle not found | Car with Driver LK',
-      description: 'This vehicle could not be found.',
+      title: t('meta.vehicle.notFoundTitle'),
+      description: t('meta.vehicle.notFoundDescription'),
       path: '/vehicles',
       noindex: true,
+      locale,
     });
   }
-  const description = `Hire a ${vehicle.model}${vehicle.year ? ` (${vehicle.year})` : ''} with an English-speaking private driver in Sri Lanka. ${vehicle.seats} seats, fuel and insurance included, from $${vehicle.pricePerDay}/day.`;
+  const description = t('meta.vehicle.description', {
+    model: `${vehicle.model}${vehicle.year ? ` (${vehicle.year})` : ''}`,
+    seats: vehicle.seats,
+    price: vehicle.pricePerDay,
+  });
   return buildMeta({
-    title: `${vehicle.model} with Private Driver in Sri Lanka | Car with Driver LK`,
+    title: t('meta.vehicle.title', { model: vehicle.model }),
     description,
+    locale,
     path: `/vehicles/${vehicle.id}`,
     image: Array.isArray(vehicle.images) ? vehicle.images[0] : undefined,
     type: 'product',

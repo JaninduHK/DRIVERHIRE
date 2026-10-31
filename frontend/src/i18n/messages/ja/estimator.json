@@ -1,0 +1,32 @@
+{
+  "buckets": {
+    "sedan": {
+      "label": "セダン",
+      "seats": "1〜3人乗り"
+    },
+    "mpv": {
+      "label": "ミニバン",
+      "seats": "4〜6人乗り"
+    },
+    "van": {
+      "label": "バン",
+      "seats": "7〜10人乗り"
+    },
+    "coach": {
+      "label": "マイクロバス",
+      "seats": "11人乗り以上"
+    },
+    "flex": {
+      "label": "指定なし",
+      "seats": ""
+    }
+  },
+  "inclusions": {
+    "fuelAndInsurance": "燃料費・保険",
+    "driverMealsAndAccommodation": "ドライバーの食事・宿泊",
+    "meetAndGreetAtAirport": "空港でのお出迎え",
+    "englishSpeakingDriver": "英語を話すドライバー",
+    "parkingFeesAndTolls": "駐車料金・通行料",
+    "allTaxes": "税金すべて"
+  }
+}

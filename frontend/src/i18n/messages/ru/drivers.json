@@ -1,0 +1,86 @@
+{
+  "eyebrow": "Каталог водителей",
+  "title": "Найдите идеального водителя",
+  "searchPlaceholder": "Имя, услуга или направление",
+  "loadError": "Сейчас не удаётся загрузить водителей.",
+  "loading": "Загрузка…",
+  "loadingDrivers": "Загрузка водителей…",
+  "count": {
+    "one": "{count} одобренный водитель",
+    "few": "{count} одобренных водителя",
+    "many": "{count} одобренных водителей",
+    "other": "{count} одобренного водителя"
+  },
+  "clearFilters": "Сбросить фильтры",
+  "clear": "Убрать",
+  "tryAgain": "Попробовать снова",
+  "empty": "Нет водителей, подходящих под ваш запрос. Попробуйте другое ключевое слово или сбросьте фильтры.",
+  "perks": {
+    "englishSpeaking": "Говорит по-английски",
+    "airportMeetGreet": "Встреча в аэропорту",
+    "fuelIncluded": "Топливо включено",
+    "mealsCovered": "Питание оплачено",
+    "largeLuggage": "Крупный багаж"
+  },
+  "options": {
+    "any": "Любой",
+    "under50": "До $50",
+    "years5": "от 5 лет",
+    "years10": "от 10 лет",
+    "chauffeurGuide": "Шофёр-гид",
+    "recommended": "Рекомендуемые",
+    "highestRated": "С лучшим рейтингом",
+    "mostExperienced": "Самые опытные"
+  },
+  "chips": {
+    "perks": "Услуги",
+    "perksCount": {
+      "one": "{count} услуга",
+      "few": "{count} услуги",
+      "many": "{count} услуг",
+      "other": "{count} услуги"
+    },
+    "price": "Цена",
+    "reviews": "Отзывы"
+  },
+  "card": {
+    "newGuide": "Новый гид",
+    "years": {
+      "one": "{count} год",
+      "few": "{count} года",
+      "many": "{count} лет",
+      "other": "{count} года"
+    },
+    "sriLanka": "Шри-Ланка",
+    "quote": "По запросу",
+    "multidayTours": "Многодневные туры",
+    "reviews": {
+      "one": "{count} отзыв",
+      "few": "{count} отзыва",
+      "many": "{count} отзывов",
+      "other": "{count} отзыва"
+    },
+    "noReviews": "Отзывов пока нет",
+    "fallback": "Надёжный водитель для индивидуальных туров по всей Шри-Ланке.",
+    "avgDailyRate": "СРЕДНЯЯ ЦЕНА ЗА ДЕНЬ",
+    "perDay": "/день",
+    "viewDriver": "Смотреть водителя"
+  },
+  "filters": {
+    "title": "Фильтры",
+    "clearAll": "Сбросить всё",
+    "whatMatters": "Что для вас важно",
+    "verifiedLicence": "Проверенная лицензия",
+    "avgPrice": "Средняя цена за день",
+    "minRating": "Минимальный рейтинг",
+    "experience": "Опыт",
+    "sortBy": "Сортировать",
+    "reset": "Сбросить",
+    "show": {
+      "one": "Показать {count} водителя",
+      "few": "Показать {count} водителей",
+      "many": "Показать {count} водителей",
+      "other": "Показать {count} водителя"
+    }
+  }
+}

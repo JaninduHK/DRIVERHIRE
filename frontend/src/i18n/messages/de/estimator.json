@@ -1,0 +1,32 @@
+{
+  "buckets": {
+    "sedan": {
+      "label": "Limousine",
+      "seats": "1-3 Sitzplätze"
+    },
+    "mpv": {
+      "label": "Van (MPV)",
+      "seats": "4-6 Sitzplätze"
+    },
+    "van": {
+      "label": "Kleinbus",
+      "seats": "7-10 Sitzplätze"
+    },
+    "coach": {
+      "label": "Minibus",
+      "seats": "11+ Sitzplätze"
+    },
+    "flex": {
+      "label": "Flexibel / nicht angegeben",
+      "seats": ""
+    }
+  },
+  "inclusions": {
+    "fuelAndInsurance": "Kraftstoff & Versicherung",
+    "driverMealsAndAccommodation": "Verpflegung & Unterkunft des Fahrers",
+    "meetAndGreetAtAirport": "Empfang am Flughafen",
+    "englishSpeakingDriver": "Englischsprachiger Fahrer",
+    "parkingFeesAndTolls": "Park- & Mautgebühren",
+    "allTaxes": "Alle Steuern"
+  }
+}

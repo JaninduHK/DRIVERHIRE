@@ -1,0 +1,163 @@
+{
+  "hero": {
+    "badge": "Plus de 1200 avis authentiques nous font confiance",
+    "title": "Location de voiture au Sri Lanka <brand>avec un chauffeur</brand> qui connaît l'île.",
+    "lead": "Des chauffeurs agréés, des véhicules climatisés et des itinéraires construits autour de vos dates. Plages, région du thé, villes classées par l'UNESCO, le tout à un tarif journalier fixe, sans frais cachés.",
+    "planTrip": "Planifier mon voyage",
+    "browse": "Voir les véhicules et les chauffeurs",
+    "statRate": "Tarif journalier dès",
+    "statRating": "Note des clients",
+    "statReply": "Délai de réponse",
+    "statReplyValue": "< 1 h"
+  },
+  "form": {
+    "title": "Recevez des devis de chauffeurs en quelques minutes",
+    "intro": "Donnez-nous l'essentiel et nous vous mettons en relation avec des chauffeurs contrôlés qui vous envoient des prix fixes.",
+    "startDate": "Date de début",
+    "endDate": "Date de fin",
+    "pickup": "Prise en charge",
+    "dropoff": "Dépose",
+    "placePlaceholder": "Ville, hôtel ou aéroport",
+    "travellers": "Voyageurs",
+    "notes": "Détails de l'itinéraire",
+    "optional": "Facultatif",
+    "notesPlaceholder": "Les lieux que vous souhaitez voir, vos horaires de vol, des enfants ou des bagages supplémentaires. Tout ce qui aide les chauffeurs à établir un devis précis.",
+    "submit": "Obtenir des devis de chauffeurs",
+    "footnote": "Demande gratuite · Aucuns frais de réservation · Paiement directement au chauffeur"
+  },
+  "badges": {
+    "sltda": "Chauffeurs agréés par la SLTDA",
+    "coverage": "Dans toute l'île",
+    "priceGuarantee": "Garantie du prix réservé",
+    "support": "Assistance voyage 24 h/24, 7 j/7"
+  },
+  "how": {
+    "eyebrow": "Comment ça marche",
+    "title": "Trois étapes, de la demande à la prise en charge à l'aéroport",
+    "step1Title": "Partagez votre itinéraire",
+    "step1Body": "Vos dates, la taille de votre groupe et les lieux sur votre liste. Une idée approximative suffit : les chauffeurs vous aident à l'affiner.",
+    "step2Title": "Comparez de vrais devis",
+    "step2Body": "Comparez côte à côte le véhicule, le tarif journalier, les langues parlées et les avis. Écrivez aux chauffeurs avant de vous engager.",
+    "step3Title": "Confirmez votre réservation",
+    "step3Body": "Mettez-vous d'accord avec votre chauffeur sur l'itinéraire définitif et le tarif, puis confirmez. Vous recevez les détails du voyage par écrit et un contact direct avant votre départ."
+  },
+  "fleet": {
+    "eyebrow": "Une flotte pour chaque voyage",
+    "title": "Des véhicules pour des locations avec chauffeur dans tout le Sri Lanka",
+    "copy": "SUV modernes, berlines haut de gamme et vans pour les groupes, tous entretenus, équipés de GPS et accompagnés d'un chauffeur bilingue.",
+    "cta": "Voir tous les véhicules",
+    "error": "Impossible de charger les véhicules.",
+    "errorCta": "Ouvrir le catalogue",
+    "empty": "Aucun véhicule pour le moment. <link>Parcourir le catalogue</link>."
+  },
+  "vehicleTags": {
+    "bestValue": "Meilleur rapport qualité-prix",
+    "groupFriendly": "Idéal pour les groupes",
+    "longTours": "Longs circuits"
+  },
+  "drivers": {
+    "eyebrow": "Chauffeurs partenaires",
+    "title": "Découvrez les chauffeurs que les voyageurs demandent par leur nom",
+    "copy": "Antécédents vérifiés, assurés et formés à l'accueil. Ils connaissent les points de vue, les sites historiques et les meilleurs cafés en bord de route.",
+    "cta": "Explorer l'annuaire des chauffeurs",
+    "error": "Impossible de charger les chauffeurs.",
+    "errorCta": "Voir l'annuaire",
+    "empty": "Aucun chauffeur publié pour le moment. <link>Parcourir l'annuaire</link>."
+  },
+  "pricing": {
+    "eyebrow": "Un coût de voyage transparent",
+    "title": "Un tarif journalier. Tout l'essentiel est inclus.",
+    "body": "Aucune commission en plus, aucune mauvaise surprise au kilomètre. Vous voyez le montant total avant de confirmer, et vous payez directement votre chauffeur.",
+    "items": [
+      "Rémunération, repas et hébergement du chauffeur",
+      "Carburant et 120–150 km par jour dans toute l'île",
+      "Assurance complète du véhicule et assistance 24 h/24, 7 j/7",
+      "Accueil à l'aéroport le jour de votre arrivée"
+    ],
+    "sampleTitle": "EXEMPLE DE VOYAGE DE 6 JOURS · 1–3 VOYAGEURS",
+    "rowVehicle": "Véhicule et chauffeur ($50 × 6 jours)",
+    "rowFuel": "Carburant et 120–150 km/jour",
+    "rowAirport": "Prise en charge à l'aéroport",
+    "rowFee": "Frais de réservation de la plateforme",
+    "included": "Inclus",
+    "total": "Total estimé",
+    "cta": "Estimer mon propre itinéraire"
+  },
+  "reviews": {
+    "eyebrow": "Récits de voyageurs",
+    "title": "4,9 sur 5 pour les voyages avec chauffeur-guide",
+    "error": "Impossible de charger les avis.",
+    "empty": "Soyez le premier à partager votre voyage. <link>Planifiez votre voyage</link>."
+  },
+  "faq": {
+    "eyebrow": "FAQ",
+    "title": "Louer une voiture avec chauffeur au Sri Lanka",
+    "intro": "Vous avez encore un doute ? Écrivez-nous sur WhatsApp au <phone>+94 76 3021 483</phone> : nous répondons généralement dans l'heure.",
+    "cost": {
+      "q": "Combien coûte une voiture avec chauffeur au Sri Lanka ?",
+      "a": "Les chauffeurs fixent leurs propres tarifs, vous verrez donc une fourchette de prix. Les berlines commencent généralement autour de $50 par jour et les grands vans de tourisme atteignent environ $95. La plupart des tarifs journaliers couvrent le véhicule, le carburant, 120–150 km par jour dans toute l'île ainsi que les repas et l'hébergement du chauffeur, et chaque annonce précise exactement ce qui est inclus. Pour un montant basé sur votre propre itinéraire et vos dates, utilisez le calculateur de coût de voyage."
+    },
+    "free": {
+      "q": "La réservation est-elle gratuite et dois-je verser un acompte ?",
+      "a": "La plateforme est entièrement gratuite pour les touristes : consulter, recevoir des devis, discuter et réserver ne vous coûte rien. Il n'y a ni acompte ni avance. Vous payez votre chauffeur directement le premier jour de votre voyage."
+    },
+    "quotes": {
+      "q": "Comment obtenir des devis pour mon propre itinéraire ?",
+      "a": "Publiez votre projet de circuit avec vos dates, le nombre de passagers et les lieux que vous souhaitez voir. Les chauffeurs disponibles vous envoient des devis gratuitement, et vous pouvez les comparer côte à côte, poser vos questions à n'importe quel chauffeur et négocier avant de vous engager."
+    },
+    "cancel": {
+      "q": "Et si je dois annuler ?",
+      "bullets": [
+        "Plus de 2 jours avant votre date de début : annulation gratuite, rien à payer.",
+        "Dans les 2 jours précédant votre date de début : 50 % du total reviennent au chauffeur.",
+        "Une fois le voyage commencé : 100 % des jours déjà effectués, plus 50 % des jours restants."
+      ],
+      "outro": "Votre chauffeur refuse d'autres réservations pour vous réserver ces dates : écrivez-lui dès que vos projets changent."
+    },
+    "licensed": {
+      "q": "Vos chauffeurs sont-ils agréés et assurés ?",
+      "a": "Chaque chauffeur de la plateforme est enregistré auprès de la SLTDA et dispose d'une assurance valide, et les documents relatifs au permis et au véhicule sont vérifiés avant la mise en ligne d'un profil. Les avis proviennent de touristes qui ont réellement voyagé avec ce chauffeur et restent définitivement sur le profil, bons comme mauvais : lisez-en quelques-uns avant de décider."
+    }
+  },
+  "cta": {
+    "eyebrow": "Voiture avec chauffeur · Circuits au Sri Lanka",
+    "title": "Prêt à réserver le bon chauffeur pour votre itinéraire ?",
+    "body": "Indiquez-nous vos dates, le nombre de passagers et vos envies. Nous vous proposons le véhicule et le chauffeur idéaux, et vous tenons informé jusqu'à votre arrivée.",
+    "quote": "Obtenir un devis personnalisé",
+    "call": "Appeler le {phone}"
+  },
+  "card": {
+    "newGuide": "Nouveau guide",
+    "years": {
+      "one": "{count} an",
+      "other": "{count} ans"
+    },
+    "sriLankaTrip": "Voyage au Sri Lanka",
+    "quote": "Sur devis",
+    "seats": {
+      "one": "{count} place",
+      "other": "{count} places"
+    },
+    "year": "Année {year}",
+    "vehicleAlt": "Véhicule",
+    "featuredVehicle": "Véhicule à la une",
+    "vehicleFallback": "Confortable et prêt pour les road trips au Sri Lanka, avec une climatisation puissante.",
+    "from": "À PARTIR DE",
+    "perDay": "/jour",
+    "getQuote": "Demander un devis",
+    "islandWide": "Dans toute l'île",
+    "multidayTours": "Circuits de plusieurs jours",
+    "reviews": {
+      "one": "{count} avis",
+      "other": "{count} avis"
+    },
+    "noReviews": "Pas encore d'avis",
+    "driverFallback": "Un chauffeur de confiance pour des circuits sur mesure dans tout le Sri Lanka.",
+    "avgDailyRate": "TARIF JOURNALIER MOYEN",
+    "viewDriver": "Voir le chauffeur",
+    "readMore": "Lire la suite",
+    "traveller": "Voyageur",
+    "reviewFallback": "Un voyage cinq étoiles en voiture avec chauffeur à travers le Sri Lanka.",
+    "tripPhoto": "Photo du voyage de {name}"
+  }
+}

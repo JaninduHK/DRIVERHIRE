@@ -1,0 +1,123 @@
+{
+  "perDay": "/jour",
+  "minDrive": "~{count} min de route",
+  "hrsDrive": "~{count} h de route",
+  "days": {
+    "one": "{count} jour",
+    "other": "{count} jours"
+  },
+  "nights": {
+    "one": "{count} nuit",
+    "other": "{count} nuits"
+  },
+  "passengers": {
+    "one": "{count} passager",
+    "other": "{count} passagers"
+  },
+  "passengersWord": "passagers",
+  "step": "Étape {n}",
+  "summary": {
+    "estimated": "Coût estimé du voyage",
+    "likelyRange": "Fourchette probable",
+    "totalDistance": "Distance totale",
+    "buffer": "Prévoyez environ {amount} de marge pour des kilomètres supplémentaires ou des surclassements.",
+    "request": "Demander des devis gratuits aux chauffeurs",
+    "noPayment": "Aucun paiement maintenant. Les chauffeurs répondent avec un prix fixe pour cet itinéraire précis."
+  },
+  "hero": {
+    "badge": "Calculateur de coût de voyage",
+    "title": "Construisez votre itinéraire au Sri Lanka et découvrez le coût réel d'une voiture avec chauffeur",
+    "lead": "Ajoutez vos étapes jour après jour. Nous calculons la distance de route entre elles et estimons le prix du voyage à partir des tarifs actuels des chauffeurs, et non d'une moyenne forfaitaire du secteur.",
+    "liveFleet": "Flotte en direct",
+    "approvedVehicles": "Véhicules de chauffeurs approuvés",
+    "medianRate": "Tarif journalier médian",
+    "forPassengers": {
+      "one": "Pour {count} passager",
+      "other": "Pour {count} passagers"
+    },
+    "forAny": "Pour un nombre quelconque de passagers",
+    "typicalRange": "Fourchette journalière habituelle",
+    "middle50": "Les 50 % centraux des devis",
+    "thisItinerary": "Cet itinéraire",
+    "stops": {
+      "one": "{count} étape",
+      "other": "{count} étapes"
+    }
+  },
+  "who": {
+    "title": "Qui voyage",
+    "startDate": "Date de début",
+    "passengers": "Passagers"
+  },
+  "itinerary": {
+    "title": "Votre itinéraire",
+    "lead": "Choisissez une destination et le nombre de nuits que vous y passez. Les distances se mettent à jour au fur et à mesure.",
+    "arrive": "Arrivée",
+    "removeStop": "Supprimer l'étape",
+    "destination": "Destination",
+    "searchPlaceholder": "Rechercher une destination…",
+    "noMatch": "Aucune destination ne correspond à cette recherche.",
+    "nightsHere": "Nuits sur place",
+    "nightsLabel": "Nuits",
+    "fewerNights": "Moins de nuits",
+    "moreNights": "Plus de nuits",
+    "sameDay": "Le même jour",
+    "addStop": "Ajouter une étape",
+    "startOver": "Recommencer"
+  },
+  "classes": {
+    "title": "Catégories de véhicules recommandées pour cet itinéraire",
+    "leadCount": "Prix établis à partir d'annonces actuelles pouvant accueillir {count} personnes, et non d'un tarif de base supposé.",
+    "leadGroup": "Prix établis à partir d'annonces actuelles pouvant accueillir votre groupe, et non d'un tarif de base supposé.",
+    "noneCount": "Aucun véhicule actuellement disponible ne convient à {count} passagers. Essayez avec moins de passagers, ou <link>demandez directement des devis</link> : les chauffeurs ont parfois des véhicules qui ne figurent pas encore dans les annonces publiques.",
+    "noneAny": "Aucun véhicule actuellement disponible ne convient à autant de passagers. Essayez avec moins de passagers, ou <link>demandez directement des devis</link> : les chauffeurs ont parfois des véhicules qui ne figurent pas encore dans les annonces publiques.",
+    "example": "ex. {model}",
+    "bestMatch": "Meilleur choix",
+    "imageAlt": "{model} — exemple de {class} proposé sur carwithdriver.lk",
+    "listed": {
+      "one": "{count} annonce",
+      "other": "{count} annonces"
+    },
+    "perDayOver": "≈ {amount}/jour sur {days}",
+    "getQuotes": "Obtenir des devis"
+  },
+  "faq": {
+    "title": "Questions fréquentes",
+    "summary": "Les voyageurs pour cette taille de groupe paient le plus souvent entre <b>{low} et {high} par jour</b> pour un chauffeur privé et un véhicule, selon la taille de la voiture. Le tarif journalier couvre normalement le chauffeur, le carburant pour une journée habituelle de 120–150 km, ainsi que l'hébergement et les repas du chauffeur. Les billets d'entrée, les jeeps de safari et les péages d'autoroute se paient généralement à part.",
+    "popularRoutes": "Itinéraires populaires estimés ici par les voyageurs",
+    "fuel": {
+      "q": "Le carburant est-il inclus dans le tarif journalier ?",
+      "a": "Pour une journée de circuit normale d'environ 120–150 km, oui, pour la plupart des annonces : consultez le panneau « Ce qui est inclus » pour voir combien de véhicules correspondant à votre itinéraire l'incluent. Les longues journées de transfert entraînent parfois un supplément au kilomètre à la place."
+    },
+    "hotel": {
+      "q": "Dois-je payer l'hôtel et les repas du chauffeur ?",
+      "a": "La plupart des chauffeurs organisent eux-mêmes leur hébergement et leurs repas lors des voyages de plusieurs jours, et ces frais sont généralement compris dans le tarif journalier plutôt que facturés à part ; là encore, le panneau des inclusions reflète des annonces réelles pour votre recherche actuelle."
+    },
+    "notIncluded": {
+      "q": "Qu'est-ce qui n'est généralement pas inclus ?",
+      "a": "Les billets d'entrée de sites comme Sigiriya ou le temple de la Dent, la location de jeeps de safari dans les parcs nationaux et les péages d'autoroute se paient généralement en plus du tarif journalier du chauffeur."
+    },
+    "accuracy": {
+      "q": "Quelle est la précision de cette estimation ?",
+      "a": "Elle est établie à partir des tarifs actuels des chauffeurs approuvés sur carwithdriver.lk et des distances routières réelles entre vos étapes, et non d'une moyenne forfaitaire du secteur. Le prix final vient des chauffeurs eux-mêmes une fois que vous demandez des devis pour votre itinéraire précis."
+    },
+    "change": {
+      "q": "Puis-je modifier l'itinéraire après la réservation ?",
+      "a": "Les petits changements ne posent normalement aucun problème et se règlent directement avec votre chauffeur. Si vous ajoutez des jours ou modifiez sensiblement l'itinéraire, votre chauffeur vous envoie une offre mise à jour avant le début du voyage."
+    }
+  },
+  "legs": {
+    "title": "Distance par trajet",
+    "empty": "Ajoutez une deuxième étape pour voir les distances entre les étapes.",
+    "paceOk": "Rythme confortable : environ {km} km par jour, avec du temps pour les arrêts.",
+    "paceFast": "Cela représente environ {km} km par jour. Pensez à ajouter une nuit quelque part pour que les journées de route restent agréables."
+  },
+  "included": {
+    "title": "Ce qui est inclus dans cette flotte",
+    "empty": "Indiquez un nombre de passagers correspondant à au moins un véhicule pour voir les taux d'inclusion réels.",
+    "rate": {
+      "one": "<b>{label}</b> : inclus pour {percent} % du {count} véhicule correspondant",
+      "other": "<b>{label}</b> : inclus pour {percent} % des {count} véhicules correspondants"
+    }
+  }
+}

@@ -1,5 +1,7 @@
+import { localizeServerMessage } from '../i18n/serverMessages.js';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from '../i18n/router.jsx';
+import { Trans, useI18n } from '../i18n/I18nProvider.jsx';
 import toast from 'react-hot-toast';
 import {
   AlertTriangle,
@@ -40,6 +42,7 @@ import {
   fetchCurrentUser as fetchProfileCurrentUser,
   updateProfile as updateProfileRequest,
   updatePassword as updatePasswordRequest,
+  saveLanguage,
 } from '../services/profileApi.js';
 import {
   fetchMyBriefs as fetchTravelerBriefs,
@@ -58,21 +61,22 @@ import { clearPendingBrief, hasPendingBrief, readPendingBrief } from '../lib/pen
 import BriefRequestBubble from '../components/BriefRequestBubble.jsx';
 import MessageMeta from '../components/MessageMeta.jsx';
 import { offerExpiryNotice, offerExpiryClass } from '../lib/offerExpiry.js';
+import { translateLicenseType } from '../i18n/labels.js';
 
 const NAV_ITEMS = [
-  { id: 'overview', label: 'Overview', icon: User2 },
-  { id: 'bookings', label: 'My Bookings', icon: CalendarDays },
-  { id: 'messages', label: 'Messages', icon: MessageCircle },
-  { id: 'requests', label: 'My Requests', icon: MapPin },
-  { id: 'settings', label: 'Settings', icon: SettingsIcon },
+  { id: 'overview', icon: User2 },
+  { id: 'bookings', icon: CalendarDays },
+  { id: 'messages', icon: MessageCircle },
+  { id: 'requests', icon: MapPin },
+  { id: 'settings', icon: SettingsIcon },
 ];
 const VALID_TABS = NAV_ITEMS.map((item) => item.id);
 
 // External browse links surfaced in the mobile drawer (navigate to public pages, not dashboard tabs).
 const BROWSE_LINKS = [
-  { id: 'browse-vehicles', label: 'Vehicles', icon: Car, href: '/vehicles' },
-  { id: 'browse-drivers', label: 'Drivers', icon: Users, href: '/drivers' },
-  { id: 'browse-trip-cost', label: 'Trip Cost', icon: Calculator, href: '/trip-cost-calculator' },
+  { id: 'browse-vehicles', icon: Car, href: '/vehicles' },
+  { id: 'browse-drivers', icon: Users, href: '/drivers' },
+  { id: 'browse-trip-cost', icon: Calculator, href: '/trip-cost-calculator' },
 ];
 
 // Explicit order for the mobile drawer, interleaving dashboard tabs with browse links.
@@ -126,23 +130,22 @@ const toIsoDateString = (value, boundary = 'start') => {
   return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
 };
 
-const BOOKING_CANCELLATION_NOTICE = [
-  'Free to cancel up to 2 days before start date.',
-  '50% of total cost to be paid to driver if cancelling within 2 days of start date.',
-  '100% of completed days and 50% of uncompleted days to be paid to driver if cancelling after start date.',
-].join('\n\n');
-
 // Presets keep the reason useful to admin, and the explanation is required so a
-// cancellation row is never just a one-word shrug.
+// cancellation row is never just a one-word shrug. The English value is what is
+// saved (admin and the driver read English); dash.cancel.reasons.<key> is shown.
 const CANCELLATION_REASONS = [
-  'Travel plans changed',
-  'Found a better price elsewhere',
-  'Trip dates moved',
-  'Driver stopped responding',
-  'Driver asked to cancel',
-  'No longer travelling to Sri Lanka',
-  'Something else',
+  { key: 'plansChanged', value: 'Travel plans changed' },
+  { key: 'betterPrice', value: 'Found a better price elsewhere' },
+  { key: 'datesMoved', value: 'Trip dates moved' },
+  { key: 'driverSilent', value: 'Driver stopped responding' },
+  { key: 'driverAsked', value: 'Driver asked to cancel' },
+  { key: 'notTravelling', value: 'No longer travelling to Sri Lanka' },
+  { key: 'other', value: 'Something else' },
 ];
+
+// Dates on this page follow the page language; set once per render by the
+// dashboard (the language never changes without a full page load).
+let DATE_LOCALE = 'en-US';
 
 const buildBriefForm = () => ({
   startDate: '',
@@ -163,6 +166,8 @@ const buildTravelerProfileForm = (profile) => ({
 });
 
 const TravelerDashboard = () => {
+  const { t, intl, locale } = useI18n();
+  DATE_LOCALE = intl;
   const [searchParams] = useSearchParams();
   const initialTab = VALID_TABS.includes(searchParams.get('tab'))
     ? searchParams.get('tab')
@@ -197,8 +202,8 @@ const TravelerDashboard = () => {
 
   const location = useLocation();
   const navigate = useNavigate();
-  const travelerName = profileState?.data?.name || 'Traveller';
-  const travelerFirstName = profileState?.data?.name?.split(' ')?.[0] || 'traveller';
+  const travelerName = profileState?.data?.name || t('dash.traveller');
+  const travelerFirstName = profileState?.data?.name?.split(' ')?.[0] || t('dash.travellerLower');
 
   const unreadMessageCount = useMemo(
     () => conversationsState.items.reduce((sum, conv) => sum + (conv.unreadCount || 0), 0),
@@ -214,9 +219,9 @@ const TravelerDashboard = () => {
 
   const handleLogout = useCallback(() => {
     clearStoredToken();
-    toast.success('You have been logged out.');
+    toast.success(t('dash.toast.loggedOut'));
     navigate('/');
-  }, [navigate]);
+  }, [navigate, t]);
 
   const loadConversations = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setConversationsState((prev) => ({ ...prev, loading: true, error: '' }));
@@ -226,10 +231,10 @@ const TravelerDashboard = () => {
       setConversationsState({ loading: false, error: '', items });
     } catch (error) {
       if (!silent) {
-        setConversationsState({ loading: false, error: error?.message || 'Unable to load conversations.', items: [] });
+        setConversationsState({ loading: false, error: error?.message || t('dash.errors.conversations'), items: [] });
       }
     }
-  }, []);
+  }, [t]);
 
   const loadMessages = useCallback(async (conversationId, { silent = false } = {}) => {
     if (!conversationId) {
@@ -255,9 +260,9 @@ const TravelerDashboard = () => {
         items: prev.items.map((item) => (item.id === conversationId ? { ...item, unreadCount: 0 } : item)),
       }));
     } catch (error) {
-      if (!silent) setMessagesState({ loading: false, error: error?.message || 'Unable to load messages.', items: [], booking: null });
+      if (!silent) setMessagesState({ loading: false, error: error?.message || t('dash.errors.messages'), items: [], booking: null });
     }
-  }, []);
+  }, [t]);
 
   const loadTravelerBookings = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setTravelerBookingsState((prev) => ({ ...prev, loading: true, error: '' }));
@@ -265,9 +270,9 @@ const TravelerDashboard = () => {
       const data = await fetchTravelerBookings();
       setTravelerBookingsState({ loading: false, error: '', items: Array.isArray(data?.bookings) ? data.bookings : [] });
     } catch (error) {
-      setTravelerBookingsState({ loading: false, error: error?.message || 'Unable to load your bookings right now.', items: [] });
+      setTravelerBookingsState({ loading: false, error: error?.message || t('dash.errors.bookings'), items: [] });
     }
-  }, []);
+  }, [t]);
 
   const loadTravelerBriefs = useCallback(async ({ silent = false } = {}) => {
     if (!silent) setTravelerBriefsState((prev) => ({ ...prev, loading: true, error: '' }));
@@ -275,9 +280,9 @@ const TravelerDashboard = () => {
       const data = await fetchTravelerBriefs();
       setTravelerBriefsState({ loading: false, error: '', items: Array.isArray(data?.briefs) ? data.briefs : [] });
     } catch (error) {
-      setTravelerBriefsState({ loading: false, error: error?.message || 'Unable to load your tour briefs.', items: [] });
+      setTravelerBriefsState({ loading: false, error: error?.message || t('dash.errors.briefs'), items: [] });
     }
-  }, []);
+  }, [t]);
 
   const loadTravelerProfile = useCallback(async ({ silent = false } = {}) => {
     setProfileState((prev) => ({ ...prev, loading: silent ? prev.loading : true, error: silent ? prev.error : '' }));
@@ -285,13 +290,20 @@ const TravelerDashboard = () => {
       const response = await fetchProfileCurrentUser();
       setProfileState((prev) => ({ ...prev, loading: false, error: '', data: response?.user || null }));
     } catch (error) {
-      setProfileState((prev) => ({ ...prev, loading: false, data: null, error: error?.message || 'Unable to load profile.' }));
+      setProfileState((prev) => ({ ...prev, loading: false, data: null, error: error?.message || t('dash.errors.profile') }));
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadTravelerProfile({ silent: false });
   }, [loadTravelerProfile]);
+
+  // Emails follow the language the traveller uses the site in.
+  const savedLanguage = profileState.data ? profileState.data.language || 'en' : null;
+  useEffect(() => {
+    if (!savedLanguage || savedLanguage === locale) return;
+    saveLanguage(locale).catch(() => {});
+  }, [savedLanguage, locale]);
 
   useEffect(() => {
     loadTravelerBookings();
@@ -385,7 +397,7 @@ const TravelerDashboard = () => {
       await markConversationRead(selectedConversationId);
       loadConversations({ silent: true });
     } catch (error) {
-      toast.error(error?.message || 'Unable to send message.');
+      toast.error(error?.message || t('dash.errors.send'));
     } finally {
       setSendingMessage(false);
     }
@@ -411,10 +423,10 @@ const TravelerDashboard = () => {
           ),
         }));
       }
-      toast.success('Request sent. The driver will reply with a new offer.');
+      toast.success(t('dash.toast.newOfferRequested'));
       loadConversations({ silent: true });
     } catch (error) {
-      toast.error(error?.message || 'Unable to request a new offer.');
+      toast.error(error?.message || t('dash.errors.newOffer'));
     } finally {
       setRequestingOfferId('');
     }
@@ -426,7 +438,7 @@ const TravelerDashboard = () => {
     if (typeof vehicleRef === 'string') vehicleId = vehicleRef;
     else if (vehicleRef && typeof vehicleRef === 'object') vehicleId = vehicleRef.id || vehicleRef._id || null;
     if (!vehicleId) {
-      toast.error('Vehicle details are missing for this offer.');
+      toast.error(t('dash.errors.offerVehicle'));
       return;
     }
     navigate(`/checkout/${vehicleId}?offer=${message.id}`, { state: { offerId: message.id } });
@@ -437,46 +449,46 @@ const TravelerDashboard = () => {
       setProfileState((prev) => ({ ...prev, savingProfile: true }));
       try {
         await updateProfileRequest(payload);
-        toast.success('Profile updated.');
+        toast.success(t('dash.toast.profileUpdated'));
         await loadTravelerProfile({ silent: true });
       } catch (error) {
-        toast.error(error?.message || 'Unable to update profile.');
+        toast.error(error?.message || t('dash.errors.updateProfile'));
         throw error;
       } finally {
         setProfileState((prev) => ({ ...prev, savingProfile: false }));
       }
     },
-    [loadTravelerProfile]
+    [loadTravelerProfile, t]
   );
 
   const handleTravelerPasswordChange = useCallback(async (payload) => {
     setProfileState((prev) => ({ ...prev, savingPassword: true }));
     try {
       await updatePasswordRequest(payload);
-      toast.success('Password updated.');
+      toast.success(t('dash.toast.passwordUpdated'));
     } catch (error) {
-      toast.error(error?.message || 'Unable to update password.');
+      toast.error(error?.message || t('dash.errors.updatePassword'));
       throw error;
     } finally {
       setProfileState((prev) => ({ ...prev, savingPassword: false }));
     }
-  }, []);
+  }, [t]);
 
   const handleTravelerBriefCreate = useCallback(
     async (payload) => {
       setCreatingBrief(true);
       try {
         await createTravelerBrief(payload);
-        toast.success('Tour brief posted.');
+        toast.success(t('dash.toast.briefPosted'));
         await loadTravelerBriefs({ silent: true });
       } catch (error) {
-        toast.error(error?.message || 'Unable to post tour brief.');
+        toast.error(error?.message || t('dash.errors.postBrief'));
         throw error;
       } finally {
         setCreatingBrief(false);
       }
     },
-    [loadTravelerBriefs]
+    [loadTravelerBriefs, t]
   );
 
   const headerProps = { onMenu: () => setDrawerOpen(true), travelerName };
@@ -551,12 +563,13 @@ const TravelerDashboard = () => {
 
   const navItems = NAV_ITEMS.map((item) => ({
     ...item,
+    label: t(`dash.nav.${item.id}`),
     active: item.id === activeTab,
     badge: item.id === 'messages' ? unreadMessageCount : 0,
   }));
   // Mobile drawer interleaves dashboard tabs with public browse links per DRAWER_ORDER.
   const drawerItemsById = {
-    ...Object.fromEntries(BROWSE_LINKS.map((link) => [link.id, link])),
+    ...Object.fromEntries(BROWSE_LINKS.map((link) => [link.id, { ...link, label: t(`dash.nav.${link.id}`) }])),
     ...Object.fromEntries(navItems.map((item) => [item.id, item])),
   };
   const drawerNavItems = DRAWER_ORDER.map((id) => drawerItemsById[id]).filter(Boolean);
@@ -576,13 +589,13 @@ const TravelerDashboard = () => {
         onClose={() => setDrawerOpen(false)}
         navItems={drawerNavItems}
         onSelect={handleNavSelect}
-        user={{ name: travelerName, roleLabel: 'Traveller' }}
+        user={{ name: travelerName, roleLabel: t('dash.traveller') }}
         onLogout={handleLogout}
       />
       <DashboardSidebar
         navItems={navItems}
         onSelect={(item) => setActiveTab(item.id)}
-        user={{ name: travelerName, roleLabel: 'Traveller' }}
+        user={{ name: travelerName, roleLabel: t('dash.traveller') }}
         onLogout={handleLogout}
       />
       <div className="mx-auto min-h-screen w-full max-w-[480px] bg-canvas shadow-[0_0_60px_rgba(15,31,45,0.06)] lg:mx-0 lg:max-w-none lg:flex-1 lg:shadow-none">
@@ -605,6 +618,7 @@ const TravelerOverview = ({
   onNavigate,
   onOpenConversation,
 }) => {
+  const { t } = useI18n();
   const now = Date.now();
   const isCancelled = (b) => ['cancelled', 'rejected'].includes(b.status);
   const upcoming = bookings.filter((b) => !isCancelled(b) && (!b.endDate || new Date(b.endDate).getTime() >= now));
@@ -631,7 +645,7 @@ const TravelerOverview = ({
             <button
               type="button"
               onClick={() => onNavigate('messages')}
-              aria-label="Messages"
+              aria-label={t('dash.nav.messages')}
               className="relative grid h-10 w-10 place-items-center rounded-xl bg-white/[0.18] text-white transition hover:bg-white/25"
             >
               <Mail className="h-[17px] w-[17px]" strokeWidth={1.8} />
@@ -644,19 +658,19 @@ const TravelerOverview = ({
         }
       >
         <div className="pt-3.5">
-          <p className="text-[12px] font-extrabold tracking-[0.08em] text-white/80">TRAVELLER DASHBOARD</p>
-          <h1 className="mt-1 text-[25px] font-extrabold leading-tight tracking-tight">Welcome back, {firstName}</h1>
+          <p className="text-[12px] font-extrabold tracking-[0.08em] text-white/80">{t('dash.overview.eyebrow')}</p>
+          <h1 className="mt-1 text-[25px] font-extrabold leading-tight tracking-tight">{t('dash.overview.welcome', { name: firstName })}</h1>
           <p className="mt-1.5 text-[13.5px] text-white/85">
-            Manage your trips, conversations, and requests all in one place.
+            {t('dash.overview.lead')}
           </p>
         </div>
       </MobileHeader>
 
       <Sheet>
         <div className="flex gap-2.5">
-          <OverviewStat value={upcoming.length} label="Upcoming" />
-          <OverviewStat value={completed.length} label="Completed" />
-          <OverviewStat value={formatCurrency(totalSpent)} label="Total spent" />
+          <OverviewStat value={upcoming.length} label={t('dash.overview.upcoming')} />
+          <OverviewStat value={completed.length} label={t('dash.overview.completed')} />
+          <OverviewStat value={formatCurrency(totalSpent)} label={t('dash.overview.totalSpent')} />
         </div>
 
         <OverviewRequestsSlot briefsState={briefsState} onRequest={onRequestQuotes} onNavigate={onNavigate} className="mt-3.5" />
@@ -665,22 +679,22 @@ const TravelerOverview = ({
           <NextTripCard trip={nextTrip} />
         ) : (
           <div className="mt-3.5 rounded-[20px] bg-white p-5 text-center text-sm text-muted shadow-card">
-            No upcoming trips yet.{' '}
+            {t('dash.overview.noUpcoming')}{' '}
             <Link to="/vehicles" className="font-bold text-brand-dark">
-              Browse vehicles
+              {t('dash.browseVehicles')}
             </Link>
           </div>
         )}
 
         <div className="mb-2.5 mt-5 flex items-center gap-2.5 px-0.5">
-          <b className="text-base font-extrabold text-ink">Recent messages</b>
+          <b className="text-base font-extrabold text-ink">{t('dash.overview.recentMessages')}</b>
           {unreadCount > 0 ? (
             <span className="rounded-full bg-[#f43f5e] px-2 py-0.5 text-[11px] font-extrabold text-white">{unreadCount}</span>
           ) : null}
         </div>
         {recent.length === 0 ? (
           <div className="rounded-[18px] bg-white p-6 text-center text-sm text-muted shadow-card">
-            No conversations yet. Message a driver from a vehicle page.
+            {t('dash.overview.noConversationsHint')}
           </div>
         ) : (
           <div className="grid gap-3 lg:grid-cols-2">
@@ -704,14 +718,14 @@ const TravelerOverview = ({
             style={{ background: 'linear-gradient(120deg,#0f7a45,#10a35a 60%,#18b866)' }}
           >
             <div>
-              <p className="text-[12px] font-extrabold tracking-[0.08em] text-white/80">TRAVELLER DASHBOARD</p>
-              <div className="mt-1 text-[28px] font-extrabold tracking-tight">Welcome back, {firstName}</div>
-              <p className="mt-1.5 text-[14px] text-white/85">Manage your trips, conversations, and requests all in one place.</p>
+              <p className="text-[12px] font-extrabold tracking-[0.08em] text-white/80">{t('dash.overview.eyebrow')}</p>
+              <div className="mt-1 text-[28px] font-extrabold tracking-tight">{t('dash.overview.welcome', { name: firstName })}</div>
+              <p className="mt-1.5 text-[14px] text-white/85">{t('dash.overview.lead')}</p>
             </div>
             <div className="flex flex-shrink-0 gap-3.5">
-              <DeskStat value={upcoming.length} label="Upcoming" />
-              <DeskStat value={completed.length} label="Completed" />
-              <DeskStat value={formatCurrency(totalSpent)} label="Total spent" />
+              <DeskStat value={upcoming.length} label={t('dash.overview.upcoming')} />
+              <DeskStat value={completed.length} label={t('dash.overview.completed')} />
+              <DeskStat value={formatCurrency(totalSpent)} label={t('dash.overview.totalSpent')} />
             </div>
           </div>
 
@@ -722,13 +736,13 @@ const TravelerOverview = ({
           <div className="mt-[22px] grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-5">
             <div className="min-w-0 rounded-[18px] bg-white p-5 shadow-card">
               <div className="mb-3.5 flex items-center justify-between gap-3">
-                <b className="text-[16px] text-ink">Upcoming trips</b>
+                <b className="text-[16px] text-ink">{t('dash.overview.upcomingTrips')}</b>
                 <button type="button" onClick={() => onNavigate('bookings')} className="flex-shrink-0 whitespace-nowrap text-[13px] font-bold text-brand-dark">
-                  View all
+                  {t('dash.overview.viewAll')}
                 </button>
               </div>
               {upcoming.length === 0 ? (
-                <p className="text-sm text-muted">No upcoming trips yet.</p>
+                <p className="text-sm text-muted">{t('dash.overview.noUpcoming')}</p>
               ) : (
                 <div className="flex flex-col gap-3">
                   {upcoming.slice(0, 4).map((b, i) => (
@@ -739,13 +753,13 @@ const TravelerOverview = ({
             </div>
             <div className="min-w-0 rounded-[18px] bg-white p-5 shadow-card">
               <div className="mb-3.5 flex items-center justify-between">
-                <b className="text-[16px] text-ink">Recent messages</b>
+                <b className="text-[16px] text-ink">{t('dash.overview.recentMessages')}</b>
                 {unreadCount > 0 ? (
                   <span className="rounded-full bg-[#f43f5e] px-2 py-0.5 text-[11px] font-extrabold text-white">{unreadCount}</span>
                 ) : null}
               </div>
               {recent.length === 0 ? (
-                <p className="text-sm text-muted">No conversations yet.</p>
+                <p className="text-sm text-muted">{t('dash.overview.noConversations')}</p>
               ) : (
                 <div className="flex flex-col gap-3.5">
                   {recent.map((c, i) => (
@@ -761,21 +775,20 @@ const TravelerOverview = ({
   );
 };
 
-const QUOTE_STEPS = [
-  { title: 'Tell us about your trip', body: 'Dates, where you start and end, and how many of you are travelling.' },
-  { title: 'Drivers send you offers', body: 'Each offer has a fixed price and vehicle. We email you when one arrives.' },
-  { title: 'Chat, compare and book', body: 'Ask questions, compare prices, and book the one you like in Messages.' },
-];
+// Text in dash.quoteSteps.step<n>.
+const QUOTE_STEPS = ['1', '2', '3'];
 
 // The overview's starting point for a traveller who signed up directly and has
 // nothing here yet: says what the site does for them and where to begin.
-const RequestQuotesCard = ({ onRequest, className = '' }) => (
+const RequestQuotesCard = ({ onRequest, className = '' }) => {
+  const { t } = useI18n();
+  return (
   <section className={`rounded-[20px] border-[1.5px] border-[#cdeede] bg-white p-5 shadow-card ${className}`}>
     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div className="min-w-0">
-        <b className="block text-[17px] font-extrabold text-ink">Get quotes from drivers</b>
+        <b className="block text-[17px] font-extrabold text-ink">{t('dash.quoteCard.title')}</b>
         <p className="mt-1 text-[13.5px] leading-relaxed text-muted">
-          Post your trip once and let vetted drivers come to you with offers. It is free, with no booking fee.
+          {t('dash.quoteCard.body')}
         </p>
       </div>
       <button
@@ -783,22 +796,23 @@ const RequestQuotesCard = ({ onRequest, className = '' }) => (
         onClick={onRequest}
         className="inline-flex flex-shrink-0 items-center justify-center gap-2 rounded-[13px] bg-brand px-5 py-3 text-[14.5px] font-extrabold text-white transition hover:bg-brand-dark"
       >
-        <PlusCircle className="h-4 w-4" /> Request quotes
+        <PlusCircle className="h-4 w-4" /> {t('dash.quoteCard.cta')}
       </button>
     </div>
     <ol className="m-0 mt-4 grid list-none gap-3 p-0 lg:grid-cols-3">
-      {QUOTE_STEPS.map((step, index) => (
-        <li key={step.title} className="flex items-start gap-3 rounded-[14px] bg-[#f4f9f6] p-3.5">
+      {QUOTE_STEPS.map((n, index) => (
+        <li key={n} className="flex items-start gap-3 rounded-[14px] bg-[#f4f9f6] p-3.5">
           <span className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full bg-brand text-[13px] font-extrabold text-white">{index + 1}</span>
           <div className="min-w-0">
-            <b className="block text-[13.5px] text-ink">{step.title}</b>
-            <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted">{step.body}</p>
+            <b className="block text-[13.5px] text-ink">{t(`dash.quoteSteps.step${n}.title`)}</b>
+            <p className="mt-0.5 text-[12.5px] leading-relaxed text-muted">{t(`dash.quoteSteps.step${n}.body`)}</p>
           </div>
         </li>
       ))}
     </ol>
   </section>
-);
+  );
+};
 
 const OVERVIEW_REQUEST_LIMIT = 2;
 
@@ -807,6 +821,7 @@ const OVERVIEW_REQUEST_LIMIT = 2;
 // Requests that are closed or already booked don't count — at that point the
 // useful next step is posting a new one, so the guide comes back.
 const OverviewRequestsSlot = ({ briefsState, onRequest, onNavigate, className = '' }) => {
+  const { t } = useI18n();
   const { loading, items = [] } = briefsState || {};
   const open = items.filter((brief) => brief.status === 'open');
   // First load: show nothing rather than flash the guide at someone who has requests.
@@ -817,9 +832,9 @@ const OverviewRequestsSlot = ({ briefsState, onRequest, onNavigate, className = 
     <section className={`rounded-[20px] border-[1.5px] border-[#cdeede] bg-white p-5 shadow-card ${className}`}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0">
-          <b className="block text-[17px] font-extrabold text-ink">Your quote request{open.length === 1 ? '' : 's'}</b>
+          <b className="block text-[17px] font-extrabold text-ink">{t('dash.slot.title', { count: open.length })}</b>
           <p className="mt-1 text-[13px] leading-relaxed text-muted">
-            Drivers reply with offers. We email you when one arrives, and you can compare and book them in Messages.
+            {t('dash.slot.body')}
           </p>
         </div>
         <button
@@ -827,7 +842,7 @@ const OverviewRequestsSlot = ({ briefsState, onRequest, onNavigate, className = 
           onClick={onRequest}
           className="inline-flex flex-shrink-0 items-center justify-center gap-2 rounded-[12px] border-[1.5px] border-[#e2e8ea] bg-white px-4 py-2.5 text-[13.5px] font-bold text-ink transition hover:border-muted-soft"
         >
-          <PlusCircle className="h-4 w-4" /> New request
+          <PlusCircle className="h-4 w-4" /> {t('dash.slot.newRequest')}
         </button>
       </div>
       <div className="mt-4 grid gap-3 lg:grid-cols-2">
@@ -835,13 +850,13 @@ const OverviewRequestsSlot = ({ briefsState, onRequest, onNavigate, className = 
           const start = formatDateLabel(brief.startDate);
           const end = formatDateLabel(brief.endDate);
           const offers = brief.offersCount || 0;
-          const guests = `${brief.adults} guest${brief.adults === 1 ? '' : 's'}${brief.children > 0 ? ` +${brief.children}` : ''}`;
+          const guests = guestsLabel(brief, t);
           return (
             <article key={brief.id} className="min-w-0 rounded-[14px] bg-[#f4f9f6] p-3.5">
               <div className="flex items-start justify-between gap-2">
                 <b className="min-w-0 truncate text-[14.5px] text-ink">{brief.startLocation} → {brief.endLocation}</b>
                 <span className={`flex-shrink-0 rounded-lg px-2 py-1 text-[11px] font-extrabold uppercase ${offers > 0 ? 'bg-brand text-white' : 'bg-white text-muted-soft'}`}>
-                  {offers > 0 ? `${offers} offer${offers === 1 ? '' : 's'}` : 'Awaiting offers'}
+                  {offers > 0 ? t('dash.offersCount', { count: offers }) : t('dash.awaitingOffers')}
                 </span>
               </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
@@ -854,10 +869,10 @@ const OverviewRequestsSlot = ({ briefsState, onRequest, onNavigate, className = 
                   onClick={() => onNavigate?.('messages')}
                   className="mt-3 w-full rounded-[11px] bg-brand py-2.5 text-[13.5px] font-bold text-white transition hover:bg-brand-dark"
                 >
-                  View offers
+                  {t('dash.viewOffers')}
                 </button>
               ) : (
-                <p className="mt-3 text-[12.5px] leading-relaxed text-muted">No offers yet. We will email you as soon as a driver replies.</p>
+                <p className="mt-3 text-[12.5px] leading-relaxed text-muted">{t('dash.slot.noOffers')}</p>
               )}
             </article>
           );
@@ -865,7 +880,7 @@ const OverviewRequestsSlot = ({ briefsState, onRequest, onNavigate, className = 
       </div>
       {open.length > OVERVIEW_REQUEST_LIMIT ? (
         <button type="button" onClick={() => onNavigate?.('requests')} className="mt-3 text-[13px] font-bold text-brand-dark">
-          View all {open.length} requests
+          {t('dash.slot.viewAll', { count: open.length })}
         </button>
       ) : null}
     </section>
@@ -880,22 +895,27 @@ const OverviewStat = ({ value, label }) => (
 );
 
 const NextTripCard = ({ trip }) => {
+  const { t } = useI18n();
   const now = Date.now();
   const startMs = trip.startDate ? new Date(trip.startDate).getTime() : null;
   const daysAway = startMs ? Math.ceil((startMs - now) / 86400000) : null;
   const awayLabel =
-    daysAway === null ? 'Scheduled' : daysAway <= 0 ? 'In progress' : daysAway === 1 ? '1 day away' : `${daysAway} days away`;
+    daysAway === null
+      ? t('dash.nextTrip.scheduled')
+      : daysAway <= 0
+        ? t('dash.nextTrip.inProgress')
+        : t('dash.nextTrip.daysAway', { count: daysAway });
   const route =
     trip.startPoint && trip.endPoint
       ? `${trip.startPoint} → ${trip.endPoint}`
-      : trip.vehicle?.model || 'Upcoming trip';
+      : trip.vehicle?.model || t('dash.nextTrip.upcomingTrip');
   const start = formatDateLabel(trip.startDate);
   const end = formatDateLabel(trip.endDate);
-  const driverName = trip.driver?.name || 'your driver';
+  const driverName = trip.driver?.name || t('dash.nextTrip.yourDriver');
   return (
     <div className="mt-3.5 rounded-[20px] p-[17px] text-white" style={{ background: 'linear-gradient(135deg,#0f1f2d,#1c3345)' }}>
       <div className="flex items-center justify-between">
-        <b className="text-[15px]">Your next trip</b>
+        <b className="text-[15px]">{t('dash.nextTrip.title')}</b>
         <span className="rounded-full bg-white/15 px-[9px] py-1 text-[12px] font-extrabold">{awayLabel}</span>
       </div>
       <div className="mt-3 flex items-center gap-[11px]">
@@ -905,7 +925,7 @@ const NextTripCard = ({ trip }) => {
         <div className="min-w-0">
           <div className="truncate text-[14.5px] font-bold">{route}</div>
           <div className="truncate text-[12px] text-white/75">
-            {start && end ? `${start} – ${end}` : 'Dates to confirm'} · with {driverName}
+            {start && end ? `${start} – ${end}` : t('dash.nextTrip.datesToConfirm')} · {t('dash.nextTrip.withDriver', { name: driverName })}
           </div>
         </div>
       </div>
@@ -914,12 +934,13 @@ const NextTripCard = ({ trip }) => {
 };
 
 const OverviewMessageCard = ({ conversation, tone, onOpen }) => {
+  const { t } = useI18n();
   const driverName =
-    conversation.participants?.driver?.name || conversation.participants?.driver?.email || 'Driver';
+    conversation.participants?.driver?.name || conversation.participants?.driver?.email || t('dash.driver');
   const isOffer = conversation.lastMessage?.type === 'offer';
   const preview = isOffer
-    ? `Sent an offer${conversation.vehicle?.model ? ` · ${conversation.vehicle.model}` : ''}`
-    : conversation.lastMessage?.body || 'Conversation started.';
+    ? `${t('dash.sentOffer')}${conversation.vehicle?.model ? ` · ${conversation.vehicle.model}` : ''}`
+    : conversation.lastMessage?.body || t('dash.conversationStarted');
   return (
     <div className="min-w-0 rounded-[18px] bg-white p-[15px] shadow-card" style={{ borderLeft: `4px solid ${isOffer ? '#10a35a' : '#d6e9fb'}` }}>
       <div className="mb-2.5 flex items-center gap-[11px]">
@@ -937,7 +958,7 @@ const OverviewMessageCard = ({ conversation, tone, onOpen }) => {
             isOffer ? 'bg-brand text-white hover:bg-brand-dark' : 'border-[1.5px] border-[#e2e8ea] bg-white text-ink hover:border-muted-soft'
           }`}
         >
-          {isOffer ? 'View offer' : 'Open chat'}
+          {isOffer ? t('dash.viewOffer') : t('dash.openChat')}
         </button>
         {isOffer ? (
           <button
@@ -945,7 +966,7 @@ const OverviewMessageCard = ({ conversation, tone, onOpen }) => {
             onClick={onOpen}
             className="flex-shrink-0 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white px-4 py-[11px] text-[13.5px] font-bold text-ink transition hover:border-muted-soft"
           >
-            Message
+            {t('dash.message')}
           </button>
         ) : null}
       </div>
@@ -955,6 +976,7 @@ const OverviewMessageCard = ({ conversation, tone, onOpen }) => {
 
 // ---------- My Bookings ----------
 const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpenConversation }) => {
+  const { t } = useI18n();
   const { loading, error, items } = bookingsState;
   const [view, setView] = useState('upcoming');
   const [expandedId, setExpandedId] = useState('');
@@ -994,13 +1016,13 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
     };
     if (canEditDates) {
       if (!editForm.startDate || !editForm.endDate) {
-        toast.error('Please select both start and end dates.');
+        toast.error(t('dash.bookings.errors.bothDates'));
         return;
       }
       const startIso = toIsoDateString(editForm.startDate, 'start');
       const endIso = toIsoDateString(editForm.endDate, 'end');
       if (!startIso || !endIso) {
-        toast.error('Choose valid travel dates.');
+        toast.error(t('dash.bookings.errors.validDates'));
         return;
       }
       payload.startDate = startIso;
@@ -1010,11 +1032,11 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
     setSavingEdit(true);
     try {
       await updateTravelerBooking(editingBooking.id, payload);
-      toast.success('Booking updated.');
+      toast.success(t('dash.bookings.toast.updated'));
       closeEditModal();
       onReload();
     } catch (err) {
-      toast.error(err?.message || 'Unable to update booking.');
+      toast.error(err?.message || t('dash.bookings.errors.update'));
       setSavingEdit(false);
     }
   };
@@ -1035,11 +1057,11 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
     if (!cancellingBooking) return;
     const detail = cancelDetail.trim();
     if (!cancelReason) {
-      toast.error('Please choose a reason for cancelling.');
+      toast.error(t('dash.cancel.errors.reason'));
       return;
     }
     if (!detail) {
-      toast.error('Please explain the reason for cancelling.');
+      toast.error(t('dash.cancel.errors.detail'));
       return;
     }
     const reason = detail && cancelReason !== 'Something else' ? `${cancelReason} — ${detail}` : detail || cancelReason;
@@ -1047,11 +1069,11 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
     setCancellingId(booking.id);
     try {
       await cancelTravelerBooking(booking.id, reason);
-      toast.success('Booking cancelled.');
+      toast.success(t('dash.cancel.toast.cancelled'));
       closeCancelModal();
       onReload();
     } catch (err) {
-      toast.error(err?.message || 'Unable to cancel booking.');
+      toast.error(err?.message || t('dash.cancel.errors.cancel'));
     } finally {
       setCancellingId('');
     }
@@ -1093,11 +1115,11 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
     }
     const ratingValue = Number(reviewForm.rating);
     if (!Number.isInteger(ratingValue) || ratingValue < 1 || ratingValue > 5) {
-      toast.error('Please choose a rating between 1 and 5.');
+      toast.error(t('dash.review.errors.rating'));
       return;
     }
     if (!reviewForm.comment || reviewForm.comment.trim().length < 10) {
-      toast.error('Tell us a bit more about your experience (at least 10 characters).');
+      toast.error(t('dash.review.errors.tooShort'));
       return;
     }
     setSubmittingReview(true);
@@ -1108,11 +1130,11 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
         comment: reviewForm.comment.trim(),
         images: reviewForm.images,
       });
-      toast.success('Review submitted for moderation.');
+      toast.success(t('dash.review.toast.submitted'));
       closeReviewModal();
       onReload();
     } catch (err) {
-      toast.error(err?.message || 'Unable to submit review.');
+      toast.error(err?.message || t('dash.review.errors.submit'));
       setSubmittingReview(false);
     }
   };
@@ -1121,8 +1143,8 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
     <MobileHeader
       onMenu={onMenu}
       right={<Avatar name={travelerName} tone="light" className="h-10 w-10 text-[15px]" />}
-      eyebrow="TRIPS"
-      title="My Bookings"
+      eyebrow={t('dash.bookings.eyebrow')}
+      title={t('dash.nav.bookings')}
     />
   );
 
@@ -1132,7 +1154,7 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
         {head}
         <Sheet>
           <div className="flex min-h-[40vh] items-center justify-center gap-2 text-sm text-muted">
-            <Loader2 className="h-5 w-5 animate-spin text-brand" /> Loading your bookings…
+            <Loader2 className="h-5 w-5 animate-spin text-brand" /> {t('dash.bookings.loading')}
           </div>
         </Sheet>
       </>
@@ -1147,7 +1169,7 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
           <div className="rounded-[18px] bg-white p-6 text-center text-sm shadow-card">
             <p className="text-[#e11d48]">{error}</p>
             <button type="button" onClick={onReload} className="mt-3 rounded-full border border-[#e2e8ea] px-4 py-2 text-xs font-bold text-ink transition hover:border-muted-soft">
-              Try again
+              {t('dash.tryAgain')}
             </button>
           </div>
         </Sheet>
@@ -1165,15 +1187,15 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
   const desktopBookings =
     items.length === 0 ? (
       <div className="rounded-[18px] bg-white p-6 text-sm text-muted shadow-card">
-        <b className="mb-1 block text-ink">No trips booked yet</b>
-        When you confirm a driver your itinerary appears here.{' '}
+        <b className="mb-1 block text-ink">{t('dash.bookings.emptyTitle')}</b>
+        {t('dash.bookings.emptyBody')}{' '}
         <Link to="/vehicles" className="font-bold text-brand-dark">
-          Browse vehicles
+          {t('dash.browseVehicles')}
         </Link>
       </div>
     ) : list.length === 0 ? (
       <div className="rounded-[18px] bg-white p-6 text-sm text-muted shadow-card">
-        {view === 'upcoming' ? 'No upcoming trips.' : 'No completed trips yet.'}
+        {view === 'upcoming' ? t('dash.bookings.noUpcoming') : t('dash.bookings.noCompleted')}
       </div>
     ) : (
       <div className="grid grid-cols-2 gap-4">
@@ -1184,7 +1206,7 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
             tone={AVATAR_TONES[index % AVATAR_TONES.length]}
             expanded={expandedId === booking.id}
             onToggle={() => setExpandedId((prev) => (prev === booking.id ? '' : booking.id))}
-            onMessage={() => (booking.conversationId ? onOpenConversation(booking.conversationId) : toast('No conversation for this trip yet.'))}
+            onMessage={() => (booking.conversationId ? onOpenConversation(booking.conversationId) : toast(t('dash.bookings.noConversation')))}
             onEdit={() => openEditModal(booking)}
             onCancel={() => openCancelModal(booking)}
             onReview={() => openReviewModal(booking)}
@@ -1201,10 +1223,10 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
       <Sheet>
         {items.length === 0 ? (
           <div className="rounded-[18px] bg-white p-6 text-center text-sm text-muted shadow-card">
-            <b className="mb-1 block text-ink">No trips booked yet</b>
-            When you confirm a driver your itinerary appears here.
+            <b className="mb-1 block text-ink">{t('dash.bookings.emptyTitle')}</b>
+            {t('dash.bookings.emptyBody')}
             <Link to="/vehicles" className="mt-3 block font-bold text-brand-dark">
-              Browse vehicles
+              {t('dash.browseVehicles')}
             </Link>
           </div>
         ) : (
@@ -1215,19 +1237,19 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
                 onClick={() => setView('upcoming')}
                 className={`flex-1 rounded-[9px] py-2 text-[13px] font-bold transition ${view === 'upcoming' ? 'bg-brand text-white' : 'text-muted'}`}
               >
-                Upcoming{upcoming.length ? ` ${upcoming.length}` : ''}
+                {t('dash.overview.upcoming')}{upcoming.length ? ` ${upcoming.length}` : ''}
               </button>
               <button
                 type="button"
                 onClick={() => setView('completed')}
                 className={`flex-1 rounded-[9px] py-2 text-[13px] font-bold transition ${view === 'completed' ? 'bg-brand text-white' : 'text-muted'}`}
               >
-                Completed{completed.length ? ` ${completed.length}` : ''}
+                {t('dash.overview.completed')}{completed.length ? ` ${completed.length}` : ''}
               </button>
             </div>
             {list.length === 0 ? (
               <div className="rounded-[18px] bg-white p-6 text-center text-sm text-muted shadow-card">
-                {view === 'upcoming' ? 'No upcoming trips.' : 'No completed trips yet.'}
+                {view === 'upcoming' ? t('dash.bookings.noUpcoming') : t('dash.bookings.noCompleted')}
               </div>
             ) : (
               <div className="grid gap-3 lg:grid-cols-2">
@@ -1238,7 +1260,7 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
                     tone={AVATAR_TONES[index % AVATAR_TONES.length]}
                     expanded={expandedId === booking.id}
                     onToggle={() => setExpandedId((prev) => (prev === booking.id ? '' : booking.id))}
-                    onMessage={() => (booking.conversationId ? onOpenConversation(booking.conversationId) : toast('No conversation for this trip yet.'))}
+                    onMessage={() => (booking.conversationId ? onOpenConversation(booking.conversationId) : toast(t('dash.bookings.noConversation')))}
                     onEdit={() => openEditModal(booking)}
                     onCancel={() => openCancelModal(booking)}
                     onReview={() => openReviewModal(booking)}
@@ -1254,7 +1276,7 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
 
       <div className="hidden lg:block">
         <div className="px-8 py-8">
-          <DesktopTitleBar title="My Bookings">
+          <DesktopTitleBar title={t('dash.nav.bookings')}>
             {items.length ? (
               <DeskTabs view={view} onView={setView} upcoming={upcoming.length} completed={completed.length} />
             ) : null}
@@ -1264,17 +1286,17 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
       </div>
 
       {cancellingBooking ? (
-        <BottomSheet title="Cancel booking" onClose={closeCancelModal}>
+        <BottomSheet title={t('dash.cancel.title')} onClose={closeCancelModal}>
           <p className="mb-3 whitespace-pre-line rounded-xl bg-[#fdf0d8] px-3 py-2 text-[12px] font-semibold leading-[1.5] text-[#a86a15]">
-            {BOOKING_CANCELLATION_NOTICE}
+            {t('dash.cancel.notice').join('\n\n')}
           </p>
           <form onSubmit={handleCancelBooking} className="flex flex-col gap-3">
             <div>
-              <label className={labelCls}>Why are you cancelling?</label>
+              <label className={labelCls}>{t('dash.cancel.why')}</label>
               <div className="mt-1.5 flex flex-col gap-1.5">
-                {CANCELLATION_REASONS.map((reason) => (
+                {CANCELLATION_REASONS.map(({ key, value: reason }) => (
                   <button
-                    key={reason}
+                    key={key}
                     type="button"
                     onClick={() => setCancelReason(reason)}
                     className={`rounded-[10px] border-[1.5px] px-3 py-2 text-left text-[13px] font-bold transition ${
@@ -1283,20 +1305,20 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
                         : 'border-[#e2e8ea] text-ink hover:border-muted-soft'
                     }`}
                   >
-                    {reason}
+                    {t(`dash.cancel.reasons.${key}`)}
                   </button>
                 ))}
               </div>
             </div>
             <div>
-              <label className={labelCls}>Explain the reason</label>
+              <label className={labelCls}>{t('dash.cancel.explain')}</label>
               <textarea
                 rows={3}
                 maxLength={400}
                 value={cancelDetail}
                 onChange={(e) => setCancelDetail(e.target.value)}
                 required
-                placeholder="This is shared with our team and your driver."
+                placeholder={t('dash.cancel.explainPlaceholder')}
                 className={`mt-1 ${inputCls} resize-y`}
               />
             </div>
@@ -1306,14 +1328,14 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
                 onClick={closeCancelModal}
                 className="flex-1 rounded-[10px] border-[1.5px] border-[#e2e8ea] py-2.5 text-[13px] font-bold text-ink transition hover:border-muted-soft"
               >
-                Keep booking
+                {t('dash.cancel.keep')}
               </button>
               <button
                 type="submit"
                 disabled={Boolean(cancellingId)}
                 className="flex-1 rounded-[10px] border-[1.5px] border-[#ffd3d9] bg-[#fff5f6] py-2.5 text-[13px] font-bold text-[#f43f5e] transition hover:border-[#f43f5e] disabled:opacity-60"
               >
-                {cancellingId ? 'Cancelling…' : 'Cancel booking'}
+                {cancellingId ? t('dash.cancel.cancelling') : t('dash.cancel.title')}
               </button>
             </div>
           </form>
@@ -1321,53 +1343,53 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
       ) : null}
 
       {editingBooking ? (
-        <BottomSheet title="Update booking" onClose={closeEditModal}>
+        <BottomSheet title={t('dash.edit.title')} onClose={closeEditModal}>
           {editingBooking.offerId ? (
             <p className="mb-3 rounded-xl bg-[#fdf0d8] px-3 py-2 text-[12px] font-semibold text-[#a86a15]">
-              Dates were confirmed through a driver offer. Message your driver to change the schedule.
+              {t('dash.edit.offerDates')}
             </p>
           ) : null}
           <form onSubmit={handleEditSubmit} className="flex flex-col gap-3">
             <div className="flex gap-2.5">
               <div className="min-w-0 flex-1">
-                <label className={labelCls}>Start date</label>
+                <label className={labelCls}>{t('dash.form.startDate')}</label>
                 <input type="date" value={editForm.startDate} disabled={Boolean(editingBooking.offerId)} onChange={(e) => handleEditFieldChange('startDate', e.target.value)} className={`mt-1 ${inputCls} disabled:bg-[#eef1f0]`} required={!editingBooking.offerId} />
               </div>
               <div className="min-w-0 flex-1">
-                <label className={labelCls}>End date</label>
+                <label className={labelCls}>{t('dash.form.endDate')}</label>
                 <input type="date" value={editForm.endDate} disabled={Boolean(editingBooking.offerId)} onChange={(e) => handleEditFieldChange('endDate', e.target.value)} className={`mt-1 ${inputCls} disabled:bg-[#eef1f0]`} required={!editingBooking.offerId} />
               </div>
             </div>
             <div className="flex gap-2.5">
               <div className="min-w-0 flex-1">
-                <label className={labelCls}>Pickup</label>
-                <input type="text" value={editForm.startPoint} onChange={(e) => handleEditFieldChange('startPoint', e.target.value)} placeholder="Hotel or meeting point" className={`mt-1 ${inputCls}`} />
+                <label className={labelCls}>{t('dash.edit.pickup')}</label>
+                <input type="text" value={editForm.startPoint} onChange={(e) => handleEditFieldChange('startPoint', e.target.value)} placeholder={t('dash.edit.pickupPlaceholder')} className={`mt-1 ${inputCls}`} />
               </div>
               <div className="min-w-0 flex-1">
-                <label className={labelCls}>Drop-off</label>
-                <input type="text" value={editForm.endPoint} onChange={(e) => handleEditFieldChange('endPoint', e.target.value)} placeholder="Final destination" className={`mt-1 ${inputCls}`} />
+                <label className={labelCls}>{t('dash.edit.dropoff')}</label>
+                <input type="text" value={editForm.endPoint} onChange={(e) => handleEditFieldChange('endPoint', e.target.value)} placeholder={t('dash.edit.dropoffPlaceholder')} className={`mt-1 ${inputCls}`} />
               </div>
             </div>
             <div>
-              <label className={labelCls}>Flight number (optional)</label>
-              <input type="text" value={editForm.flightNumber} onChange={(e) => handleEditFieldChange('flightNumber', e.target.value)} placeholder="e.g. UL 403" className={`mt-1 ${inputCls}`} />
+              <label className={labelCls}>{t('dash.edit.flight')}</label>
+              <input type="text" value={editForm.flightNumber} onChange={(e) => handleEditFieldChange('flightNumber', e.target.value)} placeholder={t('dash.edit.flightPlaceholder')} className={`mt-1 ${inputCls}`} />
             </div>
             <div className="flex gap-2.5">
               <div className="min-w-0 flex-1">
-                <label className={labelCls}>Arrival time</label>
-                <input type="text" value={editForm.arrivalTime} onChange={(e) => handleEditFieldChange('arrivalTime', e.target.value)} placeholder="e.g. 08:30" className={`mt-1 ${inputCls}`} />
+                <label className={labelCls}>{t('dash.edit.arrival')}</label>
+                <input type="text" value={editForm.arrivalTime} onChange={(e) => handleEditFieldChange('arrivalTime', e.target.value)} placeholder={t('dash.edit.timePlaceholder', { time: '08:30' })} className={`mt-1 ${inputCls}`} />
               </div>
               <div className="min-w-0 flex-1">
-                <label className={labelCls}>Departure time</label>
-                <input type="text" value={editForm.departureTime} onChange={(e) => handleEditFieldChange('departureTime', e.target.value)} placeholder="e.g. 17:45" className={`mt-1 ${inputCls}`} />
+                <label className={labelCls}>{t('dash.edit.departure')}</label>
+                <input type="text" value={editForm.departureTime} onChange={(e) => handleEditFieldChange('departureTime', e.target.value)} placeholder={t('dash.edit.timePlaceholder', { time: '17:45' })} className={`mt-1 ${inputCls}`} />
               </div>
             </div>
             <div>
-              <label className={labelCls}>Special requests</label>
-              <textarea rows={3} value={editForm.specialRequests} onChange={(e) => handleEditFieldChange('specialRequests', e.target.value)} placeholder="Dietary needs, accessibility notes, anything your driver should know." className="mt-1 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 py-2.5 text-sm text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none" />
+              <label className={labelCls}>{t('dash.edit.special')}</label>
+              <textarea rows={3} value={editForm.specialRequests} onChange={(e) => handleEditFieldChange('specialRequests', e.target.value)} placeholder={t('dash.edit.specialPlaceholder')} className="mt-1 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 py-2.5 text-sm text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none" />
             </div>
             <button type="submit" disabled={savingEdit} className="mt-1 flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand py-[14px] text-[15px] font-extrabold text-white transition hover:bg-brand-dark disabled:opacity-70">
-              {savingEdit ? (<><Loader2 className="h-4 w-4 animate-spin" /> Saving…</>) : 'Save changes'}
+              {savingEdit ? (<><Loader2 className="h-4 w-4 animate-spin" /> {t('dash.saving')}</>) : t('dash.saveChanges')}
             </button>
           </form>
         </BottomSheet>
@@ -1375,14 +1397,14 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
 
       {reviewingBooking ? (
         <BottomSheet
-          title={reviewingBooking.vehicle?.model ? `Review · ${reviewingBooking.vehicle.model}` : 'Trip feedback'}
+          title={reviewingBooking.vehicle?.model ? t('dash.review.titleModel', { model: reviewingBooking.vehicle.model }) : t('dash.review.title')}
           onClose={closeReviewModal}
         >
           {reviewingBooking.review ? (
             <div className="rounded-[16px] bg-white p-4 shadow-card">
               <div className="flex items-center justify-between">
                 <span className={`rounded-lg px-2.5 py-1 text-[11px] font-extrabold uppercase ${reviewStatusChip(reviewingBooking.review.status)}`}>
-                  {reviewStatusLabel(reviewingBooking.review.status)}
+                  {reviewStatusLabel(reviewingBooking.review.status, t)}
                 </span>
                 <span className="inline-flex items-center gap-1 text-[15px] font-bold text-star">
                   <Star className="h-4 w-4" fill="#f5b042" stroke="none" />
@@ -1393,38 +1415,38 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
               <p className="mt-1 whitespace-pre-line text-[13px] text-muted">{reviewingBooking.review.comment}</p>
               {reviewingBooking.review.adminNote ? (
                 <div className="mt-2 rounded-lg bg-[#fdf0d8] px-3 py-2 text-[12px] text-[#a86a15]">
-                  <b>Admin note</b> {reviewingBooking.review.adminNote}
+                  <b>{t('dash.review.adminNote')}</b> {reviewingBooking.review.adminNote}
                 </div>
               ) : null}
             </div>
           ) : (
             <form onSubmit={handleReviewSubmit} className="flex flex-col gap-3">
               <div>
-                <label className={labelCls}>Rating</label>
+                <label className={labelCls}>{t('dash.review.rating')}</label>
                 <select value={reviewForm.rating} onChange={(e) => handleReviewFieldChange('rating', e.target.value)} className={`mt-1 ${inputCls}`}>
                   {[5, 4, 3, 2, 1].map((value) => (
                     <option key={value} value={String(value)}>
-                      {value} — {value === 5 ? 'Amazing' : value === 4 ? 'Great' : value === 3 ? 'Good' : value === 2 ? 'Okay' : 'Needs improvement'}
+                      {value} — {t(`dash.review.ratings.r${value}`)}
                     </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className={labelCls}>Review title (optional)</label>
-                <input type="text" value={reviewForm.title} onChange={(e) => handleReviewFieldChange('title', e.target.value)} maxLength={120} placeholder="Highlights from your trip" className={`mt-1 ${inputCls}`} />
+                <label className={labelCls}>{t('dash.review.reviewTitle')}</label>
+                <input type="text" value={reviewForm.title} onChange={(e) => handleReviewFieldChange('title', e.target.value)} maxLength={120} placeholder={t('dash.review.titlePlaceholder')} className={`mt-1 ${inputCls}`} />
               </div>
               <div>
-                <label className={labelCls}>Share your experience</label>
-                <textarea rows={5} value={reviewForm.comment} onChange={(e) => handleReviewFieldChange('comment', e.target.value)} maxLength={1200} required placeholder="Tell us about your driver, vehicle, and itinerary highlights." className="mt-1 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 py-2.5 text-sm text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none" />
-                <p className="mt-1 text-[11.5px] text-muted-soft">Minimum 10 characters.</p>
+                <label className={labelCls}>{t('dash.review.experience')}</label>
+                <textarea rows={5} value={reviewForm.comment} onChange={(e) => handleReviewFieldChange('comment', e.target.value)} maxLength={1200} required placeholder={t('dash.review.experiencePlaceholder')} className="mt-1 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 py-2.5 text-sm text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none" />
+                <p className="mt-1 text-[11.5px] text-muted-soft">{t('dash.review.minChars')}</p>
               </div>
               <div>
-                <label className={labelCls}>Photos (optional)</label>
+                <label className={labelCls}>{t('dash.review.photos')}</label>
                 <div className="mt-1 flex flex-wrap gap-2">
                   {reviewForm.images.map((file, index) => (
                     <div key={`${file.name}-${index}`} className="relative h-16 w-16 overflow-hidden rounded-xl border border-[#e2e8ea]">
                       <img src={reviewPreviews[index]} alt="" className="h-full w-full object-cover" />
-                      <button type="button" onClick={() => removeReviewImage(index)} aria-label="Remove photo" className="absolute right-0.5 top-0.5 grid h-5 w-5 place-items-center rounded-full bg-ink/70 text-white">
+                      <button type="button" onClick={() => removeReviewImage(index)} aria-label={t('dash.review.removePhoto')} className="absolute right-0.5 top-0.5 grid h-5 w-5 place-items-center rounded-full bg-ink/70 text-white">
                         <X className="h-3 w-3" />
                       </button>
                     </div>
@@ -1436,10 +1458,10 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
                     </label>
                   ) : null}
                 </div>
-                <p className="mt-1 text-[11.5px] text-muted-soft">Add up to 4 photos from your trip.</p>
+                <p className="mt-1 text-[11.5px] text-muted-soft">{t('dash.review.photosHelp')}</p>
               </div>
               <button type="submit" disabled={submittingReview} className="mt-1 flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand py-[14px] text-[15px] font-extrabold text-white transition hover:bg-brand-dark disabled:opacity-70">
-                {submittingReview ? (<><Loader2 className="h-4 w-4 animate-spin" /> Submitting…</>) : 'Submit review'}
+                {submittingReview ? (<><Loader2 className="h-4 w-4 animate-spin" /> {t('dash.review.submitting')}</>) : t('dash.review.submit')}
               </button>
             </form>
           )}
@@ -1451,13 +1473,25 @@ const TravelerBookings = ({ onMenu, travelerName, bookingsState, onReload, onOpe
 
 const reviewStatusChip = (status) =>
   status === 'approved' ? 'bg-brand-tint text-brand-dark' : status === 'rejected' ? 'bg-[#ffe4e9] text-[#e11d48]' : 'bg-[#fdf0d8] text-[#a86a15]';
-const reviewStatusLabel = (status) =>
-  status === 'approved' ? 'Published' : status === 'rejected' ? 'Declined' : 'Awaiting approval';
+const reviewStatusLabel = (status, t) =>
+  status === 'approved'
+    ? t('dash.review.status.published')
+    : status === 'rejected'
+      ? t('dash.review.status.declined')
+      : t('dash.review.status.awaiting');
+
+// Booking statuses from the API (pending, confirmed, cancelled, rejected, …), shown in capitals.
+const bookingStatusLabel = (status, t) => {
+  const key = `dash.card.status.${status}`;
+  const label = t(key);
+  return (label === key ? status : label).toUpperCase();
+};
 
 const TravelerBookingCard = ({ booking, tone, expanded, onToggle, onMessage, onEdit, onCancel, onReview, cancelling }) => {
+  const { t } = useI18n();
   const now = Date.now();
-  const driverName = booking.driver?.name || 'Driver to be assigned';
-  const vehicleName = booking.vehicle?.model || 'Vehicle to be confirmed';
+  const driverName = booking.driver?.name || t('dash.card.driverTbd');
+  const vehicleName = booking.vehicle?.model || t('dash.card.vehicleTbd');
   const seats = booking.vehicle?.seats;
   const price =
     typeof booking.payableTotal === 'number' && booking.payableTotal > 0
@@ -1475,16 +1509,16 @@ const TravelerBookingCard = ({ booking, tone, expanded, onToggle, onMessage, onE
   // `past` must be checked before the plain "confirmed" branch below, or a finished
   // trip whose status was never anything but 'confirmed' would show CONFIRMED forever.
   const chip = cancelled
-    ? { text: booking.status.toUpperCase(), cls: 'bg-[#ffe4e9] text-[#e11d48]', border: '#f43f5e' }
+    ? { text: bookingStatusLabel(booking.status, t), cls: 'bg-[#ffe4e9] text-[#e11d48]', border: '#f43f5e' }
     : booking.status === 'confirmed' && past
-    ? { text: 'COMPLETED', cls: 'bg-[#eef1f0] text-muted', border: '#d6e9fb' }
+    ? { text: bookingStatusLabel('completed', t), cls: 'bg-[#eef1f0] text-muted', border: '#d6e9fb' }
     : booking.status === 'confirmed' && daysAway !== null && daysAway > 0 && daysAway <= 3
-    ? { text: `STARTS IN ${daysAway} DAY${daysAway === 1 ? '' : 'S'}`, cls: 'bg-[#e5f0fb] text-[#1d6fb8]', border: '#d6e9fb' }
+    ? { text: t('dash.card.startsIn', { count: daysAway }).toUpperCase(), cls: 'bg-[#e5f0fb] text-[#1d6fb8]', border: '#d6e9fb' }
     : booking.status === 'confirmed'
-    ? { text: 'CONFIRMED', cls: 'bg-brand-tint text-brand-dark', border: '#10a35a' }
+    ? { text: bookingStatusLabel('confirmed', t), cls: 'bg-brand-tint text-brand-dark', border: '#10a35a' }
     : past
-    ? { text: 'COMPLETED', cls: 'bg-[#eef1f0] text-muted', border: '#d6e9fb' }
-    : { text: (booking.status || 'pending').toUpperCase(), cls: 'bg-[#fdf0d8] text-[#a86a15]', border: '#f0b429' };
+    ? { text: bookingStatusLabel('completed', t), cls: 'bg-[#eef1f0] text-muted', border: '#d6e9fb' }
+    : { text: bookingStatusLabel(booking.status || 'pending', t), cls: 'bg-[#fdf0d8] text-[#a86a15]', border: '#f0b429' };
   const canManage = !cancelled && !past;
   const showReviewPrompt = booking.canReview && !booking.review;
 
@@ -1500,7 +1534,7 @@ const TravelerBookingCard = ({ booking, tone, expanded, onToggle, onMessage, onE
           <div className="truncate text-[14.5px] font-bold text-ink">{driverName}</div>
           <div className="truncate text-[12px] text-muted-soft">
             {vehicleName}
-            {seats ? ` · ${seats} seats` : ''}
+            {seats ? ` · ${t('dash.card.seats', { count: seats })}` : ''}
           </div>
         </div>
       </div>
@@ -1511,14 +1545,14 @@ const TravelerBookingCard = ({ booking, tone, expanded, onToggle, onMessage, onE
         </div>
         <div className="mt-1.5 flex items-center gap-1.5 text-muted">
           <CalendarDays className="h-3.5 w-3.5 text-muted-soft" />
-          {start && end ? `${start} – ${end}` : 'Dates to be confirmed'}
+          {start && end ? `${start} – ${end}` : t('dash.card.datesTbd')}
         </div>
       </div>
 
       {booking.review ? (
         <div className="mt-2.5 flex items-center justify-between rounded-xl border border-hairline bg-canvas px-3 py-2">
           <span className={`rounded-md px-2 py-0.5 text-[10.5px] font-extrabold uppercase ${reviewStatusChip(booking.review.status)}`}>
-            {reviewStatusLabel(booking.review.status)}
+            {reviewStatusLabel(booking.review.status, t)}
           </span>
           <span className="inline-flex items-center gap-1 text-[13px] font-bold text-star">
             <Star className="h-3.5 w-3.5" fill="#f5b042" stroke="none" />
@@ -1529,10 +1563,10 @@ const TravelerBookingCard = ({ booking, tone, expanded, onToggle, onMessage, onE
 
       <div className="mt-3 flex gap-2">
         <button type="button" onClick={onMessage} className="flex-1 rounded-[11px] bg-brand py-[11px] text-[13.5px] font-bold text-white transition hover:bg-brand-dark">
-          Message driver
+          {t('dash.card.messageDriver')}
         </button>
         <button type="button" onClick={onToggle} className="flex-shrink-0 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white px-4 py-[11px] text-[13.5px] font-bold text-ink transition hover:border-muted-soft">
-          Details
+          {t('dash.card.details')}
         </button>
       </div>
 
@@ -1540,26 +1574,26 @@ const TravelerBookingCard = ({ booking, tone, expanded, onToggle, onMessage, onE
         <div className="mt-3 flex flex-col gap-2 border-t border-hairline pt-3">
           {booking.vehicle?.id ? (
             <Link to={`/vehicles/${booking.vehicle.id}`} className="rounded-[10px] border-[1.5px] border-[#e2e8ea] py-2 text-center text-[12.5px] font-bold text-ink transition hover:border-muted-soft">
-              View vehicle
+              {t('dash.card.viewVehicle')}
             </Link>
           ) : null}
           {canManage ? (
             <div className="flex gap-2">
               <button type="button" onClick={onEdit} className="flex-1 rounded-[10px] border-[1.5px] border-[#e2e8ea] py-2 text-[12.5px] font-bold text-ink transition hover:border-muted-soft">
-                Edit details
+                {t('dash.card.editDetails')}
               </button>
               <button type="button" onClick={onCancel} disabled={cancelling} className="flex-1 rounded-[10px] border-[1.5px] border-[#ffd3d9] py-2 text-[12.5px] font-bold text-[#f43f5e] transition hover:border-[#f43f5e] disabled:opacity-60">
-                {cancelling ? 'Cancelling…' : 'Cancel booking'}
+                {cancelling ? t('dash.cancel.cancelling') : t('dash.cancel.title')}
               </button>
             </div>
           ) : null}
           {booking.review ? (
             <button type="button" onClick={onReview} className="rounded-[10px] border-[1.5px] border-[#e2e8ea] py-2 text-[12.5px] font-bold text-ink transition hover:border-muted-soft">
-              View review
+              {t('dash.card.viewReview')}
             </button>
           ) : showReviewPrompt ? (
             <button type="button" onClick={onReview} className="flex items-center justify-center gap-1.5 rounded-[10px] bg-brand-tint py-2 text-[12.5px] font-bold text-brand-dark">
-              <Star className="h-3.5 w-3.5" /> Leave a review
+              <Star className="h-3.5 w-3.5" /> {t('dash.card.leaveReview')}
             </button>
           ) : null}
         </div>
@@ -1585,6 +1619,7 @@ const TravelerMessages = ({
   requestingOfferId,
   onReloadConversations,
 }) => {
+  const { t } = useI18n();
   const [search, setSearch] = useState('');
   const { loading: convLoading, error: convError, items: conversations } = conversationsState;
   const { loading: msgLoading, error: msgError, items: messages, booking: conversationBooking } = messagesState;
@@ -1628,14 +1663,14 @@ const TravelerMessages = ({
   }, [composerValue]);
 
   const driverNameOf = (conversation) =>
-    conversation?.participants?.driver?.name || conversation?.participants?.driver?.email || 'Driver';
+    conversation?.participants?.driver?.name || conversation?.participants?.driver?.email || t('dash.driver');
   const driverPhotoOf = (conversation) => conversation?.participants?.driver?.profilePhoto || '';
   const filtered = conversations.filter((c) => driverNameOf(c).toLowerCase().includes(search.trim().toLowerCase()));
 
   const activeName = selectedConversation ? driverNameOf(selectedConversation) : '';
   const activeSubtitle = selectedConversation?.vehicle?.model
-    ? `Discussing ${selectedConversation.vehicle.model}`
-    : 'General conversation';
+    ? t('dash.chat.discussing', { model: selectedConversation.vehicle.model })
+    : t('dash.chat.general');
   const activeDriverId = selectedConversation?.participants?.driver?.id;
   const activeDriverPhoto = selectedConversation ? driverPhotoOf(selectedConversation) : '';
   const activeDriverLicenseType = selectedConversation?.participants?.driver?.licenseType || null;
@@ -1644,13 +1679,13 @@ const TravelerMessages = ({
   const chatMessages =
     msgLoading && messages.length === 0 ? (
       <div className="flex flex-1 items-center justify-center gap-2 text-sm text-muted">
-        <Loader2 className="h-4 w-4 animate-spin text-brand" /> Loading messages…
+        <Loader2 className="h-4 w-4 animate-spin text-brand" /> {t('dash.chat.loadingMessages')}
       </div>
     ) : msgError ? (
       <div className="flex flex-1 items-center justify-center text-sm text-[#e11d48]">{msgError}</div>
     ) : messages.length === 0 ? (
       <div className="flex flex-1 items-center justify-center px-8 text-center text-sm text-muted">
-        Send a message to introduce yourself to the driver.
+        {t('dash.chat.introduce')}
       </div>
     ) : (
       messages.map((message, index) => {
@@ -1688,7 +1723,7 @@ const TravelerMessages = ({
               {message.warning ? (
                 <div className="mt-2 flex items-start gap-1.5 rounded-lg bg-[#fdf0d8] px-2 py-1.5 text-[11px] font-semibold text-[#a86a15]">
                   <AlertTriangle className="mt-0.5 h-3 w-3 flex-none" />
-                  <span>{message.warning}</span>
+                  <span>{localizeServerMessage(message.warning)}</span>
                 </div>
               ) : null}
             </div>
@@ -1715,10 +1750,10 @@ const TravelerMessages = ({
       <span className="min-w-0 flex-1">
         <span className="block text-[13px] font-extrabold text-ink">
           {conversationBooking.status === 'confirmed'
-            ? 'Your booking with this driver is confirmed'
-            : 'You have a booking with this driver'}
+            ? t('dash.chat.bookingConfirmed')
+            : t('dash.chat.bookingWithDriver')}
         </span>
-        <span className="block truncate text-[12px] text-muted">Tap to view your trip details</span>
+        <span className="block truncate text-[12px] text-muted">{t('dash.chat.tapForDetails')}</span>
       </span>
       <span className="flex-shrink-0 text-[15px] font-extrabold text-brand-dark">›</span>
     </button>
@@ -1728,7 +1763,7 @@ const TravelerMessages = ({
     if (convLoading) {
       return (
         <div className="flex items-center justify-center gap-2 p-6 text-sm text-muted">
-          <Loader2 className="h-4 w-4 animate-spin text-brand" /> Loading conversations…
+          <Loader2 className="h-4 w-4 animate-spin text-brand" /> {t('dash.chat.loadingConversations')}
         </div>
       );
     }
@@ -1737,7 +1772,7 @@ const TravelerMessages = ({
         <div className="m-4 rounded-[18px] bg-white p-6 text-center text-sm shadow-card">
           <p className="text-[#e11d48]">{convError}</p>
           <button type="button" onClick={onReloadConversations} className="mt-3 rounded-full border border-[#e2e8ea] px-4 py-2 text-xs font-bold text-ink transition hover:border-muted-soft">
-            Try again
+            {t('dash.tryAgain')}
           </button>
         </div>
       );
@@ -1745,14 +1780,14 @@ const TravelerMessages = ({
     if (filtered.length === 0) {
       return (
         <div className="m-4 rounded-[18px] bg-white p-6 text-center text-sm text-muted shadow-card">
-          {conversations.length === 0 ? 'Start a conversation from a vehicle page to see it here.' : 'No conversations match your search.'}
+          {conversations.length === 0 ? t('dash.chat.emptyList') : t('dash.chat.noMatch')}
         </div>
       );
     }
     return filtered.map((conversation, index) => {
       const name = driverNameOf(conversation);
       const photo = driverPhotoOf(conversation);
-      const preview = conversation.lastMessage?.body || 'Conversation started.';
+      const preview = conversation.lastMessage?.body || t('dash.conversationStarted');
       const timestamp = formatShortDateTime(conversation.lastMessageAt || conversation.updatedAt);
       const unread = conversation.unreadCount > 0;
       const active = variant === 'desktop' && conversation.id === selectedConversation?.id;
@@ -1785,7 +1820,7 @@ const TravelerMessages = ({
               {conversation.lastMessage?.mine ? (
                 <CheckCheck
                   className={`h-3.5 w-3.5 flex-shrink-0 ${conversation.lastMessage.readByRecipient ? 'text-brand' : 'text-muted-soft'}`}
-                  aria-label={conversation.lastMessage.readByRecipient ? 'Read' : 'Sent'}
+                  aria-label={conversation.lastMessage.readByRecipient ? t('dash.chat.read') : t('dash.chat.sent')}
                 />
               ) : null}
               <span className="truncate">{preview}</span>
@@ -1796,7 +1831,13 @@ const TravelerMessages = ({
                   {formatCurrency(latestOffer.totalPrice)}
                 </span>
                 <span className="text-[11px] font-semibold text-muted-soft">
-                  {offerState === 'accepted' ? 'Offer accepted' : offerState === 'expired' ? 'Offer expired' : offerState === 'declined' ? 'Offer declined' : 'Latest offer'}
+                  {offerState === 'accepted'
+                    ? t('dash.chat.offerAccepted')
+                    : offerState === 'expired'
+                      ? t('dash.chat.offerExpired')
+                      : offerState === 'declined'
+                        ? t('dash.chat.offerDeclined')
+                        : t('dash.chat.latestOffer')}
                 </span>
               </div>
             ) : null}
@@ -1820,14 +1861,14 @@ const TravelerMessages = ({
             {/* Pinned like the composer below, so who you are chatting with (and the way back) stays in reach in a long thread. */}
             <div className="sticky top-0 z-20 text-white shadow-[0_2px_10px_rgba(15,31,45,0.12)]" style={{ background: 'linear-gradient(160deg,#0f7a45,#10a35a 55%,#18b866)' }}>
               <div className="flex items-center gap-3 px-4 pb-4 pt-4">
-                <button type="button" onClick={() => onSelectConversation('')} aria-label="Back" className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-white/[0.18] transition hover:bg-white/25">
+                <button type="button" onClick={() => onSelectConversation('')} aria-label={t('dash.back')} className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-white/[0.18] transition hover:bg-white/25">
                   <ChevronLeft className="h-[18px] w-[18px]" strokeWidth={2} />
                 </button>
                 <button
                   type="button"
                   onClick={openDriverProfile}
                   disabled={!activeDriverId}
-                  aria-label={`View ${activeName}'s driver profile`}
+                  aria-label={t('dash.chat.viewProfile', { name: activeName })}
                   className="flex min-w-0 flex-1 items-center gap-3 rounded-xl py-1 pr-2 text-left transition active:bg-white/10 disabled:cursor-default"
                 >
                   <Avatar name={activeName} image={activeDriverPhoto} tone="light" className="h-10 w-10 flex-shrink-0 text-[15px]" />
@@ -1863,10 +1904,10 @@ const TravelerMessages = ({
                       onComposerChange(e.target.value);
                       autoGrowTextarea(e.target, 100);
                     }}
-                    placeholder="Message…"
+                    placeholder={t('dash.chat.placeholder')}
                     className="max-h-[100px] min-h-[38px] min-w-0 flex-1 resize-none rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white px-3 py-2 text-[13px] leading-snug text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none"
                   />
-                  <button type="submit" disabled={!composerValue.trim() || sending} aria-label="Send" className="grid h-[38px] w-[38px] flex-shrink-0 place-items-center rounded-[11px] bg-brand transition hover:bg-brand-dark disabled:opacity-50">
+                  <button type="submit" disabled={!composerValue.trim() || sending} aria-label={t('dash.chat.send')} className="grid h-[38px] w-[38px] flex-shrink-0 place-items-center rounded-[11px] bg-brand transition hover:bg-brand-dark disabled:opacity-50">
                     {sending ? <Loader2 className="h-4 w-4 animate-spin text-white" /> : <Send className="h-[17px] w-[17px] text-white" />}
                   </button>
                 </form>
@@ -1875,11 +1916,11 @@ const TravelerMessages = ({
           </div>
         ) : (
           <>
-            <MobileHeader onMenu={onMenu} right={<Avatar name={travelerName} tone="light" className="h-10 w-10 text-[15px]" />} eyebrow="INBOX" title="Messages" />
+            <MobileHeader onMenu={onMenu} right={<Avatar name={travelerName} tone="light" className="h-10 w-10 text-[15px]" />} eyebrow={t('dash.chat.eyebrow')} title={t('dash.nav.messages')} />
             <Sheet>
               <div className="mb-3.5 flex items-center gap-2.5 rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 py-2.5">
                 <Search className="h-4 w-4 flex-shrink-0 text-muted-soft" />
-                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search conversations" className="w-full min-w-0 bg-transparent text-[13.5px] text-ink placeholder:text-[#adb8c0] focus:outline-none" />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('dash.chat.search')} className="w-full min-w-0 bg-transparent text-[13.5px] text-ink placeholder:text-[#adb8c0] focus:outline-none" />
               </div>
               <div className="overflow-hidden rounded-[18px] bg-white shadow-card">{conversationList('mobile')}</div>
             </Sheet>
@@ -1891,10 +1932,10 @@ const TravelerMessages = ({
       <div className="hidden h-screen lg:flex">
         <div className="flex w-[340px] flex-shrink-0 flex-col border-r border-hairline bg-white">
           <div className="px-[18px] pb-3.5 pt-5">
-            <h1 className="mb-3 text-[20px] font-extrabold text-ink">Messages</h1>
+            <h1 className="mb-3 text-[20px] font-extrabold text-ink">{t('dash.nav.messages')}</h1>
             <div className="flex items-center gap-2.5 rounded-[11px] border-[1.5px] border-[#e2e8ea] px-3 py-2.5">
               <Search className="h-4 w-4 flex-shrink-0 text-muted-soft" />
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search conversations" className="w-full min-w-0 bg-transparent text-[13px] text-ink placeholder:text-[#adb8c0] focus:outline-none" />
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('dash.chat.search')} className="w-full min-w-0 bg-transparent text-[13px] text-ink placeholder:text-[#adb8c0] focus:outline-none" />
             </div>
           </div>
           <div className="flex-1 overflow-y-auto">{conversationList('desktop')}</div>
@@ -1908,7 +1949,7 @@ const TravelerMessages = ({
                   type="button"
                   onClick={openDriverProfile}
                   disabled={!activeDriverId}
-                  aria-label={`View ${activeName}'s driver profile`}
+                  aria-label={t('dash.chat.viewProfile', { name: activeName })}
                   className="group flex min-w-0 flex-1 items-center gap-3 rounded-xl py-1.5 pr-3 text-left transition hover:bg-canvas disabled:cursor-default disabled:hover:bg-transparent"
                 >
                   <Avatar name={activeName} image={activeDriverPhoto} tone="brand" className="h-10 w-10 flex-shrink-0 rounded-[11px] text-[15px]" />
@@ -1941,17 +1982,17 @@ const TravelerMessages = ({
                       onComposerChange(e.target.value);
                       autoGrowTextarea(e.target, 120);
                     }}
-                    placeholder="Message…"
+                    placeholder={t('dash.chat.placeholder')}
                     className="max-h-[120px] min-h-[42px] min-w-0 flex-1 resize-none rounded-[12px] border-[1.5px] border-[#e2e8ea] bg-white px-3.5 py-2.5 text-[13.5px] leading-snug text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none"
                   />
                   <button type="submit" disabled={!composerValue.trim() || sending} className="h-[42px] flex-shrink-0 rounded-[12px] bg-brand px-5 text-[13.5px] font-bold text-white transition hover:bg-brand-dark disabled:opacity-50">
-                    {sending ? 'Sending…' : 'Send'}
+                    {sending ? t('dash.chat.sending') : t('dash.chat.send')}
                   </button>
                 </form>
               </div>
             </>
           ) : (
-            <div className="flex flex-1 items-center justify-center text-sm text-muted">Select a conversation to view messages.</div>
+            <div className="flex flex-1 items-center justify-center text-sm text-muted">{t('dash.chat.select')}</div>
           )}
         </div>
       </div>
@@ -1977,6 +2018,7 @@ const TravelerMessages = ({
   );
 };
 
+// Sent to the driver, so it stays in English whatever language the traveller uses.
 const NEW_OFFER_REQUEST_MARKER = 'has expired. Could you please send me a new offer?';
 
 const buildNewOfferRequest = (offer) =>
@@ -1992,17 +2034,18 @@ const offerFollowUp = (laterMessages) => {
 };
 
 const TravelerOfferBubble = ({ message, align, onBook, onRequestNew, requesting = false, followUp = null }) => {
+  const { t } = useI18n();
   const { offer } = message;
   const start = formatDateLabel(offer.startDate);
   const end = formatDateLabel(offer.endDate);
   const discount = offer.discount;
-  const expiry = offerExpiryNotice(offer);
+  const expiry = offerExpiryNotice(offer, undefined, t);
   const lapsed = expiry?.tone === 'expired';
   return (
     <div className={`flex ${align === 'end' ? 'justify-end' : 'justify-start'}`}>
       <div className={`max-w-[88%] rounded-[16px] border-[1.5px] border-[#cdeede] bg-white p-3.5 shadow-[0_4px_14px_rgba(15,31,45,0.06)] ${lapsed && followUp ? 'opacity-70' : ''}`}>
         <div className="mb-2 flex items-center justify-between gap-3">
-          <span className="rounded-[7px] bg-brand-tint px-2 py-[3px] text-[10.5px] font-extrabold uppercase text-brand-dark">Offer received</span>
+          <span className="rounded-[7px] bg-brand-tint px-2 py-[3px] text-[10.5px] font-extrabold uppercase text-brand-dark">{t('dash.offer.received')}</span>
           <div className="text-right">
             {discount ? <div className="text-[11px] font-semibold text-[#e11d48] line-through">{formatCurrency(offer.totalPrice)}</div> : null}
             <b className="text-[18px] text-ink">{formatCurrency(discount ? discount.payableTotal : offer.totalPrice)}</b>
@@ -2010,19 +2053,19 @@ const TravelerOfferBubble = ({ message, align, onBook, onRequestNew, requesting 
         </div>
         {discount ? (
           <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-rose-500 to-amber-500 px-2.5 py-1 text-[10.5px] font-bold text-white">
-            <Sparkles className="h-3 w-3" /> {discount.name} — save {discount.discountPercent}%
+            <Sparkles className="h-3 w-3" /> {t('dash.offer.discount', { name: discount.name, percent: discount.discountPercent })}
           </div>
         ) : null}
         <OfferVehicleImages
           images={offer.vehicle?.images}
-          alt={offer.vehicle?.model || 'Vehicle'}
+          alt={offer.vehicle?.model || t('dash.offer.vehicle')}
           className="mb-2"
         />
         <div className="text-[13px] font-bold text-ink">
-          {offer.vehicle?.model || 'Selected vehicle'} · {start}–{end}
+          {offer.vehicle?.model || t('dash.offer.selectedVehicle')} · {start}–{end}
         </div>
         <div className="mt-0.5 text-[12px] text-muted-soft">
-          {offer.totalKms} km included · {formatRate(offer.pricePerExtraKm)} / extra km
+          {t('dash.offer.kms', { km: offer.totalKms, rate: formatRate(offer.pricePerExtraKm) })}
         </div>
         <OfferInclusionList inclusions={offer.inclusions} className="mt-2" />
         {message.body ? <div className="mt-1.5 whitespace-pre-wrap text-[12px] leading-relaxed text-muted">{message.body}</div> : null}
@@ -2040,18 +2083,18 @@ const TravelerOfferBubble = ({ message, align, onBook, onRequestNew, requesting 
             className="flex-1 rounded-[11px] bg-brand py-[11px] text-[13.5px] font-bold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-brand"
           >
             {!lapsed
-              ? 'Accept offer'
+              ? t('dash.offer.accept')
               : requesting
-                ? 'Sending…'
+                ? t('dash.chat.sending')
                 : followUp === 'newer-offer'
-                  ? 'Newer offer below'
+                  ? t('dash.offer.newerBelow')
                   : followUp === 'requested'
-                    ? 'New offer requested'
-                    : 'Request new offer'}
+                    ? t('dash.offer.requested')
+                    : t('dash.offer.requestNew')}
           </button>
           {lapsed ? null : (
-            <button type="button" onClick={() => toast('Reply in the chat to negotiate or decline.')} className="flex-shrink-0 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white px-4 py-[11px] text-[13.5px] font-bold text-ink transition hover:border-muted-soft">
-              Decline
+            <button type="button" onClick={() => toast(t('dash.offer.declineHint'))} className="flex-shrink-0 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white px-4 py-[11px] text-[13.5px] font-bold text-ink transition hover:border-muted-soft">
+              {t('dash.offer.decline')}
             </button>
           )}
         </div>
@@ -2062,6 +2105,7 @@ const TravelerOfferBubble = ({ message, align, onBook, onRequestNew, requesting 
 
 // ---------- My Requests ----------
 const TravelerRequests = ({ onMenu, travelerName, briefsState, onReload, onCreateBrief, creating, onOpenMessages, autoOpenForm = false, onAutoOpenHandled }) => {
+  const { t } = useI18n();
   const { loading, error, items } = briefsState;
   const [formOpen, setFormOpen] = useState(false);
   const [formState, setFormState] = useState(() => buildBriefForm());
@@ -2127,17 +2171,19 @@ const TravelerRequests = ({ onMenu, travelerName, briefsState, onReload, onCreat
       // Only /get-quotes collects these; carried through unchanged when present.
       ...(formState.maxOffers ? { maxOffers: Number(formState.maxOffers) } : {}),
       ...(formState.requiredLicenseType ? { requiredLicenseType: formState.requiredLicenseType } : {}),
+      // The site language the request was started in (/de/get-quotes -> 'de').
+      ...(formState.language ? { language: formState.language } : {}),
     };
     if (!payload.startDate || !payload.endDate) {
-      toast.error('Please select travel dates.');
+      toast.error(t('dash.requests.errors.dates'));
       return;
     }
     if (!payload.startLocation || !payload.endLocation || !payload.message || !payload.country) {
-      toast.error('All fields are required.');
+      toast.error(t('dash.requests.errors.allFields'));
       return;
     }
     if (payload.adults < 1) {
-      toast.error('Please specify at least one adult traveller.');
+      toast.error(t('dash.requests.errors.adults'));
       return;
     }
     try {
@@ -2156,7 +2202,7 @@ const TravelerRequests = ({ onMenu, travelerName, briefsState, onReload, onCreat
     const end = formatDateLabel(brief.endDate);
     const hasOffers = brief.offersCount > 0;
     const isBooked = brief.status === 'booked';
-    const guests = `${brief.adults} guest${brief.adults === 1 ? '' : 's'}${brief.children > 0 ? ` +${brief.children}` : ''}`;
+    const guests = guestsLabel(brief, t);
     return (
       <article key={brief.id} className="min-w-0 rounded-[18px] bg-white p-4 shadow-card" style={hasOffers ? { borderLeft: '4px solid #10a35a' } : undefined}>
         <div className="flex items-start justify-between gap-2">
@@ -2165,14 +2211,14 @@ const TravelerRequests = ({ onMenu, travelerName, briefsState, onReload, onCreat
           </b>
           {isBooked ? (
             <span className="flex-shrink-0 rounded-lg bg-brand px-2 py-1 text-[11px] font-extrabold uppercase text-white">
-              Booked
+              {t('dash.requests.booked')}
             </span>
           ) : hasOffers ? (
             <span className="flex-shrink-0 rounded-lg bg-brand-tint px-2 py-1 text-[11px] font-extrabold uppercase text-brand-dark">
-              {brief.offersCount} offer{brief.offersCount === 1 ? '' : 's'}
+              {t('dash.offersCount', { count: brief.offersCount })}
             </span>
           ) : (
-            <span className="flex-shrink-0 text-[11px] font-bold text-muted-soft">Awaiting offers</span>
+            <span className="flex-shrink-0 text-[11px] font-bold text-muted-soft">{t('dash.awaitingOffers')}</span>
           )}
         </div>
         <div className="my-3 flex flex-wrap gap-1.5">
@@ -2188,14 +2234,14 @@ const TravelerRequests = ({ onMenu, travelerName, briefsState, onReload, onCreat
             disabled={!hasOffers}
             className={`flex-1 rounded-[11px] py-2.5 text-[13.5px] font-bold transition ${hasOffers ? 'bg-brand text-white hover:bg-brand-dark' : 'border-[1.5px] border-[#e2e8ea] bg-white text-muted'}`}
           >
-            View offers
+            {t('dash.viewOffers')}
           </button>
           <button
             type="button"
             onClick={openBlankForm}
             className="flex-shrink-0 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white px-4 py-2.5 text-[13.5px] font-bold text-ink transition hover:border-muted-soft"
           >
-            New
+            {t('dash.requests.new')}
           </button>
         </div>
       </article>
@@ -2206,9 +2252,9 @@ const TravelerRequests = ({ onMenu, travelerName, briefsState, onReload, onCreat
     <MobileHeader
       onMenu={onMenu}
       right={<Avatar name={travelerName} tone="light" className="h-10 w-10 text-[15px]" />}
-      eyebrow="MY REQUESTS"
-      title="Tour Requests"
-      subtitle="Trips you've posted for drivers to bid on."
+      eyebrow={t('dash.requests.eyebrow')}
+      title={t('dash.requests.title')}
+      subtitle={t('dash.requests.subtitle')}
     />
   );
 
@@ -2218,7 +2264,7 @@ const TravelerRequests = ({ onMenu, travelerName, briefsState, onReload, onCreat
         {head}
         <Sheet>
           <div className="flex min-h-[40vh] items-center justify-center gap-2 text-sm text-muted">
-            <Loader2 className="h-5 w-5 animate-spin text-brand" /> Loading your requests…
+            <Loader2 className="h-5 w-5 animate-spin text-brand" /> {t('dash.requests.loading')}
           </div>
         </Sheet>
       </>
@@ -2233,7 +2279,7 @@ const TravelerRequests = ({ onMenu, travelerName, briefsState, onReload, onCreat
           <div className="rounded-[18px] bg-white p-6 text-center text-sm shadow-card">
             <p className="text-[#e11d48]">{error}</p>
             <button type="button" onClick={onReload} className="mt-3 rounded-full border border-[#e2e8ea] px-4 py-2 text-xs font-bold text-ink transition hover:border-muted-soft">
-              Try again
+              {t('dash.tryAgain')}
             </button>
           </div>
         </Sheet>
@@ -2252,13 +2298,13 @@ const TravelerRequests = ({ onMenu, travelerName, briefsState, onReload, onCreat
           className="flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand py-[14px] text-[14.5px] font-extrabold text-white transition hover:bg-brand-dark"
         >
           <PlusCircle className="h-[18px] w-[18px]" strokeWidth={2} />
-          Post a new request
+          {t('dash.requests.postNew')}
         </button>
 
         {items.length === 0 ? (
           <div className="mt-4 rounded-[18px] bg-white p-6 text-center text-sm text-muted shadow-card">
-            <b className="mb-1 block text-ink">No requests yet</b>
-            Post your first itinerary to invite vetted drivers to respond with offers.
+            <b className="mb-1 block text-ink">{t('dash.requests.emptyTitle')}</b>
+            {t('dash.requests.emptyBody')}
           </div>
         ) : (
           <div className="mt-3.5 grid gap-3 lg:grid-cols-2">
@@ -2266,7 +2312,7 @@ const TravelerRequests = ({ onMenu, travelerName, briefsState, onReload, onCreat
               const start = formatDateLabel(brief.startDate);
               const end = formatDateLabel(brief.endDate);
               const hasOffers = brief.offersCount > 0;
-              const guests = `${brief.adults} guest${brief.adults === 1 ? '' : 's'}${brief.children > 0 ? ` +${brief.children}` : ''}`;
+              const guests = guestsLabel(brief, t);
               return (
                 <article key={brief.id} className="min-w-0 rounded-[18px] bg-white p-4 shadow-card" style={hasOffers ? { borderLeft: '4px solid #10a35a' } : undefined}>
                   <div className="flex items-start justify-between gap-2">
@@ -2275,10 +2321,10 @@ const TravelerRequests = ({ onMenu, travelerName, briefsState, onReload, onCreat
                     </b>
                     {hasOffers ? (
                       <span className="flex-shrink-0 rounded-lg bg-brand-tint px-2 py-1 text-[11px] font-extrabold uppercase text-brand-dark">
-                        {brief.offersCount} offer{brief.offersCount === 1 ? '' : 's'}
+                        {t('dash.offersCount', { count: brief.offersCount })}
                       </span>
                     ) : (
-                      <span className="flex-shrink-0 text-[11px] font-bold text-muted-soft">Awaiting offers</span>
+                      <span className="flex-shrink-0 text-[11px] font-bold text-muted-soft">{t('dash.awaitingOffers')}</span>
                     )}
                   </div>
                   <div className="my-3 flex flex-wrap gap-1.5">
@@ -2294,14 +2340,14 @@ const TravelerRequests = ({ onMenu, travelerName, briefsState, onReload, onCreat
                       disabled={!hasOffers}
                       className={`flex-1 rounded-[11px] py-2.5 text-[13.5px] font-bold transition ${hasOffers ? 'bg-brand text-white hover:bg-brand-dark' : 'border-[1.5px] border-[#e2e8ea] bg-white text-muted'}`}
                     >
-                      View offers
+                      {t('dash.viewOffers')}
                     </button>
                     <button
                       type="button"
                       onClick={openBlankForm}
                       className="flex-shrink-0 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white px-4 py-2.5 text-[13.5px] font-bold text-ink transition hover:border-muted-soft"
                     >
-                      New
+                      {t('dash.requests.new')}
                     </button>
                   </div>
                 </article>
@@ -2314,19 +2360,19 @@ const TravelerRequests = ({ onMenu, travelerName, briefsState, onReload, onCreat
 
       <div className="hidden lg:block">
         <div className="px-8 py-8">
-          <DesktopTitleBar title="Tour Requests">
+          <DesktopTitleBar title={t('dash.requests.title')}>
             <button
               type="button"
               onClick={openBlankForm}
               className="rounded-[11px] bg-brand px-[18px] py-2.5 text-[14px] font-bold text-white transition hover:bg-brand-dark"
             >
-              Post a new request
+              {t('dash.requests.postNew')}
             </button>
           </DesktopTitleBar>
           {items.length === 0 ? (
             <div className="rounded-[18px] bg-white p-6 text-sm text-muted shadow-card">
-              <b className="mb-1 block text-ink">No requests yet</b>
-              Post your first itinerary to invite vetted drivers to respond with offers.
+              <b className="mb-1 block text-ink">{t('dash.requests.emptyTitle')}</b>
+              {t('dash.requests.emptyBody')}
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-4">{items.map(renderBriefCard)}</div>
@@ -2335,68 +2381,70 @@ const TravelerRequests = ({ onMenu, travelerName, briefsState, onReload, onCreat
       </div>
 
       {formOpen ? (
-        <BottomSheet title={reviewing ? 'Review and post your request' : 'Post a request'} onClose={closeForm}>
+        <BottomSheet title={reviewing ? t('dash.requests.form.reviewTitle') : t('dash.requests.form.title')} onClose={closeForm}>
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             {reviewing ? (
               <p className="rounded-xl bg-brand-tint px-3.5 py-3 text-[13px] font-semibold leading-relaxed text-ink">
-                Here is the trip you entered. It has not been sent yet. Check the details, change anything you need, then post it to drivers.
+                {t('dash.requests.form.reviewNote')}
               </p>
             ) : null}
             <div className="flex gap-2.5">
               <div className="min-w-0 flex-1">
-                <label className={labelCls}>Start date</label>
+                <label className={labelCls}>{t('dash.form.startDate')}</label>
                 <input type="date" name="startDate" value={formState.startDate} onChange={handleFieldChange} className={`mt-1 ${inputCls}`} required />
               </div>
               <div className="min-w-0 flex-1">
-                <label className={labelCls}>End date</label>
+                <label className={labelCls}>{t('dash.form.endDate')}</label>
                 <input type="date" name="endDate" value={formState.endDate} onChange={handleFieldChange} className={`mt-1 ${inputCls}`} required />
               </div>
             </div>
             <div className="flex gap-2.5">
               <div className="min-w-0 flex-1">
-                <label className={labelCls}>From</label>
-                <input type="text" name="startLocation" value={formState.startLocation} onChange={handleFieldChange} placeholder="Colombo airport" className={`mt-1 ${inputCls}`} required />
+                <label className={labelCls}>{t('dash.requests.form.from')}</label>
+                <input type="text" name="startLocation" value={formState.startLocation} onChange={handleFieldChange} placeholder={t('dash.requests.form.fromPlaceholder')} className={`mt-1 ${inputCls}`} required />
               </div>
               <div className="min-w-0 flex-1">
-                <label className={labelCls}>To</label>
-                <input type="text" name="endLocation" value={formState.endLocation} onChange={handleFieldChange} placeholder="Kandy" className={`mt-1 ${inputCls}`} required />
+                <label className={labelCls}>{t('dash.requests.form.to')}</label>
+                <input type="text" name="endLocation" value={formState.endLocation} onChange={handleFieldChange} placeholder={t('dash.requests.form.toPlaceholder')} className={`mt-1 ${inputCls}`} required />
               </div>
             </div>
             <div className="flex gap-2.5">
               <div className="min-w-0 flex-1">
-                <label className={labelCls}>Adults</label>
+                <label className={labelCls}>{t('dash.requests.form.adults')}</label>
                 <input type="number" min="1" name="adults" value={formState.adults} onChange={handleFieldChange} className={`mt-1 ${inputCls}`} required />
               </div>
               <div className="min-w-0 flex-1">
-                <label className={labelCls}>Children</label>
+                <label className={labelCls}>{t('dash.requests.form.children')}</label>
                 <input type="number" min="0" name="children" value={formState.children} onChange={handleFieldChange} className={`mt-1 ${inputCls}`} />
               </div>
             </div>
             <div>
-              <label className={labelCls}>Country of residence</label>
-              <input type="text" name="country" value={formState.country} onChange={handleFieldChange} placeholder="United Kingdom" className={`mt-1 ${inputCls}`} required />
+              <label className={labelCls}>{t('dash.requests.form.country')}</label>
+              <input type="text" name="country" value={formState.country} onChange={handleFieldChange} placeholder={t('dash.requests.form.countryPlaceholder')} className={`mt-1 ${inputCls}`} required />
             </div>
             <div>
-              <label className={labelCls}>Trip details</label>
-              <textarea name="message" rows={4} value={formState.message} onChange={handleFieldChange} placeholder="Must-see stops, accommodation needs, languages, etc." className="mt-1 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 py-2.5 text-sm text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none" required />
+              <label className={labelCls}>{t('dash.requests.form.details')}</label>
+              <textarea name="message" rows={4} value={formState.message} onChange={handleFieldChange} placeholder={t('dash.requests.form.detailsPlaceholder')} className="mt-1 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 py-2.5 text-sm text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none" required />
               <span className="mt-1.5 block text-[11.5px] leading-[1.5] text-muted-soft">
-                Please don&apos;t include phone numbers or emails here — we&apos;ll share contact details once you accept an offer and your booking is confirmed.
+                {t('dash.requests.form.noContact')}
               </span>
             </div>
             {formState.maxOffers || formState.requiredLicenseType ? (
               <p className="text-[12px] font-semibold text-muted">
                 {[
-                  formState.maxOffers ? `Up to ${formState.maxOffers} quotes` : null,
-                  formState.requiredLicenseType ? `${formState.requiredLicenseType}s only` : null,
+                  formState.maxOffers ? t('dash.requests.form.upTo', { count: formState.maxOffers }) : null,
+                  formState.requiredLicenseType
+                    ? t('dash.requests.form.onlyType', { type: translateLicenseType(formState.requiredLicenseType, t) })
+                    : null,
                 ].filter(Boolean).join(' · ')}
               </p>
             ) : null}
             <div className="rounded-xl border border-[#e2e8ea] bg-[#f9fbfa] px-3.5 py-3 text-[12.5px] leading-relaxed text-muted">
-              <b className="mb-0.5 block text-ink">What happens next</b>
-              After posting, you will receive offers from drivers. You can chat with them, compare offers and prices, and book from the Messages tab. You will get an email each time you receive a new offer.
+              <b className="mb-0.5 block text-ink">{t('dash.requests.form.nextTitle')}</b>
+              {t('dash.requests.form.nextBody')}
             </div>
             <button type="submit" disabled={creating} className="mt-1 flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand py-[14px] text-[15px] font-extrabold text-white transition hover:bg-brand-dark disabled:opacity-70">
-              {creating ? (<><Loader2 className="h-4 w-4 animate-spin" /> Posting…</>) : reviewing ? 'Post request to drivers' : 'Post tour brief'}
+              {creating ? (<><Loader2 className="h-4 w-4 animate-spin" /> {t('dash.requests.form.posting')}</>) : reviewing ? t('dash.requests.form.postToDrivers') : t('dash.requests.form.post')}
             </button>
           </form>
         </BottomSheet>
@@ -2411,6 +2459,7 @@ const RequestTag = ({ children }) => (
 
 // ---------- Settings ----------
 const TravelerSettings = ({ onMenu, travelerName, state, onSave, onPasswordChange, onRetry }) => {
+  const { t } = useI18n();
   const { loading, error, data, savingProfile, savingPassword } = state;
   const [formState, setFormState] = useState(() => buildTravelerProfileForm(data));
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', password: '', confirmPassword: '' });
@@ -2443,7 +2492,7 @@ const TravelerSettings = ({ onMenu, travelerName, state, onSave, onPasswordChang
     event.preventDefault();
     if (!onPasswordChange) return;
     if (!passwordForm.password || passwordForm.password !== passwordForm.confirmPassword) {
-      toast.error('New passwords do not match.');
+      toast.error(t('dash.settings.mismatch'));
       return;
     }
     try {
@@ -2458,9 +2507,9 @@ const TravelerSettings = ({ onMenu, travelerName, state, onSave, onPasswordChang
     <MobileHeader
       onMenu={onMenu}
       right={<Avatar name={travelerName} tone="light" className="h-10 w-10 text-[15px]" />}
-      eyebrow="ACCOUNT"
-      title="Settings"
-      subtitle="Tell us how to reach you while you travel."
+      eyebrow={t('dash.settings.eyebrow')}
+      title={t('dash.nav.settings')}
+      subtitle={t('dash.settings.subtitle')}
     />
   );
 
@@ -2470,7 +2519,7 @@ const TravelerSettings = ({ onMenu, travelerName, state, onSave, onPasswordChang
         {head}
         <Sheet>
           <div className="flex min-h-[40vh] items-center justify-center gap-2 text-sm text-muted">
-            <Loader2 className="h-5 w-5 animate-spin text-brand" /> Loading profile…
+            <Loader2 className="h-5 w-5 animate-spin text-brand" /> {t('dash.settings.loading')}
           </div>
         </Sheet>
       </>
@@ -2485,7 +2534,7 @@ const TravelerSettings = ({ onMenu, travelerName, state, onSave, onPasswordChang
           <div className="rounded-[18px] bg-white p-6 text-center text-sm shadow-card">
             <p className="text-[#e11d48]">{error}</p>
             <button type="button" onClick={onRetry} className="mt-3 rounded-full border border-[#e2e8ea] px-4 py-2 text-xs font-bold text-ink transition hover:border-muted-soft">
-              Retry
+              {t('dash.retry')}
             </button>
           </div>
         </Sheet>
@@ -2498,7 +2547,7 @@ const TravelerSettings = ({ onMenu, travelerName, state, onSave, onPasswordChang
       <>
         {head}
         <Sheet>
-          <div className="rounded-[18px] bg-white p-6 text-center text-sm text-muted shadow-card">No profile details available.</div>
+          <div className="rounded-[18px] bg-white p-6 text-center text-sm text-muted shadow-card">{t('dash.settings.noProfile')}</div>
         </Sheet>
       </>
     );
@@ -2511,44 +2560,44 @@ const TravelerSettings = ({ onMenu, travelerName, state, onSave, onPasswordChang
       <Sheet>
         <form onSubmit={handleProfileSubmit} className="rounded-[18px] bg-white p-4 shadow-card">
           <div>
-            <label className={labelCls} htmlFor="traveler-name">Full name</label>
+            <label className={labelCls} htmlFor="traveler-name">{t('dash.settings.fullName')}</label>
             <input id="traveler-name" name="name" value={formState.name} onChange={handleFieldChange} className={`mt-1 ${inputCls}`} required />
           </div>
           <div className="mt-3">
-            <label className={labelCls} htmlFor="traveler-email">Email</label>
+            <label className={labelCls} htmlFor="traveler-email">{t('dash.settings.email')}</label>
             <input id="traveler-email" value={data.email} readOnly className="mt-1 h-11 w-full cursor-not-allowed rounded-xl border-[1.5px] border-[#e2e8ea] bg-canvas px-3 text-sm font-medium text-muted-soft" />
-            <p className="mt-1 text-[11.5px] text-muted-soft">Need to change your email? Contact support.</p>
+            <p className="mt-1 text-[11.5px] text-muted-soft">{t('dash.settings.emailHelp')}</p>
           </div>
           <div className="mt-3">
-            <label className={labelCls} htmlFor="traveler-contact">Contact number</label>
-            <input id="traveler-contact" name="contactNumber" value={formState.contactNumber} onChange={handleFieldChange} placeholder="e.g. +94 71 123 4567" className={`mt-1 ${inputCls}`} />
+            <label className={labelCls} htmlFor="traveler-contact">{t('dash.settings.contact')}</label>
+            <input id="traveler-contact" name="contactNumber" value={formState.contactNumber} onChange={handleFieldChange} placeholder={t('dash.settings.contactPlaceholder', { example: '+94 71 123 4567' })} className={`mt-1 ${inputCls}`} />
           </div>
           <div className="mt-3">
-            <label className={labelCls} htmlFor="traveler-address">Home base</label>
-            <input id="traveler-address" name="address" value={formState.address} onChange={handleFieldChange} placeholder="City, country" className={`mt-1 ${inputCls}`} />
+            <label className={labelCls} htmlFor="traveler-address">{t('dash.settings.homeBase')}</label>
+            <input id="traveler-address" name="address" value={formState.address} onChange={handleFieldChange} placeholder={t('dash.settings.homeBasePlaceholder')} className={`mt-1 ${inputCls}`} />
           </div>
           <button type="submit" disabled={savingProfile} className="mt-4 flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand py-[14px] text-[15px] font-extrabold text-white transition hover:bg-brand-dark disabled:opacity-70">
-            {savingProfile ? (<><Loader2 className="h-4 w-4 animate-spin" /> Saving…</>) : 'Save changes'}
+            {savingProfile ? (<><Loader2 className="h-4 w-4 animate-spin" /> {t('dash.saving')}</>) : t('dash.saveChanges')}
           </button>
         </form>
 
         <form onSubmit={handlePasswordSubmit} className="mt-3 rounded-[18px] bg-white p-4 shadow-card">
-          <b className="text-[15px] text-ink">Reset password</b>
-          <p className="mb-3 mt-0.5 text-[12.5px] text-muted-soft">Update your password to keep your account secure.</p>
+          <b className="text-[15px] text-ink">{t('dash.settings.resetPassword')}</b>
+          <p className="mb-3 mt-0.5 text-[12.5px] text-muted-soft">{t('dash.settings.resetHelp')}</p>
           <div>
-            <label className={labelCls} htmlFor="traveler-password-current">Current password</label>
+            <label className={labelCls} htmlFor="traveler-password-current">{t('dash.settings.currentPassword')}</label>
             <input id="traveler-password-current" name="currentPassword" type="password" value={passwordForm.currentPassword} onChange={handlePasswordFieldChange} className={`mt-1 ${inputCls}`} required />
           </div>
           <div className="mt-3">
-            <label className={labelCls} htmlFor="traveler-password-new">New password</label>
+            <label className={labelCls} htmlFor="traveler-password-new">{t('dash.settings.newPassword')}</label>
             <input id="traveler-password-new" name="password" type="password" value={passwordForm.password} onChange={handlePasswordFieldChange} className={`mt-1 ${inputCls}`} required minLength={8} />
           </div>
           <div className="mt-3">
-            <label className={labelCls} htmlFor="traveler-password-confirm">Confirm new password</label>
+            <label className={labelCls} htmlFor="traveler-password-confirm">{t('dash.settings.confirmPassword')}</label>
             <input id="traveler-password-confirm" name="confirmPassword" type="password" value={passwordForm.confirmPassword} onChange={handlePasswordFieldChange} className={`mt-1 ${inputCls}`} required />
           </div>
           <button type="submit" disabled={savingPassword} className="mt-4 w-full rounded-[14px] border-[1.5px] border-[#e2e8ea] bg-white py-[13px] text-[14px] font-bold text-ink transition hover:border-muted-soft disabled:opacity-70">
-            {savingPassword ? 'Updating…' : 'Update password'}
+            {savingPassword ? t('dash.settings.updating') : t('dash.settings.updatePassword')}
           </button>
         </form>
         <DeleteAccountCard requiresPassword={data.authProvider === 'local'} />
@@ -2558,54 +2607,54 @@ const TravelerSettings = ({ onMenu, travelerName, state, onSave, onPasswordChang
       <div className="hidden lg:block">
         <div className="px-8 py-8">
           <div className="mx-auto max-w-[560px]">
-            <h1 className="text-[24px] font-extrabold tracking-tight text-ink">Settings</h1>
-            <p className="mt-1 text-[14px] text-muted">Tell us how to reach you while you travel.</p>
+            <h1 className="text-[24px] font-extrabold tracking-tight text-ink">{t('dash.nav.settings')}</h1>
+            <p className="mt-1 text-[14px] text-muted">{t('dash.settings.subtitle')}</p>
             <form onSubmit={handleProfileSubmit} className="mt-5 rounded-[18px] bg-white p-6 shadow-card">
               <div className="flex gap-3.5">
                 <div className="min-w-0 flex-1">
-                  <label className={labelCls}>Full name</label>
+                  <label className={labelCls}>{t('dash.settings.fullName')}</label>
                   <input name="name" value={formState.name} onChange={handleFieldChange} className={`mt-1 ${inputCls}`} required />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <label className={labelCls}>Contact number</label>
+                  <label className={labelCls}>{t('dash.settings.contact')}</label>
                   <input name="contactNumber" value={formState.contactNumber} onChange={handleFieldChange} placeholder="+94 71 123 4567" className={`mt-1 ${inputCls}`} />
                 </div>
               </div>
               <div className="mt-3.5">
-                <label className={labelCls}>Email</label>
+                <label className={labelCls}>{t('dash.settings.email')}</label>
                 <input value={data.email} readOnly className="mt-1 h-11 w-full cursor-not-allowed rounded-xl border-[1.5px] border-[#e2e8ea] bg-canvas px-3 text-sm font-medium text-muted-soft" />
-                <p className="mt-1 text-[11.5px] text-muted-soft">Need to change your email? Contact support.</p>
+                <p className="mt-1 text-[11.5px] text-muted-soft">{t('dash.settings.emailHelp')}</p>
               </div>
               <div className="mt-3.5">
-                <label className={labelCls}>Home base</label>
-                <input name="address" value={formState.address} onChange={handleFieldChange} placeholder="City, country" className={`mt-1 ${inputCls}`} />
+                <label className={labelCls}>{t('dash.settings.homeBase')}</label>
+                <input name="address" value={formState.address} onChange={handleFieldChange} placeholder={t('dash.settings.homeBasePlaceholder')} className={`mt-1 ${inputCls}`} />
               </div>
               <div className="mt-4 flex justify-end">
                 <button type="submit" disabled={savingProfile} className="rounded-[12px] bg-brand px-6 py-3 text-[14px] font-extrabold text-white transition hover:bg-brand-dark disabled:opacity-70">
-                  {savingProfile ? 'Saving…' : 'Save changes'}
+                  {savingProfile ? t('dash.saving') : t('dash.saveChanges')}
                 </button>
               </div>
             </form>
             <form onSubmit={handlePasswordSubmit} className="mt-4 rounded-[18px] bg-white p-6 shadow-card">
-              <b className="text-[16px] text-ink">Reset password</b>
-              <p className="mb-3 mt-1 text-[13px] text-muted-soft">Update your password to keep your account secure.</p>
+              <b className="text-[16px] text-ink">{t('dash.settings.resetPassword')}</b>
+              <p className="mb-3 mt-1 text-[13px] text-muted-soft">{t('dash.settings.resetHelp')}</p>
               <div className="flex gap-3.5">
                 <div className="min-w-0 flex-1">
-                  <label className={labelCls}>Current password</label>
+                  <label className={labelCls}>{t('dash.settings.currentPassword')}</label>
                   <input name="currentPassword" type="password" value={passwordForm.currentPassword} onChange={handlePasswordFieldChange} className={`mt-1 ${inputCls}`} required />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <label className={labelCls}>New password</label>
+                  <label className={labelCls}>{t('dash.settings.newPassword')}</label>
                   <input name="password" type="password" value={passwordForm.password} onChange={handlePasswordFieldChange} className={`mt-1 ${inputCls}`} required minLength={8} />
                 </div>
               </div>
               <div className="mt-3.5">
-                <label className={labelCls}>Confirm new password</label>
+                <label className={labelCls}>{t('dash.settings.confirmPassword')}</label>
                 <input name="confirmPassword" type="password" value={passwordForm.confirmPassword} onChange={handlePasswordFieldChange} className={`mt-1 ${inputCls}`} required />
               </div>
               <div className="mt-4 flex justify-end">
                 <button type="submit" disabled={savingPassword} className="rounded-[12px] border-[1.5px] border-[#e2e8ea] bg-white px-5 py-2.5 text-[14px] font-bold text-ink transition hover:border-muted-soft disabled:opacity-70">
-                  {savingPassword ? 'Updating…' : 'Update password'}
+                  {savingPassword ? t('dash.settings.updating') : t('dash.settings.updatePassword')}
                 </button>
               </div>
             </form>
@@ -2626,12 +2675,13 @@ const DeskStat = ({ value, label }) => (
 );
 
 const DeskTripRow = ({ booking, tone }) => {
-  const driverName = booking.driver?.name || 'Driver';
-  const vehicleName = booking.vehicle?.model || 'Vehicle';
+  const { t } = useI18n();
+  const driverName = booking.driver?.name || t('dash.driver');
+  const vehicleName = booking.vehicle?.model || t('dash.offer.vehicle');
   const route = booking.startPoint && booking.endPoint ? `${booking.startPoint} → ${booking.endPoint}` : vehicleName;
   const start = formatDateLabel(booking.startDate);
   const end = formatDateLabel(booking.endDate);
-  const dates = start && end ? `${start} – ${end}` : 'Dates TBD';
+  const dates = start && end ? `${start} – ${end}` : t('dash.card.datesTbdShort');
   const price =
     typeof booking.payableTotal === 'number' && booking.payableTotal > 0
       ? formatCurrency(booking.payableTotal)
@@ -2653,11 +2703,12 @@ const DeskTripRow = ({ booking, tone }) => {
 };
 
 const DeskMsgRow = ({ conversation, tone, onOpen }) => {
-  const name = conversation.participants?.driver?.name || conversation.participants?.driver?.email || 'Driver';
+  const { t } = useI18n();
+  const name = conversation.participants?.driver?.name || conversation.participants?.driver?.email || t('dash.driver');
   const isOffer = conversation.lastMessage?.type === 'offer';
   const preview = isOffer
-    ? `Sent an offer${conversation.vehicle?.model ? ` · ${conversation.vehicle.model}` : ''}`
-    : conversation.lastMessage?.body || 'Conversation started.';
+    ? `${t('dash.sentOffer')}${conversation.vehicle?.model ? ` · ${conversation.vehicle.model}` : ''}`
+    : conversation.lastMessage?.body || t('dash.conversationStarted');
   return (
     <button type="button" onClick={onOpen} className="flex w-full items-center gap-[11px] text-left">
       <Avatar name={name} image={conversation.participants?.driver?.profilePhoto} tone={tone} className="h-9 w-9 flex-shrink-0 rounded-[10px] text-[13px]" />
@@ -2676,55 +2727,64 @@ const DesktopTitleBar = ({ title, children }) => (
   </div>
 );
 
-const DeskTabs = ({ view, onView, upcoming, completed }) => (
+const DeskTabs = ({ view, onView, upcoming, completed }) => {
+  const { t } = useI18n();
+  return (
   <div className="flex gap-1.5 rounded-xl bg-[#eef1f0] p-1">
     <button
       type="button"
       onClick={() => onView('upcoming')}
       className={`rounded-[9px] px-4 py-2 text-[13px] font-bold transition ${view === 'upcoming' ? 'bg-brand text-white' : 'text-muted'}`}
     >
-      Upcoming{upcoming ? ` ${upcoming}` : ''}
+      {t('dash.overview.upcoming')}{upcoming ? ` ${upcoming}` : ''}
     </button>
     <button
       type="button"
       onClick={() => onView('completed')}
       className={`rounded-[9px] px-4 py-2 text-[13px] font-bold transition ${view === 'completed' ? 'bg-brand text-white' : 'text-muted'}`}
     >
-      Completed{completed ? ` ${completed}` : ''}
+      {t('dash.overview.completed')}{completed ? ` ${completed}` : ''}
     </button>
   </div>
-);
+  );
+};
 
 // ---------- Shared bottom sheet ----------
-const BottomSheet = ({ title, onClose, children }) => (
+const BottomSheet = ({ title, onClose, children }) => {
+  const { t } = useI18n();
+  return (
   <div className="fixed inset-0 z-[70] flex items-end justify-center">
     <div className="absolute inset-0 bg-ink/45" onClick={onClose} aria-hidden="true" />
     <div className="relative mx-auto max-h-[90vh] w-full max-w-[480px] overflow-y-auto rounded-t-[24px] bg-canvas p-5 pb-8 shadow-drawer">
       <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-[#cbd5db]" />
       <div className="mb-3 flex items-center justify-between gap-3">
         <b className="min-w-0 truncate text-[17px] text-ink">{title}</b>
-        <button type="button" onClick={onClose} aria-label="Close" className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg bg-white shadow-soft">
+        <button type="button" onClick={onClose} aria-label={t('dash.close')} className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-lg bg-white shadow-soft">
           <X className="h-4 w-4 text-ink" />
         </button>
       </div>
       {children}
     </div>
   </div>
-);
+  );
+};
 
 const formatShortDateTime = (value) => {
   if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return date.toLocaleString(DATE_LOCALE, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
 
 const formatDateLabel = (value) => {
   if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return date.toLocaleDateString(DATE_LOCALE, { month: 'short', day: 'numeric', year: 'numeric' });
 };
+
+const guestsLabel = (brief, t) =>
+  `${t('dash.guests', { count: brief.adults })}${brief.children > 0 ? ` +${brief.children}` : ''}`;
 
 const formatCurrency = (value) => {
   if (typeof value !== 'number') return '$0';

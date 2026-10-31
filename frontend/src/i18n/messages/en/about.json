@@ -1,0 +1,94 @@
+{
+  "hero": {
+    "badge": "About Car with Driver LK",
+    "title": "Transparent driver bookings for every journey across Sri Lanka.",
+    "lead": "We help travelers meet verified Sri Lankan drivers, compare real options, and agree on clear prices and routes before they land. Our mission is simple: safe, fair, and stress-free travel for both travelers and local drivers.",
+    "builtFor": "Built for independent travelers & families.",
+    "coverage": "Coverage across key routes and destinations."
+  },
+  "pillars": {
+    "eyebrow": "What makes us different",
+    "title": "The three pillars of trust",
+    "lead": "Everything we build is designed to protect both sides of the journey: independent travelers and professional local drivers.",
+    "expertise": {
+      "title": "Independent Sri Lankan expertise",
+      "description": "Car with Driver LK is built by a small local team that understands the island and how travelers like to explore it."
+    },
+    "matching": {
+      "title": "Transparent matching process",
+      "description": "We connect you directly with verified, professional drivers and keep information, reviews, and pricing crystal clear."
+    },
+    "support": {
+      "title": "Platform-first support",
+      "description": "Bookings, conversations, and documents stay in one secure system so everyone sees the same trusted information."
+    }
+  },
+  "why": {
+    "eyebrow": "Why we built the platform",
+    "title": "Clarity for travelers and drivers",
+    "body": "By staying independent and focusing on transparent information, we make sure both sides of every trip are respected. Drivers showcase their expertise and set their own pricing, while travelers enjoy reliable transport, fair agreements, and dedicated support when something needs attention."
+  },
+  "help": {
+    "title": "When you need help, we’re here",
+    "body": "Most questions or issues can be solved directly with your driver. But if you need extra support, our team can help clarify agreements, document problems, and mediate where possible so you can keep traveling with confidence.",
+    "note": "For complete procedures and response times, please review our Terms and Conditions."
+  },
+  "faq": {
+    "eyebrow": "Frequently asked",
+    "title": "How Car with Driver LK operates",
+    "lead": "A quick overview of how the platform works, how we stay independent, and what you can expect when you book through us.",
+    "what": {
+      "q": "What is Car with Driver LK?",
+      "a": "Car with Driver LK is an independent online platform created to make traveling around Sri Lanka easier, safer, and more transparent for visitors. Our website helps you find trusted drivers, compare options, read real reviews, and book with confidence in one place."
+    },
+    "aim": {
+      "q": "What is the aim of the platform?",
+      "a": "Our role is to connect travelers directly with reliable, professional drivers across Sri Lanka. We do not employ drivers, own vehicles, or operate as a tour company. Instead, we provide clear systems that keep every interaction fair for travelers and drivers from the first message to the end of the trip."
+    },
+    "otherSites": {
+      "q": "Do you manage other websites?",
+      "a": "Car with Driver LK focuses entirely on this community of travelers and drivers. We may collaborate with selected tourism partners when it benefits customers, but every booking and message is handled securely through our platform."
+    },
+    "based": {
+      "q": "Where is the company based?",
+      "a": "The platform is run by a small team with deep local knowledge of Sri Lanka plus years of tourism and customer service experience. Our independent position helps us stay neutral, transparent, and fair in how we support both travelers and drivers."
+    },
+    "money": {
+      "q": "How does Car with Driver LK make money?",
+      "a": "The platform is supported by drivers who may pay small service fees or commissions to advertise and receive bookings. Keeping overheads low means drivers can stay competitive, travelers avoid extra booking fees, and you only pay the agreed amount directly to your driver."
+    },
+    "help": {
+      "q": "Will you help if something goes wrong?",
+      "a": "Yes. Our support team is available if plans change or an issue cannot be solved with your driver. We encourage travelers to speak with the driver first, and if extra help is needed we can assist or mediate with the booking details provided. Please review our Terms and Conditions for the full process."
+    }
+  },
+  "promises": {
+    "eyebrow": "Why travelers book here",
+    "title": "Our booking promises",
+    "lead": "These are the standards we work towards on every trip so you can reserve the right driver and vehicle with complete peace of mind.",
+    "items": [
+      "You receive the vehicle type described in the offer or a direct equivalent.",
+      "You meet the driver you booked, or a clearly agreed alternative if required.",
+      "You will not be asked to pay more than the total price agreed in advance.",
+      "You can request changes or cancellations through the platform based on the driver policy.",
+      "You never pay booking fees to Car with Driver LK. Payment goes directly to the driver.",
+      "You can leave an honest review for your driver after the trip.",
+      "You get written booking confirmation so everyone knows what has been arranged.",
+      "We do our best to assist if problems appear mid-trip.",
+      "You benefit from a growing network of verified drivers and traveler feedback."
+    ]
+  },
+  "testimonials": {
+    "eyebrow": "Testimonials",
+    "title": "What travelers say about Car with Driver LK",
+    "lead": "A selection of recent experiences from guests who used our platform to plan their journeys around Sri Lanka.",
+    "spain": {
+      "location": "Spain",
+      "feedback": "\"Every quote matched the final price, and the driver we met in Colombo was exactly who we booked. The confirmation pack gave us confidence to explore the south coast stress-free.\""
+    },
+    "india": {
+      "location": "India",
+      "feedback": "\"Our itinerary changed twice and the platform handled the updates instantly. Having a support team on standby made the Kandy to Ella leg relaxed and enjoyable.\""
+    }
+  }
+}

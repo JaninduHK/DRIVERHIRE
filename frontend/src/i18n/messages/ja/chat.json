@@ -1,0 +1,89 @@
+{
+  "read": "既読",
+  "sent": "送信済み",
+  "close": "閉じる",
+  "included": "（込み）",
+  "notIncluded": "（含まれません）",
+  "brief": {
+    "label": "見積もり依頼",
+    "adults": {
+      "other": "大人{count}名"
+    },
+    "children": {
+      "other": "子ども{count}名"
+    },
+    "readLess": "閉じる",
+    "readMore": "続きを読む"
+  },
+  "booking": {
+    "title": "予約の詳細",
+    "traveller": "旅行者",
+    "name": "お名前",
+    "email": "メール",
+    "phone": "電話番号",
+    "trip": "旅行",
+    "dates": "日程",
+    "days": "日数",
+    "dayCount": {
+      "other": "{count}日間"
+    },
+    "vehicle": "車両",
+    "route": "乗車地と降車地",
+    "startPoint": "乗車地",
+    "endPoint": "降車地",
+    "flight": "フライト",
+    "flightNumber": "便名",
+    "arrival": "到着時刻",
+    "departure": "出発時刻",
+    "included": "見積もりに含まれるもの",
+    "notes": "メモとオプション",
+    "status": {
+      "pending": "保留中",
+      "confirmed": "確定",
+      "cancelled": "キャンセル済み",
+      "rejected": "辞退"
+    }
+  },
+  "photos": {
+    "vehicle": "車両",
+    "view": "{name}の写真を見る",
+    "viewNumbered": "{name}の写真{n}を見る",
+    "numbered": "{name}の写真{n}"
+  },
+  "profile": {
+    "missing": "ドライバー情報がありません。",
+    "loadError": "ドライバーのプロフィールを読み込めませんでした。",
+    "linkCopied": "プロフィールのリンクをコピーしました。",
+    "copyFailed": "リンクをコピーできませんでした。",
+    "title": "ドライバーのプロフィール",
+    "copyLink": "プロフィールのリンクをコピー",
+    "newDriver": "新規ドライバー",
+    "reviews": {
+      "other": "レビュー{count}件"
+    },
+    "sriLanka": "スリランカ",
+    "loading": "ドライバーのプロフィールを読み込んでいます…",
+    "notFound": "このドライバーのプロフィールが見つかりませんでした。",
+    "years": "{count}年",
+    "experience": "経験",
+    "rating": "評価",
+    "vehicles": "車両",
+    "about": "{name}さんについて",
+    "noBio": "{name}さんはまだ自己紹介を追加していません。",
+    "location": "所在地",
+    "memberSince": "登録日",
+    "vehiclesCount": "車両（{count}）",
+    "noVehicles": "現在掲載中の車両はありません。",
+    "inThisChat": "このチャットの車両",
+    "seats": "{count}席",
+    "perDay": "1日あたり",
+    "reviewsTitle": "レビュー",
+    "loadingReviews": "レビューを読み込んでいます…",
+    "noReviews": "まだレビューはありません。このドライバーと最初にスリランカを旅して、体験をシェアしましょう。",
+    "traveller": "旅行者",
+    "showFewer": "レビューを折りたたむ",
+    "readAll": "レビュー{count}件をすべて読む",
+    "tripDetails": "旅行の詳細",
+    "backToChat": "チャットに戻る"
+  }
+}

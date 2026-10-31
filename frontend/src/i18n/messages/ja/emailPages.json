@@ -1,0 +1,45 @@
+{
+  "linkError": "このリンクを開けませんでした。",
+  "goHome": "トップページへ",
+  "backHome": "トップページに戻る",
+  "offer": {
+    "opening": "見積もりを開いています…",
+    "errorTitle": "この見積もりを開けませんでした",
+    "status": {
+      "accepted": "この見積もりはすでに承諾済みです。マイページで予約をご確認ください。",
+      "declined": "この見積もりは現在ご利用いただけません。"
+    },
+    "title": "{name}さんからの旅行の見積もり",
+    "kms": "{km} km込み",
+    "login": "ログインして返信する",
+    "loginHelp": "ログインすると、このチャットに直接移動します。"
+  },
+  "review": {
+    "opening": "レビューを開いています…",
+    "errorTitle": "このレビューを開けませんでした",
+    "errors": {
+      "rating": "星の数を選んでください。",
+      "tooShort": "もう少し詳しくご記入ください（10文字以上）。",
+      "submit": "現在レビューを送信できません。"
+    },
+    "thanksTitle": "レビューをありがとうございました",
+    "thanksBody": "チームによる承認後、サイトに掲載されます。",
+    "title": "{name}さんとのご旅行はいかがでしたか？",
+    "yourTrip": "ご旅行",
+    "rating": "評価",
+    "stars": {
+      "other": "星{count}つ"
+    },
+    "titleLabel": "タイトル",
+    "optional": "（任意）",
+    "titlePlaceholder": "例：素晴らしいドライバー、時間に正確",
+    "comment": "レビュー",
+    "commentPlaceholder": "ドライバー、車両、旅行で印象に残ったことは何ですか？",
+    "photos": "写真",
+    "removePhoto": "写真を削除",
+    "photosHelp": "旅行の写真を{count}枚まで追加できます。",
+    "submitting": "送信しています…",
+    "submit": "レビューを送信",
+    "checked": "レビューはサイトに掲載される前にチームが確認します。"
+  }
+}

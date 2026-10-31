@@ -1,6 +1,6 @@
 import { fetchVehicles } from '../../src/services/vehicleCatalogApi.js';
 import { fetchDriverDirectory } from '../../src/services/driverDirectoryApi.js';
-import { buildMeta } from '../lib/seo.js';
+import { buildMeta, metaLocale } from '../lib/seo.js';
 
 export async function loader() {
   const [vehicles, drivers] = await Promise.all([
@@ -14,12 +14,13 @@ export async function loader() {
   return { vehicles, drivers };
 }
 
-export function meta() {
+export function meta({ location }) {
+  const { locale, t } = metaLocale(location);
   return buildMeta({
-    title: 'Hire a Private Driver with Car in Sri Lanka | Car with Driver LK',
-    description:
-      'Book an SLTDA-registered private driver with a car in Sri Lanka. Compare English-speaking chauffeur-guides, transparent daily rates and island-wide tours, with free quotes in minutes.',
+    title: t('meta.home.title'),
+    description: t('meta.home.description'),
     path: '/',
+    locale,
   });
 }
 

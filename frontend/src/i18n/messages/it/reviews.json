@@ -1,0 +1,17 @@
+{
+  "count": {
+    "one": "{count} recensione",
+    "other": "{count} recensioni"
+  },
+  "sort": {
+    "newest": "Più recenti",
+    "highest": "Voto più alto",
+    "lowest": "Voto più basso",
+    "oldest": "Meno recenti"
+  },
+  "loading": "Caricamento delle recensioni…",
+  "tryAgain": "Riprova",
+  "empty": "Ancora nessuna recensione. Sii il primo a esplorare lo Sri Lanka con {name} e a raccontare la tua storia.",
+  "traveller": "Viaggiatore",
+  "recentTrip": "Viaggio recente"
+}

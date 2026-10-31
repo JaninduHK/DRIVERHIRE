@@ -1,0 +1,141 @@
+{
+  "englishPrevails": "Dies ist eine Übersetzung, die zu Ihrer Information bereitgestellt wird. Weicht sie von der <link>englischen Fassung</link> ab, gilt die englische Fassung.",
+  "terms": {
+    "eyebrow": "Allgemeine Geschäftsbedingungen",
+    "title": "Ihre Vereinbarung mit Car With Driver LK",
+    "intro": "Gültig ab: {date}",
+    "sections": [
+      {
+        "title": "1. Nutzung unserer Plattform",
+        "paragraphs": [
+          "Indem Sie ein Konto erstellen oder einen Fahrer buchen, stimmen Sie diesen Bedingungen zu. Sie müssen mindestens 18 Jahre alt sein und zutreffende Angaben machen. Wir können Konten wegen Betrugs, Missbrauchs, unsicheren Verhaltens oder Verstößen gegen diese Bedingungen sperren."
+        ]
+      },
+      {
+        "title": "2. Buchungen und Zahlungen",
+        "items": [
+          "Preise: Die Fahrer legen die Preise fest. Plattformweite Rabatte verringern den beim Checkout angezeigten zu zahlenden Gesamtbetrag.",
+          "Zahlung: Reisende bezahlen den Fahrer direkt, sofern nicht anders angegeben. Die Provision wird von den Einnahmen des Fahrers abgezogen.",
+          "Änderungen/Stornierungen: Folgen Sie den Anweisungen in Ihren Buchungs-E-Mails oder schreiben Sie dem Fahrer. Manche Reisen sind nach Beginn möglicherweise nicht erstattungsfähig.",
+          "Konflikte: Wenden Sie sich an den Support, wenn ein Fahrer oder Reisender etwas ändern oder ein Problem lösen muss."
+        ]
+      },
+      {
+        "title": "3. Pflichten der Fahrer",
+        "items": [
+          "Gültige Lizenzen, Versicherungen und verkehrstüchtige Fahrzeuge vorhalten.",
+          "Profil, Verfügbarkeit und Preise aktuell halten; Reisenden zeitnah antworten.",
+          "Angenommene Buchungen einhalten und bei Notfällen frühzeitig informieren."
+        ]
+      },
+      {
+        "title": "4. Pflichten der Reisenden",
+        "items": [
+          "Zutreffende Reisedetails, Abhol-/Zielorte und gegebenenfalls Flugzeiten angeben.",
+          "Fahrer respektvoll behandeln und die örtlichen Gesetze und Sicherheitsanweisungen befolgen.",
+          "Den vereinbarten Betrag pünktlich an den Fahrer zahlen und dabei die beim Checkout angezeigten Rabatte berücksichtigen."
+        ]
+      },
+      {
+        "title": "5. Sicherheit und Verhalten",
+        "paragraphs": [
+          "Wir können Nutzer wegen Belästigung, Diskriminierung, gefährlichen Fahrens, Betrugs oder Missbrauchs der Plattform ausschließen. Melden Sie Bedenken mit den Reisedetails an support@carwithdriver.lk."
+        ]
+      },
+      {
+        "title": "6. Inhalte und Bewertungen",
+        "paragraphs": [
+          "Bewertungen müssen wahrheitsgemäß und respektvoll sein. Wir können Inhalte moderieren oder entfernen, die beleidigend oder irreführend sind oder gegen Gesetze oder diese Bedingungen verstoßen."
+        ]
+      },
+      {
+        "title": "7. Haftung",
+        "paragraphs": [
+          "Car With Driver LK bringt Reisende und Fahrer zusammen. Wir sind weder Arbeitgeber der Fahrer noch Betreiber der Fahrzeuge. Soweit gesetzlich zulässig, haften wir nicht für indirekte Schäden oder Folgeschäden, die aus Reisen oder der Nutzung der Plattform entstehen."
+        ]
+      },
+      {
+        "title": "8. Änderungen der Bedingungen",
+        "paragraphs": [
+          "Wir können diese Bedingungen aus rechtlichen, sicherheitsbezogenen oder produktbezogenen Gründen aktualisieren. Wenn Sie die Plattform nach einer Aktualisierung weiter nutzen, akzeptieren Sie die neuen Bedingungen. Wir geben oben das Datum des Inkrafttretens an."
+        ]
+      },
+      {
+        "title": "9. Kontakt",
+        "paragraphs": [
+          "Fragen zu diesen Bedingungen? Schreiben Sie an <email>hello@carwithdriver.lk</email> oder rufen Sie +94 76 302 1483 an."
+        ]
+      }
+    ]
+  },
+  "privacy": {
+    "eyebrow": "Datenschutzerklärung",
+    "title": "Wie Car With Driver LK Ihre Daten schützt",
+    "intro": "Gültig ab: {date}. Wir erklären, welche Daten wir erheben, warum wir sie erheben und welche Kontrollmöglichkeiten Sie haben.",
+    "sections": [
+      {
+        "title": "Welche Informationen wir erheben",
+        "items": [
+          "Kontodaten: Name, E-Mail, Telefonnummer und Passwort (gehasht).",
+          "Fahrerprofil: Beschreibung, Fahrzeuginformationen, Bezeichnung/Koordinaten des Live-Standorts (falls geteilt) und hochgeladene Bilder.",
+          "Buchungsdaten: Reisedaten, Start-/Zielorte, Flugdetails, Nachrichten der Reisenden und Zahlungshinweise.",
+          "Nutzungsdaten: Geräte-/Browserinformationen, aufgerufene Seiten und Analyseereignisse zur Verbesserung der Zuverlässigkeit."
+        ]
+      },
+      {
+        "title": "Wie wir Ihre Informationen verwenden",
+        "items": [
+          "Um Konten für Reisende, Fahrer und Administratoren zu erstellen und zu verwalten.",
+          "Um Buchungen, Angebote, Nachrichten und Support-Anfragen zu bearbeiten.",
+          "Um Fahrer zu verifizieren, Fahrzeuge zu veröffentlichen und Markierungen auf der Live-Karte anzuzeigen, wenn Fahrer dem zustimmen.",
+          "Um transaktionsbezogene E-Mails (Verifizierung, Buchungsaktualisierungen, Freigaben) und wichtige Servicehinweise zu senden.",
+          "Um die Sicherheit zu verbessern, Betrug/Missbrauch zu erkennen und gesetzliche Pflichten zu erfüllen."
+        ]
+      },
+      {
+        "title": "Weitergabe und Offenlegung",
+        "items": [
+          "An Fahrer und Reisende, die an einer Buchung oder einem Nachrichtenverlauf beteiligt sind.",
+          "An Dienstleister (Hosting, E-Mail, Analyse, Zahlungsanbieter), die zur Vertraulichkeit verpflichtet sind.",
+          "Wenn dies gesetzlich vorgeschrieben ist, zum Schutz der Sicherheit oder zur Durchsetzung unserer Allgemeinen Geschäftsbedingungen.",
+          "Wir verkaufen keine personenbezogenen Daten."
+        ]
+      },
+      {
+        "title": "Aufbewahrung und Sicherheit der Daten",
+        "items": [
+          "Passwörter werden gehasht; Uploads werden sicher und mit Zugriffskontrollen gespeichert.",
+          "Wir bewahren Daten so lange auf, wie es für die Erbringung des Dienstes und die Erfüllung gesetzlicher Anforderungen nötig ist, und löschen oder anonymisieren sie dann.",
+          "Der Zugang zu den Admin-Werkzeugen ist eingeschränkt und wird protokolliert."
+        ]
+      },
+      {
+        "title": "Ihre Wahlmöglichkeiten",
+        "items": [
+          "Aktualisieren oder löschen Sie Ihre Profilinformationen in Ihrem Konto oder indem Sie den Support kontaktieren.",
+          "Fahrer können ihren Live-Standort jederzeit auf der Profilseite löschen.",
+          "Melden Sie sich über die Fußzeile der E-Mail von Marketing-E-Mails ab (falls aktiviert); transaktionsbezogene E-Mails werden weiterhin gesendet.",
+          "Beantragen Sie Auskunft, Berichtigung oder Löschung per E-Mail an support@carwithdriver.lk."
+        ]
+      },
+      {
+        "title": "Kinder",
+        "paragraphs": [
+          "Unsere Dienste richten sich nicht an Kinder unter 16 Jahren. Wenn wir erfahren, dass wir solche Daten erhoben haben, löschen wir sie."
+        ]
+      },
+      {
+        "title": "Änderungen dieser Erklärung",
+        "paragraphs": [
+          "Wir können diese Erklärung zur Klarstellung oder zur Einhaltung von Vorschriften aktualisieren. Aktualisierungen veröffentlichen wir hier und passen das Datum des Inkrafttretens an."
+        ]
+      },
+      {
+        "title": "Kontakt",
+        "paragraphs": [
+          "Schreiben Sie an <email>hello@carwithdriver.lk</email> oder rufen Sie +94 76 302 1483 an, wenn Sie Fragen oder Anliegen zum Datenschutz haben."
+        ]
+      }
+    ]
+  }
+}

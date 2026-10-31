@@ -1,0 +1,213 @@
+{
+  "breadcrumb": "Percorso di navigazione",
+  "breadcrumbHome": "Home",
+  "breadcrumbCurrent": "Richiedi preventivi",
+  "hero": {
+    "title": "Preventivi gratuiti da autisti e autisti-guida in Sri Lanka",
+    "lead": "Indicaci le tue date e dove vuoi andare. Inviamo la tua richiesta ad autisti approvati e ad autisti-guida SLTDA in tutta l'isola: ti inviano direttamente un preventivo, tu confronti, chatti e prenoti. Nessun costo di prenotazione, e paghi il tuo autista, non noi.",
+    "points": [
+      "Offerte da autisti turistici, autisti-guida e guide nazionali",
+      "Le tariffe giornaliere coprono 120–150 km al giorno in tutta l'isola",
+      "Chatta con gli autisti prima di impegnarti: i tuoi recapiti restano privati",
+      "Accetta un'offerta e quel prezzo resta bloccato per l'itinerario concordato"
+    ],
+    "stat1Value": "30 min",
+    "stat1Label": "Primo preventivo, di solito",
+    "stat2Label": "Offerte per richiesta",
+    "stat3Value": "GRATIS",
+    "stat3Label": "Nessun costo di prenotazione"
+  },
+  "errors": {
+    "dates": "Seleziona la data di inizio e di fine.",
+    "endAfterStart": "La data di fine deve essere successiva alla data di inizio.",
+    "startPast": "La data di inizio non può essere nel passato.",
+    "allFields": "Compila tutti i campi.",
+    "tooLong": "I dettagli dell'itinerario non possono superare i {max} caratteri.",
+    "adults": "Indica almeno un viaggiatore adulto."
+  },
+  "form": {
+    "title": "Richiedi i tuoi preventivi",
+    "intro": "Ci vuole circa un minuto. Al passaggio successivo accederai o creerai un account gratuito: non dovrai compilare nulla due volte.",
+    "startDate": "Data di inizio",
+    "endDate": "Data di fine",
+    "pickup": "Luogo di partenza",
+    "dropoff": "Luogo di arrivo",
+    "placePlaceholder": "Città, hotel o aeroporto",
+    "adults": "Adulti",
+    "children": "Bambini",
+    "country": "Paese di residenza",
+    "countryPlaceholder": "es. Italia",
+    "limit": "Limita i preventivi",
+    "optional": "(facoltativo)",
+    "noLimit": "Nessun limite",
+    "limitHelp": "Smettiamo di accettare preventivi quando ha risposto questo numero di autisti.",
+    "driverType": "Tipo di autista",
+    "allDrivers": "Tutti gli autisti",
+    "touristOnly": "Solo autisti turistici",
+    "chauffeurOnly": "Solo autisti-guida",
+    "driverTypeHelp": "Con questa limitazione possono inviarti un preventivo solo gli autisti con quella licenza verificata dalla SLTDA, quindi potresti ricevere meno offerte.",
+    "notes": "Dettagli dell'itinerario",
+    "notesPlaceholder": "Luoghi che vuoi visitare, orari dei voli, bambini o bagagli extra. Tutto ciò che aiuta gli autisti a fare un preventivo preciso.",
+    "noContact": "Non inserire qui numeri di telefono o indirizzi email: condivideremo i recapiti quando accetterai un'offerta e la tua prenotazione sarà confermata.",
+    "next": "Avanti",
+    "footnote": "Richiesta gratuita · Nessun costo di prenotazione · Paghi direttamente l'autista"
+  },
+  "how": {
+    "title": "Come funziona in tre passaggi",
+    "lead": "Non devi cercare e tirare a indovinare. Descrivi il viaggio una volta sola e gli autisti liberi nelle tue date ti propongono un prezzo. Non ti viene addebitato nulla in nessun momento: quando accetti un'offerta paghi direttamente quell'autista, il primo giorno del viaggio.",
+    "step1": {
+      "title": "Descrivi il tuo viaggio una volta sola",
+      "body": "Date, luogo di partenza, quanti siete e un percorso di massima. Se qualcosa non è ancora deciso, dillo: gli autisti ti proporranno alternative invece di tirare a indovinare.",
+      "meta": "Ci vuole circa un minuto"
+    },
+    "step2": {
+      "title": "Gli autisti ti inviano i preventivi",
+      "body": "La tua richiesta arriva ad autisti approvati in tutta l'isola. Ogni offerta mostra il veicolo, l'autista, la sua valutazione e una tariffa giornaliera fissa per il tuo itinerario.",
+      "meta": "I tuoi recapiti restano privati"
+    },
+    "step3": {
+      "title": "Chatta, confronta e prenota",
+      "body": "Fai domande in chat, modifica il programma e poi accetta l'offerta che fa per te. Non serve nessuna carta: paghi direttamente il tuo autista quando vi incontrate il primo giorno.",
+      "meta": "Nessun costo di prenotazione, mai"
+    }
+  },
+  "types": {
+    "title": "Di quale tipo di autista hai bisogno?",
+    "lead": "In Sri Lanka esistono tre ruoli distinti, e i siti di prenotazione usano questi termini in modo impreciso. La differenza sta nella licenza: la Sri Lanka Tourism Development Authority forma e certifica gli autisti-guida (titolo ufficiale: Chauffeur Guide Lecturer) e le guide nazionali (titolo ufficiale: National Guide Lecturer), mentre un autista turistico (Tourist Driver) ha una normale patente di guida. Gli autisti di questo sito inviano la loro licenza per la verifica, e il tipo che possiedono è indicato nel loro profilo.",
+    "bestFor": "Ideale per: {text}",
+    "touristDriver": {
+      "body": "Ha una patente normale, guida lungo il tuo itinerario, si occupa della logistica e sa dove fermarsi, mangiare e dormire.",
+      "bestFor": "vacanze al mare, trasferimenti e viaggiatori che amano documentarsi da soli"
+    },
+    "chauffeurGuideLecturer": {
+      "body": "Ha la licenza della Sri Lanka Tourism Development Authority, quindi guida e ti spiega anche i luoghi che visiti.",
+      "bestFor": "la maggior parte degli itinerari di due settimane, con una sola persona per tutto il viaggio"
+    },
+    "nationalGuideLecturer": {
+      "body": "La qualifica di guida più alta della SLTDA, con un'interpretazione storica e culturale completa.",
+      "bestFor": "viaggi incentrati sulla storia e gruppi con interessi specifici"
+    },
+    "readMore": "Leggi il confronto completo, compreso quanto costa ciascuno →"
+  },
+  "rates": {
+    "title": "Quanto costa un'auto con autista in Sri Lanka",
+    "lead": "Non è un listino prezzi ufficiale: gli autisti stabiliscono le proprie tariffe. La tabella qui sotto è basata sui veicoli attualmente presenti su carwithdriver.lk, raggruppati per dimensione, e mostra per ogni categoria la parte centrale tipica della fascia di prezzo.",
+    "fromListings": "DA {count} ANNUNCI ATTIVI",
+    "updated": "Aggiornata automaticamente quando gli autisti cambiano i prezzi",
+    "caption": "Tariffa giornaliera tipica in USD, per veicolo, dagli annunci attuali",
+    "colClass": "Categoria di veicolo",
+    "colSeats": "Posti",
+    "colPerDay": "Tipica al giorno",
+    "colListings": "Annunci",
+    "example": "es. {model}",
+    "note": "Le tariffe coprono {low}–{high} km al giorno in tutta l'isola, che è la distanza tipica di una giornata di tour con autista-guida. Le giornate più lunghe e le date di alta stagione tra dicembre e gennaio si collocano nella parte alta di ogni fascia.",
+    "estimate": "Stima il tuo viaggio →",
+    "loading": "Caricamento delle tariffe in tempo reale.",
+    "browseFleet": "Sfoglia la flotta →"
+  },
+  "included": {
+    "title": "Cosa include il tuo preventivo",
+    "lead": "Gli annunci di questo sito dichiarano cosa copre la loro tariffa, così le offerte che confronti sono davvero confrontabili. Alcune cose sono quasi sempre incluse; altre dipendono dall'autista, quindi controllale nell'offerta prima di accettare.",
+    "always": "INCLUSO IN QUASI TUTTI I PREVENTIVI",
+    "kmPerDay": "{low}–{high} km al giorno",
+    "varies": "VARIA DA ANNUNCIO AD ANNUNCIO: CONTROLLA L'OFFERTA",
+    "notIncluded": [
+      "Biglietti d'ingresso ai siti: Sigiriya, Dambulla, il Tempio del Dente",
+      "Jeep per i safari a Yala, Udawalawe e Minneriya",
+      "Il tuo alloggio, i tuoi pasti e le bevande",
+      "Le mance per l'autista: consuete, ma mai pretese"
+    ]
+  },
+  "recommended": {
+    "title": "Autisti consigliati",
+    "lead": "Alcuni degli autisti più esperti della piattaforma. Non devi sceglierne uno per richiedere preventivi (la tua richiesta viene comunque inviata in tutta l'isola), ma vale la pena vedere che tipo di autista ti risponderà.",
+    "reviews": {
+      "one": "{count} recensione",
+      "other": "{count} recensioni"
+    },
+    "yearsDriving": {
+      "one": "{count} anno di guida",
+      "other": "{count} anni di guida"
+    },
+    "vehiclesFrom": "{count} VEICOLI · DA",
+    "from": "DA",
+    "quote": "Su preventivo",
+    "perDay": "/giorno",
+    "viewDriver": "Vedi l'autista",
+    "browseAll": "Sfoglia tutti gli autisti →"
+  },
+  "why": {
+    "title": "Perché fare la richiesta tramite carwithdriver.lk",
+    "lead": "Siamo un marketplace dello Sri Lanka, non un rivenditore straniero. Gli autisti pubblicano i propri annunci, stabiliscono i propri prezzi e tengono l'intero compenso: nessun tour operator prende una percentuale, e la persona che risponde al tuo messaggio è la stessa che ti accoglierà agli arrivi.",
+    "middleman": {
+      "title": "Paghi l'autista, non un intermediario",
+      "body": "Gli autisti pubblicano i propri annunci, stabiliscono il proprio prezzo e tengono l'intero compenso. Non c'è nessun margine d'agenzia in più, ed è per questo che qui le offerte sono inferiori ai prezzi dei tour operator per lo stesso percorso."
+    },
+    "locked": {
+      "title": "Il prezzo è bloccato quando accetti",
+      "body": "Accettando un'offerta fissi quel totale per l'itinerario concordato. La tariffa non può essere aumentata in seguito e le date restano vincolate all'offerta."
+    },
+    "private": {
+      "title": "I tuoi dati restano privati",
+      "body": "Gli autisti vedono il tuo itinerario, non il tuo numero di telefono o la tua email. I recapiti vengono scambiati solo quando accetti un'offerta e la prenotazione è confermata."
+    },
+    "licences": {
+      "title": "Le licenze sono verificate dal nostro team",
+      "body": "Gli autisti inviano la patente per la verifica da parte di un amministratore prima che il loro profilo venga approvato, e il tipo di licenza che possiedono è indicato nel loro profilo."
+    },
+    "reviews": {
+      "title": "Le recensioni provengono da viaggi reali",
+      "body": "I viaggiatori possono recensire solo una prenotazione che hanno davvero effettuato tramite la piattaforma, dopo la fine del viaggio."
+    },
+    "support": {
+      "title": "Assistenza con sede in Sri Lanka",
+      "body": "Se i piani cambiano durante il viaggio o un veicolo ha un problema, il nostro team si trova nello stesso fuso orario in cui viaggi e può contattare direttamente il tuo autista."
+    }
+  },
+  "faq": {
+    "title": "Domande frequenti",
+    "contact": "Hai ancora qualche dubbio? Scrivi a <email>hello@carwithdriver.lk</email> o chiama il <phone>+94 76 3021 483</phone>.",
+    "cost": {
+      "q": "Quanto costa noleggiare un'auto con autista in Sri Lanka?",
+      "a": "Dipende dal veicolo e dalla durata del viaggio: gli autisti stabiliscono le proprie tariffe. La tabella qui sopra è basata sugli annunci attualmente presenti su questo sito, quindi riflette ciò che gli autisti chiedono davvero e non un listino prezzi ufficiale. Per una cifra basata sul tuo percorso e sulle tue date, usa il calcolatore del costo del viaggio."
+    },
+    "fee": {
+      "q": "C'è un costo di prenotazione?",
+      "a": "No. Richiedere preventivi, confrontare le offerte e chattare con gli autisti è completamente gratuito, e non aggiungiamo alcun costo di prenotazione o di servizio al prezzo dell'autista. La tariffa che accetti è quella che paghi."
+    },
+    "pay": {
+      "q": "Come e quando pago?",
+      "a": "Paghi il tuo autista direttamente quando vi incontrate il primo giorno del viaggio: su questo sito non vengono richiesti dati di carta e nessun acconto viene addebitato tramite la piattaforma. Concorda prima in chat con il tuo autista qualsiasi cosa insolita, così ne resta traccia."
+    },
+    "difference": {
+      "q": "Qual è la differenza tra un autista turistico e un autista-guida?",
+      "a": "Un autista turistico ha una patente normale e guida lungo il tuo itinerario. Un autista-guida (Chauffeur Guide Lecturer) ha la licenza della Sri Lanka Tourism Development Authority e può anche spiegarti i luoghi che visiti. Una guida nazionale (National Guide Lecturer) ha la qualifica più alta della SLTDA e offre un'interpretazione storica completa."
+    },
+    "fuel": {
+      "q": "Carburante e chilometri sono inclusi?",
+      "a": "Quasi tutti gli annunci includono carburante e assicurazione, e le tariffe giornaliere coprono 120–150 km al giorno in tutta l'isola, che è la distanza tipica di una giornata di tour con autista-guida. Ogni offerta indica esattamente cosa include, quindi controllala prima di accettare."
+    },
+    "meals": {
+      "q": "I pasti e l'alloggio dell'autista sono inclusi?",
+      "a": "Molti annunci li includono, ma non tutti: dipende dall'autista, per questo è indicato in ogni annuncio e nell'offerta che ricevi. Non ti verrà mai chiesto di prenotare tu una camera d'albergo per il tuo autista; quando è incluso, quel costo è già compreso nella tariffa giornaliera."
+    },
+    "howLong": {
+      "q": "Quanto tempo ci vuole per ricevere i preventivi?",
+      "a": "La tua richiesta viene inviata agli autisti approvati non appena la invii, e ricevi un'email e una notifica push per ogni nuova offerta. Le richieste inviate di notte, ora dello Sri Lanka, ricevono di solito risposta la mattina seguente."
+    },
+    "change": {
+      "q": "Posso modificare l'itinerario dopo la prenotazione?",
+      "a": "Sì. Le piccole modifiche durante il viaggio (cambiare spiaggia, aggiungere un tempio, spostare l'orario di partenza) di solito non sono un problema. Se una modifica aggiunge giorni di guida o molta distanza, concorda in chat con il tuo autista la tariffa aggiornata prima di partire, così ne resta traccia."
+    },
+    "wrong": {
+      "q": "E se qualcosa va storto durante il viaggio?",
+      "a": "Scrivi a hello@carwithdriver.lk o chiama il +94 76 3021 483. Ogni messaggio e ogni offerta vengono conservati, quindi c'è sempre traccia di ciò che è stato concordato con il tuo autista."
+    }
+  },
+  "cta": {
+    "title": "Vuoi sapere quanto costa davvero il tuo viaggio?",
+    "body": "Invia una sola richiesta e lascia che siano gli autisti a contattarti. Gratis, senza impegno, e i tuoi recapiti restano privati finché non accetti un'offerta.",
+    "request": "Richiedi preventivi gratuiti",
+    "estimate": "Fai una stima da solo"
+  }
+}

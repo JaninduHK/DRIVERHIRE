@@ -1,0 +1,93 @@
+{
+  "read": "Read",
+  "sent": "Sent",
+  "close": "Close",
+  "included": "(included)",
+  "notIncluded": "(not included)",
+  "brief": {
+    "label": "Quote request",
+    "adults": {
+      "one": "{count} adult",
+      "other": "{count} adults"
+    },
+    "children": {
+      "one": "{count} child",
+      "other": "{count} children"
+    },
+    "readLess": "Read less",
+    "readMore": "Read more"
+  },
+  "booking": {
+    "title": "Booking details",
+    "traveller": "Traveller",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "trip": "Trip",
+    "dates": "Dates",
+    "days": "Days",
+    "dayCount": {
+      "one": "{count} day",
+      "other": "{count} days"
+    },
+    "vehicle": "Vehicle",
+    "route": "Pick-up & drop-off",
+    "startPoint": "Start point",
+    "endPoint": "Drop-off point",
+    "flight": "Flight",
+    "flightNumber": "Flight number",
+    "arrival": "Arrival time",
+    "departure": "Departure time",
+    "included": "Included in the offer",
+    "notes": "Notes & extras",
+    "status": {
+      "pending": "pending",
+      "confirmed": "confirmed",
+      "cancelled": "cancelled",
+      "rejected": "rejected"
+    }
+  },
+  "photos": {
+    "vehicle": "Vehicle",
+    "view": "View {name} photo",
+    "viewNumbered": "View {name} photo {n}",
+    "numbered": "{name} photo {n}"
+  },
+  "profile": {
+    "missing": "Driver information is missing.",
+    "loadError": "Unable to load driver profile.",
+    "linkCopied": "Profile link copied.",
+    "copyFailed": "Unable to copy link.",
+    "title": "Driver profile",
+    "copyLink": "Copy profile link",
+    "newDriver": "New driver",
+    "reviews": {
+      "one": "{count} review",
+      "other": "{count} reviews"
+    },
+    "sriLanka": "Sri Lanka",
+    "loading": "Loading driver profile…",
+    "notFound": "This driver profile could not be found.",
+    "years": "{count} yrs",
+    "experience": "Experience",
+    "rating": "Rating",
+    "vehicles": "Vehicles",
+    "about": "About {name}",
+    "noBio": "{name} hasn't added a bio yet.",
+    "location": "Location",
+    "memberSince": "Member since",
+    "vehiclesCount": "Vehicles ({count})",
+    "noVehicles": "No vehicles listed right now.",
+    "inThisChat": "IN THIS CHAT",
+    "seats": "{count} seats",
+    "perDay": "PER DAY",
+    "reviewsTitle": "Reviews",
+    "loadingReviews": "Loading reviews…",
+    "noReviews": "No reviews yet. Be the first to explore Sri Lanka with this driver and share your story.",
+    "traveller": "Traveler",
+    "showFewer": "Show fewer reviews",
+    "readAll": "Read all {count} reviews",
+    "tripDetails": "Trip details",
+    "backToChat": "Back to chat"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "title": "Trova il tuo veicolo",
+  "searchPlaceholder": "Modello, autista o città",
+  "loadError": "Impossibile caricare i veicoli.",
+  "loadErrorTitle": "Impossibile caricare i veicoli",
+  "tryAgain": "Riprova",
+  "loading": "Caricamento…",
+  "count": {
+    "one": "{count} veicolo",
+    "other": "{count} veicoli"
+  },
+  "clearFilters": "Cancella filtri",
+  "clear": "Rimuovi",
+  "emptyTitle": "Nessun veicolo corrisponde ancora ai tuoi filtri",
+  "emptyBody": "Modifica la ricerca o torna presto: nuovi annunci vengono aggiunti regolarmente.",
+  "chips": {
+    "dates": "Date",
+    "seats": "Posti",
+    "seatsActive": "{count}+ posti",
+    "price": "Prezzo",
+    "rating": "Valutazione",
+    "sort": "Ordina"
+  },
+  "card": {
+    "seats": {
+      "one": "{count} posto",
+      "other": "{count} posti"
+    },
+    "vehicle": "Veicolo",
+    "perDay": "al giorno",
+    "by": "Di",
+    "approvedDriver": "Autista approvato",
+    "view": "Vedi"
+  },
+  "filters": {
+    "title": "Filtri",
+    "clearAll": "Cancella tutto",
+    "tripDates": "Date del viaggio",
+    "start": "Inizio",
+    "end": "Fine",
+    "seats": "Posti",
+    "budget": "Budget al giorno",
+    "min": "Min",
+    "max": "Max",
+    "rating": "Valutazione",
+    "sortBy": "Ordina per",
+    "reset": "Reimposta",
+    "show": {
+      "one": "Mostra {count} veicolo",
+      "other": "Mostra {count} veicoli"
+    },
+    "any": "Qualsiasi",
+    "under40": "Meno di $40",
+    "recommended": "Consigliati",
+    "priceAsc": "Prezzo: dal più basso",
+    "priceDesc": "Prezzo: dal più alto",
+    "topRated": "I più votati"
+  }
+}

@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Loader2, X } from 'lucide-react';
+import { useI18n } from '../i18n/I18nProvider.jsx';
 
 // Thumbnail row for photos attached to a review; click a thumbnail to view it full size
 // in a lightbox overlay (arrow keys / on-screen arrows move between photos).
 // Pass `onRemove(src)` (admin-only) to overlay a delete button on each thumbnail;
 // omit it for the read-only public display.
 const ReviewPhotos = ({ images, className = '', onRemove, removingImage = '' }) => {
+  const { t } = useI18n();
   const list = Array.isArray(images) ? images.filter(Boolean).slice(0, 4) : [];
   const [openIndex, setOpenIndex] = useState(null);
   const isOpen = openIndex !== null;
@@ -39,16 +41,16 @@ const ReviewPhotos = ({ images, className = '', onRemove, removingImage = '' }) 
               type="button"
               onClick={() => setOpenIndex(index)}
               className="block h-14 w-14 overflow-hidden rounded-lg border border-[#eef1f0] bg-[#f2f5f4]"
-              aria-label="View review photo"
+              aria-label={t('common.photos.view')}
             >
-              <img src={src} alt="Review photo" loading="lazy" className="h-full w-full object-cover" />
+              <img src={src} alt={t('common.photos.reviewPhoto')} loading="lazy" className="h-full w-full object-cover" />
             </button>
             {onRemove ? (
               <button
                 type="button"
                 onClick={(event) => { event.stopPropagation(); onRemove(src); }}
                 disabled={removingImage === src}
-                aria-label="Delete photo"
+                aria-label={t('common.photos.delete')}
                 className="absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-[#0f1f2d]/80 text-white opacity-0 transition group-hover:opacity-100 disabled:opacity-100"
               >
                 {removingImage === src ? <Loader2 className="h-3 w-3 animate-spin" /> : <X className="h-3 w-3" />}
@@ -67,7 +69,7 @@ const ReviewPhotos = ({ images, className = '', onRemove, removingImage = '' }) 
         >
           <img
             src={list[openIndex]}
-            alt="Review photo"
+            alt={t('common.photos.reviewPhoto')}
             className="max-h-[90vh] max-w-[92vw] rounded-xl object-contain shadow-2xl"
             onClick={(event) => event.stopPropagation()}
           />
@@ -75,7 +77,7 @@ const ReviewPhotos = ({ images, className = '', onRemove, removingImage = '' }) 
             type="button"
             onClick={() => setOpenIndex(null)}
             className="absolute right-4 top-4 rounded-full bg-white/15 px-3 py-1 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/25"
-            aria-label="Close"
+            aria-label={t('common.photos.close')}
           >
             Close
           </button>
@@ -88,7 +90,7 @@ const ReviewPhotos = ({ images, className = '', onRemove, removingImage = '' }) 
                   setOpenIndex((i) => (i - 1 + list.length) % list.length);
                 }}
                 className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/15 px-3 py-2 text-lg text-white backdrop-blur transition hover:bg-white/25"
-                aria-label="Previous photo"
+                aria-label={t('common.photos.previous')}
               >
                 ‹
               </button>
@@ -99,7 +101,7 @@ const ReviewPhotos = ({ images, className = '', onRemove, removingImage = '' }) 
                   setOpenIndex((i) => (i + 1) % list.length);
                 }}
                 className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/15 px-3 py-2 text-lg text-white backdrop-blur transition hover:bg-white/25"
-                aria-label="Next photo"
+                aria-label={t('common.photos.next')}
               >
                 ›
               </button>

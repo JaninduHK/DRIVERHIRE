@@ -23,6 +23,17 @@ const DISALLOWED_RETURN_PATHS = [
 // browsers to an address only reachable inside the Docker network.
 export const SSO_LOGIN_URL = '/api/auth/sso/login';
 
+// Sign-in from a translated page asks Asgardeo to show its pages in that
+// language too (/de/... -> ?lang=de). English pages use the plain URL.
+export const ssoLoginUrl = (locale) =>
+  locale && locale !== 'en' ? `${SSO_LOGIN_URL}?lang=${encodeURIComponent(locale)}` : SSO_LOGIN_URL;
+
+const currentPageLocale = () => {
+  if (typeof window === 'undefined') return 'en';
+  const first = window.location.pathname.split('/')[1];
+  return ['de', 'fr', 'it', 'ru', 'ja'].includes(first) ? first : 'en';
+};
+
 const hasWindow = typeof window !== 'undefined';
 const hasSessionStorage = hasWindow && typeof window.sessionStorage !== 'undefined';
 
@@ -141,9 +152,15 @@ const shouldRememberPath = (path) => {
 // With no explicit path, defaults to the current page (same default
 // saveReturnPath() itself uses).
 export const redirectToSsoLogin = (returnPath) => {
-  saveReturnPath(returnPath);
+  // Come back to the same language: /dashboard from a German page returns to /de/dashboard.
+  const locale = currentPageLocale();
+  const localized =
+    returnPath && locale !== 'en' && /^\/(dashboard|checkout\/|offer\/|review\/|get-quotes|vehicles|drivers)/.test(returnPath)
+      ? `/${locale}${returnPath}`
+      : returnPath;
+  saveReturnPath(localized);
   if (hasWindow) {
-    window.location.href = SSO_LOGIN_URL;
+    window.location.href = ssoLoginUrl(currentPageLocale());
   }
 };
 

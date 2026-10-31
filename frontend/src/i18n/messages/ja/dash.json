@@ -1,0 +1,340 @@
+{
+  "traveller": "旅行者",
+  "travellerLower": "旅行者",
+  "driver": "ドライバー",
+  "browseVehicles": "車両を見る",
+  "tryAgain": "もう一度試す",
+  "retry": "再試行",
+  "back": "戻る",
+  "close": "閉じる",
+  "saving": "保存しています…",
+  "saveChanges": "変更を保存",
+  "message": "メッセージ",
+  "viewOffer": "見積もりを見る",
+  "viewOffers": "見積もりを見る",
+  "openChat": "チャットを開く",
+  "sentOffer": "見積もりが届きました",
+  "conversationStarted": "会話を開始しました。",
+  "awaitingOffers": "見積もり待ち",
+  "offersCount": {
+    "other": "見積もり{count}件"
+  },
+  "guests": {
+    "other": "{count}名"
+  },
+  "nav": {
+    "overview": "概要",
+    "bookings": "予約一覧",
+    "messages": "メッセージ",
+    "requests": "見積もり依頼",
+    "settings": "設定",
+    "browse-vehicles": "車両",
+    "browse-drivers": "ドライバー",
+    "browse-trip-cost": "旅行費用"
+  },
+  "shell": {
+    "notifications": "通知",
+    "openMenu": "メニューを開く",
+    "home": "トップページへ",
+    "user": "ユーザー",
+    "logout": "ログアウト",
+    "closeMenu": "メニューを閉じる"
+  },
+  "toast": {
+    "loggedOut": "ログアウトしました。",
+    "newOfferRequested": "リクエストを送信しました。ドライバーから新しい見積もりが届きます。",
+    "profileUpdated": "プロフィールを更新しました。",
+    "passwordUpdated": "パスワードを更新しました。",
+    "briefPosted": "旅行の見積もり依頼を公開しました。"
+  },
+  "errors": {
+    "conversations": "会話を読み込めませんでした。",
+    "messages": "メッセージを読み込めませんでした。",
+    "bookings": "現在予約を読み込めません。",
+    "briefs": "見積もり依頼を読み込めませんでした。",
+    "profile": "プロフィールを読み込めませんでした。",
+    "send": "メッセージを送信できませんでした。",
+    "newOffer": "新しい見積もりを依頼できませんでした。",
+    "offerVehicle": "この見積もりには車両の詳細がありません。",
+    "updateProfile": "プロフィールを更新できませんでした。",
+    "updatePassword": "パスワードを更新できませんでした。",
+    "postBrief": "見積もり依頼を公開できませんでした。"
+  },
+  "overview": {
+    "eyebrow": "旅行者マイページ",
+    "welcome": "おかえりなさい、{name}さん",
+    "lead": "旅行、会話、見積もり依頼をまとめて管理できます。",
+    "upcoming": "今後の予定",
+    "completed": "完了",
+    "totalSpent": "利用総額",
+    "noUpcoming": "今後の旅行はまだありません。",
+    "recentMessages": "最近のメッセージ",
+    "noConversationsHint": "まだ会話はありません。車両ページからドライバーにメッセージを送りましょう。",
+    "noConversations": "まだ会話はありません。",
+    "upcomingTrips": "今後の旅行",
+    "viewAll": "すべて見る"
+  },
+  "quoteSteps": {
+    "step1": {
+      "title": "旅行について教えてください",
+      "body": "日程、出発地と到着地、旅行する人数。"
+    },
+    "step2": {
+      "title": "ドライバーから見積もりが届きます",
+      "body": "各見積もりは料金と車両が確定しています。見積もりが届くとメールでお知らせします。"
+    },
+    "step3": {
+      "title": "チャット、比較、予約",
+      "body": "質問したり料金を比べたりして、気に入った見積もりを「メッセージ」から予約できます。"
+    }
+  },
+  "quoteCard": {
+    "title": "ドライバーから見積もりを受け取る",
+    "body": "旅行の内容を一度投稿するだけで、審査済みのドライバーから見積もりが届きます。無料で、予約手数料もかかりません。",
+    "cta": "見積もりを依頼する"
+  },
+  "slot": {
+    "title": {
+      "other": "見積もり依頼"
+    },
+    "body": "ドライバーが見積もりで返信します。見積もりが届くとメールでお知らせし、「メッセージ」で比べて予約できます。",
+    "newRequest": "新しい依頼",
+    "noOffers": "まだ見積もりはありません。ドライバーから返信がありしだいメールでお知らせします。",
+    "viewAll": "依頼{count}件をすべて見る"
+  },
+  "nextTrip": {
+    "scheduled": "予定",
+    "inProgress": "旅行中",
+    "daysAway": {
+      "other": "あと{count}日"
+    },
+    "upcomingTrip": "今後の旅行",
+    "yourDriver": "担当ドライバー",
+    "title": "次の旅行",
+    "datesToConfirm": "日程未確定",
+    "withDriver": "{name}さんと"
+  },
+  "bookings": {
+    "eyebrow": "旅行",
+    "loading": "予約を読み込んでいます…",
+    "emptyTitle": "予約済みの旅行はまだありません",
+    "emptyBody": "ドライバーを確定すると、ここに旅程が表示されます。",
+    "noUpcoming": "今後の旅行はありません。",
+    "noCompleted": "完了した旅行はまだありません。",
+    "noConversation": "この旅行の会話はまだありません。",
+    "toast": {
+      "updated": "予約を更新しました。"
+    },
+    "errors": {
+      "bothDates": "開始日と終了日の両方を選んでください。",
+      "validDates": "有効な旅行日程を選んでください。",
+      "update": "予約を更新できませんでした。"
+    }
+  },
+  "cancel": {
+    "title": "予約をキャンセル",
+    "notice": [
+      "開始日の2日前までは無料でキャンセルできます。",
+      "開始日の2日以内にキャンセルする場合、総額の50%をドライバーにお支払いいただきます。",
+      "開始日以降にキャンセルする場合、終了した日数分の100%と、残りの日数分の50%をドライバーにお支払いいただきます。"
+    ],
+    "why": "キャンセルの理由を教えてください",
+    "explain": "理由の説明",
+    "explainPlaceholder": "この内容はチームと担当ドライバーに共有されます。",
+    "keep": "予約を続ける",
+    "cancelling": "キャンセルしています…",
+    "reasons": {
+      "plansChanged": "旅行の予定が変わった",
+      "betterPrice": "ほかでより安い料金を見つけた",
+      "datesMoved": "旅行の日程が変わった",
+      "driverSilent": "ドライバーから返信がなくなった",
+      "driverAsked": "ドライバーからキャンセルを頼まれた",
+      "notTravelling": "スリランカへ行かなくなった",
+      "other": "その他"
+    },
+    "toast": {
+      "cancelled": "予約をキャンセルしました。"
+    },
+    "errors": {
+      "reason": "キャンセルの理由を選んでください。",
+      "detail": "キャンセルの理由を説明してください。",
+      "cancel": "予約をキャンセルできませんでした。"
+    }
+  },
+  "form": {
+    "startDate": "開始日",
+    "endDate": "終了日"
+  },
+  "edit": {
+    "title": "予約を変更",
+    "offerDates": "日程はドライバーの見積もりで確定しています。スケジュールを変更するにはドライバーにメッセージを送ってください。",
+    "pickup": "乗車地",
+    "pickupPlaceholder": "ホテルまたは待ち合わせ場所",
+    "dropoff": "降車地",
+    "dropoffPlaceholder": "最終目的地",
+    "flight": "便名（任意）",
+    "flightPlaceholder": "例：UL 403",
+    "arrival": "到着時刻",
+    "departure": "出発時刻",
+    "timePlaceholder": "例：{time}",
+    "special": "特別なご要望",
+    "specialPlaceholder": "食事の制限、バリアフリーの必要事項など、ドライバーに知っておいてほしいこと。"
+  },
+  "review": {
+    "title": "旅行のフィードバック",
+    "titleModel": "レビュー · {model}",
+    "adminNote": "チームからのメモ",
+    "rating": "評価",
+    "ratings": {
+      "r5": "最高",
+      "r4": "とても良い",
+      "r3": "良い",
+      "r2": "普通",
+      "r1": "改善が必要"
+    },
+    "reviewTitle": "レビューのタイトル（任意）",
+    "titlePlaceholder": "旅行のハイライト",
+    "experience": "体験をシェアしてください",
+    "experiencePlaceholder": "ドライバー、車両、旅程のハイライトについて教えてください。",
+    "minChars": "10文字以上。",
+    "photos": "写真（任意）",
+    "removePhoto": "写真を削除",
+    "photosHelp": "旅行の写真を4枚まで追加できます。",
+    "submitting": "送信しています…",
+    "submit": "レビューを送信",
+    "status": {
+      "published": "掲載中",
+      "declined": "非承認",
+      "awaiting": "承認待ち"
+    },
+    "toast": {
+      "submitted": "レビューを審査に送信しました。"
+    },
+    "errors": {
+      "rating": "1〜5の評価を選んでください。",
+      "tooShort": "体験についてもう少し詳しく教えてください（10文字以上）。",
+      "submit": "レビューを送信できませんでした。"
+    }
+  },
+  "card": {
+    "driverTbd": "ドライバー未定",
+    "vehicleTbd": "車両未確定",
+    "seats": "{count}席",
+    "datesTbd": "日程未確定",
+    "datesTbdShort": "日程未定",
+    "startsIn": {
+      "other": "あと{count}日で開始"
+    },
+    "status": {
+      "pending": "保留中",
+      "confirmed": "確定",
+      "cancelled": "キャンセル済み",
+      "rejected": "辞退",
+      "completed": "完了"
+    },
+    "messageDriver": "ドライバーにメッセージ",
+    "details": "詳細",
+    "viewVehicle": "車両を見る",
+    "editDetails": "詳細を編集",
+    "viewReview": "レビューを見る",
+    "leaveReview": "レビューを書く"
+  },
+  "chat": {
+    "eyebrow": "受信トレイ",
+    "discussing": "{model}について",
+    "general": "一般的な会話",
+    "loadingMessages": "メッセージを読み込んでいます…",
+    "introduce": "メッセージを送ってドライバーに自己紹介しましょう。",
+    "bookingConfirmed": "このドライバーとの予約は確定しています",
+    "bookingWithDriver": "このドライバーとの予約があります",
+    "tapForDetails": "タップして旅行の詳細を見る",
+    "loadingConversations": "会話を読み込んでいます…",
+    "emptyList": "車両ページから会話を始めると、ここに表示されます。",
+    "noMatch": "検索に一致する会話はありません。",
+    "read": "既読",
+    "sent": "送信済み",
+    "offerAccepted": "見積もりを承諾済み",
+    "offerExpired": "見積もりの期限切れ",
+    "offerDeclined": "見積もりを辞退済み",
+    "latestOffer": "最新の見積もり",
+    "viewProfile": "{name}さんのドライバープロフィールを見る",
+    "placeholder": "メッセージ…",
+    "send": "送信",
+    "sending": "送信しています…",
+    "search": "会話を検索",
+    "select": "会話を選ぶとメッセージが表示されます。"
+  },
+  "offer": {
+    "received": "見積もりが届きました",
+    "discount": "{name} — {percent}%お得",
+    "vehicle": "車両",
+    "selectedVehicle": "選択した車両",
+    "kms": "{km} km込み · 超過1 kmあたり{rate}",
+    "accept": "見積もりを承諾",
+    "newerBelow": "新しい見積もりが下にあります",
+    "requested": "新しい見積もりを依頼済み",
+    "requestNew": "新しい見積もりを依頼",
+    "declineHint": "交渉や辞退はチャットで返信してください。",
+    "decline": "辞退"
+  },
+  "requests": {
+    "booked": "予約済み",
+    "new": "新着",
+    "eyebrow": "見積もり依頼",
+    "title": "旅行の見積もり依頼",
+    "subtitle": "ドライバーから見積もりを受け取るために投稿した旅行。",
+    "loading": "依頼を読み込んでいます…",
+    "postNew": "新しい依頼を投稿",
+    "emptyTitle": "まだ依頼はありません",
+    "emptyBody": "最初の旅程を投稿して、審査済みのドライバーから見積もりを受け取りましょう。",
+    "errors": {
+      "dates": "旅行日程を選んでください。",
+      "allFields": "すべての項目が必須です。",
+      "adults": "大人の旅行者を1名以上指定してください。"
+    },
+    "form": {
+      "reviewTitle": "依頼内容を確認して投稿",
+      "title": "依頼を投稿",
+      "reviewNote": "入力した旅行の内容です。まだ送信されていません。詳細を確認し、必要に応じて変更してから、ドライバーに投稿してください。",
+      "from": "出発地",
+      "fromPlaceholder": "コロンボ空港",
+      "to": "到着地",
+      "toPlaceholder": "キャンディ",
+      "adults": "大人",
+      "children": "子ども",
+      "country": "居住国",
+      "countryPlaceholder": "日本",
+      "details": "旅行の詳細",
+      "detailsPlaceholder": "必ず訪れたい場所、宿泊の希望、言語など。",
+      "noContact": "ここには電話番号やメールアドレスを書かないでください。見積もりを承諾して予約が確定した時点で、連絡先を共有します。",
+      "upTo": "見積もり{count}件まで",
+      "onlyType": "{type}のみ",
+      "nextTitle": "今後の流れ",
+      "nextBody": "投稿後、ドライバーから見積もりが届きます。チャットでやり取りし、見積もりと料金を比べて、「メッセージ」タブから予約できます。新しい見積もりが届くたびにメールでお知らせします。",
+      "posting": "投稿しています…",
+      "postToDrivers": "ドライバーに依頼を投稿",
+      "post": "見積もり依頼を投稿"
+    }
+  },
+  "settings": {
+    "mismatch": "新しいパスワードが一致しません。",
+    "eyebrow": "アカウント",
+    "subtitle": "旅行中の連絡先を教えてください。",
+    "loading": "プロフィールを読み込んでいます…",
+    "noProfile": "プロフィール情報がありません。",
+    "fullName": "氏名",
+    "email": "メール",
+    "emailHelp": "メールアドレスを変更したい場合は、サポートにお問い合わせください。",
+    "contact": "電話番号",
+    "contactPlaceholder": "例：{example}",
+    "homeBase": "居住地",
+    "homeBasePlaceholder": "都市、国",
+    "resetPassword": "パスワードの再設定",
+    "resetHelp": "アカウントを安全に保つため、パスワードを更新してください。",
+    "currentPassword": "現在のパスワード",
+    "newPassword": "新しいパスワード",
+    "confirmPassword": "新しいパスワード（確認）",
+    "updating": "更新しています…",
+    "updatePassword": "パスワードを更新"
+  }
+}

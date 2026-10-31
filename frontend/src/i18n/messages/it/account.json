@@ -1,0 +1,18 @@
+{
+  "delete": {
+    "typeWord": "Scrivi {word} per confermare.",
+    "enterPassword": "Inserisci la password per confermare.",
+    "deleted": "Il tuo account è stato eliminato.",
+    "error": "Al momento non è possibile eliminare il tuo account.",
+    "title": "Elimina account",
+    "body": "In questo modo il tuo nome, la tua email, il tuo numero di telefono e gli altri dati personali vengono rimossi dal sito e da tutto ciò che gli altri possono vedere. L'operazione non si può annullare.",
+    "bookingsKept": "Le tue prenotazioni passate restano come registrazioni anonime, perché siamo tenuti a conservare lo storico di pagamenti e tasse. Non saranno più collegate pubblicamente a te.",
+    "driverRecord": "I nostri amministratori conservano per 7 anni una registrazione privata con il tuo nome, i tuoi recapiti, la tua licenza e lo storico dei viaggi, perché la legge ci obbliga a sapere chi ha guidato sulla piattaforma. Non viene mai mostrata ai viaggiatori né agli altri autisti e viene eliminata automaticamente dopo quei 7 anni.",
+    "open": "Elimina il mio account",
+    "password": "La tua password",
+    "typeToConfirm": "Scrivi <w>{word}</w> per confermare",
+    "deleting": "Eliminazione…",
+    "confirm": "Elimina definitivamente",
+    "cancel": "Annulla"
+  }
+}

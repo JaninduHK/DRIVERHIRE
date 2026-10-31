@@ -1,3 +1,4 @@
+import { localizeServerMessage } from '../i18n/serverMessages.js';
 import { API_BASE_URL } from '../constants/api.js';
 
 const DRIVER_DIRECTORY_BASE_URL = `${API_BASE_URL}/drivers`;
@@ -43,12 +44,12 @@ const request = async (path, options = {}) => {
   try {
     response = await withTimeout(fetchPromise);
   } catch (error) {
-    throw new Error(error?.message || 'Network error');
+    throw new Error(localizeServerMessage(error?.message || 'Network error'));
   }
 
   if (!response.ok) {
     const message = await parseError(response);
-    throw new Error(message);
+    throw new Error(localizeServerMessage(message));
   }
 
   return safeJson(response);
@@ -58,7 +59,7 @@ export const fetchDriverDirectory = () => request('/');
 
 export const fetchDriverProfile = (driverId) => {
   if (!driverId) {
-    return Promise.reject(new Error('Driver identifier is required.'));
+    return Promise.reject(new Error(localizeServerMessage('Driver identifier is required.')));
   }
   return request(`/${encodeURIComponent(driverId)}`);
 };

@@ -1,0 +1,17 @@
+{
+  "count": {
+    "one": "{count} Bewertung",
+    "other": "{count} Bewertungen"
+  },
+  "sort": {
+    "newest": "Neueste",
+    "highest": "Beste",
+    "lowest": "Schlechteste",
+    "oldest": "Älteste"
+  },
+  "loading": "Bewertungen werden geladen…",
+  "tryAgain": "Erneut versuchen",
+  "empty": "Noch keine Bewertungen. Entdecken Sie als Erste(r) Sri Lanka mit {name} und teilen Sie Ihre Geschichte.",
+  "traveller": "Reisende(r)",
+  "recentTrip": "Kürzliche Reise"
+}

@@ -1,0 +1,43 @@
+{
+  "linkError": "This link could not be opened.",
+  "goHome": "Go to homepage",
+  "backHome": "Back to homepage",
+  "offer": {
+    "opening": "Opening your offer…",
+    "errorTitle": "We couldn't open this offer",
+    "status": {
+      "accepted": "You already accepted this offer — open your dashboard to see the booking.",
+      "declined": "This offer is no longer open."
+    },
+    "title": "Trip offer from {name}",
+    "kms": "{km} km included",
+    "login": "Log in to reply",
+    "loginHelp": "You'll be taken straight to this conversation once you're signed in."
+  },
+  "review": {
+    "opening": "Opening your review…",
+    "errorTitle": "We couldn't open this review",
+    "errors": {
+      "rating": "Please choose a star rating.",
+      "tooShort": "Please share a little more detail (at least 10 characters).",
+      "submit": "Unable to submit your review right now."
+    },
+    "thanksTitle": "Thank you for your review",
+    "thanksBody": "It will appear on the site once our team has approved it.",
+    "title": "How was your trip with {name}?",
+    "yourTrip": "Your trip",
+    "rating": "Your rating",
+    "stars": { "one": "{count} star", "other": "{count} stars" },
+    "titleLabel": "Title",
+    "optional": "(optional)",
+    "titlePlaceholder": "e.g. Excellent driver, very punctual",
+    "comment": "Your review",
+    "commentPlaceholder": "What stood out about the driver, the vehicle and the trip?",
+    "photos": "Photos",
+    "removePhoto": "Remove photo",
+    "photosHelp": "Add up to {count} photos from your trip.",
+    "submitting": "Submitting…",
+    "submit": "Submit review",
+    "checked": "Your review is checked by our team before it appears on the site."
+  }
+}

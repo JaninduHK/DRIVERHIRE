@@ -1,0 +1,94 @@
+{
+  "hero": {
+    "badge": "Chi è Car with Driver LK",
+    "title": "Prenotazioni di autisti trasparenti per ogni viaggio in Sri Lanka.",
+    "lead": "Aiutiamo i viaggiatori a conoscere autisti dello Sri Lanka verificati, a confrontare opzioni reali e a concordare prezzi e percorsi chiari prima di atterrare. La nostra missione è semplice: viaggi sicuri, equi e senza stress, sia per i viaggiatori sia per gli autisti locali.",
+    "builtFor": "Pensato per viaggiatori indipendenti e famiglie.",
+    "coverage": "Copertura sui principali percorsi e destinazioni."
+  },
+  "pillars": {
+    "eyebrow": "Cosa ci rende diversi",
+    "title": "I tre pilastri della fiducia",
+    "lead": "Tutto ciò che costruiamo è pensato per tutelare entrambe le parti del viaggio: i viaggiatori indipendenti e gli autisti locali professionisti.",
+    "expertise": {
+      "title": "Esperienza indipendente dello Sri Lanka",
+      "description": "Car with Driver LK è creato da un piccolo team locale che conosce l'isola e sa come i viaggiatori amano esplorarla."
+    },
+    "matching": {
+      "title": "Abbinamento trasparente",
+      "description": "Ti mettiamo in contatto diretto con autisti professionisti verificati e rendiamo informazioni, recensioni e prezzi chiarissimi."
+    },
+    "support": {
+      "title": "Assistenza tramite la piattaforma",
+      "description": "Prenotazioni, conversazioni e documenti restano in un unico sistema sicuro, così tutti vedono le stesse informazioni affidabili."
+    }
+  },
+  "why": {
+    "eyebrow": "Perché abbiamo creato la piattaforma",
+    "title": "Chiarezza per viaggiatori e autisti",
+    "body": "Restando indipendenti e puntando su informazioni trasparenti, facciamo in modo che entrambe le parti di ogni viaggio siano rispettate. Gli autisti mettono in mostra la loro esperienza e stabiliscono i propri prezzi, mentre i viaggiatori possono contare su trasporti affidabili, accordi equi e un'assistenza dedicata quando serve."
+  },
+  "help": {
+    "title": "Quando hai bisogno di aiuto, noi ci siamo",
+    "body": "La maggior parte delle domande o dei problemi si può risolvere direttamente con il tuo autista. Ma se ti serve un supporto in più, il nostro team può aiutarti a chiarire gli accordi, documentare i problemi e fare da mediatore quando possibile, così puoi continuare a viaggiare con fiducia.",
+    "note": "Per le procedure complete e i tempi di risposta, consulta i nostri Termini e condizioni."
+  },
+  "faq": {
+    "eyebrow": "Domande frequenti",
+    "title": "Come funziona Car with Driver LK",
+    "lead": "Una breve panoramica su come funziona la piattaforma, su come restiamo indipendenti e su cosa aspettarti quando prenoti con noi.",
+    "what": {
+      "q": "Che cos'è Car with Driver LK?",
+      "a": "Car with Driver LK è una piattaforma online indipendente creata per rendere più facile, sicuro e trasparente viaggiare in Sri Lanka. Il nostro sito ti aiuta a trovare autisti di fiducia, confrontare le opzioni, leggere recensioni reali e prenotare con sicurezza, tutto in un unico posto."
+    },
+    "aim": {
+      "q": "Qual è l'obiettivo della piattaforma?",
+      "a": "Il nostro ruolo è mettere in contatto diretto i viaggiatori con autisti affidabili e professionali in tutto lo Sri Lanka. Non assumiamo autisti, non possediamo veicoli e non siamo un tour operator. Offriamo invece procedure chiare che rendono equa ogni interazione tra viaggiatori e autisti, dal primo messaggio alla fine del viaggio."
+    },
+    "otherSites": {
+      "q": "Gestite altri siti web?",
+      "a": "Car with Driver LK si dedica interamente a questa comunità di viaggiatori e autisti. Possiamo collaborare con alcuni partner turistici selezionati quando ne traggono vantaggio i clienti, ma ogni prenotazione e ogni messaggio vengono gestiti in modo sicuro tramite la nostra piattaforma."
+    },
+    "based": {
+      "q": "Dove ha sede l'azienda?",
+      "a": "La piattaforma è gestita da un piccolo team con una profonda conoscenza dello Sri Lanka e anni di esperienza nel turismo e nel servizio clienti. La nostra posizione indipendente ci aiuta a restare neutrali, trasparenti ed equi nel supportare sia i viaggiatori sia gli autisti."
+    },
+    "money": {
+      "q": "Come guadagna Car with Driver LK?",
+      "a": "La piattaforma è sostenuta dagli autisti, che possono pagare piccole commissioni o tariffe di servizio per pubblicare annunci e ricevere prenotazioni. Mantenere bassi i costi permette agli autisti di restare competitivi e ai viaggiatori di evitare costi di prenotazione aggiuntivi: paghi solo l'importo concordato, direttamente al tuo autista."
+    },
+    "help": {
+      "q": "Mi aiuterete se qualcosa va storto?",
+      "a": "Sì. Il nostro team di assistenza è disponibile se i piani cambiano o se un problema non si può risolvere con il tuo autista. Invitiamo i viaggiatori a parlare prima con l'autista; se serve un aiuto in più, possiamo intervenire o fare da mediatori sulla base dei dettagli della prenotazione forniti. Consulta i nostri Termini e condizioni per la procedura completa."
+    }
+  },
+  "promises": {
+    "eyebrow": "Perché i viaggiatori prenotano qui",
+    "title": "I nostri impegni sulla prenotazione",
+    "lead": "Questi sono gli standard a cui puntiamo in ogni viaggio, così puoi prenotare l'autista e il veicolo giusti in tutta tranquillità.",
+    "items": [
+      "Ricevi il tipo di veicolo descritto nell'offerta o un equivalente diretto.",
+      "Incontri l'autista che hai prenotato, o un'alternativa chiaramente concordata se necessario.",
+      "Non ti verrà chiesto di pagare più del prezzo totale concordato in anticipo.",
+      "Puoi chiedere modifiche o cancellazioni tramite la piattaforma, in base alle condizioni dell'autista.",
+      "Non paghi mai costi di prenotazione a Car with Driver LK. Il pagamento va direttamente all'autista.",
+      "Dopo il viaggio puoi lasciare una recensione sincera sul tuo autista.",
+      "Ricevi una conferma di prenotazione scritta, così tutti sanno cosa è stato concordato.",
+      "Facciamo del nostro meglio per aiutarti se sorgono problemi durante il viaggio.",
+      "Benefici di una rete crescente di autisti verificati e del feedback dei viaggiatori."
+    ]
+  },
+  "testimonials": {
+    "eyebrow": "Testimonianze",
+    "title": "Cosa dicono i viaggiatori di Car with Driver LK",
+    "lead": "Una selezione di esperienze recenti di ospiti che hanno usato la nostra piattaforma per organizzare i loro viaggi in Sri Lanka.",
+    "spain": {
+      "location": "Spagna",
+      "feedback": "«Ogni preventivo corrispondeva al prezzo finale, e l'autista che abbiamo incontrato a Colombo era proprio quello che avevamo prenotato. La documentazione di conferma ci ha dato la sicurezza di esplorare la costa sud senza stress.»"
+    },
+    "india": {
+      "location": "India",
+      "feedback": "«Il nostro itinerario è cambiato due volte e la piattaforma ha gestito subito le modifiche. Avere un team di assistenza sempre pronto ha reso la tratta da Kandy a Ella rilassante e piacevole.»"
+    }
+  }
+}

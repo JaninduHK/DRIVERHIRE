@@ -8,11 +8,14 @@ import {
   useLocation,
   useRouteError,
   isRouteErrorResponse,
-  Link,
 } from 'react-router';
+import { Link } from '../src/i18n/router.jsx';
 import { Toaster } from 'react-hot-toast';
 import NavBar from '../src/components/NavBar.jsx';
 import Footer from '../src/components/Footer.jsx';
+import LanguageSuggestion from '../src/components/LanguageSuggestion.jsx';
+import { useI18n } from '../src/i18n/I18nProvider.jsx';
+import { LOCALE_INFO, getLocaleFromPath, stripLocale } from '../src/i18n/locales.js';
 import { initAnalytics, trackPageView } from '../src/lib/analytics.js';
 import '../src/index.css';
 
@@ -33,14 +36,23 @@ export const meta = () => [
 ];
 
 // The HTML document shell. Wraps every route — including the ErrorBoundary below.
+// Plus Jakarta Sans has no Cyrillic or Japanese letters, so those languages also
+// load a matching Noto font (only on their own pages).
+const EXTRA_FONTS = {
+  ru: 'https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700;800&display=swap',
+  ja: 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap',
+};
+
 export function Layout({ children }) {
+  const { locale } = useI18n();
   return (
-    <html lang="en">
+    <html lang={LOCALE_INFO[locale]?.htmlLang || 'en'}>
       <head>
         <meta charSet="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <Meta />
         <Links />
+        {EXTRA_FONTS[locale] ? <link rel="stylesheet" href={EXTRA_FONTS[locale]} /> : null}
       </head>
       <body>
         {children}
@@ -76,15 +88,24 @@ const isWidePublic = (pathname) =>
 
 export default function App() {
   const location = useLocation();
-  const { pathname, search, hash } = location;
+  const { search, hash } = location;
+  const { locale } = useI18n();
+  // Layout rules are written against English paths; /de/vehicles behaves like /vehicles.
+  const pathname = stripLocale(location.pathname);
 
   useEffect(() => {
     initAnalytics();
   }, []);
 
   useEffect(() => {
-    trackPageView(`${pathname}${search}${hash}`);
-  }, [pathname, search, hash]);
+    trackPageView(`${location.pathname}${search}${hash}`);
+  }, [location.pathname, search, hash]);
+
+  // The page language is fixed for the whole page load. If a client-side link
+  // ever crosses into another language, load that page fresh in its language.
+  useEffect(() => {
+    if (getLocaleFromPath(location.pathname) !== locale) window.location.reload();
+  }, [location.pathname, locale]);
 
   const fullBleed = isFullBleedDashboard(pathname);
   const mainClasses =
@@ -94,6 +115,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
+      {!fullBleed && <LanguageSuggestion />}
       {!fullBleed && <NavBar />}
       <Toaster
         position="top-right"
@@ -111,6 +133,7 @@ export default function App() {
 }
 
 export function ErrorBoundary() {
+  const { t } = useI18n();
   const error = useRouteError();
   const status = isRouteErrorResponse(error) ? error.status : 500;
   const is404 = status === 404;
@@ -121,18 +144,16 @@ export function ErrorBoundary() {
       <main className="mx-auto flex min-h-[60vh] w-full max-w-xl flex-col items-center justify-center px-4 py-20 text-center">
         <p className="text-7xl font-extrabold text-brand">{status}</p>
         <h1 className="mt-4 text-2xl font-bold text-ink">
-          {is404 ? 'This page could not be found' : 'Something went wrong'}
+          {is404 ? t('common.error.notFoundTitle') : t('common.error.title')}
         </h1>
         <p className="mt-2 text-muted">
-          {is404
-            ? 'The page you are looking for does not exist or has moved.'
-            : 'An unexpected error occurred. Please try again.'}
+          {is404 ? t('common.error.notFoundBody') : t('common.error.body')}
         </p>
         <Link
           to="/"
           className="mt-8 rounded-xl bg-brand px-6 py-3 font-semibold text-white transition hover:bg-brand-dark"
         >
-          Back to home
+          {t('common.error.backHome')}
         </Link>
       </main>
       <Footer />

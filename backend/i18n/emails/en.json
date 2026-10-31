@@ -1,0 +1,385 @@
+{
+  "common": {
+    "hi": "Hi {name},",
+    "there": "there",
+    "driver": "Driver",
+    "aDriver": "A driver",
+    "yourDriver": "your driver",
+    "YourDriver": "Your driver",
+    "yourTrip": "your trip",
+    "tbd": "TBD",
+    "dateRange": "{start} — {end}",
+    "adults": {
+      "one": "{count} adult",
+      "other": "{count} adults"
+    },
+    "days": {
+      "one": "{count} day",
+      "other": "{count} days"
+    },
+    "reviews": {
+      "one": "{count} review",
+      "other": "{count} reviews"
+    },
+    "offers": {
+      "one": "{count} offer",
+      "other": "{count} offers"
+    },
+    "newOffers": {
+      "one": "{count} new offer",
+      "other": "{count} new offers"
+    },
+    "drivers": {
+      "one": "{count} driver",
+      "other": "{count} drivers"
+    },
+    "viewOfferAndChat": "View offer and chat",
+    "viewMyRequest": "View my request",
+    "viewBooking": "View booking",
+    "status": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "cancelled": "Cancelled",
+      "rejected": "Rejected",
+      "completed": "Completed"
+    }
+  },
+  "footer": {
+    "support": "Reply to this email and our team in Sri Lanka will get back to you.",
+    "replyable": "Replies to this email are posted to your chat with the driver.",
+    "noReply": "This is an automated message — please don't reply to this email.",
+    "questions": "Questions? WhatsApp us on {whatsapp} or email {email}.",
+    "lessOften": "Getting too many emails? <link>Email me less often</link>.",
+    "reason": "You are receiving this email because you have an active account on {brand}.",
+    "textFooter": "No booking fee. No deposit. Free cancellation up to 2 days before your trip.",
+    "textLessOften": "Email me less often: {url}"
+  },
+  "reassurance": {
+    "title": "Booking is risk-free.",
+    "points": [
+      "No booking fee",
+      "No deposit",
+      "Pay your driver on day one",
+      "Free cancellation up to 2 days before your trip"
+    ],
+    "locked": "The price is locked once you accept an offer."
+  },
+  "card": {
+    "newOnPlatform": "New on the platform",
+    "experience": {
+      "one": "{count} yr' experience",
+      "other": "{count} yrs' experience"
+    },
+    "seats": "{count} seats",
+    "kms": "{km} km included",
+    "kmsThen": "{km} km included, then {rate} per km",
+    "total": " total",
+    "perDay": "{amount} / day",
+    "labels": {
+      "Best value": "Best value",
+      "Top rated": "Top rated",
+      "Best match": "Best match"
+    },
+    "inclusions": {
+      "englishSpeakingDriver": "English-speaking driver",
+      "fuelAndInsurance": "Fuel and insurance",
+      "parkingFeesAndTolls": "All parking charges and tolls",
+      "meetAndGreetAtAirport": "Airport meet & greet",
+      "driverMealsAndAccommodation": "Driver's meals & accommodation",
+      "allTaxes": "All taxes"
+    }
+  },
+  "message": {
+    "subjectOfferPrice": "{sender}: {price} offer for your trip",
+    "subjectOffer": "{sender} sent you a trip offer",
+    "subjectSnippet": "{sender}: \"{snippet}\"",
+    "subjectMessage": "New message from {sender}",
+    "sentOffer": "sent you a trip offer",
+    "sentMany": "sent you {count} new messages",
+    "sentOne": "sent you a new message",
+    "about": " about {model}",
+    "on": "{sender} {action}{about} on {brand}.",
+    "replyDirect": "Reply to this email to answer {sender} directly. Your reply goes straight to the chat.",
+    "replyDashboard": "Reply from your dashboard to keep the conversation moving.",
+    "titleOffer": "New trip offer",
+    "titleMany": "New messages waiting",
+    "titleOne": "New message waiting",
+    "preheaderReply": "Reply to this email to answer {sender} directly.",
+    "preheaderOffer": "{sender} shared a trip offer on {brand}",
+    "preheaderMessage": "{sender} sent you a message on {brand}",
+    "actionOffer": "View offer and chat",
+    "actionReply": "Reply in chat",
+    "textBody": "{sender} {action}.",
+    "textReplyOrOpen": "Reply to this email, or open your dashboard to reply.",
+    "textOpen": "Open your dashboard to reply.",
+    "senderVia": "{sender} via {brand}",
+    "yourContact": "your contact"
+  },
+  "received": {
+    "title": "Your trip request is live",
+    "preheader": "Drivers are being notified now. Here is what happens next.",
+    "body": "Your request for <strong>{route}</strong> ({dates}, {adults}) has gone to approved drivers across Sri Lanka.",
+    "nextTitle": "<strong>What happens next</strong>",
+    "steps": [
+      "Drivers send you offers, often within the first hour.",
+      "We email you the first one straight away, then a summary so your inbox stays clear.",
+      "Chat with any driver, compare, and book the one you like."
+    ],
+    "favour": "<strong>One quick favour:</strong> add {email} to your contacts, or move this email to your main inbox, so the offers reach you.",
+    "subject": "Your Sri Lanka trip request is live",
+    "text": "Your request for {route} ({dates}) has gone to approved drivers across Sri Lanka.\n\nWhat happens next:\n1. Drivers send you offers, often within the first hour.\n2. We email you the first one straight away, then a summary.\n3. Chat with any driver, compare, and book the one you like.\n\nView your request: {url}"
+  },
+  "first": {
+    "title": "Your first offer is in",
+    "ratingFrom": "★ {rating} from {reviews}",
+    "more": "More drivers are replying.",
+    "body": "{driver} has sent the first offer for your <strong>{route}</strong> trip. More drivers usually reply over the next few hours, and we will send you a summary so your inbox doesn't fill up.",
+    "replyAsk": "Reply to this email to ask {driver} a question. Your reply goes straight to the chat.",
+    "text": "{driver} has sent the first offer for your {route} trip: {details}.",
+    "viewOffer": "View the offer: {url}",
+    "subject": "{driver}: {price} for your {route} trip"
+  },
+  "digest": {
+    "digest1": {
+      "subjectTop": "{total} drivers replied — our top {shown} picks for {route}",
+      "subjectAll": "{drivers} replied to your {route} request",
+      "titleOne": "A driver wants to show you Sri Lanka",
+      "titleMany": "{total} drivers want to show you Sri Lanka",
+      "introTop": "{total} drivers have offered to take you on your <strong>{route}</strong> trip ({dates}). To save you comparing them all, here are the {shown} we would look at first.",
+      "introOne": "A driver has offered to take you on your <strong>{route}</strong> trip ({dates}).",
+      "introMany": "{total} drivers have offered to take you on your <strong>{route}</strong> trip ({dates}).",
+      "outro": "Not sure which to choose? Reply to this email with your questions and our team in Sri Lanka will help you decide."
+    },
+    "update": {
+      "subject": "{fresh} for your {route} trip",
+      "title": "{fresh} since we last wrote",
+      "introOne": "Another driver has sent an offer for your <strong>{route}</strong> trip. You now have {total} you can book.",
+      "introMany": "{count} more drivers have sent an offer for your <strong>{route}</strong> trip. You now have {total} you can book.",
+      "outro": "Not sure which to choose? Reply to this email with your questions and our team in Sri Lanka will help you decide."
+    },
+    "digest2": {
+      "subject": "Still planning your {route} trip?",
+      "title": "Still planning your trip?",
+      "intro": "Your request for <strong>{route}</strong> has {total} you can still book. If something is in the way, tell us and we will stop guessing.",
+      "outro": "Any questions before you decide? Reply to this email and our team in Sri Lanka will help."
+    },
+    "approaching": {
+      "subject": "Your trip is in {days} days — your driver isn't booked yet",
+      "title": "{days} days to go, and no driver booked yet",
+      "intro": "Your <strong>{route}</strong> trip starts on {start}. You have {total} waiting, and booking one takes a minute.",
+      "outro": "Any questions before you decide? Reply to this email and our team in Sri Lanka will help."
+    },
+    "expiring": {
+      "subject": "{driver}'s {price} offer expires tomorrow",
+      "title": "An offer expires tomorrow",
+      "intro": "{driver}'s {price} offer for your <strong>{route}</strong> trip expires within a day. After that they would need to send a new one, and the price may change.",
+      "outro": "Any questions before you decide? Reply to this email and our team in Sri Lanka will help."
+    },
+    "preheaderFrom": "From {price}. ",
+    "preheader": "No booking fee, pay your driver on day one.",
+    "peak": "Your dates fall in peak season, when drivers fill their calendars early.",
+    "seeAll": "See all {total} offers",
+    "compareAll": "Compare all {total} offers",
+    "openOffer": "Open your offer",
+    "text": "Compare and book in your dashboard: {url}",
+    "why": {
+      "title": "What's holding you back?",
+      "price": "Prices are higher than I expected",
+      "dates": "I haven't fixed my dates",
+      "choice": "I can't choose a driver",
+      "booked": "I've booked something else"
+    }
+  },
+  "expired": {
+    "title": "Your offers have expired",
+    "preheader": "Get fresh prices for {route} in one step.",
+    "body": "The offers drivers sent for your <strong>{route}</strong> trip ({dates}) have expired, so they can no longer be booked as they are.",
+    "repost": "Still planning this trip? Post the same request again and drivers will send you up-to-date prices. You do not need to fill anything in.",
+    "noRepost": "Still planning this trip? Open the conversation with any driver below and tap <strong>Request new offer</strong>.",
+    "preferDriver": "Prefer one of the drivers below? Open your <link>messages</link> and tap <strong>Request new offer</strong> in their chat.",
+    "actionRepost": "Post this request again",
+    "actionNew": "Request new offers",
+    "text": "The offers for your {route} trip have expired.",
+    "textRepost": "Post the same request again: {url}",
+    "textAsk": "Or ask a driver for a new offer in your messages: {url}",
+    "subject": "Your offers for {route} have expired"
+  },
+  "noOffers": {
+    "title": "Still waiting on your first offer",
+    "preheader": "Some routes and dates take longer. Here is what can help.",
+    "body": "No driver has sent an offer yet for your <strong>{route}</strong> trip ({dates}). Some routes and dates take longer, and your request stays open to every approved driver.",
+    "helpTitle": "<strong>Two things that usually help</strong>",
+    "help": [
+      "Add detail: the places you want to visit, your group size and luggage, and whether your dates are flexible.",
+      "Message us on WhatsApp at {whatsapp} and we will point drivers to your request."
+    ],
+    "willEmail": "We will email you as soon as the first offer arrives.",
+    "text": "No driver has sent an offer yet for your {route} trip. Some routes and dates take longer, and your request stays open.\n\nIt helps to add detail to your request, or message us on WhatsApp at {whatsapp}.\n\nView your request: {url}",
+    "subject": "No offers yet for your {route} trip — here is what helps"
+  },
+  "reminder": {
+    "from": "from {date}",
+    "viewOffer": "View offer",
+    "titleOne": "Your offer is still open",
+    "titleMany": "{count} offers are still open",
+    "preheader": "{price}{model}. No booking fee, no deposit.",
+    "bodyOne": "{driver} sent you an offer you have not opened yet.",
+    "bodyMany": "You have {count} offers you have not opened yet.",
+    "actionOne": "View offer",
+    "actionMany": "View my offers",
+    "subjectOne": "{driver}'s {price} offer is still open",
+    "subjectOneDate": "{driver}'s {price} offer for {date} is still open",
+    "subjectMany": "{count} offers are still waiting for you"
+  },
+  "preTrip": {
+    "title": "Your trip starts on {date}",
+    "preheader": "{driver} will meet you. Here is what to have ready.",
+    "preheaderAt": "{driver} will meet you at {place}. Here is what to have ready.",
+    "away": "Your trip with <strong>{driver}</strong> is three days away.",
+    "dates": "<strong>Dates:</strong> {value}",
+    "pickup": "<strong>Pick-up:</strong> {value}",
+    "vehicle": "<strong>Vehicle:</strong> {value}",
+    "phone": "<strong>Driver's phone:</strong> {value}",
+    "total": "<strong>Total:</strong> {value}, paid to your driver on day one",
+    "readyTitle": "<strong>Have ready</strong>",
+    "flightKnown": "Your flight number ({flight}) is on the booking. Tell your driver if it changes.",
+    "flightUnknown": "Your flight number and arrival time, sent to your driver in the chat.",
+    "payment": "The payment for your driver, as you agreed with them.",
+    "meeting": "Your pick-up time and exact meeting point, confirmed with your driver.",
+    "changed": "Plans changed? Cancelling more than 2 days before your start date is free. Within 2 days, 50% of the total is due to the driver.",
+    "action": "View my booking",
+    "text": "Your trip with {driver} starts on {date}.",
+    "textPickup": "Pick-up: {value}",
+    "textPhone": "Driver's phone: {value}",
+    "textView": "View your booking: {url}",
+    "subject": "In 3 days: {driver} meets you",
+    "subjectAt": "In 3 days: {driver} meets you at {place}"
+  },
+  "booking": {
+    "aVehicle": "a vehicle",
+    "calendarTitle": "Sri Lanka trip with {driver}",
+    "calendarDetails": "{model}. Booked on {brand}: {url}",
+    "confirmedBody": "Your booking is confirmed. <strong>{driver}</strong> has been notified and will meet you on {date}.",
+    "confirmedBodyAt": "Your booking is confirmed. <strong>{driver}</strong> has been notified and will meet you at {place} on {date}.",
+    "phone": "Phone:",
+    "dates": "Dates:",
+    "total": "Total:",
+    "sendFlight": "Send your driver your flight number and arrival time in the chat, so they can plan your pick-up.",
+    "ifChange": "<strong>If your plans change</strong>",
+    "cancellation": [
+      "More than 2 days before your start date: free to cancel, nothing to pay.",
+      "Within 2 days of the start date: 50% of the total is due to the driver.",
+      "After the trip has started: the completed days in full, plus 50% of the remaining days."
+    ],
+    "calendar": "Add this trip to Google Calendar",
+    "pendingBody": "We've sent your request for {model} to the driver.",
+    "tripDates": "<strong>Trip dates:</strong> {value}",
+    "totalEstimate": "<strong>Total estimate:</strong> {value}",
+    "statusLine": "<strong>Status:</strong> {value}",
+    "pendingNext": "You will get an email when the driver accepts or updates the request.",
+    "titleConfirmed": "Your trip is booked",
+    "titlePending": "Booking request received",
+    "preheaderConfirmed": "{driver}'s details, what is included and how to cancel.",
+    "preheaderPending": "We shared your request for {model}.",
+    "textConfirmed": "Your booking with {driver} ({model}) is confirmed.",
+    "textPhone": "Driver's phone: {value}",
+    "textPending": "We sent your booking request for {model}.",
+    "textDates": "Dates: {value}",
+    "textTotal": "Total: {value}",
+    "textStatus": "Status: {value}",
+    "textCancellation": "Cancellation:",
+    "textView": "View your booking: {url}",
+    "subjectConfirmed": "Booked: {driver} will meet you on {date}",
+    "subjectPending": "We received your booking request for {model}"
+  },
+  "status": {
+    "titleConfirmed": "Your trip is confirmed",
+    "titleRejected": "Booking was declined",
+    "titleCancelled": "Booking cancelled",
+    "titleUpdated": "Booking updated",
+    "yourBooking": "Your booking",
+    "theBooking": "The booking",
+    "booking": "Booking",
+    "preheader": "{model} is now {status}.",
+    "body": "{model} is now <strong>{status}</strong>.",
+    "tripDates": "<strong>Trip dates:</strong> {value}",
+    "total": "<strong>Total:</strong> {value}",
+    "follow": "Open the conversation if you need to follow up.",
+    "text": "{model} is now {status}.",
+    "textDates": "Dates: {value}",
+    "textTotal": "Total: {value}",
+    "textVisit": "Visit your dashboard to review details.",
+    "subject": "{model} updated: {status}"
+  },
+  "review": {
+    "title": "How was your trip with {driver}?",
+    "preheader": "Tell other travellers about your trip with {driver}",
+    "yourVehicle": "your vehicle",
+    "hope": "We hope you enjoyed your trip with {driver} in the {vehicle}.",
+    "hopeDates": "We hope you enjoyed your trip with {driver} ({dates}) in the {vehicle}.",
+    "ask": "Would you take a minute to rate your driver? Your review helps other travellers choose with confidence, and it means a great deal to your driver.",
+    "noSignIn": "You do not need to sign in — the button below opens your review form directly.",
+    "action": "Leave a review",
+    "text": "We hope you enjoyed your trip with {driver}.",
+    "textDates": "We hope you enjoyed your trip with {driver} ({dates}).",
+    "textLink": "Leave a review here: {url}",
+    "textThanks": "Thank you for choosing {brand}.",
+    "subject": "How was your trip with {driver}?"
+  },
+  "pages": {
+    "invalidTitle": "This link is not valid",
+    "invalidBody": "It may have been cut off when it was copied. Open the link from the email again.",
+    "failedTitle": "Something went wrong",
+    "failedBody": "We could not save that just now. Please try the link again in a few minutes.",
+    "prefs": {
+      "title": "Your email preferences",
+      "all": "Every offer as it arrives",
+      "allHint": "One email each time a driver sends you an offer.",
+      "summary": "A summary, at most once a day (recommended)",
+      "summaryHint": "Your first offer straight away, then our top picks in one email.",
+      "essential": "Only messages from my drivers, and my bookings",
+      "essentialHint": "No offer alerts or reminders. You can still see every offer in your dashboard.",
+      "saved": "Saved. Your choice applies from now on.",
+      "intro": "Choose how often we email you about offers from drivers.",
+      "save": "Save my choice",
+      "always": "Whatever you choose, you will always get messages from drivers you are talking to and emails about your bookings."
+    },
+    "answer": {
+      "title": "What's holding you back?",
+      "intro": "Your answer helps us send you something useful instead of another reminder.",
+      "send": "Send my answer",
+      "openDashboard": "Open my dashboard",
+      "priceTitle": "Thanks for telling us",
+      "priceBody": "Drivers set their own prices, and they often have room to adjust: fewer kilometres, a different vehicle, or a shorter route can bring the total down. Message a driver with your budget and ask what they can do.",
+      "datesTitle": "No problem, take your time",
+      "datesUntil": "We will not send reminders about this request until {date}. Your request and its offers stay in your dashboard.",
+      "datesForNow": "We will not send reminders about this request for now. Your request and its offers stay in your dashboard.",
+      "choiceTitle": "We can help you choose",
+      "choiceBody": "Reply to any of our emails about this request, or WhatsApp us on +94 76 3021 483, and our team in Sri Lanka will go through the offers with you.",
+      "bookedTitle": "Thanks, your request is closed",
+      "bookedBody": "Drivers will stop sending offers for it and you will not get any more reminders. Have a great trip."
+    },
+    "repost": {
+      "alreadyTitle": "Already posted again",
+      "alreadyBody": "This request has already been sent to drivers again. New offers will arrive by email and in your dashboard.",
+      "openRequests": "Open my requests",
+      "title": "Post this request again?",
+      "adults": {
+        "one": "{count} adult",
+        "other": "{count} adults"
+      },
+      "children": {
+        "one": "{count} child",
+        "other": "{count} children"
+      },
+      "body": "We will send the same request to drivers again so you get up-to-date prices. To change anything first, post a new request from your dashboard instead.",
+      "button": "Post it again",
+      "liveTitle": "Your request is live again",
+      "liveBody": "Drivers are being notified now. We will email you the first offer straight away, then a summary of the rest.",
+      "notTitle": "Not posted again",
+      "problemAlready": "This request has already been sent to drivers again.",
+      "problemPast": "The start date of this request has passed, so it cannot be posted again as it is. Post a new request with your new dates from your dashboard.",
+      "problemNotOpen": "This request already has a booking, so it was not posted again."
+    }
+  }
+}

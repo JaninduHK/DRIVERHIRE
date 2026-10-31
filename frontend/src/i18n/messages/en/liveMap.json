@@ -1,0 +1,42 @@
+{
+  "newGuide": "New guide",
+  "years": "{count} yrs",
+  "filters": {
+    "all": "All drivers",
+    "available": "Available now",
+    "group": "6+ seats",
+    "top": "Top rated"
+  },
+  "chatReady": "Conversation ready in your inbox.",
+  "chatError": "Unable to start a conversation right now.",
+  "online": "LIVE · {count} DRIVERS ONLINE",
+  "title": "Drivers near you, right now",
+  "lead": "Tap a pin on the map or a card below to see the driver’s vehicle, languages and daily rate — then start a chat.",
+  "mapLabel": "Driver map",
+  "listLabel": "Recommended drivers",
+  "recommended": "Recommended for you",
+  "ofTotal": "{shown} of {total}",
+  "emptyTitle": "No drivers match this filter",
+  "emptyBody": "Try “All drivers” to see everyone on the map.",
+  "sriLanka": "Sri Lanka",
+  "quote": "Quote",
+  "multidayTours": "Multiday tours",
+  "seats": "{count} seats",
+  "perDay": "per day",
+  "reviews": "{count} reviews",
+  "sheet": {
+    "label": "Driver details",
+    "close": "Close",
+    "basedIn": "BASED IN",
+    "experience": "EXPERIENCE",
+    "reviews": "REVIEWS",
+    "vehicles": "VEHICLES",
+    "vehicle": "VEHICLE",
+    "seatsVary": "Seats vary",
+    "goodToKnow": "GOOD TO KNOW",
+    "perDay": "/ day",
+    "viewProfile": "View profile",
+    "opening": "Opening chat…",
+    "chatWith": "Chat with {name}"
+  }
+}

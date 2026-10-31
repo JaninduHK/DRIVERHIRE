@@ -1,4 +1,4 @@
-import { buildMeta } from '../lib/seo.js';
+import { buildMeta, metaLocale } from '../lib/seo.js';
 import { fetchVehicles } from '../../src/services/vehicleCatalogApi.js';
 
 // Fetched server-side so the estimate is real, crawlable HTML on first load — not a
@@ -8,12 +8,13 @@ export async function loader() {
   return { vehicles: data?.vehicles || [] };
 }
 
-export function meta() {
+export function meta({ location }) {
+  const { locale, t } = metaLocale(location);
   return buildMeta({
-    title: 'Sri Lanka Trip Cost Calculator | Plan Your Itinerary | Car with Driver LK',
-    description:
-      'Build a day-by-day Sri Lanka itinerary and get a real cost estimate from live driver rates — distances, driving time, and per-vehicle-class pricing for your exact route.',
+    title: t('meta.tripCost.title'),
+    description: t('meta.tripCost.description'),
     path: '/trip-cost-calculator',
+    locale,
   });
 }
 

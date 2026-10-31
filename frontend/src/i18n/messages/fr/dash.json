@@ -1,0 +1,345 @@
+{
+  "traveller": "Voyageur",
+  "travellerLower": "voyageur",
+  "driver": "Chauffeur",
+  "browseVehicles": "Voir les véhicules",
+  "tryAgain": "Réessayer",
+  "retry": "Réessayer",
+  "back": "Retour",
+  "close": "Fermer",
+  "saving": "Enregistrement…",
+  "saveChanges": "Enregistrer les modifications",
+  "message": "Message",
+  "viewOffer": "Voir l'offre",
+  "viewOffers": "Voir les offres",
+  "openChat": "Ouvrir le chat",
+  "sentOffer": "A envoyé une offre",
+  "conversationStarted": "Conversation commencée.",
+  "awaitingOffers": "En attente d'offres",
+  "offersCount": {
+    "one": "{count} offre",
+    "other": "{count} offres"
+  },
+  "guests": {
+    "one": "{count} voyageur",
+    "other": "{count} voyageurs"
+  },
+  "nav": {
+    "overview": "Aperçu",
+    "bookings": "Mes réservations",
+    "messages": "Messages",
+    "requests": "Mes demandes",
+    "settings": "Paramètres",
+    "browse-vehicles": "Véhicules",
+    "browse-drivers": "Chauffeurs",
+    "browse-trip-cost": "Coût du voyage"
+  },
+  "shell": {
+    "notifications": "Notifications",
+    "openMenu": "Ouvrir le menu",
+    "home": "Aller à l'accueil",
+    "user": "Utilisateur",
+    "logout": "Se déconnecter",
+    "closeMenu": "Fermer le menu"
+  },
+  "toast": {
+    "loggedOut": "Vous avez été déconnecté.",
+    "newOfferRequested": "Demande envoyée. Le chauffeur répondra avec une nouvelle offre.",
+    "profileUpdated": "Profil mis à jour.",
+    "passwordUpdated": "Mot de passe mis à jour.",
+    "briefPosted": "Demande de voyage publiée."
+  },
+  "errors": {
+    "conversations": "Impossible de charger les conversations.",
+    "messages": "Impossible de charger les messages.",
+    "bookings": "Impossible de charger vos réservations pour le moment.",
+    "briefs": "Impossible de charger vos demandes de voyage.",
+    "profile": "Impossible de charger le profil.",
+    "send": "Impossible d'envoyer le message.",
+    "newOffer": "Impossible de demander une nouvelle offre.",
+    "offerVehicle": "Les détails du véhicule manquent pour cette offre.",
+    "updateProfile": "Impossible de mettre à jour le profil.",
+    "updatePassword": "Impossible de mettre à jour le mot de passe.",
+    "postBrief": "Impossible de publier la demande de voyage."
+  },
+  "overview": {
+    "eyebrow": "TABLEAU DE BORD VOYAGEUR",
+    "welcome": "Bon retour, {name}",
+    "lead": "Gérez vos voyages, conversations et demandes en un seul endroit.",
+    "upcoming": "À venir",
+    "completed": "Terminés",
+    "totalSpent": "Total dépensé",
+    "noUpcoming": "Aucun voyage à venir pour l'instant.",
+    "recentMessages": "Messages récents",
+    "noConversationsHint": "Aucune conversation pour l'instant. Écrivez à un chauffeur depuis la page d'un véhicule.",
+    "noConversations": "Aucune conversation pour l'instant.",
+    "upcomingTrips": "Voyages à venir",
+    "viewAll": "Tout voir"
+  },
+  "quoteSteps": {
+    "step1": {
+      "title": "Parlez-nous de votre voyage",
+      "body": "Les dates, vos points de départ et d'arrivée, et le nombre de voyageurs."
+    },
+    "step2": {
+      "title": "Les chauffeurs vous envoient des offres",
+      "body": "Chaque offre a un prix et un véhicule fixes. Nous vous envoyons un e-mail dès qu'une offre arrive."
+    },
+    "step3": {
+      "title": "Discutez, comparez et réservez",
+      "body": "Posez vos questions, comparez les prix et réservez l'offre qui vous plaît dans Messages."
+    }
+  },
+  "quoteCard": {
+    "title": "Recevez des devis de chauffeurs",
+    "body": "Publiez votre voyage une fois et laissez des chauffeurs vérifiés vous envoyer leurs offres. C'est gratuit, sans frais de réservation.",
+    "cta": "Demander des devis"
+  },
+  "slot": {
+    "title": {
+      "one": "Votre demande de devis",
+      "other": "Vos demandes de devis"
+    },
+    "body": "Les chauffeurs répondent avec des offres. Nous vous envoyons un e-mail dès qu'une offre arrive, et vous pouvez comparer et réserver dans Messages.",
+    "newRequest": "Nouvelle demande",
+    "noOffers": "Pas encore d'offres. Nous vous écrirons dès qu'un chauffeur répondra.",
+    "viewAll": "Voir les {count} demandes"
+  },
+  "nextTrip": {
+    "scheduled": "Prévu",
+    "inProgress": "En cours",
+    "daysAway": {
+      "one": "dans {count} jour",
+      "other": "dans {count} jours"
+    },
+    "upcomingTrip": "Voyage à venir",
+    "yourDriver": "votre chauffeur",
+    "title": "Votre prochain voyage",
+    "datesToConfirm": "Dates à confirmer",
+    "withDriver": "avec {name}"
+  },
+  "bookings": {
+    "eyebrow": "VOYAGES",
+    "loading": "Chargement de vos réservations…",
+    "emptyTitle": "Aucun voyage réservé pour l'instant",
+    "emptyBody": "Lorsque vous confirmez un chauffeur, votre itinéraire apparaît ici.",
+    "noUpcoming": "Aucun voyage à venir.",
+    "noCompleted": "Aucun voyage terminé pour l'instant.",
+    "noConversation": "Pas encore de conversation pour ce voyage.",
+    "toast": {
+      "updated": "Réservation mise à jour."
+    },
+    "errors": {
+      "bothDates": "Veuillez sélectionner les dates de début et de fin.",
+      "validDates": "Choisissez des dates de voyage valides.",
+      "update": "Impossible de mettre à jour la réservation."
+    }
+  },
+  "cancel": {
+    "title": "Annuler la réservation",
+    "notice": [
+      "Annulation gratuite jusqu'à 2 jours avant la date de début.",
+      "En cas d'annulation dans les 2 jours précédant la date de début, 50 % du coût total est dû au chauffeur.",
+      "En cas d'annulation après la date de début, 100 % des jours effectués et 50 % des jours restants sont dus au chauffeur."
+    ],
+    "why": "Pourquoi annulez-vous ?",
+    "explain": "Expliquez la raison",
+    "explainPlaceholder": "Ceci est communiqué à notre équipe et à votre chauffeur.",
+    "keep": "Conserver la réservation",
+    "cancelling": "Annulation…",
+    "reasons": {
+      "plansChanged": "Mes projets de voyage ont changé",
+      "betterPrice": "J'ai trouvé un meilleur prix ailleurs",
+      "datesMoved": "Les dates du voyage ont changé",
+      "driverSilent": "Le chauffeur ne répond plus",
+      "driverAsked": "Le chauffeur a demandé l'annulation",
+      "notTravelling": "Je ne vais plus au Sri Lanka",
+      "other": "Autre raison"
+    },
+    "toast": {
+      "cancelled": "Réservation annulée."
+    },
+    "errors": {
+      "reason": "Veuillez choisir une raison d'annulation.",
+      "detail": "Veuillez expliquer la raison de l'annulation.",
+      "cancel": "Impossible d'annuler la réservation."
+    }
+  },
+  "form": {
+    "startDate": "Date de début",
+    "endDate": "Date de fin"
+  },
+  "edit": {
+    "title": "Modifier la réservation",
+    "offerDates": "Les dates ont été confirmées par une offre du chauffeur. Écrivez à votre chauffeur pour modifier le programme.",
+    "pickup": "Prise en charge",
+    "pickupPlaceholder": "Hôtel ou point de rendez-vous",
+    "dropoff": "Dépose",
+    "dropoffPlaceholder": "Destination finale",
+    "flight": "Numéro de vol (facultatif)",
+    "flightPlaceholder": "ex. UL 403",
+    "arrival": "Heure d'arrivée",
+    "departure": "Heure de départ",
+    "timePlaceholder": "ex. {time}",
+    "special": "Demandes particulières",
+    "specialPlaceholder": "Régime alimentaire, besoins d'accessibilité – tout ce que votre chauffeur doit savoir."
+  },
+  "review": {
+    "title": "Votre avis sur le voyage",
+    "titleModel": "Avis · {model}",
+    "adminNote": "Note de l'équipe",
+    "rating": "Note",
+    "ratings": {
+      "r5": "Exceptionnel",
+      "r4": "Très bien",
+      "r3": "Bien",
+      "r2": "Correct",
+      "r1": "À améliorer"
+    },
+    "reviewTitle": "Titre de l'avis (facultatif)",
+    "titlePlaceholder": "Les temps forts de votre voyage",
+    "experience": "Partagez votre expérience",
+    "experiencePlaceholder": "Parlez-nous de votre chauffeur, du véhicule et des temps forts de votre itinéraire.",
+    "minChars": "10 caractères minimum.",
+    "photos": "Photos (facultatif)",
+    "removePhoto": "Supprimer la photo",
+    "photosHelp": "Ajoutez jusqu'à 4 photos de votre voyage.",
+    "submitting": "Envoi…",
+    "submit": "Envoyer l'avis",
+    "status": {
+      "published": "Publié",
+      "declined": "Refusé",
+      "awaiting": "En attente de validation"
+    },
+    "toast": {
+      "submitted": "Avis envoyé pour modération."
+    },
+    "errors": {
+      "rating": "Veuillez choisir une note entre 1 et 5.",
+      "tooShort": "Dites-nous-en un peu plus sur votre expérience (au moins 10 caractères).",
+      "submit": "Impossible d'envoyer l'avis."
+    }
+  },
+  "card": {
+    "driverTbd": "Chauffeur à attribuer",
+    "vehicleTbd": "Véhicule à confirmer",
+    "seats": "{count} places",
+    "datesTbd": "Dates à confirmer",
+    "datesTbdShort": "Dates à définir",
+    "startsIn": {
+      "one": "Commence dans {count} jour",
+      "other": "Commence dans {count} jours"
+    },
+    "status": {
+      "pending": "en attente",
+      "confirmed": "confirmée",
+      "cancelled": "annulée",
+      "rejected": "refusée",
+      "completed": "terminée"
+    },
+    "messageDriver": "Écrire au chauffeur",
+    "details": "Détails",
+    "viewVehicle": "Voir le véhicule",
+    "editDetails": "Modifier les détails",
+    "viewReview": "Voir l'avis",
+    "leaveReview": "Laisser un avis"
+  },
+  "chat": {
+    "eyebrow": "MESSAGERIE",
+    "discussing": "À propos de {model}",
+    "general": "Conversation générale",
+    "loadingMessages": "Chargement des messages…",
+    "introduce": "Envoyez un message pour vous présenter au chauffeur.",
+    "bookingConfirmed": "Votre réservation avec ce chauffeur est confirmée",
+    "bookingWithDriver": "Vous avez une réservation avec ce chauffeur",
+    "tapForDetails": "Appuyez pour voir les détails de votre voyage",
+    "loadingConversations": "Chargement des conversations…",
+    "emptyList": "Commencez une conversation depuis la page d'un véhicule pour la voir ici.",
+    "noMatch": "Aucune conversation ne correspond à votre recherche.",
+    "read": "Lu",
+    "sent": "Envoyé",
+    "offerAccepted": "Offre acceptée",
+    "offerExpired": "Offre expirée",
+    "offerDeclined": "Offre refusée",
+    "latestOffer": "Dernière offre",
+    "viewProfile": "Voir le profil de chauffeur de {name}",
+    "placeholder": "Message…",
+    "send": "Envoyer",
+    "sending": "Envoi…",
+    "search": "Rechercher dans les conversations",
+    "select": "Sélectionnez une conversation pour voir les messages."
+  },
+  "offer": {
+    "received": "Offre reçue",
+    "discount": "{name} – économisez {percent} %",
+    "vehicle": "Véhicule",
+    "selectedVehicle": "Véhicule sélectionné",
+    "kms": "{km} km inclus · {rate} / km supplémentaire",
+    "accept": "Accepter l'offre",
+    "newerBelow": "Offre plus récente ci-dessous",
+    "requested": "Nouvelle offre demandée",
+    "requestNew": "Demander une nouvelle offre",
+    "declineHint": "Répondez dans le chat pour négocier ou refuser.",
+    "decline": "Refuser"
+  },
+  "requests": {
+    "booked": "Réservé",
+    "new": "Nouveau",
+    "eyebrow": "MES DEMANDES",
+    "title": "Demandes de voyage",
+    "subtitle": "Les voyages que vous avez publiés pour recevoir des offres de chauffeurs.",
+    "loading": "Chargement de vos demandes…",
+    "postNew": "Publier une nouvelle demande",
+    "emptyTitle": "Aucune demande pour l'instant",
+    "emptyBody": "Publiez votre premier itinéraire pour inviter des chauffeurs vérifiés à vous envoyer des offres.",
+    "errors": {
+      "dates": "Veuillez sélectionner vos dates de voyage.",
+      "allFields": "Tous les champs sont obligatoires.",
+      "adults": "Veuillez indiquer au moins un voyageur adulte."
+    },
+    "form": {
+      "reviewTitle": "Vérifiez et publiez votre demande",
+      "title": "Publier une demande",
+      "reviewNote": "Voici le voyage que vous avez saisi. Il n'a pas encore été envoyé. Vérifiez les détails, modifiez ce qu'il faut, puis publiez-le aux chauffeurs.",
+      "from": "De",
+      "fromPlaceholder": "Aéroport de Colombo",
+      "to": "À",
+      "toPlaceholder": "Kandy",
+      "adults": "Adultes",
+      "children": "Enfants",
+      "country": "Pays de résidence",
+      "countryPlaceholder": "France",
+      "details": "Détails du voyage",
+      "detailsPlaceholder": "Étapes incontournables, besoins d'hébergement, langues, etc.",
+      "noContact": "Merci de ne pas indiquer de numéro de téléphone ni d'e-mail ici – nous partagerons les coordonnées une fois que vous aurez accepté une offre et que votre réservation sera confirmée.",
+      "upTo": "Jusqu'à {count} devis",
+      "onlyType": "{type} uniquement",
+      "nextTitle": "La suite",
+      "nextBody": "Après la publication, vous recevrez des offres de chauffeurs. Vous pourrez discuter avec eux, comparer offres et prix, et réserver depuis l'onglet Messages. Vous recevrez un e-mail à chaque nouvelle offre.",
+      "posting": "Publication…",
+      "postToDrivers": "Publier la demande aux chauffeurs",
+      "post": "Publier la demande de voyage"
+    }
+  },
+  "settings": {
+    "mismatch": "Les nouveaux mots de passe ne correspondent pas.",
+    "eyebrow": "COMPTE",
+    "subtitle": "Dites-nous comment vous joindre pendant votre voyage.",
+    "loading": "Chargement du profil…",
+    "noProfile": "Aucune information de profil disponible.",
+    "fullName": "Nom complet",
+    "email": "E-mail",
+    "emailHelp": "Besoin de changer votre e-mail ? Contactez l'assistance.",
+    "contact": "Numéro de téléphone",
+    "contactPlaceholder": "ex. {example}",
+    "homeBase": "Lieu de résidence",
+    "homeBasePlaceholder": "Ville, pays",
+    "resetPassword": "Réinitialiser le mot de passe",
+    "resetHelp": "Mettez à jour votre mot de passe pour sécuriser votre compte.",
+    "currentPassword": "Mot de passe actuel",
+    "newPassword": "Nouveau mot de passe",
+    "confirmPassword": "Confirmer le nouveau mot de passe",
+    "updating": "Mise à jour…",
+    "updatePassword": "Mettre à jour le mot de passe"
+  }
+}

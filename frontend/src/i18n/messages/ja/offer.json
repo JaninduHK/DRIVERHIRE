@@ -1,0 +1,13 @@
+{
+  "expiry": {
+    "expired": "この見積もりは有効期限が切れました",
+    "days": "あと{count}日で期限切れ",
+    "tomorrow": "明日期限切れ",
+    "hours": {
+      "other": "あと{count}時間で期限切れ"
+    },
+    "minutes": {
+      "other": "あと{count}分で期限切れ"
+    }
+  }
+}

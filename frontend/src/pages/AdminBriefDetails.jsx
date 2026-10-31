@@ -26,6 +26,7 @@ import AdminShell from './admin/AdminShell.jsx';
 import AdminModal from './admin/AdminModal.jsx';
 import { ADMIN_NAV_GROUPS } from './admin/adminNav.js';
 import { formatCurrency, formatDate, formatDateInput, formatDateTime, tagClass } from './admin/adminFormatters.js';
+import { travellerLanguageLabel } from '../i18n/languageLabel.js';
 
 const STATUS_COLORS = {
   open: 'green', booked: 'blue', closed: 'grey', pending: 'amber', accepted: 'green',
@@ -71,6 +72,7 @@ const OverviewTab = ({ data, onEdit }) => {
           <DetailRow label="Trip starts" value={formatDate(brief.startDate)} />
           <DetailRow label="Trip ends" value={formatDate(brief.endDate)} />
           <DetailRow label="Country" value={brief.country} />
+          <DetailRow label="Website language" value={travellerLanguageLabel(brief.language) || 'English'} />
           <DetailRow label="Adults" value={brief.adults} />
           <DetailRow label="Children" value={brief.children} />
           <DetailRow label="Traveller message"><span className="whitespace-pre-wrap font-normal leading-relaxed text-muted">{brief.message || EMPTY}</span></DetailRow>

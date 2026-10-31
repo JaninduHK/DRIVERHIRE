@@ -1,3 +1,4 @@
+import { localizeServerMessage } from '../i18n/serverMessages.js';
 import { API_BASE_URL } from '../constants/api.js';
 
 const REVIEWS_BASE_URL = `${API_BASE_URL}/reviews`;
@@ -21,7 +22,7 @@ export const fetchLatestReviews = async (limit = 9, minRating) => {
   }
   const response = await fetch(`${REVIEWS_BASE_URL}/latest?${params.toString()}`, { method: 'GET' });
   if (!response.ok) {
-    throw new Error(`Request failed (${response.status})`);
+    throw new Error(localizeServerMessage(`Request failed (${response.status})`));
   }
   return safeJson(response);
 };
@@ -29,7 +30,7 @@ export const fetchLatestReviews = async (limit = 9, minRating) => {
 const parseInviteError = async (response) => {
   const data = await safeJson(response);
   const error = new Error(
-    typeof data?.message === 'string' ? data.message : 'Unable to reach the server'
+    localizeServerMessage(typeof data?.message === 'string' ? data.message : 'Unable to reach the server')
   );
   error.reason = data?.reason;
   return error;

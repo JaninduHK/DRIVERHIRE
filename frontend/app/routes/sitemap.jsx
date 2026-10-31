@@ -1,6 +1,7 @@
 import { fetchDriverDirectory } from '../../src/services/driverDirectoryApi.js';
 import { fetchVehicles } from '../../src/services/vehicleCatalogApi.js';
 import { SITE_URL, isDriverIndexable, isVehicleIndexable } from '../lib/seo.js';
+import { LOCALES, LOCALE_INFO, isLocalizedPath, localizePath } from '../../src/i18n/locales.js';
 
 // Stable marketing/marketplace entry points.
 const staticEntries = [
@@ -23,8 +24,20 @@ const iso = (value) => {
   return d && !Number.isNaN(d.getTime()) ? d.toISOString() : undefined;
 };
 
-const urlTag = ({ path, lastmod, changefreq, priority }) => {
-  const lines = [`    <loc>${SITE_URL}${path}</loc>`];
+// Each translated page is listed once per language, and every copy names all
+// the others (hreflang), as Google recommends for multi-language sites.
+const alternateLinks = (path) => [
+  ...LOCALES.map(
+    (code) =>
+      `    <xhtml:link rel="alternate" hreflang="${LOCALE_INFO[code].htmlLang}" href="${SITE_URL}${localizePath(path, code)}"/>`
+  ),
+  `    <xhtml:link rel="alternate" hreflang="x-default" href="${SITE_URL}${path}"/>`,
+];
+
+const urlTag = ({ path, lastmod, changefreq, priority, locale = 'en' }) => {
+  const translated = isLocalizedPath(path);
+  const lines = [`    <loc>${SITE_URL}${translated ? localizePath(path, locale) : path}</loc>`];
+  if (translated) lines.push(...alternateLinks(path));
   if (lastmod) lines.push(`    <lastmod>${lastmod}</lastmod>`);
   if (changefreq) lines.push(`    <changefreq>${changefreq}</changefreq>`);
   if (priority) lines.push(`    <priority>${priority}</priority>`);
@@ -63,8 +76,11 @@ export async function loader() {
   // catalogue ever approaches that, split this into a sitemap index of paginated sitemaps.
   const body =
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
-    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    entries.map(urlTag).join('\n') +
+    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n` +
+    entries
+      .flatMap((entry) => (isLocalizedPath(entry.path) ? LOCALES.map((locale) => ({ ...entry, locale })) : [entry]))
+      .map(urlTag)
+      .join('\n') +
     `\n</urlset>\n`;
 
   return new Response(body, {

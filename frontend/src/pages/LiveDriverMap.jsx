@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from '../i18n/router.jsx';
+import { useI18n } from '../i18n/I18nProvider.jsx';
+import { translateFeature } from '../i18n/labels.js';
 import { useLoaderData } from 'react-router';
 import toast from 'react-hot-toast';
 import { Loader2, MessageSquare, Star, Users, X } from 'lucide-react';
@@ -15,10 +17,10 @@ const LOCATION_FRESH_MS = 48 * 60 * 60 * 1000; // "available now" = checked in w
 
 const formatCurrency = (value) => (!Number.isFinite(value) ? '$0' : `$${value.toLocaleString('en-US')}`);
 
-const yearsLabel = (years) => {
+const yearsLabel = (years, t) => {
   const value = Number(years);
-  if (!Number.isFinite(value) || value <= 0) return 'New guide';
-  return `${Math.round(value)} yrs`;
+  if (!Number.isFinite(value) || value <= 0) return t('liveMap.newGuide');
+  return t('liveMap.years', { count: Math.round(value) });
 };
 
 const isFresh = (isoDate) => {
@@ -28,13 +30,14 @@ const isFresh = (isoDate) => {
 };
 
 const FILTERS = [
-  { value: 'all', label: 'All drivers', test: () => true },
-  { value: 'available', label: 'Available now', test: (d) => Boolean(d.location) && isFresh(d.location.updatedAt) },
-  { value: 'group', label: '6+ seats', test: (d) => Number(d.featuredVehicle?.seats) >= 6 },
-  { value: 'top', label: 'Top rated', test: (d) => Number(d.reviewScore) >= 4.8 },
+  { value: 'all', test: () => true },
+  { value: 'available', test: (d) => Boolean(d.location) && isFresh(d.location.updatedAt) },
+  { value: 'group', test: (d) => Number(d.featuredVehicle?.seats) >= 6 },
+  { value: 'top', test: (d) => Number(d.reviewScore) >= 4.8 },
 ];
 
 const LiveDriverMap = () => {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const loaderData = useLoaderData();
   const [drivers, setDrivers] = useState(loaderData?.drivers || []);
@@ -88,10 +91,10 @@ const LiveDriverMap = () => {
     setCreatingConversation(true);
     try {
       const response = await startChatConversation({ driverId });
-      toast.success('Conversation ready in your inbox.');
+      toast.success(t('liveMap.chatReady'));
       navigate('/dashboard', { state: { openTab: 'messages', conversationId: response?.conversation?.id || null } });
     } catch (err) {
-      const message = err?.message || 'Unable to start a conversation right now.';
+      const message = err?.message || t('liveMap.chatError');
       toast.error(message);
       if (message.toLowerCase().includes('sign in') || message.toLowerCase().includes('auth')) {
         redirectToSsoLogin(RETURN_PATH);
@@ -107,11 +110,11 @@ const LiveDriverMap = () => {
         <div className="min-w-0 flex-1">
           <span className="inline-flex items-center gap-2 rounded-full border border-[#cdeadb] bg-[#e8f7ef] px-3 py-1.5 text-[12px] font-extrabold tracking-wide text-brand-dark">
             <span className="h-2 w-2 rounded-full bg-brand" />
-            LIVE · {drivers.filter(FILTERS[1].test).length} DRIVERS ONLINE
+            {t('liveMap.online', { count: drivers.filter(FILTERS[1].test).length })}
           </span>
-          <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-ink sm:text-4xl">Drivers near you, right now</h1>
+          <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-ink sm:text-4xl">{t('liveMap.title')}</h1>
           <p className="mt-2 max-w-xl text-[14.5px] leading-relaxed text-muted sm:text-[15px]">
-            Tap a pin on the map or a card below to see the driver&rsquo;s vehicle, languages and daily rate — then start a chat.
+            {t('liveMap.lead')}
           </p>
         </div>
       </div>
@@ -129,7 +132,7 @@ const LiveDriverMap = () => {
                 isActive ? 'border-brand bg-brand text-white' : 'border-[#e0e7e3] bg-white text-ink-soft hover:border-muted-soft'
               }`}
             >
-              {f.label}
+              {t(`liveMap.filters.${f.value}`)}
               <span className={`text-[11.5px] font-extrabold ${isActive ? 'text-white/75' : 'text-muted-soft'}`}>{count}</span>
             </button>
           );
@@ -137,7 +140,7 @@ const LiveDriverMap = () => {
       </div>
 
       <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-start">
-        <section aria-label="Driver map" className="min-w-0 flex-1 lg:flex-[1.4]">
+        <section aria-label={t('liveMap.mapLabel')} className="min-w-0 flex-1 lg:flex-[1.4]">
           <div className="h-[340px] sm:h-[420px] lg:h-[calc(100vh-220px)] lg:min-h-[520px]">
             <ClientOnly
               fallback={
@@ -151,10 +154,10 @@ const LiveDriverMap = () => {
           </div>
         </section>
 
-        <section aria-label="Recommended drivers" className="flex min-w-0 flex-1 flex-col gap-3">
+        <section aria-label={t('liveMap.listLabel')} className="flex min-w-0 flex-1 flex-col gap-3">
           <div className="flex items-baseline justify-between gap-2">
-            <h2 className="text-[16.5px] font-extrabold tracking-tight text-ink">Recommended for you</h2>
-            <span className="text-[12.5px] font-bold text-muted-soft">{visibleDrivers.length} of {drivers.length}</span>
+            <h2 className="text-[16.5px] font-extrabold tracking-tight text-ink">{t('liveMap.recommended')}</h2>
+            <span className="text-[12.5px] font-bold text-muted-soft">{t('liveMap.ofTotal', { shown: visibleDrivers.length, total: drivers.length })}</span>
           </div>
 
           <div className="flex max-h-[340px] flex-col gap-2.5 overflow-y-auto pr-1 sm:max-h-[420px] lg:max-h-[calc(100vh-220px)] lg:min-h-[520px]">
@@ -164,8 +167,8 @@ const LiveDriverMap = () => {
               </div>
             ) : visibleDrivers.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-[#d7e0da] bg-white p-6 text-center">
-                <p className="text-[14px] font-extrabold text-ink">No drivers match this filter</p>
-                <p className="mt-1 text-[12.5px] font-semibold text-muted-soft">Try &ldquo;All drivers&rdquo; to see everyone on the map.</p>
+                <p className="text-[14px] font-extrabold text-ink">{t('liveMap.emptyTitle')}</p>
+                <p className="mt-1 text-[12.5px] font-semibold text-muted-soft">{t('liveMap.emptyBody')}</p>
               </div>
             ) : (
               visibleDrivers.map((driver) => (
@@ -194,9 +197,10 @@ const LiveDriverMap = () => {
 };
 
 const DriverListCard = ({ driver, isSelected, onClick }) => {
-  const cityLabel = driver.location?.label || driver.address || 'Sri Lanka';
+  const { t } = useI18n();
+  const cityLabel = driver.location?.label || driver.address || t('liveMap.sriLanka');
   const rating = Number(driver.reviewScore) > 0 ? Number(driver.reviewScore).toFixed(1) : '—';
-  const price = Number.isFinite(driver.averagePricePerDay) && driver.averagePricePerDay > 0 ? formatCurrency(driver.averagePricePerDay) : 'Quote';
+  const price = Number.isFinite(driver.averagePricePerDay) && driver.averagePricePerDay > 0 ? formatCurrency(driver.averagePricePerDay) : t('liveMap.quote');
   const isOnline = Boolean(driver.location) && isFresh(driver.location.updatedAt);
 
   return (
@@ -225,43 +229,44 @@ const DriverListCard = ({ driver, isSelected, onClick }) => {
           <span className="text-[12px] font-semibold text-muted-soft">({driver.reviewCount ?? 0})</span>
         </span>
         <span className="mt-0.5 block truncate text-[12.5px] font-semibold text-muted-soft">
-          {driver.featuredVehicle?.model || 'Multiday tours'} · {cityLabel}
+          {driver.featuredVehicle?.model || t('liveMap.multidayTours')} · {cityLabel}
         </span>
         <span className="mt-1 flex flex-wrap gap-1.5">
-          <span className="rounded-lg bg-brand-tint px-2 py-1 text-[11px] font-bold text-brand-dark">{yearsLabel(driver.experienceYears)}</span>
+          <span className="rounded-lg bg-brand-tint px-2 py-1 text-[11px] font-bold text-brand-dark">{yearsLabel(driver.experienceYears, t)}</span>
           {driver.featuredVehicle?.seats ? (
             <span className="inline-flex items-center gap-1 rounded-lg bg-[#f5f7f6] px-2 py-1 text-[11px] font-bold text-ink-soft">
-              <Users className="h-3 w-3" /> {driver.featuredVehicle.seats} seats
+              <Users className="h-3 w-3" /> {t('liveMap.seats', { count: driver.featuredVehicle.seats })}
             </span>
           ) : null}
         </span>
       </span>
       <span className="flex-shrink-0 text-right">
         <span className="block text-[15px] font-extrabold text-ink">{price}</span>
-        <span className="block text-[10.5px] font-bold text-muted-soft">per day</span>
+        <span className="block text-[10.5px] font-bold text-muted-soft">{t('liveMap.perDay')}</span>
       </span>
     </button>
   );
 };
 
 const DriverDetailSheet = ({ driver, onClose, onChat, chatting }) => {
+  const { t } = useI18n();
   const [vehicleImageFailed, setVehicleImageFailed] = useState(false);
-  const cityLabel = driver.location?.label || driver.address || 'Sri Lanka';
+  const cityLabel = driver.location?.label || driver.address || t('liveMap.sriLanka');
   const rating = Number(driver.reviewScore) > 0 ? Number(driver.reviewScore).toFixed(1) : '—';
-  const price = Number.isFinite(driver.averagePricePerDay) && driver.averagePricePerDay > 0 ? formatCurrency(driver.averagePricePerDay) : 'Quote';
+  const price = Number.isFinite(driver.averagePricePerDay) && driver.averagePricePerDay > 0 ? formatCurrency(driver.averagePricePerDay) : t('liveMap.quote');
   const stats = [
-    { label: 'BASED IN', value: cityLabel },
-    { label: 'EXPERIENCE', value: yearsLabel(driver.experienceYears) },
-    { label: 'REVIEWS', value: `${driver.reviewCount ?? 0}` },
-    { label: 'VEHICLES', value: `${driver.vehicleCount ?? 0}` },
+    { label: t('liveMap.sheet.basedIn'), value: cityLabel },
+    { label: t('liveMap.sheet.experience'), value: yearsLabel(driver.experienceYears, t) },
+    { label: t('liveMap.sheet.reviews'), value: `${driver.reviewCount ?? 0}` },
+    { label: t('liveMap.sheet.vehicles'), value: `${driver.vehicleCount ?? 0}` },
   ];
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="Driver details" className="fixed inset-0 z-[1000] flex items-end justify-center bg-[#0f1f2d]/45 backdrop-blur-[2px] sm:items-center sm:p-4">
+    <div role="dialog" aria-modal="true" aria-label={t('liveMap.sheet.label')} className="fixed inset-0 z-[1000] flex items-end justify-center bg-[#0f1f2d]/45 backdrop-blur-[2px] sm:items-center sm:p-4">
       <div onClick={onClose} className="absolute inset-0" />
       <div className="relative max-h-[92vh] w-full max-w-[540px] overflow-y-auto rounded-t-[24px] bg-white shadow-[0_-18px_50px_rgba(15,31,45,.25)] sm:rounded-[24px]">
         <div className="relative px-5 pt-5 sm:px-7">
-          <button type="button" onClick={onClose} aria-label="Close" className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-xl border border-[#e6ece9] bg-white text-muted-soft transition hover:text-ink sm:right-6">
+          <button type="button" onClick={onClose} aria-label={t('liveMap.sheet.close')} className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-xl border border-[#e6ece9] bg-white text-muted-soft transition hover:text-ink sm:right-6">
             <X className="h-4 w-4" />
           </button>
           <div className="flex items-center gap-3.5 pr-12">
@@ -272,7 +277,7 @@ const DriverDetailSheet = ({ driver, onClose, onChat, chatting }) => {
                 <span className="inline-flex items-center gap-1 text-[13px] font-bold text-ink">
                   <Star className="h-3.5 w-3.5 fill-star text-star" /> {rating}
                 </span>
-                <span className="text-[12.5px] font-semibold text-muted-soft">{driver.reviewCount ?? 0} reviews</span>
+                <span className="text-[12.5px] font-semibold text-muted-soft">{t('liveMap.reviews', { count: driver.reviewCount ?? 0 })}</span>
               </div>
             </div>
           </div>
@@ -289,7 +294,7 @@ const DriverDetailSheet = ({ driver, onClose, onChat, chatting }) => {
 
         {driver.featuredVehicle ? (
           <div className="mt-4 px-5 sm:px-7">
-            <div className="text-[11px] font-extrabold tracking-wide text-muted-soft">VEHICLE</div>
+            <div className="text-[11px] font-extrabold tracking-wide text-muted-soft">{t('liveMap.sheet.vehicle')}</div>
             <div className="mt-2 flex items-center gap-3 rounded-2xl border border-[#e6ece9] p-3">
               {driver.featuredVehicle.image && !vehicleImageFailed ? (
                 <img
@@ -305,7 +310,7 @@ const DriverDetailSheet = ({ driver, onClose, onChat, chatting }) => {
               )}
               <div className="min-w-0">
                 <div className="truncate text-[14px] font-extrabold text-ink">{driver.featuredVehicle.model}</div>
-                <div className="text-[12px] font-semibold text-muted-soft">{driver.featuredVehicle.seats ? `${driver.featuredVehicle.seats} seats` : 'Seats vary'}</div>
+                <div className="text-[12px] font-semibold text-muted-soft">{driver.featuredVehicle.seats ? t('liveMap.seats', { count: driver.featuredVehicle.seats }) : t('liveMap.sheet.seatsVary')}</div>
               </div>
             </div>
           </div>
@@ -313,10 +318,10 @@ const DriverDetailSheet = ({ driver, onClose, onChat, chatting }) => {
 
         {driver.badges?.length ? (
           <div className="mt-4 px-5 sm:px-7">
-            <div className="text-[11px] font-extrabold tracking-wide text-muted-soft">GOOD TO KNOW</div>
+            <div className="text-[11px] font-extrabold tracking-wide text-muted-soft">{t('liveMap.sheet.goodToKnow')}</div>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {driver.badges.map((badge) => (
-                <span key={badge} className="rounded-full bg-[#f5f7f6] px-3 py-1.5 text-[12px] font-bold text-ink-soft">{badge}</span>
+                <span key={badge} className="rounded-full bg-[#f5f7f6] px-3 py-1.5 text-[12px] font-bold text-ink-soft">{translateFeature(badge, t)}</span>
               ))}
             </div>
           </div>
@@ -328,10 +333,10 @@ const DriverDetailSheet = ({ driver, onClose, onChat, chatting }) => {
 
         <div className="sticky bottom-0 mt-5 flex flex-wrap items-center gap-2.5 border-t border-hairline bg-white/95 px-5 py-4 backdrop-blur sm:px-7">
           <div className="min-w-0 flex-1">
-            <div className="text-[18px] font-extrabold text-ink">{price}<span className="text-[12px] font-bold text-muted-soft"> / day</span></div>
+            <div className="text-[18px] font-extrabold text-ink">{price}<span className="text-[12px] font-bold text-muted-soft"> {t('liveMap.sheet.perDay')}</span></div>
           </div>
           <Link to={`/drivers/${driver.id}`} className="inline-flex min-h-[46px] items-center rounded-xl border border-[#e2e8ea] px-4 text-[13.5px] font-bold text-ink transition hover:border-muted-soft">
-            View profile
+            {t('liveMap.sheet.viewProfile')}
           </Link>
           <button
             type="button"
@@ -340,7 +345,7 @@ const DriverDetailSheet = ({ driver, onClose, onChat, chatting }) => {
             className="inline-flex min-h-[46px] flex-1 items-center justify-center gap-2 rounded-xl bg-brand px-4 text-[14px] font-extrabold text-white transition hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-70 sm:flex-initial"
           >
             <MessageSquare className="h-4 w-4" />
-            {chatting ? 'Opening chat…' : `Chat with ${driver.name.split(' ')[0]}`}
+            {chatting ? t('liveMap.sheet.opening') : t('liveMap.sheet.chatWith', { name: driver.name.split(' ')[0] })}
           </button>
         </div>
       </div>

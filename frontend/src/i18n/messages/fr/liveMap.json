@@ -1,0 +1,51 @@
+{
+  "newGuide": "Nouveau guide",
+  "years": {
+    "one": "{count} an",
+    "other": "{count} ans"
+  },
+  "filters": {
+    "all": "Tous les chauffeurs",
+    "available": "Disponibles maintenant",
+    "group": "6 places et +",
+    "top": "Les mieux notés"
+  },
+  "chatReady": "La conversation vous attend dans votre messagerie.",
+  "chatError": "Impossible de démarrer une conversation pour le moment.",
+  "online": "EN DIRECT · {count} CHAUFFEURS EN LIGNE",
+  "title": "Des chauffeurs près de chez vous, en ce moment",
+  "lead": "Touchez un repère sur la carte ou une fiche ci-dessous pour voir le véhicule, les langues et le tarif journalier du chauffeur, puis lancez une discussion.",
+  "mapLabel": "Carte des chauffeurs",
+  "listLabel": "Chauffeurs recommandés",
+  "recommended": "Recommandés pour vous",
+  "ofTotal": "{shown} sur {total}",
+  "emptyTitle": "Aucun chauffeur ne correspond à ce filtre",
+  "emptyBody": "Essayez « Tous les chauffeurs » pour voir tout le monde sur la carte.",
+  "sriLanka": "Sri Lanka",
+  "quote": "Sur devis",
+  "multidayTours": "Circuits de plusieurs jours",
+  "seats": {
+    "one": "{count} place",
+    "other": "{count} places"
+  },
+  "perDay": "par jour",
+  "reviews": {
+    "one": "{count} avis",
+    "other": "{count} avis"
+  },
+  "sheet": {
+    "label": "Détails du chauffeur",
+    "close": "Fermer",
+    "basedIn": "BASÉ À",
+    "experience": "EXPÉRIENCE",
+    "reviews": "AVIS",
+    "vehicles": "VÉHICULES",
+    "vehicle": "VÉHICULE",
+    "seatsVary": "Nombre de places variable",
+    "goodToKnow": "BON À SAVOIR",
+    "perDay": "/ jour",
+    "viewProfile": "Voir le profil",
+    "opening": "Ouverture du chat…",
+    "chatWith": "Discuter avec {name}"
+  }
+}

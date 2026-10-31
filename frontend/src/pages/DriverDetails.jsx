@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from '../i18n/router.jsx';
+import { useI18n } from '../i18n/I18nProvider.jsx';
+import { translateFeature, translateLicenseType } from '../i18n/labels.js';
 import { useLoaderData } from 'react-router';
 import {
   Car,
@@ -26,6 +28,7 @@ import { LicenseIconBadge, LicenseTypeChip } from '../components/LicenseBadge.js
 
 const formatCurrency = (value) => (!Number.isFinite(value) ? '$0' : `$${value.toLocaleString('en-US')}`);
 const DriverDetails = () => {
+  const { t } = useI18n();
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -41,7 +44,7 @@ const DriverDetails = () => {
 
   const loadProfile = useCallback(async () => {
     if (!id) {
-      setState({ loading: false, error: 'Driver identifier missing.', data: null });
+      setState({ loading: false, error: t('driver.missingId'), data: null });
       return;
     }
     setState((prev) => ({ ...prev, loading: prev.data ? false : true, error: '' }));
@@ -49,7 +52,7 @@ const DriverDetails = () => {
       const response = await fetchDriverProfile(id);
       setState({ loading: false, error: '', data: response });
     } catch (error) {
-      setState((prev) => ({ loading: false, error: prev.data ? '' : (error?.message || 'Unable to load driver profile right now.'), data: prev.data }));
+      setState((prev) => ({ loading: false, error: prev.data ? '' : (error?.message || t('driver.loadError')), data: prev.data }));
     }
   }, [id]);
 
@@ -95,7 +98,7 @@ const DriverDetails = () => {
         typeof reviews.meta?.averageRating === 'number' ? reviews.meta.averageRating.toFixed(1) : '—',
       ratingCounts: counts,
       ratingOptions: [
-        { value: 'all', label: 'All', count: reviews.meta?.total ?? all.length },
+        { value: 'all', label: t('driver.reviewsAll'), count: reviews.meta?.total ?? all.length },
         ...[5, 4, 3, 2, 1].map((v) => ({ value: String(v), label: `${v}★`, count: counts[v - 1] ?? 0 })),
       ],
       reviewFilters,
@@ -104,9 +107,9 @@ const DriverDetails = () => {
       handleReviewSortChange: (value) =>
         setReviewFilters((prev) => (prev.sort === value ? prev : { ...prev, sort: value })),
       handleReviewReload: reviews.reload,
-      firstName: (driver?.name || 'this driver').split(' ')[0],
+      firstName: driver?.name ? driver.name.split(' ')[0] : t('driver.thisDriver'),
     };
-  }, [reviews, reviewFilters, driver]);
+  }, [reviews, reviewFilters, driver, t]);
 
   useEffect(() => {
     if (!driver || location.hash !== '#reviews') return undefined;
@@ -122,7 +125,7 @@ const DriverDetails = () => {
   if (state.loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center gap-2 bg-canvas font-sans text-sm text-muted">
-        <Loader2 className="h-5 w-5 animate-spin text-brand" /> Loading driver profile…
+        <Loader2 className="h-5 w-5 animate-spin text-brand" /> {t('driver.loading')}
       </div>
     );
   }
@@ -130,11 +133,11 @@ const DriverDetails = () => {
     return (
       <div className="flex min-h-[60vh] items-center justify-center bg-canvas px-5 font-sans">
         <div className="w-full max-w-[420px] rounded-[20px] bg-white p-8 text-center shadow-card">
-          <p className="text-[16px] font-extrabold text-ink">Driver unavailable</p>
-          <p className="mt-2 text-sm text-muted">{state.error || 'This profile could not be found.'}</p>
+          <p className="text-[16px] font-extrabold text-ink">{t('driver.unavailable')}</p>
+          <p className="mt-2 text-sm text-muted">{state.error || t('driver.notFound')}</p>
           <div className="mt-5 flex justify-center gap-2.5">
-            <button type="button" onClick={loadProfile} className="rounded-full border border-[#e2e8ea] px-4 py-2 text-sm font-bold text-ink">Retry</button>
-            <Link to="/drivers" className="rounded-full bg-brand px-4 py-2 text-sm font-bold text-white">All drivers</Link>
+            <button type="button" onClick={loadProfile} className="rounded-full border border-[#e2e8ea] px-4 py-2 text-sm font-bold text-ink">{t('driver.retry')}</button>
+            <Link to="/drivers" className="rounded-full bg-brand px-4 py-2 text-sm font-bold text-white">{t('driver.allDrivers')}</Link>
           </div>
         </div>
       </div>
@@ -142,8 +145,8 @@ const DriverDetails = () => {
   }
 
   const cover = driver.featuredVehicle?.image || vehicles[0]?.image || null;
-  const cityLabel = driver.location?.label || driver.address || 'Sri Lanka';
-  const perks = driver.badges?.length ? driver.badges : vehicles[0]?.features || [];
+  const cityLabel = driver.location?.label || driver.address || t('driver.sriLanka');
+  const perks = (driver.badges?.length ? driver.badges : vehicles[0]?.features || []).map((label) => translateFeature(label, t));
   const primaryVehicle = vehicles[0] || null;
   const lowestRate = vehicles.reduce((min, v) => (typeof v.pricePerDay === 'number' ? Math.min(min, v.pricePerDay) : min), Infinity);
   const rateLabel = Number.isFinite(lowestRate) ? formatCurrency(lowestRate) : null;
@@ -156,7 +159,7 @@ const DriverDetails = () => {
   const goMessage = async () => {
     const driverId = driver?.id || id;
     if (!driverId) {
-      toast.error('Driver information is missing.');
+      toast.error(t('driver.missingInfo'));
       return;
     }
     const token = getStoredToken();
@@ -169,10 +172,10 @@ const DriverDetails = () => {
     try {
       const response = await startChatConversation({ driverId });
       const conversationId = response?.conversation?.id;
-      toast.success('Conversation ready in your inbox.');
+      toast.success(t('driver.chatReady'));
       navigate('/dashboard', { state: { openTab: 'messages', conversationId: conversationId || null } });
     } catch (err) {
-      const message = err?.message || 'Unable to start a conversation right now.';
+      const message = err?.message || t('driver.chatError');
       toast.error(message);
       if (message.toLowerCase().includes('sign in') || message.toLowerCase().includes('auth')) {
         redirectToSsoLogin(`/drivers/${driverId}`);
@@ -194,10 +197,12 @@ const DriverDetails = () => {
 
 // ---------------- MOBILE ----------------
 const MobileProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks, rateLabel, ratingLabel, expYears, tab, setTab, goBook, goMessage, creatingConversation, navigate }) => {
-  const scrollTo = (t) => {
-    setTab(t);
-    document.getElementById(`m-${t}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const { t } = useI18n();
+  const scrollTo = (section) => {
+    setTab(section);
+    document.getElementById(`m-${section}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
+  const vehicleCount = driver.vehicleCount ?? vehicles.length;
   return (
     <div className="min-h-screen bg-canvas pb-[84px] lg:hidden">
       {/* Cover */}
@@ -205,12 +210,12 @@ const MobileProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks,
         {cover ? <img src={cover} alt="" className="h-full w-full object-cover" /> : <div className="h-full w-full bg-ink" />}
         <div className="absolute inset-0 bg-gradient-to-b from-ink/50 via-transparent to-ink/35" />
         <div className="absolute inset-x-3.5 top-3.5 flex justify-between">
-          <button type="button" onClick={() => navigate(-1)} aria-label="Back" className="grid h-[38px] w-[38px] place-items-center rounded-xl bg-ink/55 text-white backdrop-blur">
+          <button type="button" onClick={() => navigate(-1)} aria-label={t('driver.back')} className="grid h-[38px] w-[38px] place-items-center rounded-xl bg-ink/55 text-white backdrop-blur">
             <ChevronLeft className="h-4 w-4" strokeWidth={2} />
           </button>
           <div className="flex gap-2">
-            <button type="button" aria-label="Save" className="grid h-[38px] w-[38px] place-items-center rounded-xl bg-ink/55 text-white"><Heart className="h-4 w-4" /></button>
-            <button type="button" aria-label="Share" className="grid h-[38px] w-[38px] place-items-center rounded-xl bg-ink/55 text-white"><Share2 className="h-4 w-4" /></button>
+            <button type="button" aria-label={t('driver.save')} className="grid h-[38px] w-[38px] place-items-center rounded-xl bg-ink/55 text-white"><Heart className="h-4 w-4" /></button>
+            <button type="button" aria-label={t('driver.share')} className="grid h-[38px] w-[38px] place-items-center rounded-xl bg-ink/55 text-white"><Share2 className="h-4 w-4" /></button>
           </div>
         </div>
       </div>
@@ -247,24 +252,24 @@ const MobileProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks,
             </>
           ) : (
             <>
-              <span className="text-muted-soft">No reviews yet</span>
+              <span className="text-muted-soft">{t('driver.noReviews')}</span>
               <span className="h-1 w-1 rounded-full bg-[#cfd8dd]" />
               {driver.licenseType ? <LicenseTypeChip licenseType={driver.licenseType} className="!mt-0" /> : <span>{cityLabel}</span>}
             </>
           )}
         </div>
         <div className="mt-4 grid grid-cols-3 gap-2">
-          <StatTile value={expYears ? `${expYears} yrs` : 'New'} label="Guiding" />
-          <StatTile value={ratingLabel || '—'} label="Rating" />
-          <StatTile value={driver.vehicleCount ?? vehicles.length} label={`Vehicle${(driver.vehicleCount ?? vehicles.length) === 1 ? '' : 's'}`} />
+          <StatTile value={expYears ? t('driver.years', { count: expYears }) : t('driver.new')} label={t('driver.stats.guiding')} />
+          <StatTile value={ratingLabel || '—'} label={t('driver.stats.rating')} />
+          <StatTile value={vehicleCount} label={t('driver.stats.vehicles', { count: vehicleCount })} />
         </div>
       </div>
 
       {/* Tabs */}
       <div className="sticky top-0 z-10 flex border-b border-hairline bg-white px-[18px]">
-        {['about', 'vehicles', 'reviews'].map((t) => (
-          <button key={t} type="button" onClick={() => scrollTo(t)} className={`flex-1 py-[13px] text-center text-[13.5px] capitalize ${tab === t ? 'border-b-[2.5px] border-brand font-extrabold text-ink' : 'font-semibold text-muted-soft'}`}>
-            {t}
+        {['about', 'vehicles', 'reviews'].map((section) => (
+          <button key={section} type="button" onClick={() => scrollTo(section)} className={`flex-1 py-[13px] text-center text-[13.5px] ${tab === section ? 'border-b-[2.5px] border-brand font-extrabold text-ink' : 'font-semibold text-muted-soft'}`}>
+            {t(`driver.tabs.${section}`)}
           </button>
         ))}
       </div>
@@ -272,10 +277,10 @@ const MobileProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks,
       <div className="px-[18px] pb-5 pt-4">
         {/* About */}
         <div id="m-about">
-          <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-ink-soft">{driver.description || 'This driver has not added a bio yet.'}</p>
+          <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-ink-soft">{driver.description || t('driver.noBio')}</p>
           {perks.length > 0 ? (
             <>
-              <SectionLabel className="mt-5">Every trip includes</SectionLabel>
+              <SectionLabel className="mt-5">{t('driver.everyTripIncludes')}</SectionLabel>
               <div className="mt-3 flex flex-col gap-2.5">
                 {perks.map((p) => <PerkRow key={p}>{p}</PerkRow>)}
               </div>
@@ -287,7 +292,7 @@ const MobileProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks,
         <div id="m-vehicles">
           {vehicles.length > 0 ? (
             <>
-              <SectionLabel className="mt-6">Vehicle{vehicles.length === 1 ? '' : 's'}</SectionLabel>
+              <SectionLabel className="mt-6">{t('driver.vehiclesHeading', { count: vehicles.length })}</SectionLabel>
               <div className="mt-2.5 flex flex-col gap-2.5">
                 {vehicles.map((v) => (
                   <Link key={v.id} to={`/vehicles/${v.id}`} className="flex items-center gap-3 rounded-[18px] bg-white p-2.5 shadow-card">
@@ -298,8 +303,8 @@ const MobileProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks,
                     )}
                     <div className="min-w-0 flex-1">
                       <b className="block truncate text-[14.5px] text-ink">{v.model}</b>
-                      <div className="text-[12px] text-muted-soft">{[v.year, v.seats ? `${v.seats} seats` : null].filter(Boolean).join(' · ')}</div>
-                      <div className="mt-1 text-[13px] font-extrabold text-ink">{formatCurrency(v.pricePerDay)} <span className="text-[11.5px] font-semibold text-muted-soft">/ day</span></div>
+                      <div className="text-[12px] text-muted-soft">{[v.year, v.seats ? t('driver.seats', { count: v.seats }) : null].filter(Boolean).join(' · ')}</div>
+                      <div className="mt-1 text-[13px] font-extrabold text-ink">{formatCurrency(v.pricePerDay)} <span className="text-[11.5px] font-semibold text-muted-soft">{t('driver.perDay')}</span></div>
                     </div>
                     <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted-soft" />
                   </Link>
@@ -311,7 +316,7 @@ const MobileProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks,
 
         {/* Reviews */}
         <div id="m-reviews">
-          <SectionLabel className="mt-6">Reviews</SectionLabel>
+          <SectionLabel className="mt-6">{t('driver.tabs.reviews')}</SectionLabel>
           <div className="mt-2.5">
             <ReviewsSection {...reviewProps} />
           </div>
@@ -321,10 +326,10 @@ const MobileProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks,
       {/* Sticky action bar */}
       <div className="fixed inset-x-0 bottom-0 z-20 mx-auto flex max-w-[480px] items-center gap-2.5 border-t border-hairline bg-white px-4 pb-4 pt-3 shadow-[0_-8px_24px_rgba(15,31,45,0.06)]">
         <div className="flex-shrink-0">
-          <div className="text-[16px] font-extrabold text-ink">{rateLabel || '—'}<span className="text-[11.5px] font-semibold text-muted-soft">/day</span></div>
-          <div className="text-[11px] text-muted-soft">from</div>
+          <div className="text-[16px] font-extrabold text-ink">{rateLabel || '—'}<span className="text-[11.5px] font-semibold text-muted-soft">{t('driver.perDayShort')}</span></div>
+          <div className="text-[11px] text-muted-soft">{t('driver.from')}</div>
         </div>
-        <button type="button" onClick={goMessage} disabled={creatingConversation} aria-label="Message" className="grid h-[46px] w-[46px] flex-shrink-0 place-items-center rounded-[14px] border-[1.5px] border-[#e2e8ea] disabled:opacity-60">
+        <button type="button" onClick={goMessage} disabled={creatingConversation} aria-label={t('driver.message')} className="grid h-[46px] w-[46px] flex-shrink-0 place-items-center rounded-[14px] border-[1.5px] border-[#e2e8ea] disabled:opacity-60">
           {creatingConversation ? (
             <Loader2 className="h-[18px] w-[18px] animate-spin text-muted-soft" />
           ) : (
@@ -332,7 +337,7 @@ const MobileProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks,
           )}
         </button>
         <button type="button" onClick={goBook} className="flex-1 rounded-[14px] bg-brand py-[14px] text-[14.5px] font-bold text-white transition hover:bg-brand-dark">
-          Request booking
+          {t('driver.requestBooking')}
         </button>
       </div>
     </div>
@@ -340,13 +345,15 @@ const MobileProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks,
 };
 
 // ---------------- DESKTOP ----------------
-const DesktopProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks, rateLabel, ratingLabel, expYears, goBook, goMessage, creatingConversation, navigate }) => (
+const DesktopProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks, rateLabel, ratingLabel, expYears, goBook, goMessage, creatingConversation, navigate }) => {
+  const { t } = useI18n();
+  return (
   <div className="hidden min-h-screen lg:block">
     <div className="relative h-[300px] w-full">
       {cover ? <img src={cover} alt="" className="h-full w-full object-cover" /> : <div className="h-full w-full bg-ink" />}
       <div className="absolute inset-0 bg-gradient-to-b from-ink/35 to-transparent" />
       <button type="button" onClick={() => navigate(-1)} className="absolute left-9 top-5 flex items-center gap-2 rounded-xl bg-ink/55 px-4 py-2.5 text-[13.5px] font-bold text-white backdrop-blur">
-        <ChevronLeft className="h-[15px] w-[15px]" strokeWidth={2} /> Back to drivers
+        <ChevronLeft className="h-[15px] w-[15px]" strokeWidth={2} /> {t('driver.backToDrivers')}
       </button>
     </div>
 
@@ -368,9 +375,9 @@ const DesktopProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks
               </div>
               <div className="mt-2 flex items-center gap-3 text-[14px] font-semibold text-muted">
                 {ratingLabel ? (
-                  <span className="flex items-center gap-1.5"><Star className="h-3.5 w-3.5" fill="#f5b400" stroke="none" /><b className="text-ink">{ratingLabel}</b> ({driver.reviewCount ?? 0} reviews)</span>
+                  <span className="flex items-center gap-1.5"><Star className="h-3.5 w-3.5" fill="#f5b400" stroke="none" /><b className="text-ink">{ratingLabel}</b> ({t('driver.reviewCount', { count: driver.reviewCount ?? 0 })})</span>
                 ) : (
-                  <span className="text-muted-soft">No reviews yet</span>
+                  <span className="text-muted-soft">{t('driver.noReviews')}</span>
                 )}
                 <span className="h-1 w-1 rounded-full bg-[#cfd8dd]" />
                 {driver.licenseType ? <LicenseTypeChip licenseType={driver.licenseType} className="!mt-0" /> : <span>{cityLabel}</span>}
@@ -379,22 +386,22 @@ const DesktopProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks
           </div>
 
           <div className="mt-[26px] flex gap-[26px] border-b border-hairline">
-            <span className="border-b-[2.5px] border-brand pb-3 text-[14.5px] font-extrabold text-ink">About</span>
-            <a href="#d-vehicles" className="pb-3 text-[14.5px] font-semibold text-muted-soft">Vehicles</a>
-            <a href="#d-reviews" className="pb-3 text-[14.5px] font-semibold text-muted-soft">Reviews</a>
+            <span className="border-b-[2.5px] border-brand pb-3 text-[14.5px] font-extrabold text-ink">{t('driver.tabs.about')}</span>
+            <a href="#d-vehicles" className="pb-3 text-[14.5px] font-semibold text-muted-soft">{t('driver.tabs.vehicles')}</a>
+            <a href="#d-reviews" className="pb-3 text-[14.5px] font-semibold text-muted-soft">{t('driver.tabs.reviews')}</a>
           </div>
 
-          <p className="mt-[22px] max-w-[640px] whitespace-pre-wrap text-[15px] leading-relaxed text-ink-soft">{driver.description || 'This driver has not added a bio yet.'}</p>
+          <p className="mt-[22px] max-w-[640px] whitespace-pre-wrap text-[15px] leading-relaxed text-ink-soft">{driver.description || t('driver.noBio')}</p>
 
           <div className="mt-6 grid grid-cols-3 gap-3">
-            <DeskStatCard value={expYears ? `${expYears} yrs` : 'New'} label="Guiding experience" />
-            <DeskStatCard value={ratingLabel ? `${ratingLabel} / 5` : '—'} label="Traveller rating" />
-            <DeskStatCard value={driver.vehicleCount ?? vehicles.length} label="Available vehicles" />
+            <DeskStatCard value={expYears ? t('driver.years', { count: expYears }) : t('driver.new')} label={t('driver.stats.guidingExperience')} />
+            <DeskStatCard value={ratingLabel ? `${ratingLabel} / 5` : '—'} label={t('driver.stats.travellerRating')} />
+            <DeskStatCard value={driver.vehicleCount ?? vehicles.length} label={t('driver.stats.availableVehicles')} />
           </div>
 
           {perks.length > 0 ? (
             <>
-              <h3 className="mt-8 text-[17px] font-extrabold text-ink">Every trip includes</h3>
+              <h3 className="mt-8 text-[17px] font-extrabold text-ink">{t('driver.everyTripIncludes')}</h3>
               <div className="mt-3.5 grid max-w-[640px] grid-cols-2 gap-x-6 gap-y-3">
                 {perks.map((p) => <PerkRow key={p}>{p}</PerkRow>)}
               </div>
@@ -404,7 +411,7 @@ const DesktopProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks
           <div id="d-vehicles" />
           {vehicles.length > 0 ? (
             <>
-              <h3 className="mt-8 text-[17px] font-extrabold text-ink">Vehicle{vehicles.length === 1 ? '' : 's'}</h3>
+              <h3 className="mt-8 text-[17px] font-extrabold text-ink">{t('driver.vehiclesHeading', { count: vehicles.length })}</h3>
               <div className="mt-3.5 grid grid-cols-2 gap-4">
                 {vehicles.map((v) => (
                   <div key={v.id} className="flex items-center gap-4 rounded-[18px] border border-[#eef1f0] bg-white p-3.5">
@@ -415,10 +422,10 @@ const DesktopProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks
                     )}
                     <div className="min-w-0 flex-1">
                       <b className="block truncate text-[16px] text-ink">{v.model}</b>
-                      <div className="text-[13px] text-muted-soft">{[v.year, v.seats ? `${v.seats} seats` : null].filter(Boolean).join(' · ')}</div>
-                      <div className="mt-2 text-[15px] font-extrabold text-ink">{formatCurrency(v.pricePerDay)} <span className="text-[12px] font-semibold text-muted-soft">/ day</span></div>
+                      <div className="text-[13px] text-muted-soft">{[v.year, v.seats ? t('driver.seats', { count: v.seats }) : null].filter(Boolean).join(' · ')}</div>
+                      <div className="mt-2 text-[15px] font-extrabold text-ink">{formatCurrency(v.pricePerDay)} <span className="text-[12px] font-semibold text-muted-soft">{t('driver.perDay')}</span></div>
                     </div>
-                    <Link to={`/vehicles/${v.id}`} className="flex-shrink-0 rounded-full border-[1.5px] border-[#e2e8ea] px-4 py-2.5 text-[13px] font-bold text-ink transition hover:border-muted-soft">View</Link>
+                    <Link to={`/vehicles/${v.id}`} className="flex-shrink-0 rounded-full border-[1.5px] border-[#e2e8ea] px-4 py-2.5 text-[13px] font-bold text-ink transition hover:border-muted-soft">{t('driver.view')}</Link>
                   </div>
                 ))}
               </div>
@@ -426,7 +433,7 @@ const DesktopProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks
           ) : null}
 
           <div id="d-reviews" />
-          <h3 className="mt-8 text-[17px] font-extrabold text-ink">Reviews</h3>
+          <h3 className="mt-8 text-[17px] font-extrabold text-ink">{t('driver.tabs.reviews')}</h3>
           <div className="mt-3.5">
             <ReviewsSection {...reviewProps} />
           </div>
@@ -437,30 +444,31 @@ const DesktopProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks
           <div className="rounded-[18px] border border-[#e7ebe9] bg-white p-[22px] shadow-[0_18px_40px_-18px_rgba(15,31,45,0.25)]">
             <div className="flex items-baseline gap-1.5">
               <b className="text-[26px] text-ink">{rateLabel || '—'}</b>
-              <span className="text-[13.5px] font-semibold text-muted-soft">/ day, all-in</span>
+              <span className="text-[13.5px] font-semibold text-muted-soft">{t('driver.perDayAllIn')}</span>
             </div>
-            <p className="mt-1.5 text-[12.5px] text-muted-soft">No booking fee · pay the driver on arrival</p>
+            <p className="mt-1.5 text-[12.5px] text-muted-soft">{t('driver.noBookingFee')}</p>
             <button type="button" onClick={goBook} className="mt-4 w-full rounded-[14px] bg-brand py-[14px] text-[15px] font-extrabold text-white transition hover:bg-brand-dark">
-              Request booking
+              {t('driver.requestBooking')}
             </button>
             <button type="button" onClick={goMessage} disabled={creatingConversation} className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-[14px] border-[1.5px] border-[#e2e8ea] py-[13px] text-[14px] font-bold text-ink transition hover:border-muted-soft disabled:opacity-60">
               {creatingConversation ? (
-                <><Loader2 className="h-4 w-4 animate-spin text-muted-soft" /> Starting…</>
+                <><Loader2 className="h-4 w-4 animate-spin text-muted-soft" /> {t('driver.starting')}</>
               ) : (
-                <><MessageSquare className="h-4 w-4" strokeWidth={1.7} /> Message {driver.name.split(' ')[0]}</>
+                <><MessageSquare className="h-4 w-4" strokeWidth={1.7} /> {t('driver.messageName', { name: driver.name.split(' ')[0] })}</>
               )}
             </button>
             <div className="mt-4 flex flex-col gap-2.5 border-t border-hairline pt-3.5 text-[12.5px] font-semibold text-muted">
-              <span className="flex items-center gap-2.5"><Shield className="h-[15px] w-[15px] text-brand" /> {driver.licenseType ? `${driver.licenseType} verified` : 'Identity & licence verified'}</span>
-              <span className="flex items-center gap-2.5"><Clock className="h-[15px] w-[15px] text-brand" /> Usually replies within a day</span>
-              <span className="flex items-center gap-2.5"><Check className="h-[15px] w-[15px] text-brand" strokeWidth={2.5} /> Free cancellation until 2 days before your trip</span>
+              <span className="flex items-center gap-2.5"><Shield className="h-[15px] w-[15px] text-brand" /> {driver.licenseType ? t('driver.licenseVerified', { license: translateLicenseType(driver.licenseType, t) }) : t('driver.identityVerified')}</span>
+              <span className="flex items-center gap-2.5"><Clock className="h-[15px] w-[15px] text-brand" /> {t('driver.repliesWithinDay')}</span>
+              <span className="flex items-center gap-2.5"><Check className="h-[15px] w-[15px] text-brand" strokeWidth={2.5} /> {t('driver.freeCancellation')}</span>
             </div>
           </div>
         </div>
       </div>
     </div>
   </div>
-);
+  );
+};
 
 // ---------------- Shared bits ----------------
 const StatTile = ({ value, label }) => (

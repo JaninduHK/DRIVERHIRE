@@ -8,7 +8,9 @@
     "build": "react-router build",
     "start": "react-router-serve ./build/server/index.js",
     "preview": "react-router-serve ./build/server/index.js",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "prebuild": "node scripts/check-translations.mjs",
+    "check:i18n": "node scripts/check-translations.mjs"
   },
   "dependencies": {
     "@react-router/dev": "^7.18.2",

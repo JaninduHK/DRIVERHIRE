@@ -1,0 +1,50 @@
+{
+  "title": "Find your ride",
+  "searchPlaceholder": "Model, driver or city",
+  "loadError": "Unable to load vehicles.",
+  "loadErrorTitle": "Unable to load vehicles",
+  "tryAgain": "Try again",
+  "loading": "Loading…",
+  "count": { "one": "{count} vehicle", "other": "{count} vehicles" },
+  "clearFilters": "Clear filters",
+  "clear": "Clear",
+  "emptyTitle": "No vehicles match your filters yet",
+  "emptyBody": "Adjust your search or check back soon — new listings are added regularly.",
+  "chips": {
+    "dates": "Dates",
+    "seats": "Seats",
+    "seatsActive": "{count}+ seats",
+    "price": "Price",
+    "rating": "Rating",
+    "sort": "Sort"
+  },
+  "card": {
+    "seats": "{count} seats",
+    "vehicle": "Vehicle",
+    "perDay": "per day",
+    "by": "By",
+    "approvedDriver": "Approved driver",
+    "view": "View"
+  },
+  "filters": {
+    "title": "Filters",
+    "clearAll": "Clear all",
+    "tripDates": "Trip dates",
+    "start": "Start",
+    "end": "End",
+    "seats": "Seats",
+    "budget": "Budget per day",
+    "min": "Min",
+    "max": "Max",
+    "rating": "Rating",
+    "sortBy": "Sort by",
+    "reset": "Reset",
+    "show": { "one": "Show {count} vehicle", "other": "Show {count} vehicles" },
+    "any": "Any",
+    "under40": "Under $40",
+    "recommended": "Recommended",
+    "priceAsc": "Price: low to high",
+    "priceDesc": "Price: high to low",
+    "topRated": "Top rated"
+  }
+}

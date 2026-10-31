@@ -1,0 +1,89 @@
+{
+  "notFound": "Véhicule introuvable.",
+  "notFoundBody": "Ce véhicule est introuvable.",
+  "loadError": "Impossible de charger les détails du véhicule.",
+  "reviewsError": "Impossible de charger les avis pour le moment.",
+  "reviewsAll": "Tous",
+  "loading": "Chargement du véhicule…",
+  "errorTitle": "Un petit souci est survenu",
+  "browseVehicles": "Voir les véhicules",
+  "home": "Accueil",
+  "pickupAfterConfirmation": "Lieu de prise en charge communiqué après confirmation",
+  "approvedDriver": "Chauffeur approuvé",
+  "memberSince": "Membre depuis {date}",
+  "verifiedDriver": "Chauffeur vérifié",
+  "specs": {
+    "seats": "Places",
+    "year": "Année",
+    "rating": "Note",
+    "payment": "Paiement",
+    "onArrival": "À l'arrivée"
+  },
+  "availability": {
+    "missingVehicle": "Les informations du véhicule sont manquantes. Veuillez réessayer depuis le catalogue.",
+    "selectDates": "Sélectionnez une date de début et une date de fin pour vérifier la disponibilité.",
+    "endAfterStart": "La date de fin doit être postérieure à la date de début.",
+    "startPast": "La date de début ne peut pas être dans le passé.",
+    "freeDays": {
+      "one": "Bonne nouvelle ! Disponible pour votre voyage de {count} jour.",
+      "other": "Bonne nouvelle ! Disponible pour votre voyage de {count} jours."
+    },
+    "free": "Bonne nouvelle ! Ce véhicule est disponible à vos dates.",
+    "notAvailable": "Ce véhicule n'est pas disponible aux dates sélectionnées.",
+    "checkError": "Impossible de vérifier la disponibilité. Veuillez réessayer dans un instant."
+  },
+  "chat": {
+    "missingDriver": "Les informations du chauffeur sont manquantes pour ce véhicule.",
+    "ready": "La conversation vous attend dans votre messagerie.",
+    "error": "Impossible de démarrer une conversation pour le moment."
+  },
+  "back": "Retour",
+  "save": "Enregistrer",
+  "share": "Partager",
+  "previousPhoto": "Photo précédente",
+  "nextPhoto": "Photo suivante",
+  "yourTrip": "Votre voyage",
+  "included": "Ce qui est inclus",
+  "about": "À propos de ce véhicule",
+  "yourDriver": "Votre chauffeur",
+  "reviews": "Avis",
+  "reviewCount": {
+    "one": "{count} avis",
+    "other": "{count} avis"
+  },
+  "quote": "Sur devis",
+  "perDayShort": "/jour",
+  "allIn": "tout compris",
+  "bookNow": "Réserver",
+  "checkAvailability": "Vérifier la disponibilité",
+  "backToVehicles": "Retour aux véhicules",
+  "noImages": "Aucune photo publiée pour le moment",
+  "booking": {
+    "limitedOffer": "Offre limitée : économisez {percent} % sur ce véhicule",
+    "requestQuote": "Demander un devis",
+    "perDay": "/ jour",
+    "saveThisTrip": "Économisez {percent} % sur ce voyage",
+    "start": "Début",
+    "end": "Fin",
+    "travellers": "Voyageurs",
+    "fewer": "Moins de voyageurs",
+    "more": "Plus de voyageurs",
+    "checking": "Vérification…",
+    "dayTrip": {
+      "one": "Voyage de {count} jour",
+      "other": "Voyage de {count} jours"
+    },
+    "discount": "Réduction",
+    "payDriver": "À payer à votre chauffeur",
+    "licenseVerified": "{license} vérifié",
+    "identityVerified": "Identité et permis vérifiés",
+    "payOnArrival": "Paiement au chauffeur à l'arrivée",
+    "freeCancellation": "Annulation gratuite jusqu'à 2 jours avant votre voyage"
+  },
+  "driver": {
+    "rating": "Note : {rating}",
+    "starting": "Démarrage…",
+    "message": "Message",
+    "viewProfile": "Voir le profil"
+  }
+}
