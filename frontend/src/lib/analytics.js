@@ -55,7 +55,7 @@ export const trackPageView = (pagePath) => {
 // ---- Reddit Pixel (Reddit Ads conversion tracking) ----
 // The ID is public (it appears in the page source), so it defaults here rather than
 // relying on a deploy .env that can silently drop it. Set VITE_REDDIT_PIXEL_ID to override.
-const redditPixelId = import.meta.env.VITE_REDDIT_PIXEL_ID || 'p2_1948oeey1egjy';
+const redditPixelId = import.meta.env.VITE_REDDIT_PIXEL_ID || 'p2_1a01tmkat9rp0';
 // Skipped in local dev so test visits don't count as ad results.
 const redditEnabled = Boolean(redditPixelId) && !import.meta.env.DEV;
 

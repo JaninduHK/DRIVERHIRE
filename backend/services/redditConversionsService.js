@@ -5,7 +5,7 @@
 import crypto from 'node:crypto';
 import User from '../models/User.js';
 
-const PIXEL_ID = process.env.REDDIT_PIXEL_ID || 'p2_1948oeey1egjy';
+const PIXEL_ID = process.env.REDDIT_PIXEL_ID || 'p2_1a01tmkat9rp0';
 const ENDPOINT = `https://ads-api.reddit.com/api/v3/pixels/${PIXEL_ID}/conversion_events`;
 const TIMEOUT_MS = 5000;
 
