@@ -18,6 +18,7 @@ import { sendBriefAlertEmail, sendQuoteRequestReceivedEmail } from '../services/
 import { buildEmailPreferencesUrl, sendOfferArrivalEmail } from '../services/quoteFollowUpService.js';
 import { sendExpoPushNotifications } from '../services/expoPushService.js';
 import { expiredBefore } from '../services/briefExpiryService.js';
+import { sendRedditLead } from '../services/redditConversionsService.js';
 import { sanitizeMessageContent } from '../utils/chatSanitizer.js';
 import { offerExpiresAt } from '../utils/offerExpiry.js';
 import { hasVehicleDateConflict, VEHICLE_UNAVAILABLE_MESSAGE } from '../utils/vehicleAvailability.js';
@@ -251,6 +252,8 @@ export const createBrief = async (req, res) => {
     // no-owner (sanitized) view so the email doesn't leak contact details
     // that the open-briefs board itself already hides.
     notifyApprovedDriversOfBrief(toPlainBrief(brief, null));
+    // Same ID as the browser pixel's Lead event, so Reddit counts it once.
+    sendRedditLead({ req, conversionId: brief._id, userId: req.user.id });
 
     // Tell the traveller their request is out and what to expect, so the first
     // email they get from us is not an offer from a driver they have never heard of.

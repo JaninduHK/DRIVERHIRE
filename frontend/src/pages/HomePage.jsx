@@ -12,6 +12,7 @@ import { LicenseIconBadge, LicenseTypeChip } from '../components/LicenseBadge.js
 
 // Prefill stash read by the traveller "My Requests" tab to open a new quote request.
 import { savePendingBrief } from '../lib/pendingBrief.js';
+import { afterTracking, trackQuoteFormStart, trackQuoteFormSubmit } from '../lib/analytics.js';
 const REQUESTS_PATH = '/dashboard?tab=requests';
 
 // ---------- helpers ----------
@@ -186,7 +187,7 @@ const HomePage = () => {
     savePendingBrief({ language: locale, ...prefill });
     if (!getStoredToken()) {
       // Straight to Asgardeo's hosted sign-in/registration, same as /get-quotes.
-      redirectToSsoLogin(REQUESTS_PATH);
+      afterTracking(() => redirectToSsoLogin(REQUESTS_PATH));
       return;
     }
     navigate(REQUESTS_PATH);
@@ -194,6 +195,7 @@ const HomePage = () => {
 
   const handleQuoteSubmit = (event) => {
     event.preventDefault();
+    trackQuoteFormSubmit('home_mini_form');
     goToRequests({
       startDate: form.startDate,
       endDate: form.endDate,
@@ -248,6 +250,7 @@ const HomePage = () => {
           <form
             id="quote"
             onSubmit={handleQuoteSubmit}
+            onFocus={() => trackQuoteFormStart('home_mini_form')}
             className="scroll-mt-24 rounded-[24px] border border-[#e5ebe8] bg-white p-[clamp(20px,2.4vw,28px)] shadow-[0_28px_60px_-32px_rgba(15,31,45,.28)]"
           >
             <h2 className="text-[19px] font-extrabold tracking-[-.01em]">{t('home.form.title')}</h2>

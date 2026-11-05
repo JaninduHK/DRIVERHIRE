@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { Check, ChevronDown, Star, X } from 'lucide-react';
 import { getStoredToken, getStoredUser, redirectToSsoLogin } from '../services/authToken.js';
 import { savePendingBrief } from '../lib/pendingBrief.js';
+import { afterTracking, trackQuoteFormStart, trackQuoteFormSubmit } from '../lib/analytics.js';
 import { calculateClassEstimates, calculateInclusionRates, priceFormatter } from '../lib/tripCostEstimator.js';
 import { LICENSE_BADGE_STYLES } from '../constants/driverLicense.js';
 import { LicenseIconBadge, LicenseTypeChip } from '../components/LicenseBadge.jsx';
@@ -189,6 +190,7 @@ const GetQuotes = () => {
     // lib/pendingBrief.js) — the same step whether they are already signed in
     // or come back from registering with Asgardeo.
     savePendingBrief(payload);
+    trackQuoteFormSubmit('get_quotes_page');
 
     const token = getStoredToken();
     const user = getStoredUser();
@@ -197,7 +199,7 @@ const GetQuotes = () => {
       return;
     }
 
-    redirectToSsoLogin(REQUESTS_PATH);
+    afterTracking(() => redirectToSsoLogin(REQUESTS_PATH));
   };
 
   return (
@@ -253,6 +255,7 @@ const GetQuotes = () => {
             <div ref={formRef} id="quote-form" className="min-w-0 scroll-mt-24">
               <form
                 onSubmit={handleNext}
+                onFocus={() => trackQuoteFormStart('get_quotes_page')}
                 className="rounded-[24px] border border-[#e7ecea] bg-white p-[clamp(16px,2.4vw,24px)] shadow-[0_18px_44px_rgba(15,36,48,.07)]"
               >
                 <h2 className="text-[18px] font-extrabold tracking-[-.01em] text-ink">{t('getQuotes.form.title')}</h2>

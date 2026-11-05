@@ -59,6 +59,7 @@ import DeleteAccountCard from '../components/DeleteAccountCard.jsx';
 import OfferVehicleImages from '../components/OfferVehicleImages.jsx';
 import { OfferInclusionList } from '../components/OfferInclusions.jsx';
 import { clearPendingBrief, hasPendingBrief, readPendingBrief } from '../lib/pendingBrief.js';
+import { trackQuoteRequest } from '../lib/analytics.js';
 import BriefRequestBubble from '../components/BriefRequestBubble.jsx';
 import MessageMeta from '../components/MessageMeta.jsx';
 import { offerExpiryNotice, offerExpiryClass } from '../lib/offerExpiry.js';
@@ -479,7 +480,8 @@ const TravelerDashboard = () => {
     async (payload) => {
       setCreatingBrief(true);
       try {
-        await createTravelerBrief(payload);
+        const created = await createTravelerBrief(payload);
+        trackQuoteRequest(created?.brief?._id || created?.brief?.id);
         toast.success(t('dash.toast.briefPosted'));
         await loadTravelerBriefs({ silent: true });
       } catch (error) {

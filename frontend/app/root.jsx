@@ -16,7 +16,7 @@ import Footer from '../src/components/Footer.jsx';
 import LanguageSuggestion from '../src/components/LanguageSuggestion.jsx';
 import { useI18n } from '../src/i18n/I18nProvider.jsx';
 import { LOCALE_INFO, getLocaleFromPath, stripLocale } from '../src/i18n/locales.js';
-import { initAnalytics, trackPageView } from '../src/lib/analytics.js';
+import { initAnalytics, initRedditPixel, trackPageView } from '../src/lib/analytics.js';
 import '../src/index.css';
 
 // The <head> defaults that used to live in index.html. Per-route <title>/meta is layered
@@ -95,6 +95,7 @@ export default function App() {
 
   useEffect(() => {
     initAnalytics();
+    initRedditPixel();
   }, []);
 
   useEffect(() => {
