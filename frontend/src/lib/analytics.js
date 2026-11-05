@@ -147,3 +147,23 @@ export const afterTracking = (callback, delayMs = 300) => {
   }
   window.setTimeout(callback, delayMs);
 };
+
+/**
+ * A traveller booked (accepted an offer or booked a vehicle). Reddit Purchase and
+ * GA purchase. The booking ID matches the server's Conversions API event.
+ */
+export const trackBooking = ({ bookingId, value } = {}) => {
+  const amount = Number(value);
+  const hasValue = Number.isFinite(amount) && amount > 0;
+  trackReddit('track', 'Purchase', {
+    ...(bookingId ? { conversionId: String(bookingId) } : {}),
+    itemCount: 1,
+    currency: 'USD',
+    ...(hasValue ? { value: amount } : {}),
+  });
+  trackGa('purchase', {
+    ...(bookingId ? { transaction_id: String(bookingId) } : {}),
+    currency: 'USD',
+    ...(hasValue ? { value: amount } : {}),
+  });
+};

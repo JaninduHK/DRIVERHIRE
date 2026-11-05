@@ -74,11 +74,11 @@ const postEvents = async (events) => {
 };
 
 /**
- * A traveller posted a quote request. Matches the browser pixel's
- * `rdt('track', 'Lead', { conversionId })`, using the request's ID.
- * Fire-and-forget: call without await.
+ * Send one conversion to Reddit. Fire-and-forget: call without await.
+ * conversionId must match what the browser pixel sends for the same event
+ * (if it sends one), so Reddit counts it once.
  */
-export const sendRedditLead = ({ req, conversionId, userId }) => {
+const sendRedditEvent = ({ req, userId, trackingType, conversionId, metadata = {} }) => {
   if (!process.env.REDDIT_CAPI_TOKEN) return;
 
   (async () => {
@@ -86,11 +86,36 @@ export const sendRedditLead = ({ req, conversionId, userId }) => {
     const event = {
       event_at: Date.now(),
       action_source: 'WEBSITE',
-      type: { tracking_type: 'LEAD' },
+      type: { tracking_type: trackingType },
       user,
-      metadata: { conversion_id: String(conversionId) },
+      metadata: { ...metadata, conversion_id: String(conversionId) },
     };
     if (clickId) event.click_id = clickId;
     await postEvents([event]);
   })().catch((error) => console.warn('Reddit Conversions API call failed:', error?.message || error));
 };
+
+/** A traveller posted a quote request. Pixel: rdt('track', 'Lead', { conversionId: briefId }). */
+export const sendRedditLead = ({ req, conversionId, userId }) =>
+  sendRedditEvent({ req, userId, trackingType: 'LEAD', conversionId });
+
+/** A new traveller account was created (server only; the pixel doesn't send SignUp). */
+export const sendRedditSignUp = ({ req, userId }) =>
+  sendRedditEvent({ req, userId, trackingType: 'SIGN_UP', conversionId: `signup-${userId}` });
+
+/**
+ * A traveller booked: accepted a driver's offer or booked a vehicle directly.
+ * Pixel: rdt('track', 'Purchase', { conversionId: bookingId, value, currency }).
+ */
+export const sendRedditPurchase = ({ req, userId, bookingId, value }) =>
+  sendRedditEvent({
+    req,
+    userId,
+    trackingType: 'PURCHASE',
+    conversionId: bookingId,
+    metadata: {
+      item_count: 1,
+      currency: 'USD',
+      ...(Number.isFinite(value) && value > 0 ? { value } : {}),
+    },
+  });

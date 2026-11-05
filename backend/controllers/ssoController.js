@@ -4,6 +4,7 @@ import User, { AUTH_PROVIDERS, USER_ROLES } from '../models/User.js';
 import { generateAccessToken } from '../utils/jwt.js';
 import getAsgardeoConfig from '../utils/asgardeoClient.js';
 import { putStateEntry, takeStateEntry, putExchangeEntry, takeExchangeEntry } from '../utils/ssoStateStore.js';
+import { sendRedditSignUp } from '../services/redditConversionsService.js';
 
 const STATE_TTL_MS = 5 * 60 * 1000;
 const EXCHANGE_TTL_MS = 60 * 1000;
@@ -158,6 +159,9 @@ export const ssoCallback = async (req, res) => {
         isVerified: true,
         language: stored.lang || null,
       });
+      // New traveller account: tell Reddit Ads (this request comes from the browser,
+      // so it carries the visitor's Reddit cookies).
+      sendRedditSignUp({ req, userId: user._id });
     }
 
     const token = generateAccessToken(user);

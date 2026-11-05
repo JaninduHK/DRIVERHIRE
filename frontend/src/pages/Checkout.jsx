@@ -18,6 +18,7 @@ import {
 import toast from 'react-hot-toast';
 import { fetchVehicleDetails, checkVehicleAvailability, createVehicleBooking } from '../services/vehicleCatalogApi.js';
 import { fetchOffer } from '../services/chatApi.js';
+import { trackBooking } from '../lib/analytics.js';
 import { OfferInclusionList } from '../components/OfferInclusions.jsx';
 
 // The English label is what the driver receives in the booking notes; the
@@ -471,6 +472,10 @@ const Checkout = () => {
     createVehicleBooking(vehicleId, payload)
       .then((data) => {
         setBookingResult(data.booking || null);
+        trackBooking({
+          bookingId: data?.booking?.id,
+          value: data?.booking?.payableTotal ?? data?.booking?.totalPrice,
+        });
         const successMessage =
           typeof data?.message === 'string' && data.message.trim()
             ? localizeServerMessage(data.message)

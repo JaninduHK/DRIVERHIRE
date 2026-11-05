@@ -15,6 +15,7 @@ import {
 } from '../services/emailService.js';
 import { notifyUser } from '../services/expoPushService.js';
 import { mapAssetUrls, buildAssetUrl } from '../utils/assetUtils.js';
+import { sendRedditPurchase } from '../services/redditConversionsService.js';
 
 const escapeRegex = (value = '') => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -818,6 +819,13 @@ export const createVehicleBooking = async (req, res) => {
     });
 
     await booking.save();
+    // Same ID as the browser pixel's Purchase event, so Reddit counts it once.
+    sendRedditPurchase({
+      req,
+      userId: req.user.id,
+      bookingId: booking._id.toString(),
+      value: Number(booking.payableTotal ?? booking.totalPrice),
+    });
 
     const travelerContact = {
       name: trimmedName,
