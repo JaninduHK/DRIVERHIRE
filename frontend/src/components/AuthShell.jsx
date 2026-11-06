@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SSO_LOGIN_URL } from '../services/authToken.js';
 
-// Chrome for the driver/admin sign-in page. Traveller sign-in/sign-up moved
+// Chrome for the driver sign-in page (admins use it too). Traveller sign-in/sign-up moved
 // to Asgardeo SSO (goes straight to SSO_LOGIN_URL, no local page) — this shell now serves a single
 // audience and a single mode, so there's no more tab switcher or "create
 // account" variant to carry around.
@@ -13,7 +13,6 @@ const PANEL_POINTS = [
   'Manage your vehicle listings and availability.',
   'Track bookings, payouts and driver reviews.',
   'Message travellers directly from your portal.',
-  'Admins get full oversight of drivers and bookings.',
 ];
 
 // Shared field styles / helpers, also used by ForgotPassword/ResetPassword.
@@ -61,13 +60,13 @@ const AuthShell = ({ children, footerNote }) => {
         >
           <div>
             <span className="inline-flex items-center gap-2 rounded-full bg-white/[.18] px-[13px] py-[7px] text-xs font-bold tracking-[.02em]">
-              Driver &amp; admin sign in
+              Driver sign in
             </span>
             <h1 className="mt-[18px] text-[clamp(25px,2.9vw,34px)] font-extrabold leading-[1.14] tracking-[-.025em]">
-              Sign in to your operator account.
+              Sign in to your driver account.
             </h1>
             <p className="mt-3 max-w-[36ch] text-[15px] leading-[1.6] text-white/85">
-              Manage your listings, bookings and payouts, or access the admin console.
+              Manage your listings, bookings and payouts.
             </p>
           </div>
           <ul className="m-0 grid list-none gap-3.5 p-0">
