@@ -432,8 +432,9 @@ function OfferModal({
   const [endDate, setEndDate] = useState('');
   const [vehicleId, setVehicleId] = useState<string | undefined>(vehicles[0]?.id);
   const [totalPrice, setTotalPrice] = useState('');
-  const [totalKms, setTotalKms] = useState('300');
-  const [extraKm, setExtraKm] = useState('0.30');
+  // Empty on purpose: pre-filled values got sent unchanged as real offers.
+  const [totalKms, setTotalKms] = useState('');
+  const [extraKm, setExtraKm] = useState('');
   const [inclusions, setInclusions] = useState<string[]>([]);
   const [note, setNote] = useState('');
 
@@ -464,6 +465,7 @@ function OfferModal({
     Boolean(vehicleId) &&
     Number(totalPrice) > 0 &&
     Number(totalKms) > 0 &&
+    extraKm.trim() !== '' &&
     Number(extraKm) >= 0 &&
     Number(extraKm) <= 1 &&
     !submit.isPending;
@@ -524,10 +526,10 @@ function OfferModal({
 
             {/* Pricing */}
             <View className="mt-3 flex-row gap-2.5">
-              <TextField className="flex-1" label="Total price (USD)" value={totalPrice} onChangeText={setTotalPrice} placeholder="420" keyboardType="number-pad" />
-              <TextField className="flex-1" label="Included kms" value={totalKms} onChangeText={setTotalKms} placeholder="300" keyboardType="number-pad" />
+              <TextField className="flex-1" label="Total price (USD)" value={totalPrice} onChangeText={setTotalPrice} placeholder="e.g. 1200" keyboardType="number-pad" hint="Total for whole trip" />
+              <TextField className="flex-1" label="Included kms" value={totalKms} onChangeText={setTotalKms} placeholder="e.g. 1500" keyboardType="number-pad" hint="Total kms for whole trip" />
             </View>
-            <TextField className="mt-3" label="Price per extra km (USD)" value={extraKm} onChangeText={setExtraKm} placeholder="0.30" keyboardType="decimal-pad" />
+            <TextField className="mt-3" label="Price per extra km (USD)" value={extraKm} onChangeText={setExtraKm} placeholder="e.g. 0.30" keyboardType="decimal-pad" />
             <Text className={`mt-1 font-med text-[11px] ${Number(extraKm) > 1 ? 'text-danger' : 'text-muted-soft'}`}>
               In USD, between $0.00 and $1.00 per km.
             </Text>

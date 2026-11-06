@@ -32,8 +32,9 @@ export default function RequestDetail() {
     if (!vehicleId && activeVehicles.length) setVehicleId(activeVehicles[0].id);
   }, [activeVehicles, vehicleId]);
   const [price, setPrice] = useState(brief?.budget ? String(brief.budget) : '');
-  const [includedKm, setIncludedKm] = useState('300');
-  const [extraKm, setExtraKm] = useState('0.30');
+  // Empty on purpose: pre-filled values got sent unchanged as real offers.
+  const [includedKm, setIncludedKm] = useState('');
+  const [extraKm, setExtraKm] = useState('');
   const [inclusions, setInclusions] = useState<string[]>([]);
   const [note, setNote] = useState('');
 
@@ -75,6 +76,7 @@ export default function RequestDetail() {
     Number(price) > 0 &&
     Boolean(vehicleId) &&
     Number(includedKm) > 0 &&
+    extraKm.trim() !== '' &&
     Number(extraKm) >= 0 &&
     Number(extraKm) <= 1 &&
     !respond.isPending;
@@ -128,10 +130,10 @@ export default function RequestDetail() {
             <Card className="mt-3 p-4">
               <Text className="font-heavy text-[14px] text-ink">Your offer</Text>
               <View className="mt-3 flex-row gap-2.5">
-                <TextField className="flex-1" label="Total price (USD)" value={price} onChangeText={setPrice} placeholder="420" keyboardType="number-pad" />
-                <TextField className="flex-1" label="Included kms" value={includedKm} onChangeText={setIncludedKm} placeholder="300" keyboardType="number-pad" />
+                <TextField className="flex-1" label="Total price (USD)" value={price} onChangeText={setPrice} placeholder="e.g. 1200" keyboardType="number-pad" hint="Total for whole trip" />
+                <TextField className="flex-1" label="Included kms" value={includedKm} onChangeText={setIncludedKm} placeholder="e.g. 1500" keyboardType="number-pad" hint="Total kms for whole trip" />
               </View>
-              <TextField className="mt-3" label="Price per extra km (USD)" value={extraKm} onChangeText={setExtraKm} placeholder="0.30" keyboardType="decimal-pad" />
+              <TextField className="mt-3" label="Price per extra km (USD)" value={extraKm} onChangeText={setExtraKm} placeholder="e.g. 0.30" keyboardType="decimal-pad" />
               <Text className={`mt-1 font-med text-[11px] ${Number(extraKm) > 1 ? 'text-danger' : 'text-muted-soft'}`}>
                 In USD, between $0.00 and $1.00 per km.
               </Text>
