@@ -540,7 +540,7 @@ function OfferModal({
               label="Notes to traveller (optional)"
               value={note}
               onChangeText={setNote}
-              placeholder="Share highlights, inclusions, or expectations."
+              placeholder="Write a creative message: add suggestions and explain your expertise and experience. Always write a unique message to each guest."
               multiline
             />
             <ContactWarning value={note} />

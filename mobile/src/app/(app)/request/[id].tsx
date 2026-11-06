@@ -164,7 +164,7 @@ export default function RequestDetail() {
                 label="Note to traveller"
                 value={note}
                 onChangeText={setNote}
-                placeholder="Happy to add stops along the way at no extra cost."
+                placeholder="Write a creative message: add suggestions and explain your expertise and experience. Always write a unique message to each guest."
                 multiline
               />
               <ContactWarning value={note} />
