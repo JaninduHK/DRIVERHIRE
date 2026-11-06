@@ -237,6 +237,13 @@ export const setDriverBriefAlertEmail = (driverId, enabled) =>
     body: JSON.stringify({ enabled }),
   });
 
+// Mark a driver's email verified (lets them sign in) or not verified.
+export const setDriverEmailVerified = (driverId, verified) =>
+  request(`/drivers/${driverId}/email-verified`, {
+    method: 'PATCH',
+    body: JSON.stringify({ verified }),
+  });
+
 export const setDriverFeatured = (driverId, featured) =>
   request(`/drivers/${driverId}/featured`, {
     method: 'PATCH',

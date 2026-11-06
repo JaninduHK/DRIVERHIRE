@@ -8,6 +8,7 @@ import {
   updateDriverStatus,
   setDriverFeatured,
   setDriverBriefAlertEmail,
+  setDriverEmailVerified,
   reorderFeaturedDrivers,
   updateDriverDetails,
   listLicenseSubmissions,
@@ -107,6 +108,15 @@ router.patch(
     body('enabled').isBoolean().withMessage('enabled must be true or false'),
   ],
   setDriverBriefAlertEmail
+);
+
+router.patch(
+  '/drivers/:id/email-verified',
+  [
+    param('id').isMongoId().withMessage('Invalid driver identifier'),
+    body('verified').isBoolean().withMessage('verified must be true or false'),
+  ],
+  setDriverEmailVerified
 );
 
 router.patch(

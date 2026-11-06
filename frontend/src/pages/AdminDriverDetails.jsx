@@ -18,12 +18,14 @@ import {
   Undo2,
   Wallet,
   XCircle,
+  MailCheck,
 } from 'lucide-react';
 import {
   fetchDriverDetails,
   sendDriverEmail,
   setDriverFeatured,
   setDriverBriefAlertEmail,
+  setDriverEmailVerified,
   setDriverMessagingSuspension,
   setDriverPassword,
   updateDriverDetails,
@@ -425,6 +427,14 @@ const AdminDriverDetails = () => {
     return runAction('password', () => setDriverPassword(driverId, passwordForm.password), 'Driver password updated.');
   };
 
+  const toggleEmailVerified = () => {
+    const verified = Boolean(data.driver.isVerified);
+    // Un-verifying blocks the driver's password sign-in, so ask first.
+    if (verified && !window.confirm('Mark this driver\'s email as NOT verified? They won\'t be able to sign in with their password until it is verified again.')) {
+      return;
+    }
+    runAction('email-verified', () => setDriverEmailVerified(driverId, !verified), verified ? 'Email marked as not verified.' : 'Email marked as verified. The driver can now sign in.');
+  };
   const toggleBriefEmails = () => runAction('brief-emails', () => setDriverBriefAlertEmail(driverId, !data.driver.briefAlertEmailOptIn), data.driver.briefAlertEmailOptIn ? 'Brief emails back to the default for this driver.' : 'This driver will now get brief emails.');
   const toggleFeatured = () => runAction('featured', () => setDriverFeatured(driverId, !data.driver.featured), data.driver.featured ? 'Driver removed from the homepage.' : 'Driver added to the homepage.');
 
@@ -494,6 +504,7 @@ const AdminDriverDetails = () => {
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6"><Stat value={summary.completedTrips} label="Completed trips" /><Stat value={summary.upcomingTrips} label="Upcoming" /><Stat value={summary.offerCount} label="Offers" /><Stat value={summary.averageRating ? `${summary.averageRating}/5` : '—'} label={`${summary.reviewCount} reviews`} /><Stat value={formatCurrency(summary.totalGross)} label="Booking value" /><Stat value={formatCurrency(summary.totalEarnings)} label="Driver earnings" /></div>
         <div className="mt-4 flex flex-wrap gap-2 border-t border-hairline pt-4">
+          <button type="button" disabled={Boolean(actionLoading)} onClick={toggleEmailVerified} className="inline-flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-xs font-bold text-ink hover:bg-canvas disabled:opacity-60"><MailCheck className="h-4 w-4" /> {driver.isVerified ? 'Mark email not verified' : 'Mark email verified'}</button>
           <button type="button" disabled={Boolean(actionLoading)} onClick={toggleBriefEmails} className="inline-flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-xs font-bold text-ink hover:bg-canvas disabled:opacity-60"><Mail className="h-4 w-4" /> {driver.briefAlertEmailOptIn ? 'Stop brief emails' : 'Send brief emails'}</button>
           <button type="button" disabled={Boolean(actionLoading)} onClick={toggleFeatured} className="inline-flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-xs font-bold text-ink hover:bg-canvas disabled:opacity-60"><Star className={`h-4 w-4 ${driver.featured ? 'fill-amber-400 text-amber-500' : ''}`} /> {driver.featured ? 'Remove from homepage' : 'Feature on homepage'}</button>
           <button type="button" disabled={Boolean(actionLoading)} onClick={toggleSuspension} className="inline-flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-xs font-bold text-ink hover:bg-canvas disabled:opacity-60">{paused ? <Undo2 className="h-4 w-4" /> : <Ban className="h-4 w-4" />} {paused ? 'Resume messaging' : 'Pause messaging'}</button>

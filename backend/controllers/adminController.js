@@ -777,6 +777,38 @@ export const setDriverBriefAlertEmail = async (req, res) => {
   }
 };
 
+/**
+ * PATCH /admin/drivers/:id/email-verified
+ *
+ * Marks a driver's email as verified (or not). Unverified drivers can't sign in
+ * with a password, so this unblocks drivers whose verification email never arrived.
+ */
+export const setDriverEmailVerified = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+
+  try {
+    const driver = await User.findOne({ _id: req.params.id, role: USER_ROLES.DRIVER });
+    if (!driver) {
+      return res.status(404).json({ message: 'Driver not found.' });
+    }
+    const verified = Boolean(req.body.verified);
+    driver.isVerified = verified;
+    if (verified) {
+      // The emailed link is no longer needed once an admin has verified the address.
+      driver.verificationToken = undefined;
+      driver.verificationTokenExpires = undefined;
+    }
+    await driver.save({ validateBeforeSave: false });
+    return res.json({ driver: driver.toJSON() });
+  } catch (error) {
+    console.error('Set driver email verified error:', error);
+    return res.status(500).json({ message: 'Unable to update email verification for this driver.' });
+  }
+};
+
 export const setDriverFeatured = async (req, res) => {
   const validationError = handleValidation(req, res);
   if (validationError) {
