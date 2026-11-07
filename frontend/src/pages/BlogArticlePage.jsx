@@ -14,6 +14,40 @@ const formatDate = (value, intl = 'en-US') => {
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString(intl, { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
+// Post text can carry [label](url) links and **bold**. Links to this site open
+// in-page (and keep the reader's language); outside links open in a new tab.
+const INLINE_RE = /\[([^\]]+)\]\(([^)\s]+)\)|\*\*([^*]+)\*\*/g;
+const LINK_CLS = 'font-semibold text-brand-dark underline decoration-brand/40 underline-offset-2 hover:text-brand';
+
+const RichText = ({ text }) => {
+  if (typeof text !== 'string' || !text) return text ?? null;
+  const parts = [];
+  let last = 0;
+  for (const match of text.matchAll(INLINE_RE)) {
+    if (match.index > last) parts.push(text.slice(last, match.index));
+    const key = `${match.index}`;
+    if (match[3]) {
+      parts.push(<strong key={key} className="font-semibold text-ink">{match[3]}</strong>);
+    } else {
+      const [, label, href] = match;
+      const internal = href.startsWith('/') || href.startsWith(SITE_URL);
+      parts.push(
+        internal ? (
+          <Link key={key} to={href.startsWith(SITE_URL) ? href.slice(SITE_URL.length) || '/' : href} className={LINK_CLS}>{label}</Link>
+        ) : (
+          <a key={key} href={href} target="_blank" rel="noopener noreferrer" className={LINK_CLS}>{label}</a>
+        )
+      );
+    }
+    last = match.index + match[0].length;
+  }
+  if (last < text.length) parts.push(text.slice(last));
+  return <>{parts}</>;
+};
+
+/** The same text without link/bold markup, for structured data. */
+const plainText = (text) => (typeof text === 'string' ? text.replace(INLINE_RE, (m, label, href, bold) => bold || label) : '');
+
 const BlogArticlePage = () => {
   const { t, locale, intl } = useI18n();
   const { post, related } = useLoaderData();
@@ -44,6 +78,19 @@ const BlogArticlePage = () => {
     ],
   };
 
+  // FAQ answers as structured data, so Google can show them in search results.
+  const faqSchema = body?.faqs?.length
+    ? {
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        mainEntity: body.faqs.map((faq) => ({
+          '@type': 'Question',
+          name: plainText(faq.q),
+          acceptedAnswer: { '@type': 'Answer', text: plainText(faq.a) },
+        })),
+      }
+    : null;
+
   const copyLink = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
@@ -62,6 +109,7 @@ const BlogArticlePage = () => {
     <div className="bg-white font-sans text-ink">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
+      {faqSchema ? <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} /> : null}
 
       <div className="mx-auto max-w-[1200px] px-[clamp(16px,4vw,40px)] pt-[clamp(14px,2.4vw,26px)]">
         <nav aria-label={t('blog.breadcrumb')} className="flex flex-wrap items-center gap-1.5 text-[13px] font-semibold text-muted-soft">
@@ -123,7 +171,7 @@ const BlogArticlePage = () => {
 
           {body ? (
             <div className="mt-[clamp(22px,3vw,32px)] font-serif text-[clamp(17px,1.6vw,18.5px)] leading-[1.75] text-[#26333d]">
-              {body.intro ? <p>{body.intro}</p> : null}
+              {body.intro ? <p><RichText text={body.intro} /></p> : null}
 
               {body.sections?.map((section, index) => (
                 <SectionBlock key={section.id || index} section={section} />
@@ -213,7 +261,7 @@ const BlogArticlePage = () => {
                     {body.faqs.map((faq) => (
                       <div key={faq.q} className="rounded-2xl border border-[#e6ece9] bg-white p-4">
                         <h3 className="text-[15.5px] font-extrabold tracking-tight text-ink">{faq.q}</h3>
-                        <p className="mt-2 text-[14.5px] leading-relaxed text-muted-soft">{faq.a}</p>
+                        <p className="mt-2 text-[14.5px] leading-relaxed text-muted-soft"><RichText text={faq.a} /></p>
                       </div>
                     ))}
                   </div>
@@ -391,19 +439,26 @@ const SectionBlock = ({ section }) => {
   return (
     <>
       {section.heading ? <h2 id={section.id} className={SECTION_HEADING_CLS}>{section.heading}</h2> : null}
-      {(section.paragraphs || []).map((paragraph) => (<p key={paragraph} className="mt-3">{paragraph}</p>))}
+      {(section.paragraphs || []).map((paragraph) => (<p key={paragraph} className="mt-3"><RichText text={paragraph} /></p>))}
       {section.points?.length ? (
         <ul className="mt-3.5 flex flex-col gap-2 pl-5">
           {section.points.map((point) => (
-            <li key={point.title}><strong className="font-semibold text-ink">{point.title}</strong> {point.body}</li>
+            <li key={point.title}><strong className="font-semibold text-ink">{point.title}</strong> <RichText text={point.body} /></li>
           ))}
         </ul>
       ) : null}
       {section.list?.length ? (
-        <ul className="mt-3.5 flex flex-col gap-2 pl-5">
-          {section.list.map((line) => (<li key={line}>{line}</li>))}
-        </ul>
+        section.ordered ? (
+          <ol className="mt-3.5 flex list-decimal flex-col gap-2 pl-6">
+            {section.list.map((line) => (<li key={line}><RichText text={line} /></li>))}
+          </ol>
+        ) : (
+          <ul className="mt-3.5 flex flex-col gap-2 pl-5">
+            {section.list.map((line) => (<li key={line}><RichText text={line} /></li>))}
+          </ul>
+        )
       ) : null}
+      {(section.after || []).map((paragraph) => (<p key={paragraph} className="mt-3"><RichText text={paragraph} /></p>))}
     </>
   );
 };

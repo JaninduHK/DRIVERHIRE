@@ -12,6 +12,7 @@ const staticEntries = [
   { path: '/get-quotes', changefreq: 'weekly', priority: '0.8' },
   { path: '/blog', changefreq: 'weekly', priority: '0.7' },
   { path: '/blog/tourist-driver-vs-chauffeur-guide-vs-national-guide', changefreq: 'monthly', priority: '0.6' },
+  { path: '/blog/is-it-safe-to-hire-a-private-driver-in-sri-lanka', changefreq: 'monthly', priority: '0.6' },
   { path: '/trip-cost-calculator', changefreq: 'monthly', priority: '0.6' },
   { path: '/about', changefreq: 'monthly', priority: '0.5' },
   { path: '/contact', changefreq: 'monthly', priority: '0.5' },

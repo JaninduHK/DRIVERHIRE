@@ -27,8 +27,9 @@ export function meta({ data, location }) {
     });
   }
   return buildMeta({
-    title: t('meta.article.title', { title: post.title }),
-    description: post.excerpt,
+    // A post can set its own search title (used as-is) and meta description.
+    title: post.seoTitle || t('meta.article.title', { title: post.title }),
+    description: post.metaDescription || post.excerpt,
     locale,
     path: `/blog/${post.slug}`,
     type: 'article',
