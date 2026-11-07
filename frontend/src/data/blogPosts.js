@@ -157,6 +157,7 @@ export const BLOG_POSTS = [
     readTime: "6 min read",
     wordCount: 1150,
     heroAlt: "Private driver in Sri Lanka with tourists",
+    heroImage: "/images/blog/is-it-safe-to-hire-a-private-driver-in-sri-lanka.jpg",
     author: AUTHOR,
     publishedAt: "2026-11-07",
     related: [
