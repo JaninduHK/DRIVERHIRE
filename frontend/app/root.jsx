@@ -22,7 +22,7 @@ import '../src/index.css';
 // The <head> defaults that used to live in index.html. Per-route <title>/meta is layered
 // on top of these by each route's `meta` export.
 export const links = () => [
-  { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+  { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg?v=2' },
   { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
   { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossOrigin: 'anonymous' },
   {
