@@ -119,6 +119,8 @@ const notifyApprovedDriversOfBrief = async (brief) => {
       role: USER_ROLES.DRIVER,
       driverStatus: DRIVER_STATUS.APPROVED,
       email: { $exists: true, $ne: '' },
+      // Frozen for unpaid commission: they can't quote, so don't alert them.
+      commissionFrozenAt: null,
     }).select('name email role driverStatus expoPushTokens briefAlertEmailOptIn');
 
     if (!drivers.length) {

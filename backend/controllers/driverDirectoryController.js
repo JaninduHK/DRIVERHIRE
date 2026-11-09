@@ -212,6 +212,8 @@ export const listPublicDrivers = async (req, res) => {
       role: USER_ROLES.DRIVER,
       driverStatus: DRIVER_STATUS.APPROVED,
       deletedAt: null,
+      // Frozen for unpaid commission: hidden from listings until paid.
+      commissionFrozenAt: null,
     })
       .select(
         'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation shareLiveLocation experienceYears licenseType licenseStatus featured featuredOrder'
@@ -280,13 +282,16 @@ export const getPublicDriverDetails = async (req, res) => {
       deletedAt: null,
     })
       .select(
-        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation shareLiveLocation experienceYears licenseType licenseStatus featured featuredOrder'
+        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation shareLiveLocation experienceYears licenseType licenseStatus featured featuredOrder commissionFrozenAt'
       )
       .lean();
 
     if (!driver) {
       return res.status(404).json({ message: 'Driver not found.' });
     }
+    // A frozen driver's page stays reachable by direct link but says they aren't taking bookings.
+    const notTakingBookings = Boolean(driver.commissionFrozenAt);
+    delete driver.commissionFrozenAt;
 
     const activeDiscount = await findActiveCommissionDiscount();
     const vehicles = await Vehicle.find({
@@ -322,7 +327,7 @@ export const getPublicDriverDetails = async (req, res) => {
     );
 
     return res.json({
-      driver: driverSummary,
+      driver: { ...driverSummary, notTakingBookings },
       vehicles: shapedVehicles,
     });
   } catch (error) {

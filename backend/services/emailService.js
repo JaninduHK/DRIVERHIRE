@@ -1892,6 +1892,128 @@ export const sendCommissionDueEmail = async ({
   });
 };
 
+// ---- Unpaid-commission freeze emails (services/commissionFreezeService.js) ----
+// `periods` is a list of { label: 'November 2026', amountLabel: 'US$12.50' }.
+const periodLinesHtml = (periods) =>
+  (periods || []).map((p) => `• <b>${escapeHtml(p.label)}</b>: ${escapeHtml(p.amountLabel)}`).join('<br>');
+const periodLinesText = (periods) => (periods || []).map((p) => `- ${p.label}: ${p.amountLabel}`).join('\n');
+const FREEZE_EFFECTS =
+  'While frozen you cannot send quotes or messages, travellers cannot book your vehicles, and your profile is hidden from the website.';
+const HOW_TO_PAY =
+  'Pay using the bank details in the <b>My Earnings</b> tab of your driver dashboard and upload the transfer slip there. Your account unfreezes as soon as our team confirms the payment.';
+const HOW_TO_PAY_TEXT =
+  'Pay using the bank details in the My Earnings tab of your driver dashboard and upload the transfer slip there. Your account unfreezes as soon as our team confirms the payment.';
+
+/** One-time announcement of the deadline and freeze rule. */
+export const sendCommissionPolicyNoticeEmail = async ({ to, driverName, firstDeadlineLabel, earningsUrl }) => {
+  const brandName = getBrandName();
+  const safeName = escapeHtml(driverName || 'there');
+  const safeDeadline = escapeHtml(firstDeadlineLabel);
+  const html = buildEmailTemplate({
+    title: 'Commission must be paid by the 10th of each month',
+    preheader: `Starting ${safeDeadline}, unpaid commission freezes your account`,
+    bodyLines: [
+      `Hi ${safeName},`,
+      'From now on, the commission for each month must be paid by the <b>10th of the following month</b>, and confirmed by our team.',
+      `This starts with November's commission, which is due by <b>${safeDeadline}</b>.`,
+      `If a month's commission is still unpaid after the 10th, your account is <b>frozen</b> automatically. ${FREEZE_EFFECTS}`,
+      'It unfreezes as soon as we confirm your payment. Upload your transfer slip early so we have time to check it.',
+      'You will get a reminder on the 1st, a warning on the 7th and a final notice on the 10th. Questions? Reply to this email or contact support@carwithdriver.lk.',
+    ],
+    action: { label: 'Open My Earnings', url: earningsUrl },
+  });
+  const text =
+    `Hi ${driverName || 'there'},\n\n` +
+    `From now on, each month's commission must be paid by the 10th of the following month and confirmed by our team. ` +
+    `This starts with November's commission, due by ${firstDeadlineLabel}.\n\n` +
+    `If a month's commission is still unpaid after the 10th, your account is frozen automatically. ${FREEZE_EFFECTS} ` +
+    `It unfreezes as soon as we confirm your payment.\n\nMy Earnings: ${earningsUrl}\n\n` +
+    `Questions? Contact support@carwithdriver.lk.\n\n${brandName}`;
+  await sendEmail({ to, subject: 'New rule: pay commission by the 10th to keep your account active', html, text });
+};
+
+/** Before the deadline: `final` = it's the last day. */
+export const sendCommissionFreezeWarningEmail = async ({ to, driverName, periodLabel, amountLabel, deadlineLabel, final = false, earningsUrl }) => {
+  const brandName = getBrandName();
+  const safeName = escapeHtml(driverName || 'there');
+  const safePeriod = escapeHtml(periodLabel);
+  const safeAmount = escapeHtml(amountLabel);
+  const safeDeadline = escapeHtml(deadlineLabel);
+  const title = final ? `Last day: pay your ${safePeriod} commission today` : `Your ${safePeriod} commission is due by ${safeDeadline}`;
+  const html = buildEmailTemplate({
+    title,
+    preheader: final ? 'Your account will be frozen tomorrow if unpaid' : `${safeAmount} is due by ${safeDeadline}`,
+    bodyLines: [
+      `Hi ${safeName},`,
+      final
+        ? `Today is the last day to pay your <b>${safePeriod}</b> commission of <b>${safeAmount}</b>. If it is not paid and confirmed by the end of today, your account will be <b>frozen</b> tomorrow.`
+        : `Your <b>${safePeriod}</b> commission of <b>${safeAmount}</b> is due by <b>${safeDeadline}</b>. If it is not paid by then, your account will be <b>frozen</b>.`,
+      FREEZE_EFFECTS,
+      HOW_TO_PAY,
+    ],
+    action: { label: 'Pay commission', url: earningsUrl },
+  });
+  const text =
+    `Hi ${driverName || 'there'},\n\n` +
+    (final
+      ? `Today is the last day to pay your ${periodLabel} commission of ${amountLabel}. If it is not paid and confirmed by the end of today, your account will be frozen tomorrow.`
+      : `Your ${periodLabel} commission of ${amountLabel} is due by ${deadlineLabel}. If it is not paid by then, your account will be frozen.`) +
+    `\n\n${FREEZE_EFFECTS}\n\n${HOW_TO_PAY_TEXT}\n${earningsUrl}\n\n${brandName}`;
+  await sendEmail({
+    to,
+    subject: final ? `Last day: ${periodLabel} commission (${amountLabel}) or your account is frozen tomorrow` : `Reminder: ${periodLabel} commission (${amountLabel}) due by ${deadlineLabel}`,
+    html,
+    text,
+  });
+};
+
+/** The account was frozen (`reminder` = the repeat email while it stays frozen). */
+export const sendCommissionFrozenEmail = async ({ to, driverName, periods, reminder = false, earningsUrl }) => {
+  const brandName = getBrandName();
+  const safeName = escapeHtml(driverName || 'there');
+  const html = buildEmailTemplate({
+    title: reminder ? 'Your account is still frozen' : 'Your account has been frozen',
+    preheader: 'Unpaid commission. Pay to unfreeze your account.',
+    bodyLines: [
+      `Hi ${safeName},`,
+      reminder
+        ? 'Your account is still frozen because this commission is unpaid:'
+        : 'Your account has been frozen because this commission was not paid by the 10th:',
+      periodLinesHtml(periods),
+      FREEZE_EFFECTS,
+      HOW_TO_PAY,
+      'Confirmed bookings you already have are not affected. If you think this is a mistake, reply to this email or contact support@carwithdriver.lk.',
+    ],
+    action: { label: 'Pay and unfreeze', url: earningsUrl },
+  });
+  const text =
+    `Hi ${driverName || 'there'},\n\n` +
+    (reminder ? 'Your account is still frozen because this commission is unpaid:\n' : 'Your account has been frozen because this commission was not paid by the 10th:\n') +
+    `${periodLinesText(periods)}\n\n${FREEZE_EFFECTS}\n\n${HOW_TO_PAY_TEXT}\n${earningsUrl}\n\n` +
+    `Confirmed bookings you already have are not affected.\n\n${brandName}`;
+  await sendEmail({ to, subject: reminder ? 'Reminder: your account is still frozen (unpaid commission)' : 'Your account has been frozen (unpaid commission)', html, text });
+};
+
+/** Every overdue month is paid and the freeze is lifted. */
+export const sendCommissionUnfrozenEmail = async ({ to, driverName, dashboardUrl }) => {
+  const brandName = getBrandName();
+  const safeName = escapeHtml(driverName || 'there');
+  const html = buildEmailTemplate({
+    title: 'Your account is active again',
+    preheader: 'Thanks, your commission payment is confirmed',
+    bodyLines: [
+      `Hi ${safeName},`,
+      'Thank you, your commission payment has been confirmed and your account is <b>active again</b>.',
+      'You can send quotes and messages, travellers can book your vehicles, and your profile is back on the website.',
+    ],
+    action: { label: 'Open dashboard', url: dashboardUrl },
+  });
+  const text =
+    `Hi ${driverName || 'there'},\n\nThank you, your commission payment has been confirmed and your account is active again. ` +
+    `You can send quotes and messages, and travellers can book your vehicles.\n\n${dashboardUrl}\n\n${brandName}`;
+  await sendEmail({ to, subject: 'Your account is active again', html, text });
+};
+
 export const sendReviewRequestEmail = async ({
   to,
   travelerName,

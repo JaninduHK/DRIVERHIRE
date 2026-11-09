@@ -74,7 +74,9 @@ export default function Earnings() {
   const rateLabel = formatPercent(totals?.effectiveCommissionRate || totals?.commissionRate);
   const statusKey = (commission?.status ?? 'pending').toLowerCase();
   const tone = STATUS_TONE[statusKey] ?? STATUS_TONE.pending;
-  const canUploadSlip = statusKey !== 'approved';
+  // The server says when a slip may be filed: only once the month is over, and not once it's paid.
+  const slipNotYet = summary?.period?.slipUploadAllowed === false;
+  const canUploadSlip = statusKey !== 'approved' && !slipNotYet;
 
   return (
     <Screen>
@@ -214,6 +216,11 @@ export default function Earnings() {
                 {bank?.swiftCode ? <DetailLine label="SWIFT / BIC" value={bank.swiftCode} /> : null}
                 <DetailLine label="Reference" value={bank?.referenceNote} fullWidth />
               </View>
+              {slipNotYet && statusKey !== 'approved' ? (
+                <Text className="mt-3 rounded-xl bg-canvas px-3 py-2.5 font-med text-[12.5px] text-muted">
+                  You can upload the payment slip for {summary?.period?.label} from {summary?.period?.slipUploadOpensLabel}, once the month has ended.
+                </Text>
+              ) : null}
               {canUploadSlip ? (
                 <Pressable
                   onPress={() => slip.mutate()}

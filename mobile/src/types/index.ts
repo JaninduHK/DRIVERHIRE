@@ -224,7 +224,7 @@ export interface EarningsBooking {
 }
 
 export interface EarningsSummary {
-  period?: { value?: string; label?: string; commissionDueDate?: string };
+  period?: { value?: string; label?: string; commissionDueDate?: string; slipUploadAllowed?: boolean; slipUploadOpensLabel?: string };
   totals?: {
     totalGross?: number;
     driverEarnings?: number;

@@ -1176,6 +1176,19 @@ const DriverDashboard = () => {
         onUnavailable={handleUnavailableToday}
       />
       <div className="mx-auto min-h-screen w-full max-w-[480px] bg-canvas shadow-[0_0_60px_rgba(15,31,45,0.06)] lg:mx-0 lg:max-w-none lg:flex-1 lg:shadow-none">
+        {profile?.commissionFrozenAt ? (
+          // Unpaid-commission freeze (server: commissionFreezeService). Shown on every tab.
+          <div className="m-3 rounded-[14px] border border-rose-200 bg-rose-50 p-4 text-rose-800 lg:mx-6 lg:mt-5">
+            <b className="text-[14px]">Your account is frozen</b>
+            <p className="mt-1 text-[12.5px] leading-relaxed">
+              Commission for {formatFrozenPeriods(profile.commissionFrozenPeriods)} is unpaid. Until it is paid you can&apos;t send quotes or
+              messages, travellers can&apos;t book you, and your profile is hidden. Pay and upload the slip; your account unfreezes once we confirm it.
+            </p>
+            <button type="button" onClick={() => goToTab('earnings')} className="mt-2.5 rounded-[10px] bg-rose-600 px-3.5 py-2 text-[12.5px] font-bold text-white hover:bg-rose-700">
+              Pay commission
+            </button>
+          </div>
+        ) : null}
         {currentTabId === 'overview' ? (
           <DriverOverview
             firstName={firstName}
@@ -1199,6 +1212,16 @@ const DriverDashboard = () => {
       </div>
     </div>
   );
+};
+
+const FROZEN_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+// ['2026-11'] -> 'November 2026'
+const formatFrozenPeriods = (periods) => {
+  const names = (periods || []).map((key) => {
+    const [year, month] = String(key).split('-').map(Number);
+    return FROZEN_MONTHS[month - 1] ? `${FROZEN_MONTHS[month - 1]} ${year}` : key;
+  });
+  return names.length ? names.join(', ') : 'a previous month';
 };
 
 // ---- Driver Overview (redesign direction 1b "Bold header") ----
@@ -2800,7 +2823,9 @@ const DriverEarningsPanel = ({ onMenu, driverName, driverImage, state, onMonthCh
   const driverEarningsLabel = formatCurrency(totals?.driverEarnings);
   const totalGrossLabel = formatCurrency(totals?.totalGross);
   const statusBadge = statusBadgeStyles[commission?.status] || 'bg-slate-200 text-slate-700';
-  const canUploadSlip = commission?.status !== 'approved';
+  // The server says when a slip may be filed: only once the month is over, and not once it's paid.
+  const slipNotYet = period?.slipUploadAllowed === false;
+  const canUploadSlip = commission?.status !== 'approved' && !slipNotYet;
   const baseCommissionRate =
     bookings?.find((booking) => Number.isFinite(booking.commissionBaseRate))?.commissionBaseRate ||
     0.08;
@@ -2926,6 +2951,11 @@ const DriverEarningsPanel = ({ onMenu, driverName, driverImage, state, onMonthCh
             ) : null}
             <DetailLine label="Reference" value={bankDetails?.referenceNote || '—'} fullWidth />
           </dl>
+          {slipNotYet && commission?.status !== 'approved' ? (
+            <p className="mt-3 rounded-[12px] bg-canvas px-3 py-2.5 text-[12.5px] text-muted">
+              You can upload the payment slip for {period?.label} from {period?.slipUploadOpensLabel}, once the month has ended.
+            </p>
+          ) : null}
           {canUploadSlip ? (
             <>
               <input

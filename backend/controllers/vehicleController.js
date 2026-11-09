@@ -39,6 +39,8 @@ const sanitizeDriver = (driverDoc, extras = {}) => {
     profilePhoto: buildAssetUrl(source.profilePhoto, req),
     // Only surface the license type once an admin has approved it.
     licenseType: source.licenseStatus === 'approved' ? source.licenseType || null : null,
+    // Frozen for unpaid commission (only loaded on the vehicle page; listings hide them).
+    notTakingBookings: Boolean(source.commissionFrozenAt),
     // Drivers who switch "Available today" off stop publishing their position, so
     // no coordinates leave the API for them. Defaults to shared when unset.
     location: source.shareLiveLocation !== false && source.driverLocation
@@ -377,7 +379,8 @@ export const listVehicles = async (req, res) => {
       .sort(sortOption)
       .populate({
         path: 'driver',
-        match: { driverStatus: DRIVER_STATUS.APPROVED, deletedAt: null },
+        // commissionFrozenAt: frozen for unpaid commission, hidden from listings until paid.
+        match: { driverStatus: DRIVER_STATUS.APPROVED, deletedAt: null, commissionFrozenAt: null },
         select:
           'name description contactNumber tripAdvisor address driverStatus createdAt profilePhoto driverLocation shareLiveLocation',
         options: { lean: true },
@@ -482,7 +485,7 @@ export const getVehicleDetails = async (req, res) => {
       .populate({
         path: 'driver',
         select:
-          'name description contactNumber tripAdvisor address driverStatus createdAt profilePhoto driverLocation shareLiveLocation licenseType licenseStatus',
+          'name description contactNumber tripAdvisor address driverStatus createdAt profilePhoto driverLocation shareLiveLocation licenseType licenseStatus commissionFrozenAt',
         match: { driverStatus: DRIVER_STATUS.APPROVED, deletedAt: null },
         options: { lean: true },
       })
@@ -674,11 +677,16 @@ export const createVehicleBooking = async (req, res) => {
       .populate({
         path: 'driver',
         match: { driverStatus: DRIVER_STATUS.APPROVED, deletedAt: null },
-        select: '_id name email driverStatus contactNumber profilePhoto driverLocation shareLiveLocation',
+        select: '_id name email driverStatus contactNumber profilePhoto driverLocation shareLiveLocation commissionFrozenAt',
       });
 
     if (!vehicle || !vehicle.driver) {
       return res.status(404).json({ message: 'Vehicle not found' });
+    }
+
+    // Driver frozen for unpaid commission: no new bookings, including accepting their offers.
+    if (vehicle.driver.commissionFrozenAt) {
+      return res.status(403).json({ message: 'This driver is not taking new bookings right now. Please choose another driver.' });
     }
 
     if (offerId) {

@@ -27,6 +27,7 @@ import { startOfferExpiryScheduler } from './services/offerExpiryService.js';
 import { startRetentionScheduler } from './services/retentionSweepService.js';
 import { startBriefExpiryScheduler } from './services/briefExpiryService.js';
 import { startCommissionReminderScheduler } from './services/commissionReminderService.js';
+import { startCommissionFreezeScheduler } from './services/commissionFreezeService.js';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -181,6 +182,7 @@ const startServer = async () => {
 
     // Monthly commission-due email, to drivers who actually owe something.
     startCommissionReminderScheduler();
+    startCommissionFreezeScheduler();
   } catch (error) {
     console.error('Server startup failed:', error.message);
     process.exit(1);

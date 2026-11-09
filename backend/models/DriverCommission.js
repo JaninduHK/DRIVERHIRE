@@ -80,6 +80,16 @@ const driverCommissionSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    // Freeze-warning emails for this month (services/commissionFreezeService.js):
+    // a few days before the deadline, and on the last day.
+    freezeWarningSentAt: {
+      type: Date,
+      default: null,
+    },
+    freezeFinalNoticeSentAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

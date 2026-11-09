@@ -158,10 +158,14 @@ export const startConversation = async (req, res) => {
       _id: driverId,
       role: USER_ROLES.DRIVER,
       driverStatus: DRIVER_STATUS.APPROVED,
-    }).select('id name driverStatus');
+    }).select('id name driverStatus commissionFrozenAt');
 
     if (!driver) {
       return res.status(404).json({ message: 'Driver not found or unavailable.' });
+    }
+    // Frozen for unpaid commission: they couldn't reply, so don't open a new chat.
+    if (driver.commissionFrozenAt) {
+      return res.status(403).json({ message: 'This driver is not taking new requests right now. Please choose another driver.' });
     }
 
     let vehicle = null;

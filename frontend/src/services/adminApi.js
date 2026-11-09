@@ -237,6 +237,13 @@ export const setDriverBriefAlertEmail = (driverId, enabled) =>
     body: JSON.stringify({ enabled }),
   });
 
+// Give a driver extra time on unpaid commission (no freeze until `until`); null removes it.
+export const setDriverCommissionGrace = (driverId, until) =>
+  request(`/drivers/${driverId}/commission-grace`, {
+    method: 'PATCH',
+    body: JSON.stringify({ until }),
+  });
+
 // Mark a driver's email verified (lets them sign in) or not verified.
 export const setDriverEmailVerified = (driverId, verified) =>
   request(`/drivers/${driverId}/email-verified`, {

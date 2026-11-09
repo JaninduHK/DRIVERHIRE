@@ -70,7 +70,11 @@ export const DriverApprovalSetting = () => {
 };
 
 const DriversPanel = ({ state, onRetry, onView, searchValue = '', onSearchChange }) => {
-  const { items: drivers, loading, error } = state;
+  const { items: allDrivers, loading, error } = state;
+  // Drivers frozen for unpaid commission (see commissionFreezeService on the server).
+  const [frozenOnly, setFrozenOnly] = useState(false);
+  const frozenCount = allDrivers.filter((driver) => driver.commissionFrozenAt).length;
+  const drivers = frozenOnly ? allDrivers.filter((driver) => driver.commissionFrozenAt) : allDrivers;
 
   if (loading) {
     return <div className="flex min-h-[240px] items-center justify-center rounded-[18px] bg-surface text-sm text-muted shadow-card">Loading drivers…</div>;
@@ -94,7 +98,16 @@ const DriversPanel = ({ state, onRetry, onView, searchValue = '', onSearchChange
           <b className="text-[15px] text-ink">{searchValue.trim() ? 'Matching drivers' : 'All drivers'} <span className="font-semibold text-muted-soft">({drivers.length})</span></b>
           <p className="mt-1 text-[11.5px] text-muted-soft">Select a driver to view the complete record.</p>
         </div>
-        {onSearchChange ? <PanelSearch value={searchValue} onChange={onSearchChange} placeholder="Search name, email, phone or location…" className="w-full sm:w-[300px]" /> : null}
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <button
+            type="button"
+            onClick={() => setFrozenOnly((value) => !value)}
+            className={`rounded-full px-3.5 py-2 text-[12px] font-bold transition ${frozenOnly ? 'bg-rose-600 text-white' : 'bg-canvas text-muted hover:text-ink'}`}
+          >
+            Frozen for unpaid commission ({frozenCount})
+          </button>
+          {onSearchChange ? <PanelSearch value={searchValue} onChange={onSearchChange} placeholder="Search name, email, phone or location…" className="w-full sm:w-[300px]" /> : null}
+        </div>
       </div>
 
       {drivers.length === 0 ? (
@@ -123,6 +136,7 @@ const DriversPanel = ({ state, onRetry, onView, searchValue = '', onSearchChange
                   <div className="flex flex-wrap items-center gap-2">
                     <b className="truncate text-[13.5px] text-ink">{driver.name}</b>
                     <span className={tagClass(STATUS_TAGS[driver.driverStatus] || 'amber')}>{driver.driverStatus || 'pending'}</span>
+                    {driver.commissionFrozenAt ? <span className={tagClass('red')}>Frozen</span> : null}
                   </div>
                   <p className="mt-0.5 truncate text-[11.5px] text-muted-soft">{driver.contactNumber || 'No contact number'}</p>
                 </div>

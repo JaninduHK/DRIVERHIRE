@@ -129,7 +129,7 @@ const sameDay = (a, b) => Boolean(a && b) && new Date(a).toISOString().slice(0, 
 export const getDriverOverview = async (req, res) => {
   try {
     const driver = await User.findById(req.user.id).select(
-      'name email contactNumber address description tripAdvisor driverStatus createdAt profilePhoto driverLocation shareLiveLocation driverApprovedAt driverProfileTourCompletedAt driverReviewedAt experienceYears licenseType licenseImage licenseStatus licenseSubmittedAt licenseReviewedAt licenseAdminNote'
+      'name email contactNumber address description tripAdvisor driverStatus createdAt profilePhoto driverLocation shareLiveLocation driverApprovedAt driverProfileTourCompletedAt driverReviewedAt experienceYears licenseType licenseImage licenseStatus licenseSubmittedAt licenseReviewedAt licenseAdminNote commissionFrozenAt commissionFrozenPeriods'
     );
 
     if (!driver) {

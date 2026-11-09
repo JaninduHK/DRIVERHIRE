@@ -172,6 +172,35 @@ const userSchema = new mongoose.Schema(
       maxlength: 300,
       default: '',
     },
+    // Unpaid-commission freeze (services/commissionFreezeService.js). Set when a month's
+    // commission is still not marked paid after the 10th of the following month; cleared
+    // once every overdue month is paid. While set the driver can't message, quote or be
+    // booked, and is hidden from public listings.
+    commissionFrozenAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
+    // The overdue months behind the freeze, as 'YYYY-MM'.
+    commissionFrozenPeriods: {
+      type: [String],
+      default: [],
+    },
+    // Extra time an admin granted: no freeze until this date.
+    commissionGraceUntil: {
+      type: Date,
+      default: null,
+    },
+    // Last "your account is still frozen" email, so they go out every few days, not hourly.
+    commissionFreezeReminderAt: {
+      type: Date,
+      default: null,
+    },
+    // One-time email announcing the commission deadline and freeze rule.
+    commissionPolicyNoticeSentAt: {
+      type: Date,
+      default: null,
+    },
     // Admin-handpicked for the homepage driver strip, independent of ranking.
     // Mirrors Review.featured / Review.featuredOrder.
     featured: {

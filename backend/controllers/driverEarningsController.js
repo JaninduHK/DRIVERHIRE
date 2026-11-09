@@ -44,6 +44,8 @@ const clampRate = (value) => {
   return value;
 };
 
+const SL_OFFSET_MS = (5 * 60 + 30) * 60 * 1000; // Sri Lanka is UTC+5:30
+
 const roundCurrency = (value) => Math.round((Number.isFinite(value) ? value : 0) * 100) / 100;
 const roundRate = (value) => Math.round((Number.isFinite(value) ? value : 0) * 10000) / 10000;
 
@@ -76,7 +78,14 @@ const buildPeriodMeta = (year, month) => {
     label,
     periodStart: start.toISOString(),
     periodEnd: lastDay.toISOString(),
-    commissionDueDate: lastDay.toISOString(),
+    // A slip can be uploaded only once the month has ended (Sri Lanka time).
+    slipUploadAllowed: (() => {
+      const slNow = new Date(Date.now() + SL_OFFSET_MS);
+      return year * 12 + (month - 1) < slNow.getUTCFullYear() * 12 + slNow.getUTCMonth();
+    })(),
+    slipUploadOpensLabel: `1 ${MONTH_NAMES[month % 12]} ${month === 12 ? year + 1 : year}`,
+    // Due by the end of the 10th of the following month, Sri Lanka time (freeze deadline).
+    commissionDueDate: new Date(Date.UTC(year, month, 11) - SL_OFFSET_MS).toISOString(),
   };
 };
 
@@ -307,6 +316,19 @@ export const uploadCommissionPaymentSlip = async (req, res) => {
 
     if (!commission) {
       return res.status(404).json({ message: 'Commission record not found.' });
+    }
+
+    // A month's commission can only be paid once the month is over (Sri Lanka time),
+    // so a slip can't be filed against the current or a future month by mistake.
+    const slNow = new Date(Date.now() + SL_OFFSET_MS);
+    const currentIndex = slNow.getUTCFullYear() * 12 + slNow.getUTCMonth();
+    if (commission.year * 12 + (commission.month - 1) >= currentIndex) {
+      return res.status(400).json({ message: 'You can upload a payment slip only after the month has ended. Please choose the month you are paying for.' });
+    }
+
+    // Already confirmed as paid: a new upload would reset it to "waiting for review".
+    if (commission.status === COMMISSION_STATUS.APPROVED) {
+      return res.status(400).json({ message: 'This month is already marked as paid.' });
     }
 
     if (!req.file) {

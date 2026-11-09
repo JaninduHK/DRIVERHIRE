@@ -19,6 +19,7 @@ import {
   Wallet,
   XCircle,
   MailCheck,
+  Clock,
 } from 'lucide-react';
 import {
   fetchDriverDetails,
@@ -26,6 +27,7 @@ import {
   setDriverFeatured,
   setDriverBriefAlertEmail,
   setDriverEmailVerified,
+  setDriverCommissionGrace,
   setDriverMessagingSuspension,
   setDriverPassword,
   updateDriverDetails,
@@ -146,6 +148,14 @@ const DriverOverview = ({ data, onEdit, onVerification, onChangeLicenseType }) =
             <DetailRow label="Authentication" value={driver.authProvider} />
             <DetailRow label="Email verified">{driver.isVerified ? <span className={tagClass('green')}>Verified</span> : <span className={tagClass('amber')}>Not verified</span>}</DetailRow>
             <DetailRow label="Application">{driver.driverStatus ? <span className={statusTag(driver.driverStatus)}>{driver.driverStatus}</span> : null}</DetailRow>
+            <DetailRow label="Commission">
+              {driver.commissionFrozenAt
+                ? <span className={tagClass('red')}>Frozen: {(driver.commissionFrozenPeriods || []).join(', ') || 'unpaid commission'}</span>
+                : <span className={tagClass('green')}>Active</span>}
+              {driver.commissionGraceUntil && new Date(driver.commissionGraceUntil) > new Date()
+                ? <span className={`ml-2 ${tagClass('blue')}`}>Extra time until {new Date(driver.commissionGraceUntil).toLocaleDateString()}</span>
+                : null}
+            </DetailRow>
             <DetailRow label="Reviewed"><Timestamp value={driver.driverReviewedAt} /></DetailRow>
             <DetailRow label="Reviewed by" value={driver.driverReviewedBy?.name} />
             <DetailRow label="Approved"><Timestamp value={driver.driverApprovedAt} /></DetailRow>
@@ -427,6 +437,17 @@ const AdminDriverDetails = () => {
     return runAction('password', () => setDriverPassword(driverId, passwordForm.password), 'Driver password updated.');
   };
 
+  // Extra time on unpaid commission: no freeze for 7 more days (unfreezes now if frozen).
+  const graceActive = Boolean(data?.driver?.commissionGraceUntil && new Date(data.driver.commissionGraceUntil) > new Date());
+  const toggleCommissionGrace = () => {
+    if (graceActive) {
+      runAction('commission-grace', () => setDriverCommissionGrace(driverId, null), 'Extra time removed. The driver is frozen again if a month is still overdue.');
+      return;
+    }
+    const until = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    runAction('commission-grace', () => setDriverCommissionGrace(driverId, until), 'Driver has 7 days extra time and is not frozen until then.');
+  };
+
   const toggleEmailVerified = () => {
     const verified = Boolean(data.driver.isVerified);
     // Un-verifying blocks the driver's password sign-in, so ask first.
@@ -504,6 +525,7 @@ const AdminDriverDetails = () => {
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6"><Stat value={summary.completedTrips} label="Completed trips" /><Stat value={summary.upcomingTrips} label="Upcoming" /><Stat value={summary.offerCount} label="Offers" /><Stat value={summary.averageRating ? `${summary.averageRating}/5` : '—'} label={`${summary.reviewCount} reviews`} /><Stat value={formatCurrency(summary.totalGross)} label="Booking value" /><Stat value={formatCurrency(summary.totalEarnings)} label="Driver earnings" /></div>
         <div className="mt-4 flex flex-wrap gap-2 border-t border-hairline pt-4">
+          <button type="button" disabled={Boolean(actionLoading)} onClick={toggleCommissionGrace} className="inline-flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-xs font-bold text-ink hover:bg-canvas disabled:opacity-60"><Clock className="h-4 w-4" /> {graceActive ? 'Remove commission extra time' : 'Give 7 days extra time (commission)'}</button>
           <button type="button" disabled={Boolean(actionLoading)} onClick={toggleEmailVerified} className="inline-flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-xs font-bold text-ink hover:bg-canvas disabled:opacity-60"><MailCheck className="h-4 w-4" /> {driver.isVerified ? 'Mark email not verified' : 'Mark email verified'}</button>
           <button type="button" disabled={Boolean(actionLoading)} onClick={toggleBriefEmails} className="inline-flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-xs font-bold text-ink hover:bg-canvas disabled:opacity-60"><Mail className="h-4 w-4" /> {driver.briefAlertEmailOptIn ? 'Stop brief emails' : 'Send brief emails'}</button>
           <button type="button" disabled={Boolean(actionLoading)} onClick={toggleFeatured} className="inline-flex items-center gap-2 rounded-lg border border-line px-3 py-2 text-xs font-bold text-ink hover:bg-canvas disabled:opacity-60"><Star className={`h-4 w-4 ${driver.featured ? 'fill-amber-400 text-amber-500' : ''}`} /> {driver.featured ? 'Remove from homepage' : 'Feature on homepage'}</button>

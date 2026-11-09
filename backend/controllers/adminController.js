@@ -49,6 +49,7 @@ import {
   findRegistrationConflict,
   parseRegistrationNumber,
 } from '../utils/vehicleRegistration.js';
+import { refreshDriverFreeze } from '../services/commissionFreezeService.js';
 
 const handleValidation = (req, res) => {
   const errors = validationResult(req);
@@ -691,6 +692,9 @@ export const getDriverDetails = async (req, res) => {
       role: driver.role,
       authProvider: driver.authProvider,
       isVerified: Boolean(driver.isVerified),
+      commissionFrozenAt: driver.commissionFrozenAt || null,
+      commissionFrozenPeriods: driver.commissionFrozenPeriods || [],
+      commissionGraceUntil: driver.commissionGraceUntil || null,
       driverStatus: driver.driverStatus,
       driverReviewedAt: driver.driverReviewedAt,
       driverReviewedBy: driver.driverReviewedBy
@@ -783,6 +787,38 @@ export const setDriverBriefAlertEmail = async (req, res) => {
  * Marks a driver's email as verified (or not). Unverified drivers can't sign in
  * with a password, so this unblocks drivers whose verification email never arrived.
  */
+/**
+ * PATCH /admin/drivers/:id/commission-grace
+ *
+ * Gives a driver extra time on unpaid commission: no freeze until `until`
+ * (null removes it). Takes effect straight away.
+ */
+export const setDriverCommissionGrace = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+  try {
+    const driver = await User.findOne({ _id: req.params.id, role: USER_ROLES.DRIVER });
+    if (!driver) {
+      return res.status(404).json({ message: 'Driver not found.' });
+    }
+    const { until } = req.body || {};
+    driver.commissionGraceUntil = until ? new Date(until) : null;
+    await driver.save({ validateBeforeSave: false });
+    await refreshDriverFreeze(driver._id);
+    const fresh = await User.findById(driver._id).select('commissionFrozenAt commissionFrozenPeriods commissionGraceUntil').lean();
+    return res.json({
+      commissionFrozenAt: fresh.commissionFrozenAt,
+      commissionFrozenPeriods: fresh.commissionFrozenPeriods || [],
+      commissionGraceUntil: fresh.commissionGraceUntil,
+    });
+  } catch (error) {
+    console.error('Set driver commission grace error:', error);
+    return res.status(500).json({ message: 'Unable to update extra time for this driver.' });
+  }
+};
+
 export const setDriverEmailVerified = async (req, res) => {
   const validationError = handleValidation(req, res);
   if (validationError) {
@@ -1490,6 +1526,9 @@ export const updateDriverCommissionStatus = async (req, res) => {
     commission.status = status;
     commission.adminNote = adminNote?.trim() || undefined;
     await commission.save();
+    // Marking a month paid lifts an unpaid-commission freeze right away (and moving it
+    // back to unpaid after the deadline re-freezes), instead of waiting for the hourly sweep.
+    await refreshDriverFreeze(driverId);
     commission.driver = driver;
 
     return res.json({ commission: shapeCommission(commission, req) });

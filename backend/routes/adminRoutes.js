@@ -9,6 +9,7 @@ import {
   setDriverFeatured,
   setDriverBriefAlertEmail,
   setDriverEmailVerified,
+  setDriverCommissionGrace,
   reorderFeaturedDrivers,
   updateDriverDetails,
   listLicenseSubmissions,
@@ -108,6 +109,15 @@ router.patch(
     body('enabled').isBoolean().withMessage('enabled must be true or false'),
   ],
   setDriverBriefAlertEmail
+);
+
+router.patch(
+  '/drivers/:id/commission-grace',
+  [
+    param('id').isMongoId().withMessage('Invalid driver identifier'),
+    body('until').optional({ nullable: true }).isISO8601().withMessage('until must be a date'),
+  ],
+  setDriverCommissionGrace
 );
 
 router.patch(
