@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Loader2, Star } from 'lucide-react';
 import { Avatar } from './dashboard/primitives.jsx';
 import ReviewPhotos from './ReviewPhotos.jsx';
@@ -13,6 +14,9 @@ import { useI18n } from '../i18n/I18nProvider.jsx';
  * already-aggregated in-memory list.
  */
 // Same date rendering the vehicle page used before this was extracted.
+// Reviews shown at first, and added per "Show more reviews" click.
+const REVIEWS_PAGE_SIZE = 10;
+
 const formatDate = (value, intl = 'en-US') => {
   if (!value) {
     return null;
@@ -34,6 +38,12 @@ export const ReviewsSection = ({
 }) => {
   const { t, intl } = useI18n();
   const maxCount = Math.max(...(ratingCounts || [1]), 1);
+  const [visibleCount, setVisibleCount] = useState(REVIEWS_PAGE_SIZE);
+  // A new rating filter or sort order starts again from the first 10.
+  useEffect(() => {
+    setVisibleCount(REVIEWS_PAGE_SIZE);
+  }, [reviewFilters.rating, reviewFilters.sort]);
+  const visibleReviews = reviews.slice(0, visibleCount);
   return (
     <div className="rounded-[18px] border border-[#e7ebe9] bg-white p-5 lg:p-6">
       <div className="flex flex-col gap-4 border-b border-hairline pb-5 sm:flex-row sm:items-center sm:gap-6">
@@ -89,7 +99,7 @@ export const ReviewsSection = ({
           // Two flowing columns (not a grid) so a short review isn't stretched to match a
           // long one beside it; each card keeps its own height.
           <div className="gap-4 sm:columns-2">
-            {reviews.map((review) => {
+            {visibleReviews.map((review) => {
               const reviewDateLabel = formatDate(
                 review.reviewDate || review.publishedAt || review.visitedStartDate || review.createdAt,
                 intl,
@@ -115,6 +125,17 @@ export const ReviewsSection = ({
             })}
           </div>
         )}
+        {!reviewsLoading && !reviewsError && reviews.length > visibleCount ? (
+          <div className="mt-1 flex justify-center">
+            <button
+              type="button"
+              onClick={() => setVisibleCount((count) => count + REVIEWS_PAGE_SIZE)}
+              className="rounded-full border border-[#e2e8ea] bg-white px-5 py-2.5 text-[13px] font-bold text-ink transition hover:border-brand hover:text-brand"
+            >
+              {t('reviews.showMore')} ({reviews.length - visibleCount})
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );

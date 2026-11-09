@@ -1,5 +1,8 @@
 {
-  "count": { "one": "{count} review", "other": "{count} reviews" },
+  "count": {
+    "one": "{count} review",
+    "other": "{count} reviews"
+  },
   "sort": {
     "newest": "Newest",
     "highest": "Highest",
@@ -10,5 +13,6 @@
   "tryAgain": "Try again",
   "empty": "No reviews yet. Be the first to explore Sri Lanka with {name} and share your story.",
   "traveller": "Traveller",
-  "recentTrip": "Recent trip"
+  "recentTrip": "Recent trip",
+  "showMore": "Show more reviews"
 }
