@@ -86,7 +86,9 @@ export const ReviewsSection = ({
             {t('reviews.empty', { name: firstName })}
           </p>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
+          // Two flowing columns (not a grid) so a short review isn't stretched to match a
+          // long one beside it; each card keeps its own height.
+          <div className="gap-4 sm:columns-2">
             {reviews.map((review) => {
               const reviewDateLabel = formatDate(
                 review.reviewDate || review.publishedAt || review.visitedStartDate || review.createdAt,
@@ -94,7 +96,7 @@ export const ReviewsSection = ({
               );
               const travelerName = review.travelerName || t('reviews.traveller');
               return (
-                <article key={review.id} className="rounded-[16px] border border-[#eef1f0] bg-white p-4">
+                <article key={review.id} className="mb-4 break-inside-avoid rounded-[16px] border border-[#eef1f0] bg-white p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                       <Avatar name={travelerName} tone="purple" className="h-9 w-9 rounded-[11px] text-[13px]" />
