@@ -695,6 +695,7 @@ export const getDriverDetails = async (req, res) => {
       commissionFrozenAt: driver.commissionFrozenAt || null,
       commissionFrozenPeriods: driver.commissionFrozenPeriods || [],
       commissionGraceUntil: driver.commissionGraceUntil || null,
+      commissionEnforceFrom: driver.commissionEnforceFrom || null,
       driverStatus: driver.driverStatus,
       driverReviewedAt: driver.driverReviewedAt,
       driverReviewedBy: driver.driverReviewedBy
@@ -816,6 +817,38 @@ export const setDriverCommissionGrace = async (req, res) => {
   } catch (error) {
     console.error('Set driver commission grace error:', error);
     return res.status(500).json({ message: 'Unable to update extra time for this driver.' });
+  }
+};
+
+/**
+ * PATCH /admin/drivers/:id/commission-enforce-from
+ *
+ * Also enforces older unpaid months (before the global start) for this driver,
+ * from `from` ('YYYY-MM'); null stops it. Unpaid ones freeze the driver right
+ * away and unfreeze once marked paid, through the same freeze system.
+ */
+export const setDriverCommissionEnforceFrom = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+  try {
+    const driver = await User.findOne({ _id: req.params.id, role: USER_ROLES.DRIVER });
+    if (!driver) {
+      return res.status(404).json({ message: 'Driver not found.' });
+    }
+    driver.commissionEnforceFrom = req.body?.from || null;
+    await driver.save({ validateBeforeSave: false });
+    await refreshDriverFreeze(driver._id);
+    const fresh = await User.findById(driver._id).select('commissionFrozenAt commissionFrozenPeriods commissionEnforceFrom').lean();
+    return res.json({
+      commissionFrozenAt: fresh.commissionFrozenAt,
+      commissionFrozenPeriods: fresh.commissionFrozenPeriods || [],
+      commissionEnforceFrom: fresh.commissionEnforceFrom,
+    });
+  } catch (error) {
+    console.error('Set driver commission enforce-from error:', error);
+    return res.status(500).json({ message: 'Unable to update commission enforcement for this driver.' });
   }
 };
 

@@ -10,6 +10,7 @@ import {
   setDriverBriefAlertEmail,
   setDriverEmailVerified,
   setDriverCommissionGrace,
+  setDriverCommissionEnforceFrom,
   reorderFeaturedDrivers,
   updateDriverDetails,
   listLicenseSubmissions,
@@ -109,6 +110,15 @@ router.patch(
     body('enabled').isBoolean().withMessage('enabled must be true or false'),
   ],
   setDriverBriefAlertEmail
+);
+
+router.patch(
+  '/drivers/:id/commission-enforce-from',
+  [
+    param('id').isMongoId().withMessage('Invalid driver identifier'),
+    body('from').optional({ nullable: true }).matches(/^\d{4}-(0[1-9]|1[0-2])$/).withMessage('from must be YYYY-MM'),
+  ],
+  setDriverCommissionEnforceFrom
 );
 
 router.patch(

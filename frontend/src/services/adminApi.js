@@ -237,6 +237,13 @@ export const setDriverBriefAlertEmail = (driverId, enabled) =>
     body: JSON.stringify({ enabled }),
   });
 
+// Also enforce older unpaid months for this driver from `from` ('YYYY-MM'); null stops it.
+export const setDriverCommissionEnforceFrom = (driverId, from) =>
+  request(`/drivers/${driverId}/commission-enforce-from`, {
+    method: 'PATCH',
+    body: JSON.stringify({ from }),
+  });
+
 // Give a driver extra time on unpaid commission (no freeze until `until`); null removes it.
 export const setDriverCommissionGrace = (driverId, until) =>
   request(`/drivers/${driverId}/commission-grace`, {

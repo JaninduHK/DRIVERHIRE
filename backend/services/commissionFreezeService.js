@@ -58,11 +58,22 @@ export const deadlineLabel = (year, month) => {
 
 const previousPeriod = ({ year, month }) => (month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 });
 
+const parseKey = (key) => {
+  const [year, month] = String(key || '').split('-').map(Number);
+  return Number.isInteger(year) && month >= 1 && month <= 12 ? { year, month } : null;
+};
+
+/** Where enforcement starts for a driver: the global start, or earlier if an admin chose. */
+const enforceStartFor = (driver) => {
+  const own = parseKey(driver?.commissionEnforceFrom);
+  return own && comparePeriods(own, ENFORCE_FROM) < 0 ? own : ENFORCE_FROM;
+};
+
 /** Enforced months that have fully ended, oldest first. */
-const endedEnforcedPeriods = (now) => {
+const endedEnforcedPeriods = (now, from = ENFORCE_FROM) => {
   const last = previousPeriod(slDate(now));
   const periods = [];
-  for (let p = { ...ENFORCE_FROM }; comparePeriods(p, last) <= 0; p = p.month === 12 ? { year: p.year + 1, month: 1 } : { year: p.year, month: p.month + 1 }) {
+  for (let p = { ...from }; comparePeriods(p, last) <= 0; p = p.month === 12 ? { year: p.year + 1, month: 1 } : { year: p.year, month: p.month + 1 }) {
     periods.push(p);
   }
   return periods;
@@ -85,8 +96,8 @@ const commissionForBooking = (booking) => {
  * DriverCommission record with the amount, even if they never opened their
  * earnings page. Paid (approved) months are left untouched.
  */
-const syncCommissionRecords = async (now, onlyDriverId = null) => {
-  for (const { year, month } of endedEnforcedPeriods(now)) {
+const syncCommissionRecords = async (now, onlyDriverId = null, from = ENFORCE_FROM) => {
+  for (const { year, month } of endedEnforcedPeriods(now, from)) {
     const start = new Date(Date.UTC(year, month - 1, 1));
     const end = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
     const filter = { status: BOOKING_STATUS.CONFIRMED, endDate: { $gte: start, $lte: end } };
@@ -125,8 +136,12 @@ const syncCommissionRecords = async (now, onlyDriverId = null) => {
 const earningsUrl = () => buildAppUrl('/portal/driver#earnings');
 
 /** Overdue, unpaid enforced months for these drivers, as a Map driverId -> [{ year, month, due }]. */
-const overdueByDriver = async (now, driverIds = null) => {
-  const ended = endedEnforcedPeriods(now).filter((p) => deadlineFor(p.year, p.month) <= now);
+// Months before the global start (only for drivers an admin chose) are overdue as
+// soon as they have ended: they are already long past their usual deadline.
+const isOverdue = (p, now) => comparePeriods(p, ENFORCE_FROM) < 0 || deadlineFor(p.year, p.month) <= now;
+
+const overdueByDriver = async (now, driverIds = null, from = ENFORCE_FROM) => {
+  const ended = endedEnforcedPeriods(now, from).filter((p) => isOverdue(p, now));
   const result = new Map();
   if (!ended.length) return result;
   const filter = {
@@ -196,7 +211,7 @@ const applyFreezeState = async (driver, overdue, now) => {
   return null;
 };
 
-const FREEZE_FIELDS = 'name email role driverStatus deletedAt commissionFrozenAt commissionFrozenPeriods commissionGraceUntil commissionFreezeReminderAt';
+const FREEZE_FIELDS = 'name email role driverStatus deletedAt commissionFrozenAt commissionFrozenPeriods commissionGraceUntil commissionFreezeReminderAt commissionEnforceFrom';
 
 /**
  * Re-checks one driver straight away, e.g. right after an admin marks a month
@@ -204,10 +219,11 @@ const FREEZE_FIELDS = 'name email role driverStatus deletedAt commissionFrozenAt
  */
 export const refreshDriverFreeze = async (driverId, { now = new Date() } = {}) => {
   try {
-    await syncCommissionRecords(now, driverId);
     const driver = await User.findOne({ _id: driverId, role: USER_ROLES.DRIVER }).select(FREEZE_FIELDS);
     if (!driver) return null;
-    const overdue = (await overdueByDriver(now, [driver._id])).get(driver._id.toString()) || [];
+    const from = enforceStartFor(driver);
+    await syncCommissionRecords(now, driver._id, from);
+    const overdue = (await overdueByDriver(now, [driver._id], from)).get(driver._id.toString()) || [];
     return await applyFreezeState(driver, overdue, now);
   } catch (error) {
     console.error('Commission freeze refresh failed for driver', driverId, error);
@@ -298,6 +314,15 @@ export const runCommissionFreezeSweep = async ({ now = new Date() } = {}) => {
     await sendDeadlineWarnings(now, results);
 
     const overdue = await overdueByDriver(now);
+    // Drivers an admin set to also enforce older months: check them from their own start.
+    const early = await User.find({ role: USER_ROLES.DRIVER, commissionEnforceFrom: { $ne: null } }).select('commissionEnforceFrom');
+    for (const driver of early) {
+      const from = enforceStartFor(driver);
+      if (comparePeriods(from, ENFORCE_FROM) >= 0) continue;
+      await syncCommissionRecords(now, driver._id, from);
+      const own = (await overdueByDriver(now, [driver._id], from)).get(driver._id.toString());
+      if (own?.length) overdue.set(driver._id.toString(), own);
+    }
     // Everyone overdue, plus everyone currently frozen (who may now be clear).
     const drivers = await User.find({
       role: USER_ROLES.DRIVER,

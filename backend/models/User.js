@@ -186,6 +186,12 @@ const userSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    // Admin chose to enforce older months for this driver too ('YYYY-MM'). Months from
+    // here up to the global start count as overdue as soon as they have ended.
+    commissionEnforceFrom: {
+      type: String,
+      default: null,
+    },
     // Extra time an admin granted: no freeze until this date.
     commissionGraceUntil: {
       type: Date,

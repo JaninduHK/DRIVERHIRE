@@ -28,6 +28,7 @@ import {
   setDriverBriefAlertEmail,
   setDriverEmailVerified,
   setDriverCommissionGrace,
+  setDriverCommissionEnforceFrom,
   setDriverMessagingSuspension,
   setDriverPassword,
   updateDriverDetails,
@@ -90,7 +91,9 @@ const Stat = ({ value, label }) => (
 
 const Timestamp = ({ value }) => <span title={value || ''}>{formatDateTime(value)}</span>;
 
-const DriverOverview = ({ data, onEdit, onVerification, onChangeLicenseType }) => {
+const DriverOverview = ({ data, onEdit, onVerification, onChangeLicenseType, onEnforceFrom, actionLoading }) => {
+  // Month picked for "Freeze if unpaid" (older months, before the automatic start).
+  const [enforceMonth, setEnforceMonth] = useState('2026-10');
   const { driver } = data;
   const licenseBadge = getLicenseBadge(driver.licenseType);
   const LicenseIcon = licenseBadge?.icon;
@@ -148,6 +151,19 @@ const DriverOverview = ({ data, onEdit, onVerification, onChangeLicenseType }) =
             <DetailRow label="Authentication" value={driver.authProvider} />
             <DetailRow label="Email verified">{driver.isVerified ? <span className={tagClass('green')}>Verified</span> : <span className={tagClass('amber')}>Not verified</span>}</DetailRow>
             <DetailRow label="Application">{driver.driverStatus ? <span className={statusTag(driver.driverStatus)}>{driver.driverStatus}</span> : null}</DetailRow>
+            <DetailRow label="Older unpaid months">
+              {driver.commissionEnforceFrom ? (
+                <span className="inline-flex flex-wrap items-center gap-2">
+                  <span className={tagClass('red')}>Enforced from {driver.commissionEnforceFrom}</span>
+                  <button type="button" disabled={Boolean(actionLoading)} onClick={() => onEnforceFrom?.(null)} className="rounded-lg border border-line px-2.5 py-1 text-xs font-bold text-ink hover:bg-canvas disabled:opacity-60">Stop</button>
+                </span>
+              ) : (
+                <span className="inline-flex flex-wrap items-center gap-2">
+                  <input type="month" value={enforceMonth} max="2026-10" onChange={(e) => setEnforceMonth(e.target.value)} className="rounded-lg border border-line bg-surface px-2 py-1 text-xs text-ink" />
+                  <button type="button" disabled={Boolean(actionLoading) || !enforceMonth} onClick={() => onEnforceFrom?.(enforceMonth)} className="rounded-lg bg-rose-600 px-2.5 py-1 text-xs font-bold text-white hover:bg-rose-700 disabled:opacity-60">Freeze if unpaid</button>
+                </span>
+              )}
+            </DetailRow>
             <DetailRow label="Commission">
               {driver.commissionFrozenAt
                 ? <span className={tagClass('red')}>Frozen: {(driver.commissionFrozenPeriods || []).join(', ') || 'unpaid commission'}</span>
@@ -448,6 +464,15 @@ const AdminDriverDetails = () => {
     runAction('commission-grace', () => setDriverCommissionGrace(driverId, until), 'Driver has 7 days extra time and is not frozen until then.');
   };
 
+  // Freeze for an older unpaid month (before the automatic start, November 2026).
+  const applyEnforceFrom = (from) =>
+    runAction('commission-enforce', async () => {
+      const result = await setDriverCommissionEnforceFrom(driverId, from);
+      if (from && !result?.commissionFrozenAt) {
+        throw new Error('No unpaid commission found from that month, so the driver was not frozen.');
+      }
+    }, from ? 'Driver frozen for unpaid commission. They unfreeze when the month is marked paid.' : 'Older months are no longer enforced for this driver.');
+
   const toggleEmailVerified = () => {
     const verified = Boolean(data.driver.isVerified);
     // Un-verifying blocks the driver's password sign-in, so ask first.
@@ -536,7 +561,7 @@ const AdminDriverDetails = () => {
 
       <nav className="flex gap-1 overflow-x-auto rounded-[16px] bg-surface p-1.5 shadow-card">{tabs.map(([id, label, count]) => <button key={id} type="button" onClick={() => setActiveTab(id)} className={`whitespace-nowrap rounded-xl px-3.5 py-2.5 text-xs font-extrabold transition ${activeTab === id ? 'bg-brand text-white' : 'text-muted hover:bg-canvas hover:text-ink'}`}>{label}{count != null ? ` (${count})` : ''}</button>)}</nav>
 
-      {activeTab === 'overview' ? <DriverOverview data={data} onEdit={openEdit} onChangeLicenseType={() => { setLicenseTypeChoice(driver.licenseType || ''); setFormError(''); setModal('license-type'); }} onVerification={() => navigate(`/admin?section=verification&search=${encodeURIComponent(driver.email)}`)} /> : null}
+      {activeTab === 'overview' ? <DriverOverview data={data} onEdit={openEdit} onChangeLicenseType={() => { setLicenseTypeChoice(driver.licenseType || ''); setFormError(''); setModal('license-type'); }} onVerification={() => navigate(`/admin?section=verification&search=${encodeURIComponent(driver.email)}`)} onEnforceFrom={applyEnforceFrom} actionLoading={actionLoading} /> : null}
       {activeTab === 'vehicles' ? <VehiclesTab vehicles={data.vehicles} /> : null}
       {activeTab === 'bookings' ? <BookingsTab bookings={data.bookings} /> : null}
       {activeTab === 'offers' ? <OffersChatsTab offers={data.offers} conversations={data.conversations} /> : null}
