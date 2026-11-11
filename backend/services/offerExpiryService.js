@@ -1,5 +1,6 @@
 import ChatMessage from '../models/ChatMessage.js';
 import { offerExpiresAt } from '../utils/offerExpiry.js';
+import { declineOffersOverlappingUpcomingBookings } from '../utils/overlappingOffers.js';
 
 const INTERVAL_MS = 60 * 60 * 1000;
 
@@ -53,6 +54,13 @@ export const runOfferExpirySweep = async (now = new Date()) => {
     const expired = result.modifiedCount ?? 0;
     if (expired > 0) {
       console.info(`Offer expiry sweep: expired ${expired} unbooked offer(s).`);
+    }
+
+    // Also close offers that clash with a booking the traveller already confirmed
+    // (catches bookings made before booking-time closing existed).
+    const declined = await declineOffersOverlappingUpcomingBookings(now);
+    if (declined > 0) {
+      console.info(`Offer expiry sweep: declined ${declined} offer(s) overlapping a confirmed booking.`);
     }
     return { expired, backfilled };
   } catch (error) {

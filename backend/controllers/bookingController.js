@@ -6,7 +6,8 @@ import { closeBriefsForBooking, reopenBriefsForBooking } from '../utils/briefClo
 import { USER_ROLES } from '../models/User.js';
 import { sendBookingStatusUpdateEmail } from '../services/emailService.js';
 import { travellerSnapshotFor } from '../utils/travellerContact.js';
-import { mapAssetUrls } from '../utils/assetUtils.js';
+import { buildAssetUrl, mapAssetUrls } from '../utils/assetUtils.js';
+import { declineOffersOverlappingBooking } from '../utils/overlappingOffers.js';
 
 const toId = (value) => {
   if (!value) {
@@ -44,15 +45,19 @@ const shapeVehicle = (vehicle, req) => {
   };
 };
 
-const shapeDriver = (driver) => {
+// The driver's phone and email are shared once the booking is confirmed (the same
+// rule that gives the driver the traveller's contact details, utils/travellerContact.js).
+const shapeDriver = (driver, booking, req) => {
   if (!driver) {
     return null;
   }
+  const shareContact = booking?.status === BOOKING_STATUS.CONFIRMED;
   return {
     id: toId(driver),
     name: driver.name,
-    contactNumber: driver.contactNumber,
-    email: driver.email,
+    profilePhoto: buildAssetUrl(driver.profilePhoto, req) || '',
+    contactNumber: shareContact ? driver.contactNumber || '' : '',
+    email: shareContact ? driver.email || '' : '',
   };
 };
 
@@ -146,7 +151,7 @@ const shapeBooking = (booking, review, req) => {
     driverEarnings,
     paymentNote: booking.paymentNote,
     vehicle: shapeVehicle(booking.vehicle, req),
-    driver: shapeDriver(booking.driver),
+    driver: shapeDriver(booking.driver, booking, req),
     traveler: travellerSnapshotFor(booking, req?.user),
     specialRequests: booking.specialRequests,
     startPoint: booking.startPoint,
@@ -195,7 +200,7 @@ const fetchBookingWithDetails = async (bookingId) =>
     })
     .populate({
       path: 'driver',
-      select: 'name contactNumber email',
+      select: 'name contactNumber email profilePhoto',
     })
     .populate({
       path: 'offerMessage',
@@ -213,7 +218,7 @@ export const listTravelerBookings = async (req, res) => {
       })
       .populate({
         path: 'driver',
-        select: 'name contactNumber email',
+        select: 'name contactNumber email profilePhoto',
       })
       .populate({
         path: 'offerMessage',
@@ -250,7 +255,7 @@ export const listDriverBookings = async (req, res) => {
       })
       .populate({
         path: 'driver',
-        select: 'name contactNumber email',
+        select: 'name contactNumber email profilePhoto',
       })
       .populate({
         path: 'offerMessage',
@@ -338,6 +343,10 @@ export const driverRespondToBooking = async (req, res) => {
     }
 
     await booking.save();
+    // A driver confirming a direct booking: other drivers' pending offers for the same dates close.
+    await declineOffersOverlappingBooking(booking).catch((error) =>
+      console.warn('Declining overlapping offers failed:', error?.message || error)
+    );
 
     if (booking.offerMessage) {
       const nextOfferStatus = normalizedAction === 'accept' ? 'accepted' : 'declined';

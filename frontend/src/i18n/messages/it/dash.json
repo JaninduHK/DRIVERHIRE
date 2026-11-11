@@ -242,7 +242,11 @@
     "viewVehicle": "Vedi il veicolo",
     "editDetails": "Modifica i dettagli",
     "viewReview": "Vedi la recensione",
-    "leaveReview": "Lascia una recensione"
+    "leaveReview": "Lascia una recensione",
+    "driverContact": "Contatto dell'autista",
+    "call": "Chiama",
+    "whatsapp": "WhatsApp",
+    "email": "Email"
   },
   "chat": {
     "eyebrow": "POSTA",
@@ -280,7 +284,9 @@
     "requested": "Nuova offerta richiesta",
     "requestNew": "Richiedi una nuova offerta",
     "declineHint": "Rispondi in chat per trattare o rifiutare.",
-    "decline": "Rifiuta"
+    "decline": "Rifiuta",
+    "viewBooking": "Vedi prenotazione e contatto dell'autista",
+    "closed": "Questa offerta non è più disponibile."
   },
   "requests": {
     "booked": "Prenotato",

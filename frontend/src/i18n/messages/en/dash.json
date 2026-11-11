@@ -242,7 +242,11 @@
     "viewVehicle": "View vehicle",
     "editDetails": "Edit details",
     "viewReview": "View review",
-    "leaveReview": "Leave a review"
+    "leaveReview": "Leave a review",
+    "driverContact": "Driver contact",
+    "call": "Call",
+    "whatsapp": "WhatsApp",
+    "email": "Email"
   },
   "chat": {
     "eyebrow": "INBOX",
@@ -280,7 +284,9 @@
     "requested": "New offer requested",
     "requestNew": "Request new offer",
     "declineHint": "Reply in the chat to negotiate or decline.",
-    "decline": "Decline"
+    "decline": "Decline",
+    "viewBooking": "View booking & driver contact",
+    "closed": "This offer is no longer available."
   },
   "requests": {
     "booked": "Booked",

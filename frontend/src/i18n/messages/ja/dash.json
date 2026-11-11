@@ -237,7 +237,11 @@
     "viewVehicle": "車両を見る",
     "editDetails": "詳細を編集",
     "viewReview": "レビューを見る",
-    "leaveReview": "レビューを書く"
+    "leaveReview": "レビューを書く",
+    "driverContact": "ドライバーの連絡先",
+    "call": "電話する",
+    "whatsapp": "WhatsApp",
+    "email": "メール"
   },
   "chat": {
     "eyebrow": "受信トレイ",
@@ -275,7 +279,9 @@
     "requested": "新しい見積もりを依頼済み",
     "requestNew": "新しい見積もりを依頼",
     "declineHint": "交渉や辞退はチャットで返信してください。",
-    "decline": "辞退"
+    "decline": "辞退",
+    "viewBooking": "予約とドライバーの連絡先を見る",
+    "closed": "この見積もりは現在ご利用いただけません。"
   },
   "requests": {
     "booked": "予約済み",

@@ -534,6 +534,7 @@ const TravelerDashboard = () => {
         onSendMessage={handleSendMessage}
         sending={sendingMessage}
         onBookOffer={handleOfferBooking}
+        onViewBookings={() => setActiveTab('bookings')}
         onRequestNewOffer={handleRequestNewOffer}
         requestingOfferId={requestingOfferId}
         onReloadConversations={() => loadConversations({ silent: false })}
@@ -922,9 +923,13 @@ const NextTripCard = ({ trip }) => {
         <span className="rounded-full bg-white/15 px-[9px] py-1 text-[12px] font-extrabold">{awayLabel}</span>
       </div>
       <div className="mt-3 flex items-center gap-[11px]">
-        <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-[11px] bg-white/15">
-          <Car className="h-[18px] w-[18px]" strokeWidth={1.6} />
-        </div>
+        {trip.driver?.profilePhoto ? (
+          <img src={trip.driver.profilePhoto} alt={driverName} className="h-10 w-10 flex-shrink-0 rounded-[11px] object-cover" />
+        ) : (
+          <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-[11px] bg-white/15">
+            <Car className="h-[18px] w-[18px]" strokeWidth={1.6} />
+          </div>
+        )}
         <div className="min-w-0">
           <div className="truncate text-[14.5px] font-bold">{route}</div>
           <div className="truncate text-[12px] text-white/75">
@@ -1532,7 +1537,7 @@ const TravelerBookingCard = ({ booking, tone, expanded, onToggle, onMessage, onE
         {price ? <b className="text-[16px] text-ink">{price}</b> : null}
       </div>
       <div className="flex items-center gap-[11px]">
-        <Avatar name={driverName} tone={tone} className="h-10 w-10 text-sm" />
+        <Avatar name={driverName} image={booking.driver?.profilePhoto} tone={tone} className="h-10 w-10 text-sm" />
         <div className="min-w-0">
           <div className="truncate text-[14.5px] font-bold text-ink">{driverName}</div>
           <div className="truncate text-[12px] text-muted-soft">
@@ -1551,6 +1556,32 @@ const TravelerBookingCard = ({ booking, tone, expanded, onToggle, onMessage, onE
           {start && end ? `${start} – ${end}` : t('dash.card.datesTbd')}
         </div>
       </div>
+
+      {/* Driver's phone/email: sent by the server only once the booking is confirmed. */}
+      {!cancelled && (booking.driver?.contactNumber || booking.driver?.email) ? (
+        <div className="mt-2.5 rounded-xl border border-[#cdeede] bg-[#f3fbf6] px-[13px] py-[11px]">
+          <div className="text-[11px] font-extrabold uppercase tracking-wide text-brand-dark">{t('dash.card.driverContact')}</div>
+          {booking.driver.contactNumber ? <div className="mt-1 text-[14px] font-bold text-ink">{booking.driver.contactNumber}</div> : null}
+          {booking.driver.email ? <div className="truncate text-[12.5px] text-muted">{booking.driver.email}</div> : null}
+          <div className="mt-2 flex flex-wrap gap-2">
+            {booking.driver.contactNumber ? (
+              <>
+                <a href={`tel:${booking.driver.contactNumber.replace(/[^\d+]/g, '')}`} className="rounded-[10px] bg-white px-3 py-1.5 text-[12.5px] font-bold text-ink shadow-sm">
+                  {t('dash.card.call')}
+                </a>
+                <a href={`https://wa.me/${booking.driver.contactNumber.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className="rounded-[10px] bg-white px-3 py-1.5 text-[12.5px] font-bold text-ink shadow-sm">
+                  {t('dash.card.whatsapp')}
+                </a>
+              </>
+            ) : null}
+            {booking.driver.email ? (
+              <a href={`mailto:${booking.driver.email}`} className="rounded-[10px] bg-white px-3 py-1.5 text-[12.5px] font-bold text-ink shadow-sm">
+                {t('dash.card.email')}
+              </a>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
 
       {booking.review ? (
         <div className="mt-2.5 flex items-center justify-between rounded-xl border border-hairline bg-canvas px-3 py-2">
@@ -1618,6 +1649,7 @@ const TravelerMessages = ({
   onSendMessage,
   sending,
   onBookOffer,
+  onViewBookings,
   onRequestNewOffer,
   requestingOfferId,
   onReloadConversations,
@@ -1711,6 +1743,7 @@ const TravelerMessages = ({
                 align={align}
                 onBook={() => onBookOffer(message)}
                 onRequestNew={() => onRequestNewOffer?.(message)}
+                onViewBooking={onViewBookings}
                 requesting={requestingOfferId === message.id}
                 followUp={offerFollowUp(messages.slice(index + 1))}
               />
@@ -2036,13 +2069,17 @@ const offerFollowUp = (laterMessages) => {
   return null;
 };
 
-const TravelerOfferBubble = ({ message, align, onBook, onRequestNew, requesting = false, followUp = null }) => {
+const TravelerOfferBubble = ({ message, align, onBook, onRequestNew, onViewBooking, requesting = false, followUp = null }) => {
   const { t } = useI18n();
   const { offer } = message;
   const start = formatDateLabel(offer.startDate);
   const end = formatDateLabel(offer.endDate);
   const discount = offer.discount;
-  const expiry = offerExpiryNotice(offer, undefined, t);
+  // Accepted = this offer became the booking; declined = the traveller booked another
+  // driver for these dates (or it was turned down). Neither can be accepted again.
+  const accepted = offer.status === 'accepted';
+  const declined = offer.status === 'declined';
+  const expiry = accepted || declined ? null : offerExpiryNotice(offer, undefined, t);
   const lapsed = expiry?.tone === 'expired';
   return (
     <div className={`flex ${align === 'end' ? 'justify-end' : 'justify-start'}`}>
@@ -2078,6 +2115,24 @@ const TravelerOfferBubble = ({ message, align, onBook, onRequestNew, requesting 
             {expiry.text}
           </div>
         ) : null}
+        {accepted ? (
+          <div className="mt-3">
+            <div className="inline-flex items-center gap-1 rounded-lg bg-brand-tint px-2 py-1 text-[11.5px] font-extrabold text-brand-dark">
+              <CheckCheck className="h-3.5 w-3.5" /> {t('dash.chat.offerAccepted')}
+            </div>
+            <button
+              type="button"
+              onClick={onViewBooking}
+              className="mt-2 w-full rounded-[11px] bg-brand py-[11px] text-[13.5px] font-bold text-white transition hover:bg-brand-dark"
+            >
+              {t('dash.offer.viewBooking')}
+            </button>
+          </div>
+        ) : declined ? (
+          <div className="mt-3 rounded-lg bg-[#eef1f0] px-2.5 py-2 text-[12px] font-semibold text-muted">
+            {t('dash.chat.offerDeclined')} · {t('dash.offer.closed')}
+          </div>
+        ) : (
         <div className="mt-3 flex gap-2">
           <button
             type="button"
@@ -2101,6 +2156,7 @@ const TravelerOfferBubble = ({ message, align, onBook, onRequestNew, requesting 
             </button>
           )}
         </div>
+        )}
       </div>
     </div>
   );
@@ -2693,7 +2749,7 @@ const DeskTripRow = ({ booking, tone }) => {
         : null;
   return (
     <div className="flex items-center gap-[13px] rounded-[14px] border border-hairline p-[13px]">
-      <Avatar name={driverName} tone={tone} className="h-[42px] w-[42px] flex-shrink-0 text-sm" />
+      <Avatar name={driverName} image={booking.driver?.profilePhoto} tone={tone} className="h-[42px] w-[42px] flex-shrink-0 text-sm" />
       <div className="min-w-0 flex-1">
         <b className="block truncate text-[14.5px] text-ink">{route}</b>
         <div className="truncate text-[12.5px] text-muted-soft">

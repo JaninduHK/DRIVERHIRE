@@ -16,6 +16,7 @@ import {
 import { notifyUser } from '../services/expoPushService.js';
 import { mapAssetUrls, buildAssetUrl } from '../utils/assetUtils.js';
 import { sendRedditPurchase } from '../services/redditConversionsService.js';
+import { declineOffersOverlappingBooking } from '../utils/overlappingOffers.js';
 
 const escapeRegex = (value = '') => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -899,6 +900,11 @@ export const createVehicleBooking = async (req, res) => {
         );
       }
     }
+
+    // Other drivers' pending offers for the same dates can't be taken any more.
+    await declineOffersOverlappingBooking(booking).catch((error) =>
+      console.warn('Declining overlapping offers failed:', error?.message || error)
+    );
 
     // Close the traveller's open requests covering these dates. Also catches the
     // direct-chat and straight-off-a-vehicle-page bookings, which the brief-linked
