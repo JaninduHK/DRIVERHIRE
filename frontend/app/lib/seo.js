@@ -66,6 +66,8 @@ export function buildMeta({
   image,
   type = 'website',
   noindex = false,
+  // false leaves out the other-language links (pages that exist only in English).
+  alternates = true,
   locale = DEFAULT_LOCALE,
 }) {
   const translated = isLocalizedPath(path);
@@ -88,7 +90,7 @@ export function buildMeta({
   ];
   // Every language version lists all the others so Google shows each searcher
   // the right one (x-default = English for everyone else).
-  if (translated && !noindex) {
+  if (translated && !noindex && alternates) {
     for (const code of LOCALES) {
       tags.push({
         tagName: 'link',

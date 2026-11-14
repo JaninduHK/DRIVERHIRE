@@ -5,7 +5,10 @@
   "loadError": "Unable to load drivers right now.",
   "loading": "Loading…",
   "loadingDrivers": "Loading drivers…",
-  "count": { "one": "{count} approved driver", "other": "{count} approved drivers" },
+  "count": {
+    "one": "{count} approved driver",
+    "other": "{count} approved drivers"
+  },
   "clearFilters": "Clear filters",
   "clear": "Clear",
   "tryAgain": "Try again",
@@ -31,7 +34,8 @@
     "perks": "Perks",
     "perksCount": "{count} perks",
     "price": "Price",
-    "reviews": "Reviews"
+    "reviews": "Reviews",
+    "anyLocation": "Any location"
   },
   "card": {
     "newGuide": "New guide",
@@ -56,6 +60,10 @@
     "experience": "Experience",
     "sortBy": "Sort by",
     "reset": "Reset",
-    "show": { "one": "Show {count} driver", "other": "Show {count} drivers" }
+    "show": {
+      "one": "Show {count} driver",
+      "other": "Show {count} drivers"
+    },
+    "basedIn": "Based in"
   }
 }

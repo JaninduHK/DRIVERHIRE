@@ -15,6 +15,7 @@ import {
   Share2,
   Shield,
   Star,
+  MapPin,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fetchDriverProfile } from '../services/driverDirectoryApi.js';
@@ -25,6 +26,7 @@ import ReviewPhotos from '../components/ReviewPhotos.jsx';
 import ReviewsSection from '../components/ReviewsSection.jsx';
 import { useAggregatedDriverReviews } from '../hooks/useAggregatedDriverReviews.js';
 import { LicenseIconBadge, LicenseTypeChip } from '../components/LicenseBadge.jsx';
+import { SERVICE_AREAS, guessLocationName } from '../constants/locations.js';
 
 const formatCurrency = (value) => (!Number.isFinite(value) ? '$0' : `$${value.toLocaleString('en-US')}`);
 const DriverDetails = () => {
@@ -196,6 +198,24 @@ const DriverDetails = () => {
 };
 
 // ---------------- MOBILE ----------------
+// "Based in Negombo · Also available in Kandy, Sigiriya" under the name.
+const AreasLine = ({ driver }) => {
+  const { t } = useI18n();
+  const town = guessLocationName(driver.address);
+  const areas = (driver.serviceAreas || []).map((slug) => SERVICE_AREAS.find((area) => area.slug === slug)?.name).filter(Boolean);
+  if (!town && !areas.length) return null;
+  return (
+    <p className="mt-2 flex items-start gap-1.5 text-[12.5px] font-semibold text-muted-soft">
+      <MapPin className="mt-[2px] h-3.5 w-3.5 flex-shrink-0 text-brand" />
+      <span>
+        {town ? t('driver.basedIn', { town }) : null}
+        {town && areas.length ? ' · ' : null}
+        {areas.length ? t('driver.alsoAvailableIn', { areas: areas.join(', ') }) : null}
+      </span>
+    </p>
+  );
+};
+
 const MobileProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks, rateLabel, ratingLabel, expYears, tab, setTab, goBook, goMessage, creatingConversation, navigate }) => {
   const { t } = useI18n();
   const scrollTo = (section) => {
@@ -258,6 +278,7 @@ const MobileProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks,
             </>
           )}
         </div>
+        <AreasLine driver={driver} />
         <div className="mt-4 grid grid-cols-3 gap-2">
           <StatTile value={expYears ? t('driver.years', { count: expYears }) : t('driver.new')} label={t('driver.stats.guiding')} />
           <StatTile value={ratingLabel || '—'} label={t('driver.stats.rating')} />
@@ -382,6 +403,7 @@ const DesktopProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks
                 <span className="h-1 w-1 rounded-full bg-[#cfd8dd]" />
                 {driver.licenseType ? <LicenseTypeChip licenseType={driver.licenseType} className="!mt-0" /> : <span>{cityLabel}</span>}
               </div>
+              <AreasLine driver={driver} />
             </div>
           </div>
 

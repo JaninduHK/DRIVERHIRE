@@ -65,5 +65,7 @@
   "licenseVerified": "{license} verificato",
   "identityVerified": "Identità e licenza verificate",
   "repliesWithinDay": "Di solito risponde entro un giorno",
-  "freeCancellation": "Cancellazione gratuita fino a 2 giorni prima del viaggio"
+  "freeCancellation": "Cancellazione gratuita fino a 2 giorni prima del viaggio",
+  "basedIn": "Con base a {town}",
+  "alsoAvailableIn": "Disponibile anche a {areas}"
 }

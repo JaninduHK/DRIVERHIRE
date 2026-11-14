@@ -50,6 +50,7 @@ import {
   parseRegistrationNumber,
 } from '../utils/vehicleRegistration.js';
 import { refreshDriverFreeze } from '../services/commissionFreezeService.js';
+import { normalizeDriverBase, normalizeServiceAreas } from '../constants/locations.js';
 
 const handleValidation = (req, res) => {
   const errors = validationResult(req);
@@ -696,6 +697,7 @@ export const getDriverDetails = async (req, res) => {
       commissionFrozenPeriods: driver.commissionFrozenPeriods || [],
       commissionGraceUntil: driver.commissionGraceUntil || null,
       commissionEnforceFrom: driver.commissionEnforceFrom || null,
+      serviceAreas: driver.serviceAreas || [],
       driverStatus: driver.driverStatus,
       driverReviewedAt: driver.driverReviewedAt,
       driverReviewedBy: driver.driverReviewedBy
@@ -1152,7 +1154,23 @@ export const updateDriverDetails = async (req, res) => {
     driver.contactNumber = contactNumber?.trim() || undefined;
     driver.description = description?.trim() || undefined;
     driver.tripAdvisor = tripAdvisor?.trim() || undefined;
-    driver.address = address?.trim() || undefined;
+    if (req.body.serviceAreas !== undefined) {
+      const areas = normalizeServiceAreas(req.body.serviceAreas);
+      if (!areas.ok) {
+        return res.status(400).json({ message: areas.message });
+      }
+      driver.serviceAreas = areas.value;
+    }
+    if (address?.trim()) {
+      // Same fixed town list as the driver profile; an unchanged older value is kept.
+      const base = normalizeDriverBase(address, driver.address);
+      if (!base.ok) {
+        return res.status(400).json({ message: base.message });
+      }
+      driver.address = base.value;
+    } else {
+      driver.address = undefined;
+    }
     driver.experienceYears = experienceYears === '' || experienceYears === undefined ? undefined : experienceYears;
 
     if (memberSince) {

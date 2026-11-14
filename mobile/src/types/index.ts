@@ -15,6 +15,7 @@ export interface User {
   authProvider?: 'local' | 'google' | 'facebook';
   contactNumber?: string;
   address?: string;
+  serviceAreas?: string[];
   description?: string;
   tripAdvisor?: string;
   profilePhoto?: string | null;

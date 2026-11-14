@@ -65,5 +65,7 @@
   "licenseVerified": "{license} verifiziert",
   "identityVerified": "Identität & Lizenz verifiziert",
   "repliesWithinDay": "Antwortet meist innerhalb eines Tages",
-  "freeCancellation": "Kostenlose Stornierung bis 2 Tage vor Ihrer Reise"
+  "freeCancellation": "Kostenlose Stornierung bis 2 Tage vor Ihrer Reise",
+  "basedIn": "Standort: {town}",
+  "alsoAvailableIn": "Auch verfügbar in {areas}"
 }

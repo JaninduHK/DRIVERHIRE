@@ -75,5 +75,7 @@
   "licenseVerified": "{license}: проверено",
   "identityVerified": "Личность и лицензия проверены",
   "repliesWithinDay": "Обычно отвечает в течение дня",
-  "freeCancellation": "Бесплатная отмена не позднее чем за 2 дня до поездки"
+  "freeCancellation": "Бесплатная отмена не позднее чем за 2 дня до поездки",
+  "basedIn": "Базируется: {town}",
+  "alsoAvailableIn": "Также работает: {areas}"
 }

@@ -2,12 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from '../i18n/router.jsx';
 import { useI18n } from '../i18n/I18nProvider.jsx';
 import { translateLicenseType } from '../i18n/labels.js';
-import { useLoaderData } from 'react-router';
-import { Car, Check, ChevronDown, Loader2, Search, SlidersHorizontal, Star, X } from 'lucide-react';
+import { useLoaderData, useSearchParams } from 'react-router';
+import { Car, Check, ChevronDown, Loader2, MapPin, Search, SlidersHorizontal, Star, X } from 'lucide-react';
 import { fetchDriverDirectory } from '../services/driverDirectoryApi.js';
 import { Avatar } from '../components/dashboard/primitives.jsx';
 import { LicenseIconBadge, LicenseTypeChip } from '../components/LicenseBadge.jsx';
 import { getLicenseBadge } from '../constants/driverLicense.js';
+import { LOCATIONS, SERVICE_AREAS, driverTownSlug, getLocationBySlug } from '../constants/locations.js';
 
 const formatCurrency = (value) => (!Number.isFinite(value) ? '$0' : `$${value.toLocaleString('en-US')}`);
 const yearsLabel = (years, t) => {
@@ -61,6 +62,8 @@ const SORT_OPTIONS = [
 
 const defaultFilters = {
   search: '',
+  town: '', // base-town slug from constants/locations.js
+
   sort: 'recommended',
   perks: [],
   licenseTypes: [],
@@ -90,7 +93,12 @@ const DriversDirectory = () => {
   const loaderData = useLoaderData();
   const seededDrivers = loaderData?.drivers || [];
   const [state, setState] = useState({ loading: false, error: '', drivers: seededDrivers });
-  const [filters, setFilters] = useState(defaultFilters);
+  // /drivers?town=galle opens the list already filtered to that town.
+  const [searchParams] = useSearchParams();
+  const [filters, setFilters] = useState(() => {
+    const town = getLocationBySlug(searchParams.get('town'))?.slug || '';
+    return { ...defaultFilters, town };
+  });
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const loadDrivers = useCallback(async () => {
@@ -112,6 +120,25 @@ const DriversDirectory = () => {
     loadDrivers();
   }, [loadDrivers]);
 
+  // Towns that have at least one driver (based there, or available there via
+  // "Also available in"), in list order, with how many.
+  const townOptions = useMemo(() => {
+    const counts = new Map();
+    for (const driver of state.drivers) {
+      const towns = new Set([driverTownSlug(driver)]);
+      for (const slug of driver.serviceAreas || []) {
+        SERVICE_AREAS.find((area) => area.slug === slug)?.towns.forEach((town) => towns.add(town));
+      }
+      towns.delete(null);
+      for (const town of towns) counts.set(town, (counts.get(town) || 0) + 1);
+    }
+    return LOCATIONS.filter((location) => counts.has(location.slug) || location.slug === filters.town).map((location) => ({
+      slug: location.slug,
+      name: location.name,
+      count: counts.get(location.slug) || 0,
+    }));
+  }, [state.drivers, filters.town]);
+
   const filteredDrivers = useMemo(() => {
     const term = filters.search.trim().toLowerCase();
     const minPrice = Number(filters.minPrice);
@@ -119,7 +146,14 @@ const DriversDirectory = () => {
     const minReview = Number(filters.minReview);
     const minExp = Number(filters.minExperience);
 
+    // A town filter matches drivers based there, and drivers who added an area covering
+    // it under "Also available in" (those are listed after the local ones).
+    const townAreas = filters.town ? SERVICE_AREAS.filter((area) => area.towns.includes(filters.town)).map((area) => area.slug) : [];
+    const basedInTown = (driver) => driverTownSlug(driver) === filters.town;
+    const availableInTown = (driver) => (driver.serviceAreas || []).some((slug) => townAreas.includes(slug));
+
     const matches = (driver) => {
+      if (filters.town && !basedInTown(driver) && !availableInTown(driver)) return false;
       if (term) {
         const haystack = [driver.name, driver.description, driver.location?.label, ...(driver.badges || [])]
           .filter(Boolean)
@@ -150,7 +184,9 @@ const DriversDirectory = () => {
       }
     };
 
-    return [...state.drivers].filter(matches).sort(sortFn);
+    const list = [...state.drivers].filter(matches).sort(sortFn);
+    if (!filters.town) return list;
+    return [...list.filter(basedInTown), ...list.filter((driver) => !basedInTown(driver))];
   }, [filters, state.drivers]);
 
   const set = (patch) => setFilters((prev) => ({ ...prev, ...patch }));
@@ -158,6 +194,7 @@ const DriversDirectory = () => {
   const otherPerks = filters.perks.filter((p) => p !== 'English speaking');
   const priceActive = Boolean(filters.minPrice || filters.maxPrice);
   const activeCount =
+    (filters.town ? 1 : 0) +
     filters.perks.length +
     filters.licenseTypes.length +
     (priceActive ? 1 : 0) +
@@ -196,6 +233,7 @@ const DriversDirectory = () => {
             </button>
           </div>
           <div className="no-scrollbar mt-2.5 flex gap-2 overflow-x-auto pb-0.5">
+            <TownSelect value={filters.town} options={townOptions} onChange={(town) => set({ town })} variant="chip" />
             <button
               type="button"
               onClick={() =>
@@ -291,6 +329,7 @@ const DriversDirectory = () => {
         <DriverFilterSheet
           filters={filters}
           set={set}
+          townOptions={townOptions}
           count={filteredDrivers.length}
           onReset={() => setFilters(defaultFilters)}
           onClose={() => setSheetOpen(false)}
@@ -323,7 +362,8 @@ const ChevronChip = ({ children, onClick }) => (
   </button>
 );
 
-const DriverCard = ({ driver, tone }) => {
+// Also used by the city pages (CityDriversPage).
+export const DriverCard = ({ driver, tone }) => {
   const { t } = useI18n();
   const cityLabel = driver.location?.label || driver.address || t('drivers.card.sriLanka');
   const rating = Number(driver.reviewScore) > 0 ? Number(driver.reviewScore).toFixed(1) : '—';
@@ -388,6 +428,29 @@ const DriverCard = ({ driver, tone }) => {
   );
 };
 
+// Base-town filter: only towns that have drivers, with how many. `variant="chip"` is the
+// compact version for the quick-filter row; the default fills the filter sheet.
+const TownSelect = ({ value, options, onChange, variant }) => {
+  const { t } = useI18n();
+  const chip = variant === 'chip';
+  const active = Boolean(value);
+  const selectCls = chip
+    ? `h-full appearance-none rounded-full bg-transparent pl-8 pr-7 text-[13px] font-bold outline-none ${active ? 'text-white' : 'text-ink-soft'}`
+    : 'h-12 w-full appearance-none rounded-xl bg-[#f2f4f3] pl-9 pr-8 text-[13.5px] font-bold text-ink outline-none focus:ring-2 focus:ring-brand/30';
+  return (
+    <div className={`relative flex-shrink-0 ${chip ? `h-[38px] rounded-full ${active ? 'bg-brand' : 'border-[1.5px] border-[#e2e8ea] bg-white'}` : ''}`}>
+      <MapPin className={`pointer-events-none absolute top-1/2 h-[14px] w-[14px] -translate-y-1/2 ${chip ? 'left-3' : 'left-3.5'} ${chip && active ? 'text-white' : 'text-brand'}`} strokeWidth={2.2} />
+      <select value={value} onChange={(e) => onChange(e.target.value)} aria-label={t('drivers.filters.basedIn')} className={selectCls}>
+        <option value="">{t('drivers.chips.anyLocation')}</option>
+        {options.map((option) => (
+          <option key={option.slug} value={option.slug}>{option.name} ({option.count})</option>
+        ))}
+      </select>
+      <ChevronDown className={`pointer-events-none absolute right-2.5 top-1/2 h-[13px] w-[13px] -translate-y-1/2 ${chip && active ? 'text-white' : 'text-muted-soft'}`} strokeWidth={2.4} />
+    </div>
+  );
+};
+
 const Section = ({ label, children }) => (
   <div>
     <div className="text-[12px] font-extrabold uppercase tracking-[0.05em] text-muted-soft">{label}</div>
@@ -395,7 +458,7 @@ const Section = ({ label, children }) => (
   </div>
 );
 
-const DriverFilterSheet = ({ filters, set, count, onReset, onClose }) => {
+const DriverFilterSheet = ({ filters, set, townOptions, count, onReset, onClose }) => {
   const { t } = useI18n();
   const togglePerk = (perk) =>
     set({ perks: filters.perks.includes(perk) ? filters.perks.filter((p) => p !== perk) : [...filters.perks, perk] });
@@ -414,6 +477,12 @@ const DriverFilterSheet = ({ filters, set, count, onReset, onClose }) => {
           <button type="button" onClick={onReset} className="text-[13px] font-bold text-brand-dark">{t('drivers.filters.clearAll')}</button>
         </div>
         <div className="flex-1 space-y-5 overflow-y-auto px-[18px] pb-3.5">
+          <Section label={t('drivers.filters.basedIn')}>
+            <div className="mt-2.5">
+              <TownSelect value={filters.town} options={townOptions} onChange={(town) => set({ town })} />
+            </div>
+          </Section>
+
           <Section label={t('drivers.filters.whatMatters')}>
             <div className="mt-2.5 flex flex-wrap gap-2">
               {PERKS.map((perk) => {

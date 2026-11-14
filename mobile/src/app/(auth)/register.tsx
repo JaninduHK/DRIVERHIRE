@@ -19,6 +19,7 @@ import { ContactWarning } from '../../components/ContactWarning';
 import { bioContactWarningMessage } from '../../lib/contactWarning';
 import { colors } from '../../theme/colors';
 import type { LicenseType } from '../../types';
+import { LocationPickerField } from '../../components/LocationPickerField';
 
 const LANGUAGES = ['English', 'Sinhala', 'Tamil', 'German', 'French', 'Russian'];
 
@@ -195,14 +196,12 @@ export default function Register() {
                 <TextField label="Full name" value={name} onChangeText={setName} placeholder="Janindu Hansaka" autoCapitalize="words" />
                 <TextField className="mt-4" label="Email address" value={email} onChangeText={setEmail} placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" />
                 <TextField className="mt-4" label="Mobile number" value={mobile} onChangeText={setMobile} placeholder="71 234 5678" keyboardType="phone-pad" prefix="+94" />
-                <TextField
+                <LocationPickerField
                   className="mt-4"
                   label="Base city"
                   value={city}
-                  onChangeText={setCity}
-                  placeholder="e.g. Negombo"
-                  autoCapitalize="words"
-                  hint="City or town only, not your full address. Travellers use it to find drivers near them."
+                  onChange={setCity}
+                  hint="Choose the town you are based in, or the nearest one. Travellers use it to find drivers near them."
                 />
                 <TextField className="mt-4" label="Create password" value={password} onChangeText={setPassword} placeholder="Minimum 8 characters" secure autoCapitalize="none" />
               </Card>

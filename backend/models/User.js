@@ -186,6 +186,12 @@ const userSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    // "Also available in": up to 3 city-page areas besides the base town
+    // (constants/locations.js SERVICE_AREAS), so city pages can list the driver.
+    serviceAreas: {
+      type: [String],
+      default: [],
+    },
     // Admin chose to enforce older months for this driver too ('YYYY-MM'). Months from
     // here up to the global start count as overdue as soon as they have ended.
     commissionEnforceFrom: {

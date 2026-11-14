@@ -31,7 +31,8 @@
     "perks": "サービス",
     "perksCount": "サービス{count}件",
     "price": "料金",
-    "reviews": "レビュー"
+    "reviews": "レビュー",
+    "anyLocation": "すべての地域"
   },
   "card": {
     "newGuide": "新人ガイド",
@@ -56,6 +57,7 @@
     "experience": "経験",
     "sortBy": "並べ替え",
     "reset": "リセット",
-    "show": "{count}名を表示"
+    "show": "{count}名を表示",
+    "basedIn": "拠点"
   }
 }

@@ -2,6 +2,7 @@ import { fetchDriverDirectory } from '../../src/services/driverDirectoryApi.js';
 import { fetchVehicles } from '../../src/services/vehicleCatalogApi.js';
 import { SITE_URL, isDriverIndexable, isVehicleIndexable } from '../lib/seo.js';
 import { LOCALES, LOCALE_INFO, isLocalizedPath, localizePath } from '../../src/i18n/locales.js';
+import { CITY_PAGE_LIST } from '../../src/data/cityPages.js';
 
 // Stable marketing/marketplace entry points.
 const staticEntries = [
@@ -35,8 +36,9 @@ const alternateLinks = (path) => [
   `    <xhtml:link rel="alternate" hreflang="x-default" href="${SITE_URL}${path}"/>`,
 ];
 
-const urlTag = ({ path, lastmod, changefreq, priority, locale = 'en' }) => {
-  const translated = isLocalizedPath(path);
+// `englishOnly`: pages whose text isn't translated yet (city pages) are listed once, in English.
+const urlTag = ({ path, lastmod, changefreq, priority, locale = 'en', englishOnly = false }) => {
+  const translated = isLocalizedPath(path) && !englishOnly;
   const lines = [`    <loc>${SITE_URL}${translated ? localizePath(path, locale) : path}</loc>`];
   if (translated) lines.push(...alternateLinks(path));
   if (lastmod) lines.push(`    <lastmod>${lastmod}</lastmod>`);
@@ -53,6 +55,11 @@ export async function loader() {
   ]);
 
   const entries = [...staticEntries];
+
+  // City landing pages (/drivers/galle): English only for now.
+  for (const city of CITY_PAGE_LIST) {
+    entries.push({ path: `/drivers/${city.slug}`, changefreq: 'weekly', priority: '0.8', englishOnly: true });
+  }
 
   for (const driver of drivers) {
     if (!driver?.id || !isDriverIndexable(driver)) continue;
@@ -79,7 +86,7 @@ export async function loader() {
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n` +
     entries
-      .flatMap((entry) => (isLocalizedPath(entry.path) ? LOCALES.map((locale) => ({ ...entry, locale })) : [entry]))
+      .flatMap((entry) => (isLocalizedPath(entry.path) && !entry.englishOnly ? LOCALES.map((locale) => ({ ...entry, locale })) : [entry]))
       .map(urlTag)
       .join('\n') +
     `\n</urlset>\n`;

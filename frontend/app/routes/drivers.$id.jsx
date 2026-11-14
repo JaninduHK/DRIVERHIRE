@@ -1,11 +1,63 @@
-import { fetchDriverProfile } from '../../src/services/driverDirectoryApi.js';
+import { redirect, useLoaderData } from 'react-router';
+import { fetchDriverDirectory, fetchDriverProfile } from '../../src/services/driverDirectoryApi.js';
+import { CITY_PAGE_LIST, getCityPage } from '../../src/data/cityPages.js';
+import { driverTownSlug } from '../../src/constants/locations.js';
+import { getLocaleFromPath, localizePath } from '../../src/i18n/locales.js';
+import DriverDetails from '../../src/pages/DriverDetails.jsx';
+import CityDriversPage from '../../src/pages/CityDriversPage.jsx';
 import { fetchVehicleReviews } from '../../src/services/vehicleCatalogApi.js';
 import { buildMeta, isDriverIndexable, metaLocale } from '../lib/seo.js';
 
 const emptyMeta = { total: 0, averageRating: null, counts: [0, 0, 0, 0, 0] };
 
-export async function loader({ params }) {
+// /drivers/galle: a city page, not a driver profile (driver ids are 24-character hex).
+async function loadCityPage(city) {
+  let drivers = [];
+  try {
+    drivers = (await fetchDriverDirectory())?.drivers || [];
+  } catch {
+    // Render the page without drivers rather than failing; the text still stands.
+  }
+  const byReviews = (a, b) => (b.reviewCount || 0) - (a.reviewCount || 0);
+  const inCity = [];
+  const nearby = [];
+  const available = []; // chose this area under "Also available in"
+  const rest = [];
+  const towns = city.towns || [city.slug];
+  for (const driver of drivers) {
+    const town = driverTownSlug(driver);
+    if (towns.includes(town)) inCity.push(driver);
+    else if (city.nearby.includes(town)) nearby.push(driver);
+    else if ((driver.serviceAreas || []).includes(city.slug)) available.push(driver);
+    else rest.push(driver);
+  }
+  const based = [...inCity.sort(byReviews), ...nearby.sort(byReviews)];
+  const rates = based.map((d) => Number(d.averagePricePerDay)).filter((n) => Number.isFinite(n) && n > 0);
+  return {
+    city,
+    // Links to the other city pages, for "drivers in other areas".
+    otherCities: CITY_PAGE_LIST.filter((page) => page.slug !== city.slug).map((page) => ({ slug: page.slug, name: page.areaName || page.name })),
+    based,
+    available: available.sort(byReviews),
+    others: rest.sort(byReviews).slice(0, 6),
+    stats: {
+      basedCount: based.length,
+      minRate: rates.length ? Math.round(Math.min(...rates)) : null,
+      reviewCount: based.reduce((sum, d) => sum + (d.reviewCount || 0), 0),
+    },
+  };
+}
+
+export async function loader({ params, request }) {
   const { id } = params;
+
+  const cityMatch = getCityPage(id);
+  if (cityMatch?.redirectTo) {
+    // /drivers/airport -> /drivers/negombo (keeping the language prefix).
+    const locale = getLocaleFromPath(new URL(request.url).pathname);
+    throw redirect(localizePath(`/drivers/${cityMatch.redirectTo}`, locale), 301);
+  }
+  if (cityMatch) return loadCityPage(cityMatch.page);
 
   let profile;
   try {
@@ -60,6 +112,17 @@ export async function loader({ params }) {
 
 export function meta({ data, location }) {
   const { locale, t } = metaLocale(location);
+  if (data?.city) {
+    // City pages are English only for now: the translated paths stay out of the index.
+    return buildMeta({
+      title: data.city.seoTitle,
+      description: data.city.metaDescription,
+      path: `/drivers/${data.city.slug}`,
+      locale,
+      alternates: false,
+      noindex: getLocaleFromPath(location.pathname) !== 'en',
+    });
+  }
   const driver = data?.driver;
   if (!driver) {
     return buildMeta({
@@ -92,4 +155,7 @@ export function meta({ data, location }) {
   });
 }
 
-export { default } from '../../src/pages/DriverDetails.jsx';
+export default function DriverOrCityPage() {
+  const data = useLoaderData();
+  return data?.city ? <CityDriversPage /> : <DriverDetails />;
+}

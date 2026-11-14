@@ -7,6 +7,7 @@ import StoreBadges from '../components/StoreBadges.jsx';
 import { bioContactWarningMessage } from '../lib/contactWarning.js';
 import { register as registerUser } from '../services/authApi.js';
 import { LICENSE_BADGE_STYLES, LICENSE_COPY } from '../constants/driverLicense.js';
+import LocationSelect from '../components/LocationSelect.jsx';
 
 const LICENSE_TYPES = Object.keys(LICENSE_BADGE_STYLES);
 
@@ -200,17 +201,15 @@ const DriverRegister = () => {
                 <label htmlFor="address" className="block text-sm font-medium text-slate-700">
                   Base location
                 </label>
-                <input
+                <LocationSelect
                   id="address"
                   name="address"
-                  type="text"
                   required
                   value={formData.address}
-                  onChange={handleChange}
+                  onChange={(_value, event) => handleChange(event)}
                   className="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
-                  placeholder="e.g. Negombo"
                 />
-                <p className="mt-1.5 text-xs text-slate-500">City or town only, not your full address. Travellers use it to find drivers near them.</p>
+                <p className="mt-1.5 text-xs text-slate-500">Choose the town you are based in, or the nearest one. Travellers use it to find drivers near them.</p>
               </div>
 
               <div>

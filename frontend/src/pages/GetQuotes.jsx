@@ -3,7 +3,7 @@ import DateField from '../components/DateField.jsx';
 import { Link, useNavigate } from '../i18n/router.jsx';
 import { Trans, useI18n } from '../i18n/I18nProvider.jsx';
 import { translateLicenseType } from '../i18n/labels.js';
-import { useLoaderData } from 'react-router';
+import { useLoaderData, useSearchParams } from 'react-router';
 import toast from 'react-hot-toast';
 import { Check, ChevronDown, Star, X } from 'lucide-react';
 import { getStoredToken, getStoredUser, redirectToSsoLogin } from '../services/authToken.js';
@@ -42,10 +42,10 @@ const formatBand = (low, high) =>
     ? priceFormatter(low)
     : `${priceFormatter(low)}–${priceFormatter(high)}`;
 
-const buildForm = () => ({
+const buildForm = (initial = {}) => ({
   startDate: '',
   endDate: '',
-  startLocation: '',
+  startLocation: initial.startLocation || '',
   endLocation: '',
   adults: '2',
   children: '0',
@@ -80,7 +80,9 @@ const GetQuotes = () => {
     [loaderData]
   );
 
-  const [form, setForm] = useState(buildForm());
+  // ?from=Galle (city pages) pre-fills the pick-up location.
+  const [searchParams] = useSearchParams();
+  const [form, setForm] = useState(() => buildForm({ startLocation: (searchParams.get('from') || '').slice(0, 120) }));
   const [openFaq, setOpenFaq] = useState(0);
   const formRef = useRef(null);
 

@@ -37,7 +37,8 @@
       "other": "{count} servizi"
     },
     "price": "Prezzo",
-    "reviews": "Recensioni"
+    "reviews": "Recensioni",
+    "anyLocation": "Tutte le località"
   },
   "card": {
     "newGuide": "Nuova guida",
@@ -71,6 +72,7 @@
     "show": {
       "one": "Mostra {count} autista",
       "other": "Mostra {count} autisti"
-    }
+    },
+    "basedIn": "Con base a"
   }
 }

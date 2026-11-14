@@ -140,6 +140,7 @@ const buildDriverSummary = (driver, vehicles = [], reviewStats = null, req, acti
     contactNumber: driver.contactNumber || '',
     tripAdvisor: driver.tripAdvisor || '',
     address: driver.address || '',
+    serviceAreas: Array.isArray(driver.serviceAreas) ? driver.serviceAreas : [],
     vehicleCount: vehicles.length,
     averagePricePerDay,
     featuredVehicle,
@@ -216,7 +217,7 @@ export const listPublicDrivers = async (req, res) => {
       commissionFrozenAt: null,
     })
       .select(
-        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation shareLiveLocation experienceYears licenseType licenseStatus featured featuredOrder'
+        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation shareLiveLocation experienceYears licenseType licenseStatus featured featuredOrder serviceAreas'
       )
       .sort({ createdAt: -1 })
       .lean();
@@ -282,7 +283,7 @@ export const getPublicDriverDetails = async (req, res) => {
       deletedAt: null,
     })
       .select(
-        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation shareLiveLocation experienceYears licenseType licenseStatus featured featuredOrder commissionFrozenAt'
+        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation shareLiveLocation experienceYears licenseType licenseStatus featured featuredOrder serviceAreas commissionFrozenAt'
       )
       .lean();
 

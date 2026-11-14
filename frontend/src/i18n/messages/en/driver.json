@@ -21,7 +21,10 @@
   "stats": {
     "guiding": "Guiding",
     "rating": "Rating",
-    "vehicles": { "one": "Vehicle", "other": "Vehicles" },
+    "vehicles": {
+      "one": "Vehicle",
+      "other": "Vehicles"
+    },
     "guidingExperience": "Guiding experience",
     "travellerRating": "Traveller rating",
     "availableVehicles": "Available vehicles"
@@ -33,7 +36,10 @@
   },
   "noBio": "This driver has not added a bio yet.",
   "everyTripIncludes": "Every trip includes",
-  "vehiclesHeading": { "one": "Vehicle", "other": "Vehicles" },
+  "vehiclesHeading": {
+    "one": "Vehicle",
+    "other": "Vehicles"
+  },
   "seats": "{count} seats",
   "perDay": "/ day",
   "perDayShort": "/day",
@@ -50,5 +56,7 @@
   "licenseVerified": "{license} verified",
   "identityVerified": "Identity & licence verified",
   "repliesWithinDay": "Usually replies within a day",
-  "freeCancellation": "Free cancellation until 2 days before your trip"
+  "freeCancellation": "Free cancellation until 2 days before your trip",
+  "basedIn": "Based in {town}",
+  "alsoAvailableIn": "Also available in {areas}"
 }

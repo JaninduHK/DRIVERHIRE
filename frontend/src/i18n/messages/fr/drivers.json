@@ -37,7 +37,8 @@
       "other": "{count} services"
     },
     "price": "Prix",
-    "reviews": "Avis"
+    "reviews": "Avis",
+    "anyLocation": "Tous les lieux"
   },
   "card": {
     "newGuide": "Nouveau guide",
@@ -71,6 +72,7 @@
     "show": {
       "one": "Afficher {count} chauffeur",
       "other": "Afficher {count} chauffeurs"
-    }
+    },
+    "basedIn": "Basé à"
   }
 }

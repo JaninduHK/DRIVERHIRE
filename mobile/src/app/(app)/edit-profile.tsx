@@ -20,6 +20,9 @@ import { ContactWarning } from '../../components/ContactWarning';
 import { bioContactWarningMessage } from '../../lib/contactWarning';
 import { colors } from '../../theme/colors';
 import type { User } from '../../types';
+import { LocationPickerField } from '../../components/LocationPickerField';
+import { ServiceAreasPicker } from '../../components/ServiceAreasPicker';
+import { guessLocationName } from '../../constants/locations';
 
 const normalizeUser = (payload: { user: User } | User): User =>
   payload && typeof payload === 'object' && 'user' in payload ? (payload as { user: User }).user : (payload as User);
@@ -31,7 +34,9 @@ export default function EditProfile() {
   const [name, setName] = useState(user?.name ?? '');
   const [contactNumber, setContactNumber] = useState(user?.contactNumber ?? '');
   const [experienceYears, setExperienceYears] = useState(user?.experienceYears != null ? String(user.experienceYears) : '');
-  const [address, setAddress] = useState(user?.address ?? '');
+  // Older typed locations are preselected as their nearest list town when one matches.
+  const [address, setAddress] = useState(guessLocationName(user?.address) || user?.address || '');
+  const [serviceAreas, setServiceAreas] = useState<string[]>(user?.serviceAreas ?? []);
   const [description, setDescription] = useState(user?.description ?? '');
   const [tripAdvisor, setTripAdvisor] = useState(user?.tripAdvisor ?? '');
   const [locationLabel, setLocationLabel] = useState(user?.driverLocation?.label ?? '');
@@ -70,6 +75,7 @@ export default function EditProfile() {
       fd.append('name', name.trim());
       fd.append('contactNumber', contactNumber.trim());
       fd.append('address', address.trim());
+      fd.append('serviceAreas', serviceAreas.join(','));
       fd.append('description', description.trim());
       fd.append('tripAdvisor', tripAdvisor.trim());
       fd.append('currentLocationLabel', locationLabel.trim());
@@ -133,15 +139,14 @@ export default function EditProfile() {
             <TextField label="Name" value={name} onChangeText={setName} placeholder="Your name" autoCapitalize="words" />
             <TextField className="mt-3" label="Contact number" value={contactNumber} onChangeText={setContactNumber} placeholder="e.g. +94 71 555 5555" keyboardType="phone-pad" />
             <TextField className="mt-3" label="Years of driving experience" value={experienceYears} onChangeText={setExperienceYears} placeholder="e.g. 5" keyboardType="number-pad" />
-            <TextField
+            <LocationPickerField
               className="mt-3"
               label="Base location"
               value={address}
-              onChangeText={setAddress}
-              placeholder="e.g. Negombo"
-              autoCapitalize="words"
-              hint="City or town only, not your full address. Travellers use it to find drivers near them."
+              onChange={setAddress}
+              hint="Choose the town you are based in, or the nearest one. Travellers use it to find drivers near them."
             />
+            <ServiceAreasPicker className="mt-3" label="Also available in" value={serviceAreas} onChange={setServiceAreas} />
             <TextField
               className="mt-3"
               label="Bio"

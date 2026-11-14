@@ -71,6 +71,9 @@ import { bioContactWarningMessage } from '../lib/contactWarning.js';
 import { clearStoredToken, getStoredToken, saveReturnPath } from '../services/authToken.js';
 import DeleteAccountCard from '../components/DeleteAccountCard.jsx';
 import imageCompression from 'browser-image-compression';
+import LocationSelect from '../components/LocationSelect.jsx';
+import ServiceAreasPicker from '../components/ServiceAreasPicker.jsx';
+import { guessLocationName } from '../constants/locations.js';
 
 const NAV_ITEMS = [
   { id: 'overview', label: 'Overview', icon: User2, hash: 'overview' },
@@ -3038,7 +3041,9 @@ const buildDriverProfileForm = (profile) => ({
     const numeric = Number(profile?.experienceYears);
     return Number.isFinite(numeric) && numeric >= 0 ? String(numeric) : '';
   })(),
-  address: profile?.address || '',
+  // Older typed locations are preselected as their nearest list town when one matches.
+  address: guessLocationName(profile?.address) || profile?.address || '',
+  serviceAreas: Array.isArray(profile?.serviceAreas) ? profile.serviceAreas : [],
   description: profile?.description || '',
   tripAdvisor: profile?.tripAdvisor || '',
   profilePhoto: profile?.profilePhoto || '',
@@ -3287,6 +3292,7 @@ const DriverProfilePanel = ({
         payload.append('experienceYears', String(normalizedExperience));
       }
       payload.append('address', formState.address || '');
+      payload.append('serviceAreas', (formState.serviceAreas || []).join(','));
       payload.append('description', formState.description || '');
       payload.append('tripAdvisor', formState.tripAdvisor || '');
 
@@ -3463,8 +3469,15 @@ const DriverProfilePanel = ({
               </div>
               <div className="mt-3">
                 <label className={labelCls} htmlFor="driver-profile-address">Base location</label>
-                <input id="driver-profile-address" name="address" value={formState.address} onChange={handleFieldChange} className={inputCls} placeholder="e.g. Negombo" />
-                <p className="mt-1 text-[11.5px] text-muted-soft">City or town only, not your full address. Travellers use it to find drivers near them.</p>
+                <LocationSelect id="driver-profile-address" name="address" value={formState.address} onChange={(_value, event) => handleFieldChange(event)} className={inputCls} />
+                {formState.address && !guessLocationName(formState.address) ? (
+                  <p className="mt-1 text-[11.5px] font-semibold text-amber-700">
+                    Your current location &quot;{formState.address}&quot; is not in the list. Please choose your town or the nearest one.
+                  </p>
+                ) : null}
+                <span className={`${labelCls} mt-3 block`}>Also available in</span>
+                <ServiceAreasPicker value={formState.serviceAreas} onChange={(serviceAreas) => setFormState((prev) => ({ ...prev, serviceAreas }))} />
+                <p className="mt-1 text-[11.5px] text-muted-soft">Choose the town you are based in, or the nearest one. Travellers use it to find drivers near them.</p>
               </div>
               <div className="mt-3">
                 <label className={labelCls} htmlFor="driver-profile-description">Bio</label>

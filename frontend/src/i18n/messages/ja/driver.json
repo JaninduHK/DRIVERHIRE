@@ -50,5 +50,7 @@
   "licenseVerified": "{license}（認証済み）",
   "identityVerified": "本人確認・ライセンス認証済み",
   "repliesWithinDay": "通常1日以内に返信",
-  "freeCancellation": "旅行の2日前まで無料キャンセル"
+  "freeCancellation": "旅行の2日前まで無料キャンセル",
+  "basedIn": "拠点：{town}",
+  "alsoAvailableIn": "対応エリア：{areas}"
 }

@@ -34,7 +34,8 @@
     "perks": "Leistungen",
     "perksCount": "{count} Leistungen",
     "price": "Preis",
-    "reviews": "Bewertungen"
+    "reviews": "Bewertungen",
+    "anyLocation": "Alle Orte"
   },
   "card": {
     "newGuide": "Neuer Guide",
@@ -68,6 +69,7 @@
     "show": {
       "one": "{count} Fahrer anzeigen",
       "other": "{count} Fahrer anzeigen"
-    }
+    },
+    "basedIn": "Standort"
   }
 }

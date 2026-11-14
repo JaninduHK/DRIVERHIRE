@@ -14,6 +14,7 @@ import {
 import { buildAssetUrl } from '../utils/assetUtils.js';
 import * as cloudinaryService from '../services/cloudinaryService.js';
 import { anonymizeUser } from '../services/accountDeletionService.js';
+import { normalizeDriverBase, normalizeServiceAreas } from '../constants/locations.js';
 
 const buildVerificationUrl = (token) => {
   const url = new URL(buildAppUrl('/verify-email'));
@@ -135,7 +136,19 @@ export const registerUser = async (req, res) => {
 
       user.contactNumber = contactNumber.trim();
       user.description = description.trim();
-      user.address = address.trim();
+      // Drivers choose their base town from a fixed list (constants/locations.js).
+      const base = normalizeDriverBase(address);
+      if (!base.ok) {
+        return res.status(400).json({ message: base.message });
+      }
+      user.address = base.value;
+      if (req.body.serviceAreas !== undefined) {
+        const areas = normalizeServiceAreas(req.body.serviceAreas);
+        if (!areas.ok) {
+          return res.status(400).json({ message: areas.message });
+        }
+        user.serviceAreas = areas.value;
+      }
       user.tripAdvisor = tripAdvisor ? tripAdvisor.trim() : '';
       const normalizedExperience = Math.max(
         0,
@@ -511,9 +524,27 @@ export const updateProfile = async (req, res) => {
         typeof contactNumber === 'string' && contactNumber.trim() ? contactNumber.trim() : '';
     }
 
+    if (req.body.serviceAreas !== undefined && user.role === USER_ROLES.DRIVER) {
+      const areas = normalizeServiceAreas(req.body.serviceAreas);
+      if (!areas.ok) {
+        return res.status(400).json({ message: areas.message });
+      }
+      user.serviceAreas = areas.value;
+    }
+
     if (address !== undefined) {
-      user.address =
-        typeof address === 'string' && address.trim() ? address.trim() : '';
+      if (user.role === USER_ROLES.DRIVER) {
+        // Drivers choose their base town from a fixed list; an older typed value is
+        // kept unchanged so saving other fields never fails.
+        const base = normalizeDriverBase(address, user.address);
+        if (!base.ok) {
+          return res.status(400).json({ message: base.message });
+        }
+        user.address = base.value;
+      } else {
+        user.address =
+          typeof address === 'string' && address.trim() ? address.trim() : '';
+      }
     }
 
     if (user.role === USER_ROLES.DRIVER) {
