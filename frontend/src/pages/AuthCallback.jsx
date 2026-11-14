@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { ssoExchange } from '../services/authApi.js';
-import { hasPendingBrief } from '../lib/pendingBrief.js';
+import { readPendingBrief } from '../lib/pendingBrief.js';
+import { DEFAULT_LOCALE, getLocaleFromPath, isLocale, localizePath } from '../i18n/locales.js';
 import { consumeAuthMessage, consumeReturnPath, persistAuthSession, SSO_LOGIN_URL } from '../services/authToken.js';
 
 // Shown when Asgardeo redirects back with ?error=<code> instead of a code to
@@ -24,6 +25,17 @@ const ERROR_MESSAGES = {
 // posted automatically from here, which left new travellers unsure what had
 // just happened.
 const REQUESTS_PATH = '/dashboard?tab=requests';
+
+// The language to come back in. First the page they left (remembered for this
+// tab only); then the language their parked quote request was written in,
+// because finishing sign-up from the verification email opens a new tab that
+// has lost the first; then the language saved on their account.
+const returnLocale = (savedPath, pendingBrief, user) => {
+  if (savedPath) return getLocaleFromPath(savedPath.split(/[?#]/)[0]);
+  if (isLocale(pendingBrief?.language)) return pendingBrief.language;
+  if (isLocale(user?.language)) return user.language;
+  return DEFAULT_LOCALE;
+};
 
 // Landing point after a successful Asgardeo SSO round-trip. The backend redirects
 // here with a one-time exchange code (not the JWT itself, to keep it out of
@@ -77,7 +89,12 @@ const AuthCallback = () => {
         }
 
         const savedPath = consumeReturnPath();
-        navigate(hasPendingBrief() ? REQUESTS_PATH : savedPath || '/dashboard', { replace: true });
+        const pendingBrief = readPendingBrief();
+        const locale = returnLocale(savedPath, pendingBrief, response.user);
+        navigate(
+          pendingBrief ? localizePath(REQUESTS_PATH, locale) : savedPath || localizePath('/dashboard', locale),
+          { replace: true }
+        );
       } catch (err) {
         setError(err?.message || 'Unable to complete sign-in right now.');
       }
