@@ -37,6 +37,8 @@ export default function License() {
   const [editing, setEditing] = useState(false);
   const [selectedType, setSelectedType] = useState<LicenseType | null>(null);
   const [photoUri, setPhotoUri] = useState<string | undefined>();
+  // Earliest expiry date allowed (worked out once, not on every render).
+  const [tomorrow] = useState(() => new Date(Date.now() + 86400000));
   const [expiry, setExpiry] = useState(profile?.licenseExpiresAt ? String(profile.licenseExpiresAt).slice(0, 10) : '');
   // An approved licence can't be resubmitted until it expires (the server enforces this too).
   const locked =
@@ -253,7 +255,7 @@ export default function License() {
                   label="License expiry date"
                   value={expiry}
                   onChange={setExpiry}
-                  minimumDate={new Date(Date.now() + 86400000)}
+                  minimumDate={tomorrow}
                 />
                 <Text className="mt-1.5 font-med text-[11.5px] leading-4 text-muted-soft">
                   As printed on your license. Once approved, you can submit a new license only after this date.

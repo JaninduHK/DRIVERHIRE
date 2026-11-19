@@ -59,7 +59,7 @@ export function LocationPickerField({
       </Pressable>
       {value && !selected ? (
         <Text className="mt-1.5 font-med text-[11.5px] leading-4 text-warn">
-          Your current location "{value}" is not in the list. Please choose your town or the nearest one.
+          Your current location “{value}” is not in the list. Please choose your town or the nearest one.
         </Text>
       ) : null}
       {hint ? <Text className="mt-1.5 font-med text-[11.5px] leading-4 text-muted-soft">{hint}</Text> : null}

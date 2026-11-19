@@ -193,7 +193,7 @@ export default function Register() {
           {step === 1 && (
             <>
               <Card className="p-4">
-                <TextField label="Full name" value={name} onChangeText={setName} placeholder="Janindu Hansaka" autoCapitalize="words" />
+                <TextField label="Full name" value={name} onChangeText={setName} placeholder="e.g. Saman Perera" autoCapitalize="words" />
                 <TextField className="mt-4" label="Email address" value={email} onChangeText={setEmail} placeholder="you@example.com" keyboardType="email-address" autoCapitalize="none" />
                 <TextField className="mt-4" label="Mobile number" value={mobile} onChangeText={setMobile} placeholder="71 234 5678" keyboardType="phone-pad" prefix="+94" />
                 <LocationPickerField

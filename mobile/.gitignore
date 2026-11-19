@@ -47,3 +47,4 @@ example
 
 mobile/google-services.json
 **/.env
+/ios.old
