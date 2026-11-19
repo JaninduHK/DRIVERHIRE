@@ -715,6 +715,7 @@ export const getDriverDetails = async (req, res) => {
       licenseType: driver.licenseType,
       licenseImage: buildAssetUrl(driver.licenseImage, req),
       licenseStatus: driver.licenseStatus || null,
+      licenseExpiresAt: driver.licenseExpiresAt || null,
       licenseSubmittedAt: driver.licenseSubmittedAt,
       licenseReviewedAt: driver.licenseReviewedAt,
       licenseReviewedBy: driver.licenseReviewedBy
@@ -1014,7 +1015,7 @@ export const listLicenseSubmissions = async (req, res) => {
   try {
     const drivers = await User.find(filters)
       .select(
-        'name email contactNumber profilePhoto licenseType licenseImage licenseStatus licenseSubmittedAt licenseReviewedAt licenseReviewedBy licenseAdminNote'
+        'name email contactNumber profilePhoto licenseType licenseImage licenseStatus licenseSubmittedAt licenseReviewedAt licenseReviewedBy licenseAdminNote licenseExpiresAt'
       )
       .populate({ path: 'licenseReviewedBy', select: 'name' })
       .sort({ licenseSubmittedAt: -1 });
@@ -1031,6 +1032,7 @@ export const listLicenseSubmissions = async (req, res) => {
         licenseImage: json.licenseImage ? buildAssetUrl(json.licenseImage, req) : '',
         status: json.licenseStatus,
         submittedAt: json.licenseSubmittedAt,
+        expiresAt: json.licenseExpiresAt || null,
         reviewedAt: json.licenseReviewedAt,
         reviewedBy: json.licenseReviewedBy?.name || null,
         adminNote: json.licenseAdminNote || '',
@@ -1104,6 +1106,19 @@ export const updateLicenseStatus = async (req, res) => {
     const driver = await User.findOne({ _id: id, role: USER_ROLES.DRIVER });
     if (!driver || !driver.licenseStatus) {
       return res.status(404).json({ message: 'License submission not found' });
+    }
+
+    // The admin can enter or correct the expiry date (read from the licence photo).
+    if (req.body.licenseExpiresAt !== undefined && req.body.licenseExpiresAt !== '') {
+      const expiry = new Date(req.body.licenseExpiresAt);
+      if (Number.isNaN(expiry.getTime())) {
+        return res.status(400).json({ message: 'The licence expiry date is not valid.' });
+      }
+      driver.licenseExpiresAt = expiry;
+    }
+    // Approval needs an expiry date: it decides when the driver may submit a new licence.
+    if (status === LICENSE_STATUS.APPROVED && !driver.licenseExpiresAt) {
+      return res.status(400).json({ message: 'Enter the licence expiry date before approving.' });
     }
 
     driver.licenseStatus = status;

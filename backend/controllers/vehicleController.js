@@ -17,6 +17,8 @@ import { notifyUser } from '../services/expoPushService.js';
 import { mapAssetUrls, buildAssetUrl } from '../utils/assetUtils.js';
 import { sendRedditPurchase } from '../services/redditConversionsService.js';
 import { declineOffersOverlappingBooking } from '../utils/overlappingOffers.js';
+import { parsePassengers } from '../utils/passengers.js';
+import { ensureBookingConversation } from '../utils/bookingConversation.js';
 
 const escapeRegex = (value = '') => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -674,7 +676,7 @@ export const createVehicleBooking = async (req, res) => {
       status: VEHICLE_STATUS.APPROVED,
       deletedAt: null,
     })
-      .select('availability pricePerDay model driver')
+      .select('availability pricePerDay model driver seats')
       .populate({
         path: 'driver',
         match: { driverStatus: DRIVER_STATUS.APPROVED, deletedAt: null },
@@ -773,6 +775,22 @@ export const createVehicleBooking = async (req, res) => {
       return res.status(400).json({ message: 'End date must be on or after the start date' });
     }
 
+    // Who is travelling. An offer booking falls back to the numbers on the quote
+    // request it answered; the seat limit applies to direct bookings (an offer's
+    // driver already agreed to the group).
+    const passengerInput = { adults: req.body?.adults, children: req.body?.children, childAges: req.body?.childAges };
+    if ((passengerInput.adults === undefined || passengerInput.adults === '') && offerMessage?.offer?.brief) {
+      const brief = await TourBrief.findById(offerMessage.offer.brief).select('adults children').lean();
+      if (brief) {
+        passengerInput.adults = brief.adults;
+        passengerInput.children = brief.children;
+      }
+    }
+    const passengers = parsePassengers(passengerInput, { seats: offerMessage ? null : vehicle.seats });
+    if (!passengers.ok) {
+      return res.status(400).json({ message: passengers.message });
+    }
+
     const availabilityConflict = findAvailabilityConflict(vehicle.availability, startDate, endDate);
     if (availabilityConflict) {
       return res
@@ -825,6 +843,10 @@ export const createVehicleBooking = async (req, res) => {
       commissionRate: DEFAULT_COMMISSION_RATE,
       status: offerMessage ? BOOKING_STATUS.CONFIRMED : BOOKING_STATUS.PENDING,
       offerMessage: offerMessage ? offerMessage._id : null,
+      conversation: offerMessage ? offerMessage.conversation._id : null,
+      adults: passengers.value.adults,
+      children: passengers.value.children,
+      childAges: passengers.value.childAges,
     });
 
     await booking.save();
@@ -899,6 +921,13 @@ export const createVehicleBooking = async (req, res) => {
           { $set: { 'offer.status': 'declined' } }
         );
       }
+    }
+
+    // A direct booking gets its own chat so driver and traveller can message each other.
+    if (!booking.conversation) {
+      await ensureBookingConversation(booking, { vehicleModel: vehicle.model }).catch((error) =>
+        console.warn('Booking chat could not be created:', error?.message || error)
+      );
     }
 
     // Other drivers' pending offers for the same dates can't be taken any more.

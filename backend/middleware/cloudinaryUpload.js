@@ -47,6 +47,9 @@ export const vehicleImageUpload = multer({
   },
 });
 
+// A driver's profile cover photo (one image in `coverPhoto`), awaiting admin approval.
+export const coverPhotoUpload = vehicleImageUpload.single('coverPhoto');
+
 // The driver's vehicle form: vehicle photos in `images`, insurance card photos
 // in `insuranceImages`. With .fields() multer puts them on req.files as
 // { images: [...], insuranceImages: [...] } (an object, not an array).

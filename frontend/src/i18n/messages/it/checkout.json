@@ -22,7 +22,9 @@
     "required": "Nome completo, email e numero di telefono sono obbligatori.",
     "noLongerAvailable": "Queste date non sono più disponibili. Scegli un altro periodo.",
     "notesTooLong": "Le tue note (extra selezionati compresi) devono avere al massimo {max} caratteri – ora sono {current}.",
-    "confirm": "Al momento non è possibile confermare la prenotazione."
+    "confirm": "Al momento non è possibile confermare la prenotazione.",
+    "adults": "Scegli quanti adulti viaggiano.",
+    "tooManyPassengers": "Questo veicolo ha {seats} posti. Scegli meno viaggiatori o un veicolo più grande."
   },
   "guard": {
     "bumpTitle": "Si è verificato un problema",
@@ -92,7 +94,18 @@
     "notes": "Note per il tuo autista",
     "optional": "Facoltativo",
     "notesPlaceholder": "Tappe extra, esigenze alimentari, hotel già prenotati – tutto ciò che aiuta l'autista a organizzarsi.",
-    "extrasCount": "Anche gli extra selezionati sopra contano per questo limite."
+    "extrasCount": "Anche gli extra selezionati sopra contano per questo limite.",
+    "adults": "Adulti",
+    "children": "Bambini",
+    "choose": "Scegli",
+    "childAges": "Età dei bambini (facoltativo)",
+    "childAgeN": "Età bambino {n}",
+    "underOne": "Meno di 1 anno",
+    "ageYears": {
+      "one": "{count} anno",
+      "other": "{count} anni"
+    },
+    "childAgesHelp": "Aiuta il tuo autista a portare i seggiolini giusti."
   },
   "extras": {
     "childSeat": "Seggiolino per bambini",

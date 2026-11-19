@@ -432,3 +432,13 @@ export const updateSettings = (payload) =>
     method: 'PATCH',
     body: JSON.stringify(payload),
   });
+
+// Driver cover photos waiting for approval ('pending'), or 'approved' / 'rejected'.
+export const fetchCoverPhotos = (status = 'pending') =>
+  request(`/cover-photos?status=${encodeURIComponent(status)}`, { method: 'GET' });
+
+export const reviewDriverCoverPhoto = (driverId, action, note = '') =>
+  request(`/drivers/${driverId}/cover-photo`, {
+    method: 'PATCH',
+    body: JSON.stringify({ action, note }),
+  });

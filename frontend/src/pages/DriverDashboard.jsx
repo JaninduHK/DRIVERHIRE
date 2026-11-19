@@ -74,6 +74,7 @@ import imageCompression from 'browser-image-compression';
 import LocationSelect from '../components/LocationSelect.jsx';
 import ServiceAreasPicker from '../components/ServiceAreasPicker.jsx';
 import { guessLocationName } from '../constants/locations.js';
+import CoverPhotoCard from '../components/CoverPhotoCard.jsx';
 
 const NAV_ITEMS = [
   { id: 'overview', label: 'Overview', icon: User2, hash: 'overview' },
@@ -2449,6 +2450,7 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
 };
 
 const DriverBookingsPanel = ({ onMenu, onNavigate, driverName, driverImage, bookingsState, onReload }) => {
+  const navigate = useNavigate();
   const { loading, error, items } = bookingsState;
   const [responding, setResponding] = useState({ id: '', action: '' });
   const [selectedBooking, setSelectedBooking] = useState(null);
@@ -2563,7 +2565,11 @@ const DriverBookingsPanel = ({ onMenu, onNavigate, driverName, driverImage, book
                 tone={index % 2 === 0 ? 'amber' : 'purple'}
                 responding={responding}
                 onRespond={handleRespond}
-                onMessage={() => onNavigate?.('messages')}
+                onMessage={() =>
+                  booking.conversationId
+                    ? navigate(`/portal/driver/messages?conversation=${booking.conversationId}`)
+                    : onNavigate?.('messages')
+                }
                 onView={setSelectedBooking}
               />
             ))}
@@ -2621,7 +2627,7 @@ const BookingCard = ({ booking, tone = 'amber', responding, onRespond, onMessage
         <div className="min-w-0">
           <div className="truncate text-[14.5px] font-bold text-ink">{name}</div>
           <div className="truncate text-[12px] text-muted-soft">
-            {guests ? `${guests} guests · ` : ''}
+            {booking.passengerSummary ? `${booking.passengerSummary} · ` : guests ? `${guests} guests · ` : ''}
             {vehicleName}
           </div>
         </div>
@@ -3085,6 +3091,13 @@ const DriverProfilePanel = ({
   const [locating, setLocating] = useState(false);
   const [locationStatus, setLocationStatus] = useState('');
   const [licenseType, setLicenseType] = useState(profile?.licenseType || '');
+  const [licenseExpiry, setLicenseExpiry] = useState(profile?.licenseExpiresAt ? String(profile.licenseExpiresAt).slice(0, 10) : '');
+  // An approved licence can't be resubmitted until it expires (the server enforces this too).
+  const licenseLocked =
+    profile?.licenseStatus === 'approved' && (!profile?.licenseExpiresAt || new Date(profile.licenseExpiresAt) > new Date());
+  const licenseExpiryLabel = profile?.licenseExpiresAt
+    ? new Date(profile.licenseExpiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    : '';
   const [licenseFile, setLicenseFile] = useState(null);
   const [licensePreview, setLicensePreview] = useState(profile?.licenseImage || '');
   const photoInputRef = useRef(null);
@@ -3214,9 +3227,14 @@ const DriverProfilePanel = ({
       toast.error('Upload an image of your SLTDA license, not your driving license.');
       return;
     }
+    if (!licenseExpiry) {
+      toast.error('Enter the expiry date shown on your license.');
+      return;
+    }
     try {
       const payload = new FormData();
       payload.append('licenseType', licenseType);
+      payload.append('licenseExpiresAt', licenseExpiry);
       if (licenseFile) {
         payload.append('licenseImage', licenseFile);
       }
@@ -3550,6 +3568,19 @@ const DriverProfilePanel = ({
                   {licenseStatusLabel(profile?.licenseStatus)}
                 </span>
               </div>
+              {licenseLocked ? (
+                <div className="mt-3 rounded-lg border border-[#cdeede] bg-[#f3fbf6] p-3 text-[12.5px] text-brand-dark">
+                  <p className="font-bold">
+                    {profile?.licenseType ? `${profile.licenseType} · ` : ''}Approved{licenseExpiryLabel ? ` until ${licenseExpiryLabel}` : ''}
+                  </p>
+                  <p className="mt-1 text-muted">
+                    {licenseExpiryLabel
+                      ? 'You can submit a new license after this date.'
+                      : 'Your license is approved. Contact support if you need to update it.'}
+                  </p>
+                </div>
+              ) : (
+              <>
               <p className="mt-0.5 text-[12px] text-muted-soft">Select your license type and upload a photo for admin verification.</p>
 
               <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-[12px] text-amber-800">
@@ -3601,8 +3632,25 @@ const DriverProfilePanel = ({
                   </div>
                 </div>
               </div>
+
+              <div className="mt-3">
+                <label className={labelCls} htmlFor="driver-license-expiry">License expiry date</label>
+                <input
+                  id="driver-license-expiry"
+                  type="date"
+                  value={licenseExpiry}
+                  min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
+                  onChange={(event) => setLicenseExpiry(event.target.value)}
+                  className={inputCls}
+                  required
+                />
+                <p className="mt-1 text-[11.5px] text-muted-soft">As printed on your license. Once approved, you can submit a new license only after this date.</p>
+              </div>
+              </>
+              )}
             </div>
 
+            {licenseLocked ? null : (
             <button
               type="submit"
               disabled={licenseSaving}
@@ -3616,6 +3664,7 @@ const DriverProfilePanel = ({
                 'Submit license'
               )}
             </button>
+            )}
           </form>
         </Sheet>
       </>
@@ -3654,6 +3703,8 @@ const DriverProfilePanel = ({
           </div>
           <div className="mt-0.5 text-[13px] font-semibold text-muted-soft">Approved driver · {city}</div>
         </div>
+
+        <CoverPhotoCard key={profile?.id || 'cover'} profile={profile} />
 
         <div className="mt-4 rounded-[18px] bg-white p-4 shadow-card">
           <div className="mb-2 flex items-center justify-between">

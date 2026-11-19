@@ -197,3 +197,12 @@ export const updateDriverLicense = (payload) => {
   const body = payload instanceof FormData ? payload : JSON.stringify(payload);
   return request('/license', { method: 'PUT', body });
 };
+
+// Profile cover photo: shown on the public profile once an admin approves it.
+export const uploadCoverPhoto = (file) => {
+  const body = new FormData();
+  body.append('coverPhoto', file);
+  return request('/cover-photo', { method: 'POST', body });
+};
+
+export const removeCoverPhoto = () => request('/cover-photo', { method: 'DELETE' });

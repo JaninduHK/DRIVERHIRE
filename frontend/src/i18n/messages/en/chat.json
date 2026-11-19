@@ -45,7 +45,9 @@
       "confirmed": "confirmed",
       "cancelled": "cancelled",
       "rejected": "rejected"
-    }
+    },
+    "travellers": "Travellers",
+    "notProvided": "Not provided"
   },
   "photos": {
     "vehicle": "Vehicle",

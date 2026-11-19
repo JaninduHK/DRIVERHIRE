@@ -34,6 +34,8 @@ export interface User {
   licenseSubmittedAt?: string | null;
   licenseReviewedAt?: string | null;
   licenseAdminNote?: string | null;
+  /** Approved licences can't be resubmitted before this date. */
+  licenseExpiresAt?: string | null;
   createdAt?: string;
 }
 
@@ -107,6 +109,11 @@ export interface Booking {
   totalPrice?: number;
   totalDays?: number;
   guests?: number;
+  // Who is travelling, e.g. "2 adults · 1 child (age 5)"; '' on older bookings.
+  adults?: number | null;
+  children?: number | null;
+  childAges?: number[];
+  passengerSummary?: string;
   startDate?: string;
   endDate?: string;
   pickupLocation?: string;

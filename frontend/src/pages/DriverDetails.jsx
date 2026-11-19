@@ -146,8 +146,10 @@ const DriverDetails = () => {
     );
   }
 
-  const cover = driver.featuredVehicle?.image || vehicles[0]?.image || null;
-  const cityLabel = driver.location?.label || driver.address || t('driver.sriLanka');
+  // The driver's approved cover photo, else a vehicle photo.
+  const cover = driver.coverPhoto || driver.featuredVehicle?.image || vehicles[0]?.image || null;
+  // Shown beside the rating only when the "Based in …" line below won't already say it.
+  const cityLabel = guessLocationName(driver.address) ? null : driver.location?.label || driver.address || t('driver.sriLanka');
   const perks = (driver.badges?.length ? driver.badges : vehicles[0]?.features || []).map((label) => translateFeature(label, t));
   const primaryVehicle = vehicles[0] || null;
   const lowestRate = vehicles.reduce((min, v) => (typeof v.pricePerDay === 'number' ? Math.min(min, v.pricePerDay) : min), Infinity);
@@ -242,7 +244,7 @@ const MobileProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks,
 
       {/* Identity */}
       <div className="relative -mt-[26px] rounded-t-[26px] bg-white px-[18px] pb-[18px]">
-        <div className="-mt-[30px] flex items-start gap-3 pt-[14px]">
+        <div className="-mt-[30px] flex items-center gap-3 pt-[14px]">
           <div className="flex-shrink-0 rounded-full border-4 border-white">
             {driver.profilePhoto ? (
               <img src={driver.profilePhoto} alt={driver.name} className="h-[76px] w-[76px] rounded-full object-cover" />
@@ -250,13 +252,17 @@ const MobileProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks,
               <Avatar name={driver.name} className="h-[76px] w-[76px] rounded-full text-2xl" />
             )}
           </div>
-          <div className="min-w-0 flex-1 self-start">
-            <h1 className="min-w-0 text-[25px] font-extrabold leading-[1.05] tracking-tight text-ink">{driver.name}</h1>
-            {driver.licenseType ? (
-              <div className="mt-2">
-                <LicenseIconBadge licenseType={driver.licenseType} className="h-6 w-6 p-1.5" />
-              </div>
-            ) : null}
+          <div className="min-w-0 flex-1">
+            {/* The verified tick sits inline after the last word, so it stays beside the
+                name even when a long name wraps onto two lines. */}
+            <h1 className="min-w-0 text-[25px] font-extrabold leading-[1.15] tracking-tight text-ink">
+              {driver.name}
+              {driver.licenseType ? (
+                <span className="ml-2 inline-flex align-middle">
+                  <LicenseIconBadge licenseType={driver.licenseType} className="h-6 w-6 p-1.5" />
+                </span>
+              ) : null}
+            </h1>
           </div>
         </div>
         <div className="mt-3 flex items-center gap-2.5 text-[13.5px] font-semibold text-muted">
@@ -267,14 +273,14 @@ const MobileProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks,
                 <b className="text-ink">{ratingLabel}</b>
                 <span>({driver.reviewCount ?? 0})</span>
               </span>
-              <span className="h-1 w-1 rounded-full bg-[#cfd8dd]" />
-              {driver.licenseType ? <LicenseTypeChip licenseType={driver.licenseType} className="!mt-0" /> : <span>{cityLabel}</span>}
+              {driver.licenseType || cityLabel ? <span className="h-1 w-1 rounded-full bg-[#cfd8dd]" /> : null}
+              {driver.licenseType ? <LicenseTypeChip licenseType={driver.licenseType} className="!mt-0" /> : cityLabel ? <span>{cityLabel}</span> : null}
             </>
           ) : (
             <>
               <span className="text-muted-soft">{t('driver.noReviews')}</span>
-              <span className="h-1 w-1 rounded-full bg-[#cfd8dd]" />
-              {driver.licenseType ? <LicenseTypeChip licenseType={driver.licenseType} className="!mt-0" /> : <span>{cityLabel}</span>}
+              {driver.licenseType || cityLabel ? <span className="h-1 w-1 rounded-full bg-[#cfd8dd]" /> : null}
+              {driver.licenseType ? <LicenseTypeChip licenseType={driver.licenseType} className="!mt-0" /> : cityLabel ? <span>{cityLabel}</span> : null}
             </>
           )}
         </div>
@@ -381,7 +387,10 @@ const DesktopProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks
     <div className="mx-auto max-w-[1180px] px-9 pb-12">
       <div className="relative z-10 grid grid-cols-[1fr_350px] items-start gap-8">
         <div className="-mt-[36px]">
-          <div className="flex items-end gap-[18px]">
+          {/* Name block anchored from the top, just below the cover (the avatar overlaps
+              it by 36px), so extra lines grow downwards instead of pushing the name up
+              into the cover photo. */}
+          <div className="flex items-start gap-[18px]">
             <div className="flex-shrink-0 rounded-full border-[5px] border-white shadow-[0_10px_26px_rgba(15,31,45,0.14)]">
               {driver.profilePhoto ? (
                 <img src={driver.profilePhoto} alt={driver.name} className="h-28 w-28 rounded-full object-cover" />
@@ -389,7 +398,7 @@ const DesktopProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks
                 <Avatar name={driver.name} className="h-28 w-28 rounded-full text-4xl" />
               )}
             </div>
-            <div className="pb-2">
+            <div className="pt-[44px]">
               <div className="flex items-center gap-2.5">
                 <h1 className="text-[30px] font-extrabold tracking-tight text-ink">{driver.name}</h1>
                 <LicenseIconBadge licenseType={driver.licenseType} className="h-7 w-7 p-[7px]" />
@@ -400,8 +409,8 @@ const DesktopProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks
                 ) : (
                   <span className="text-muted-soft">{t('driver.noReviews')}</span>
                 )}
-                <span className="h-1 w-1 rounded-full bg-[#cfd8dd]" />
-                {driver.licenseType ? <LicenseTypeChip licenseType={driver.licenseType} className="!mt-0" /> : <span>{cityLabel}</span>}
+                {driver.licenseType || cityLabel ? <span className="h-1 w-1 rounded-full bg-[#cfd8dd]" /> : null}
+                {driver.licenseType ? <LicenseTypeChip licenseType={driver.licenseType} className="!mt-0" /> : cityLabel ? <span>{cityLabel}</span> : null}
               </div>
               <AreasLine driver={driver} />
             </div>

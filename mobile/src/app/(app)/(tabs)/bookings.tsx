@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { View, Text, Alert, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { MapPin, Calendar } from 'lucide-react-native';
+import { MapPin, Calendar, Users } from 'lucide-react-native';
 import { Screen } from '../../../components/Screen';
 import { AppHeader } from '../../../components/AppHeader';
 import { BodySheet } from '../../../components/BodySheet';
@@ -201,6 +201,10 @@ function BookingCard({
             </Text>
           </View>
         ) : null}
+        <View className="flex-row items-center gap-2">
+          <Users size={14} color={colors.mutedSoft} strokeWidth={1.6} />
+          <Text className="font-med text-[13px] text-muted">{booking.passengerSummary || 'Travellers: not provided'}</Text>
+        </View>
       </Pressable>
 
       {isPending(booking) ? (

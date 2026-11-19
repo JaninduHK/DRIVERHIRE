@@ -141,6 +141,8 @@ const buildDriverSummary = (driver, vehicles = [], reviewStats = null, req, acti
     tripAdvisor: driver.tripAdvisor || '',
     address: driver.address || '',
     serviceAreas: Array.isArray(driver.serviceAreas) ? driver.serviceAreas : [],
+    // Approved cover photo only; the profile falls back to a vehicle photo without one.
+    coverPhoto: buildAssetUrl(driver.coverPhoto, req) || '',
     vehicleCount: vehicles.length,
     averagePricePerDay,
     featuredVehicle,
@@ -217,7 +219,7 @@ export const listPublicDrivers = async (req, res) => {
       commissionFrozenAt: null,
     })
       .select(
-        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation shareLiveLocation experienceYears licenseType licenseStatus featured featuredOrder serviceAreas'
+        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation shareLiveLocation experienceYears licenseType licenseStatus featured featuredOrder serviceAreas coverPhoto'
       )
       .sort({ createdAt: -1 })
       .lean();
@@ -283,7 +285,7 @@ export const getPublicDriverDetails = async (req, res) => {
       deletedAt: null,
     })
       .select(
-        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation shareLiveLocation experienceYears licenseType licenseStatus featured featuredOrder serviceAreas commissionFrozenAt'
+        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation shareLiveLocation experienceYears licenseType licenseStatus featured featuredOrder serviceAreas coverPhoto commissionFrozenAt'
       )
       .lean();
 

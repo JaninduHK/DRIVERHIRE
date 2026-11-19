@@ -186,6 +186,15 @@ const userSchema = new mongoose.Schema(
       type: [String],
       default: [],
     },
+    // Profile cover photo. Drivers upload one; it shows publicly only after an admin
+    // approves it (controllers/coverPhotoController.js). Until then the profile uses
+    // a vehicle photo. A new upload waits in coverPhotoPending; the approved one stays live.
+    coverPhoto: { type: String, default: '' },
+    coverPhotoPending: { type: String, default: '' },
+    coverPhotoStatus: { type: String, enum: ['none', 'pending', 'approved', 'rejected'], default: 'none' },
+    coverPhotoNote: { type: String, trim: true, maxlength: 300, default: '' },
+    coverPhotoSubmittedAt: { type: Date, default: null },
+    coverPhotoReviewedAt: { type: Date, default: null },
     // "Also available in": up to 3 city-page areas besides the base town
     // (constants/locations.js SERVICE_AREAS), so city pages can list the driver.
     serviceAreas: {
@@ -233,6 +242,9 @@ const userSchema = new mongoose.Schema(
       default: null,
     },
     licenseSubmittedAt: Date,
+    // When the driving/guide licence expires. Entered by the driver, checked by the
+    // admin on approval. An approved licence can't be resubmitted until this date.
+    licenseExpiresAt: { type: Date, default: null },
     licenseReviewedAt: Date,
     licenseReviewedBy: {
       type: mongoose.Schema.Types.ObjectId,

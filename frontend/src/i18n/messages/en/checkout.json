@@ -1,6 +1,9 @@
 {
   "dateRange": "{start} to {end}",
-  "days": { "one": "{count} day", "other": "{count} days" },
+  "days": {
+    "one": "{count} day",
+    "other": "{count} days"
+  },
   "selectedVehicle": "Selected vehicle",
   "yourDriver": "Your driver",
   "confirmed": "Your booking has been confirmed.",
@@ -19,7 +22,9 @@
     "required": "Full name, email, and phone number are required.",
     "noLongerAvailable": "These dates are no longer available. Please pick a different range.",
     "notesTooLong": "Your notes (including any selected extras) must be {max} characters or fewer — currently {current}.",
-    "confirm": "Unable to confirm booking right now."
+    "confirm": "Unable to confirm booking right now.",
+    "adults": "Please choose how many adults are travelling.",
+    "tooManyPassengers": "This vehicle seats {seats} passengers. Please choose fewer travellers or a larger vehicle."
   },
   "guard": {
     "bumpTitle": "We hit a bump",
@@ -89,7 +94,18 @@
     "notes": "Notes for your driver",
     "optional": "Optional",
     "notesPlaceholder": "Extra stops, dietary needs, hotel names you already booked, anything that helps your driver plan.",
-    "extrasCount": "Your selected extras above count toward this limit too."
+    "extrasCount": "Your selected extras above count toward this limit too.",
+    "adults": "Adults",
+    "children": "Children",
+    "choose": "Choose",
+    "childAges": "Children’s ages (optional)",
+    "childAgeN": "Child {n} age",
+    "underOne": "Under 1",
+    "ageYears": {
+      "one": "{count} year",
+      "other": "{count} years"
+    },
+    "childAgesHelp": "Helps your driver bring the right child seats."
   },
   "extras": {
     "childSeat": "Child seat",

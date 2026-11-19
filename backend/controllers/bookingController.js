@@ -8,6 +8,8 @@ import { sendBookingStatusUpdateEmail } from '../services/emailService.js';
 import { travellerSnapshotFor } from '../utils/travellerContact.js';
 import { buildAssetUrl, mapAssetUrls } from '../utils/assetUtils.js';
 import { declineOffersOverlappingBooking } from '../utils/overlappingOffers.js';
+import { passengerSummary } from '../utils/passengers.js';
+import { attachMissingConversations } from '../utils/bookingConversation.js';
 
 const toId = (value) => {
   if (!value) {
@@ -165,9 +167,16 @@ const shapeBooking = (booking, review, req) => {
     // Offers cannot be edited after sending, so reading through the reference
     // is the agreed terms; null for direct bookings and pre-inclusions offers.
     offerInclusions: booking.offerMessage?.offer?.inclusions ?? null,
-    conversationId: booking.offerMessage?.conversation
-      ? toId(booking.offerMessage.conversation)
-      : null,
+    // The booking's own chat (direct bookings), else the chat of the offer it came from.
+    conversationId: booking.conversation
+      ? toId(booking.conversation)
+      : booking.offerMessage?.conversation
+        ? toId(booking.offerMessage.conversation)
+        : null,
+    adults: Number.isFinite(booking.adults) ? booking.adults : null,
+    children: Number.isFinite(booking.children) ? booking.children : null,
+    childAges: Array.isArray(booking.childAges) ? booking.childAges : [],
+    passengerSummary: passengerSummary(booking),
     review: shapedReview,
     canReview: canSubmitReviewForBooking(booking, review),
     createdAt: booking.createdAt,
@@ -226,6 +235,8 @@ export const listTravelerBookings = async (req, res) => {
       })
       .lean();
 
+    await attachMissingConversations(bookings, Booking);
+
     const bookingIds = bookings.map((booking) => booking._id.toString());
     const reviews = await Review.find({
       booking: { $in: bookingIds },
@@ -262,6 +273,9 @@ export const listDriverBookings = async (req, res) => {
         select: 'offer conversation',
       })
       .lean();
+
+    // Older direct bookings have no chat yet: create it so "Message traveller" works.
+    await attachMissingConversations(bookings, Booking);
 
     const bookingIds = bookings.map((booking) => booking._id.toString());
     const reviews = await Review.find({

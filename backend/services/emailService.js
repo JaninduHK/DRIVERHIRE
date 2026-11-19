@@ -2,6 +2,7 @@ import Brevo from 'sib-api-v3-sdk';
 import { OFFER_INCLUSION_KEYS } from '../utils/offerInclusions.js';
 import User from '../models/User.js';
 import { emailT, intlFor, localizeUrl, normalizeLanguage } from '../i18n/emailI18n.js';
+import { passengerSummary } from '../utils/passengers.js';
 
 const EN = emailT('en');
 
@@ -1557,6 +1558,7 @@ export const sendBookingRequestAlertEmail = async ({ driver, traveler, booking, 
         ? `${escapeHtml(travelerName)} accepted your offer and booked ${escapeHtml(vehicleModel)}. The booking is confirmed.`
         : `${escapeHtml(travelerName)} just requested ${escapeHtml(vehicleModel)}.`,
       `<strong>Dates:</strong> ${dates}`,
+      `<strong>Travellers:</strong> ${escapeHtml(passengerSummary(booking) || 'Not provided')}`,
       `<strong>${confirmed ? 'Total' : 'Estimated total'}:</strong> ${total}`,
       confirmed && traveler?.email ? `<strong>Traveller email:</strong> ${escapeHtml(traveler.email)}` : null,
       confirmed && traveler?.phoneNumber ? `<strong>Traveller phone:</strong> ${escapeHtml(traveler.phoneNumber)}` : null,
@@ -1577,7 +1579,7 @@ export const sendBookingRequestAlertEmail = async ({ driver, traveler, booking, 
     : '';
   const text = `Hi ${driver.name || 'there'},\n\n${travelerName} ${
     confirmed ? 'accepted your offer and booked' : 'requested'
-  } ${vehicleModel}.${confirmed ? ' The booking is confirmed.' : ''}\nDates: ${dates}\nTotal: ${total}${contactText}\n\nOpen your driver portal to ${
+  } ${vehicleModel}.${confirmed ? ' The booking is confirmed.' : ''}\nDates: ${dates}\nTravellers: ${passengerSummary(booking) || 'Not provided'}\nTotal: ${total}${contactText}\n\nOpen your driver portal to ${
     confirmed ? 'see the trip details' : 'respond'
   }.`;
 
@@ -2012,6 +2014,30 @@ export const sendCommissionUnfrozenEmail = async ({ to, driverName, dashboardUrl
     `Hi ${driverName || 'there'},\n\nThank you, your commission payment has been confirmed and your account is active again. ` +
     `You can send quotes and messages, and travellers can book your vehicles.\n\n${dashboardUrl}\n\n${brandName}`;
   await sendEmail({ to, subject: 'Your account is active again', html, text });
+};
+
+/** Tells a driver their cover photo was approved (now live) or rejected (with the reason). */
+export const sendCoverPhotoReviewEmail = async ({ to, driverName, approved, note, profileUrl }) => {
+  const brandName = getBrandName();
+  const safeName = escapeHtml(driverName || 'there');
+  const safeNote = escapeHtml(note || '');
+  const html = buildEmailTemplate({
+    title: approved ? 'Your cover photo is live' : 'Your cover photo was not approved',
+    preheader: approved ? 'Travellers now see it on your profile.' : 'Please upload a different photo.',
+    bodyLines: approved
+      ? [`Hi ${safeName},`, 'Your new cover photo has been approved and now shows at the top of your profile.']
+      : [
+          `Hi ${safeName},`,
+          'Your new cover photo was not approved, so it is not shown on your profile.',
+          safeNote ? `<b>Reason:</b> ${safeNote}` : 'Please upload a clear, landscape photo of your vehicle or a place you drive to, without phone numbers, logos or text.',
+          'You can upload another photo in the Profile tab of your driver dashboard.',
+        ],
+    action: { label: 'Open my profile', url: profileUrl },
+  });
+  const text = approved
+    ? `Hi ${driverName || 'there'},\n\nYour new cover photo has been approved and now shows on your profile.\n\n${profileUrl}\n\n${brandName}`
+    : `Hi ${driverName || 'there'},\n\nYour new cover photo was not approved.${note ? ` Reason: ${note}` : ''}\n\nYou can upload another photo in the Profile tab of your driver dashboard:\n${profileUrl}\n\n${brandName}`;
+  await sendEmail({ to, subject: approved ? 'Your cover photo is live' : 'Your cover photo was not approved', html, text });
 };
 
 export const sendReviewRequestEmail = async ({

@@ -51,7 +51,9 @@
       "confirmed": "подтверждено",
       "cancelled": "отменено",
       "rejected": "отклонено"
-    }
+    },
+    "travellers": "Путешественники",
+    "notProvided": "Не указано"
   },
   "photos": {
     "vehicle": "Автомобиль",

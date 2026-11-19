@@ -1,7 +1,8 @@
 import express from 'express';
 import { body, param } from 'express-validator';
 import { authenticate, ensureApprovedDriver } from '../middleware/authMiddleware.js';
-import { vehicleSubmissionUpload, commissionSlipUpload, conditionalLicenseUpload } from '../middleware/cloudinaryUpload.js';
+import { vehicleSubmissionUpload, commissionSlipUpload, conditionalLicenseUpload, coverPhotoUpload } from '../middleware/cloudinaryUpload.js';
+import { uploadCoverPhoto, removeCoverPhoto } from '../controllers/coverPhotoController.js';
 import {
   getDriverOverview,
   updateDriverLicense,
@@ -42,6 +43,9 @@ router.put(
   updateDriverLicense
 );
 router.post('/onboarding/profile-tour/complete', completeDriverProfileTour);
+// Profile cover photo: uploaded here, shown publicly once an admin approves it.
+router.post('/cover-photo', coverPhotoUpload, uploadCoverPhoto);
+router.delete('/cover-photo', removeCoverPhoto);
 router.post(
   '/push-token',
   [body('token').isString().trim().notEmpty().withMessage('Push token is required')],

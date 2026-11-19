@@ -45,7 +45,9 @@
       "confirmed": "confirmée",
       "cancelled": "annulée",
       "rejected": "refusée"
-    }
+    },
+    "travellers": "Voyageurs",
+    "notProvided": "Non renseigné"
   },
   "photos": {
     "vehicle": "Véhicule",

@@ -22,7 +22,9 @@
     "required": "Le nom complet, l'e-mail et le numéro de téléphone sont obligatoires.",
     "noLongerAvailable": "Ces dates ne sont plus disponibles. Veuillez choisir une autre période.",
     "notesTooLong": "Vos notes (options sélectionnées comprises) ne doivent pas dépasser {max} caractères – actuellement {current}.",
-    "confirm": "Impossible de confirmer la réservation pour le moment."
+    "confirm": "Impossible de confirmer la réservation pour le moment.",
+    "adults": "Veuillez indiquer le nombre d’adultes.",
+    "tooManyPassengers": "Ce véhicule compte {seats} places. Choisissez moins de voyageurs ou un véhicule plus grand."
   },
   "guard": {
     "bumpTitle": "Un problème est survenu",
@@ -92,7 +94,18 @@
     "notes": "Notes pour votre chauffeur",
     "optional": "Facultatif",
     "notesPlaceholder": "Arrêts supplémentaires, régime alimentaire, hôtels déjà réservés – tout ce qui aide votre chauffeur à s'organiser.",
-    "extrasCount": "Les options sélectionnées ci-dessus comptent aussi dans cette limite."
+    "extrasCount": "Les options sélectionnées ci-dessus comptent aussi dans cette limite.",
+    "adults": "Adultes",
+    "children": "Enfants",
+    "choose": "Choisir",
+    "childAges": "Âge des enfants (facultatif)",
+    "childAgeN": "Âge enfant {n}",
+    "underOne": "Moins d’1 an",
+    "ageYears": {
+      "one": "{count} an",
+      "other": "{count} ans"
+    },
+    "childAgesHelp": "Permet à votre chauffeur de prévoir les bons sièges enfants."
   },
   "extras": {
     "childSeat": "Siège enfant",

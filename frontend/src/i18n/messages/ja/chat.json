@@ -42,7 +42,9 @@
       "confirmed": "確定",
       "cancelled": "キャンセル済み",
       "rejected": "辞退"
-    }
+    },
+    "travellers": "人数",
+    "notProvided": "未入力"
   },
   "photos": {
     "vehicle": "車両",

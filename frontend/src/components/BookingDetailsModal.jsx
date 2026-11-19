@@ -119,6 +119,7 @@ const BookingDetailsModal = ({ booking, onClose }) => {
             {booking.totalDays ? (
               <Row icon={Calendar} label={t('chat.booking.days')} value={t('chat.booking.dayCount', { count: booking.totalDays })} />
             ) : null}
+            <Row icon={User2} label={t('chat.booking.travellers')} value={booking.passengerSummary || t('chat.booking.notProvided')} />
             {vehicleModel ? <Row icon={Car} label={t('chat.booking.vehicle')} value={vehicleModel} /> : null}
           </Section>
 

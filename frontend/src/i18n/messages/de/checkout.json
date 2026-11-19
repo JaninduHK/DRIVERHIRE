@@ -22,7 +22,9 @@
     "required": "Vollständiger Name, E-Mail-Adresse und Telefonnummer sind erforderlich.",
     "noLongerAvailable": "Diese Reisedaten sind nicht mehr verfügbar. Bitte wählen Sie einen anderen Zeitraum.",
     "notesTooLong": "Ihre Notizen (einschließlich ausgewählter Extras) dürfen höchstens {max} Zeichen lang sein – derzeit {current}.",
-    "confirm": "Die Buchung kann gerade nicht bestätigt werden."
+    "confirm": "Die Buchung kann gerade nicht bestätigt werden.",
+    "adults": "Bitte wählen Sie, wie viele Erwachsene reisen.",
+    "tooManyPassengers": "Dieses Fahrzeug hat {seats} Sitzplätze. Bitte wählen Sie weniger Reisende oder ein größeres Fahrzeug."
   },
   "guard": {
     "bumpTitle": "Da ist etwas schiefgelaufen",
@@ -92,7 +94,18 @@
     "notes": "Notizen für Ihren Fahrer",
     "optional": "Optional",
     "notesPlaceholder": "Zusätzliche Stopps, Ernährungswünsche, bereits gebuchte Hotels – alles, was Ihrem Fahrer bei der Planung hilft.",
-    "extrasCount": "Ihre oben ausgewählten Extras zählen ebenfalls zu diesem Limit."
+    "extrasCount": "Ihre oben ausgewählten Extras zählen ebenfalls zu diesem Limit.",
+    "adults": "Erwachsene",
+    "children": "Kinder",
+    "choose": "Auswählen",
+    "childAges": "Alter der Kinder (optional)",
+    "childAgeN": "Alter Kind {n}",
+    "underOne": "Unter 1",
+    "ageYears": {
+      "one": "{count} Jahr",
+      "other": "{count} Jahre"
+    },
+    "childAgesHelp": "So kann Ihr Fahrer die passenden Kindersitze mitbringen."
   },
   "extras": {
     "childSeat": "Kindersitz",

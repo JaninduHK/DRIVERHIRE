@@ -21,7 +21,9 @@
     "required": "氏名、メールアドレス、電話番号は必須です。",
     "noLongerAvailable": "この日程は予約できなくなりました。別の期間を選んでください。",
     "notesTooLong": "メモ（選択したオプションを含む）は{max}文字以内にしてください（現在{current}文字）。",
-    "confirm": "現在予約を確定できません。"
+    "confirm": "現在予約を確定できません。",
+    "adults": "大人の人数を選択してください。",
+    "tooManyPassengers": "この車両の定員は{seats}名です。人数を減らすか、より大きな車両をお選びください。"
   },
   "guard": {
     "bumpTitle": "問題が発生しました",
@@ -91,7 +93,17 @@
     "notes": "ドライバーへのメモ",
     "optional": "任意",
     "notesPlaceholder": "立ち寄り先の追加、食事の制限、予約済みのホテル名など、ドライバーの計画に役立つこと。",
-    "extrasCount": "上で選んだオプションもこの文字数に含まれます。"
+    "extrasCount": "上で選んだオプションもこの文字数に含まれます。",
+    "adults": "大人",
+    "children": "子ども",
+    "choose": "選択してください",
+    "childAges": "お子様の年齢（任意）",
+    "childAgeN": "お子様{n}の年齢",
+    "underOne": "1歳未満",
+    "ageYears": {
+      "other": "{count}歳"
+    },
+    "childAgesHelp": "ドライバーが適切なチャイルドシートを用意できます。"
   },
   "extras": {
     "childSeat": "チャイルドシート",

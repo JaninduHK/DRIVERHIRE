@@ -141,6 +141,10 @@ const Checkout = () => {
     startPoint: '',
     endPoint: '',
     specialRequests: '',
+    // Who is travelling: adults required, children and their ages optional.
+    adults: '',
+    children: '0',
+    childAges: [],
   });
   const [selectedExtras, setSelectedExtras] = useState({});
   const toggleExtra = (label) =>
@@ -274,6 +278,14 @@ const Checkout = () => {
             offer: null,
           });
           return;
+        }
+        // Pre-fill the travellers from the quote request this offer answers.
+        if (offer.adults) {
+          setFormState((prev) =>
+            prev.adults
+              ? prev
+              : { ...prev, adults: String(offer.adults), children: String(offer.children || 0) }
+          );
         }
         const offerVehicleId =
           offer.vehicle?.id || (typeof offer.vehicle === 'string' ? offer.vehicle : null);
@@ -426,6 +438,18 @@ const Checkout = () => {
       return;
     }
 
+    const adultCount = Number(formState.adults);
+    const childCount = Number(formState.children) || 0;
+    if (!Number.isInteger(adultCount) || adultCount < 1) {
+      setBookingFeedback({ success: false, message: '', error: t('checkout.errors.adults') });
+      return;
+    }
+    // The seat limit applies to direct bookings; an offer's driver already agreed to the group.
+    if (!queryParams.offerId && Number(vehicle?.seats) > 0 && adultCount + childCount > Number(vehicle.seats)) {
+      setBookingFeedback({ success: false, message: '', error: t('checkout.errors.tooManyPassengers', { seats: vehicle.seats }) });
+      return;
+    }
+
     if (!availabilityState.available) {
       setBookingFeedback({
         success: false,
@@ -456,6 +480,9 @@ const Checkout = () => {
       startPoint: formState.startPoint.trim() || undefined,
       endPoint: formState.endPoint.trim() || undefined,
       specialRequests: combinedNotes || undefined,
+      adults: adultCount,
+      children: childCount,
+      childAges: formState.childAges.slice(0, childCount).filter((age) => age !== ''),
     };
 
     if (queryParams.offerId) {
@@ -502,6 +529,8 @@ const Checkout = () => {
   };
 
   const { vehicle, loading: vehicleLoading, error: vehicleError } = vehicleState;
+  // Dropdown range for adults/children: the vehicle's seats (direct bookings), else 15.
+  const passengerLimit = !queryParams.offerId && Number(vehicle?.seats) > 0 ? Number(vehicle.seats) : 15;
   const { quote, loading: availabilityLoading, error: availabilityError, available } =
     availabilityState;
 
@@ -776,6 +805,55 @@ const Checkout = () => {
                         <span className="mt-[7px] block text-[12.5px] text-muted-soft">{t('checkout.form.phoneHelp')}</span>
                       </label>
                     </div>
+                    {/* Who is travelling: the driver checks the vehicle fits before accepting. */}
+                    <div className="grid gap-3.5 sm:grid-cols-2">
+                      <label className="block">
+                        <span className={fieldLabelCls}>{t('checkout.form.adults')}</span>
+                        <select value={formState.adults} onChange={handleInputChange('adults')} className={fieldCls} required>
+                          <option value="" disabled>{t('checkout.form.choose')}</option>
+                          {Array.from({ length: passengerLimit }, (_, i) => i + 1).map((n) => (
+                            <option key={n} value={String(n)}>{n}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="block">
+                        <span className={fieldLabelCls}>{t('checkout.form.children')}</span>
+                        <select value={formState.children} onChange={handleInputChange('children')} className={fieldCls}>
+                          {Array.from({ length: passengerLimit }, (_, i) => i).map((n) => (
+                            <option key={n} value={String(n)}>{n}</option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    {Number(formState.children) > 0 ? (
+                      <div>
+                        <span className={fieldLabelCls}>{t('checkout.form.childAges')}</span>
+                        <div className="mt-1 flex flex-wrap gap-2">
+                          {Array.from({ length: Number(formState.children) }, (_, i) => (
+                            <select
+                              key={i}
+                              aria-label={t('checkout.form.childAgeN', { n: i + 1 })}
+                              value={formState.childAges[i] ?? ''}
+                              onChange={(event) => {
+                                const value = event.target.value;
+                                setFormState((prev) => {
+                                  const ages = [...prev.childAges];
+                                  ages[i] = value;
+                                  return { ...prev, childAges: ages };
+                                });
+                              }}
+                              className={`${fieldCls} !w-auto min-w-[120px]`}
+                            >
+                              <option value="">{t('checkout.form.childAgeN', { n: i + 1 })}</option>
+                              {Array.from({ length: 18 }, (_, age) => age).map((age) => (
+                                <option key={age} value={String(age)}>{age === 0 ? t('checkout.form.underOne') : t('checkout.form.ageYears', { count: age })}</option>
+                              ))}
+                            </select>
+                          ))}
+                        </div>
+                        <span className="mt-[7px] block text-[12.5px] text-muted-soft">{t('checkout.form.childAgesHelp')}</span>
+                      </div>
+                    ) : null}
                   </div>
                 </section>
 

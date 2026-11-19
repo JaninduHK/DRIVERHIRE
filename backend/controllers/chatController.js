@@ -783,10 +783,17 @@ export const fetchOffer = async (req, res) => {
       return res.status(403).json({ message: 'Access denied.' });
     }
 
+    // The quote request this offer answers: checkout pre-fills the passengers from it.
+    const brief = message.offer.brief
+      ? await TourBrief.findById(message.offer.brief).select('adults children').lean().catch(() => null)
+      : null;
+
     return res.json({
       offer: {
         id: message._id.toString(),
         conversationId: conversation._id.toString(),
+        adults: brief?.adults ?? null,
+        children: brief?.children ?? null,
         startDate: message.offer.startDate,
         endDate: message.offer.endDate,
         totalPrice: message.offer.totalPrice,

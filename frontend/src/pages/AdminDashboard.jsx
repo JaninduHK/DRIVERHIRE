@@ -78,6 +78,7 @@ import VehiclesPanel from './admin/VehiclesPanel.jsx';
 import PaymentsPanel from './admin/PaymentsPanel.jsx';
 import ReviewsPanel from './admin/ReviewsPanel.jsx';
 import VerificationPanel from './admin/VerificationPanel.jsx';
+import CoverPhotosReview from './admin/CoverPhotosReview.jsx';
 import ReportsPanel from './admin/ReportsPanel.jsx';
 import PerformancePanel from './admin/PerformancePanel.jsx';
 import AdminProfilePanel from './admin/AdminProfilePanel.jsx';
@@ -615,10 +616,10 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleLicenseStatusChange = async (driverId, nextStatus, adminNote) => {
+  const handleLicenseStatusChange = async (driverId, nextStatus, adminNote, licenseExpiresAt) => {
     setLicenseState((prev) => ({ ...prev, updatingId: driverId }));
     try {
-      await updateLicenseStatusRequest(driverId, { status: nextStatus, adminNote });
+      await updateLicenseStatusRequest(driverId, { status: nextStatus, adminNote, ...(licenseExpiresAt ? { licenseExpiresAt } : {}) });
       toast.success(nextStatus === 'approved' ? 'License approved.' : nextStatus === 'rejected' ? 'License rejected.' : 'License reopened.');
       await loadLicenses(licenseFilter);
       if (licenseFilter !== 'pending') {
@@ -1012,6 +1013,13 @@ const AdminDashboard = () => {
         onStatusChange={handleLicenseStatusChange}
         onTypeChange={handleLicenseTypeChange}
       />
+    );
+    // Cover photos are reviewed in the same section as licences.
+    content = (
+      <>
+        {content}
+        <CoverPhotosReview />
+      </>
     );
   } else if (activeSection === 'reports') {
     content = (

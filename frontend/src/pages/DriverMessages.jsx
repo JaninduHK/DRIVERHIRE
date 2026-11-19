@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import DateField from '../components/DateField.jsx';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   AlertTriangle,
@@ -241,6 +241,18 @@ const DriverMessages = () => {
     const interval = setInterval(() => loadConversations({ silent: true }), 15000);
     return () => clearInterval(interval);
   }, [loadConversations]);
+
+  // ?conversation=<id> (e.g. "Message traveller" on a booking) opens that chat once it has loaded.
+  const location = useLocation();
+  const requestedConversationRef = useRef(new URLSearchParams(location.search).get('conversation'));
+  useEffect(() => {
+    const requested = requestedConversationRef.current;
+    if (requested && conversationsState.items.some((item) => item.id === requested)) {
+      requestedConversationRef.current = null;
+      setSelectedConversationId(requested);
+      setView('thread');
+    }
+  }, [conversationsState.items]);
 
   // Mobile flow: don't auto-open a thread. If the open conversation disappears, return to the list.
   useEffect(() => {

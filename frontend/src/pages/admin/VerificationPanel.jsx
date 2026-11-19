@@ -52,6 +52,8 @@ const LicenseTypeEditor = ({ license, disabled, onSave }) => {
 };
 
 const VerificationPanel = ({ state, filter, onFilterChange, onRetry, onStatusChange, onTypeChange }) => {
+  // Expiry dates typed by the admin before approving, per driver ('YYYY-MM-DD').
+  const [expiryDrafts, setExpiryDrafts] = useState({});
   const { items: filtered, meta, loading, error, updatingId } = state;
 
   const filters = [
@@ -133,6 +135,7 @@ const VerificationPanel = ({ state, filter, onFilterChange, onRetry, onStatusCha
             const statusLabel = getLicenseStatusLabel(license.status);
             const isUpdating = updatingId === license.driverId;
             const isExpanded = expandedId === license.driverId;
+            const expiryValue = expiryDrafts[license.driverId] ?? (license.expiresAt ? String(license.expiresAt).slice(0, 10) : '');
 
             const handleReject = () => {
               let note = license.adminNote || '';
@@ -185,6 +188,7 @@ const VerificationPanel = ({ state, filter, onFilterChange, onRetry, onStatusCha
                       <div className="min-w-0 flex-1 text-[12.5px] text-muted-soft">
                         {license.driverContactNumber ? <p>Contact: {license.driverContactNumber}</p> : null}
                         {reviewedOn ? <p className="mt-0.5">Reviewed {reviewedOn}{license.reviewedBy ? ` by ${license.reviewedBy}` : ''}</p> : null}
+                        <p className="mt-0.5">Expires: {license.expiresAt ? formatDate(license.expiresAt) : 'not entered'}</p>
                       </div>
                     </div>
                     {license.status === 'rejected' && license.adminNote ? (
@@ -195,8 +199,20 @@ const VerificationPanel = ({ state, filter, onFilterChange, onRetry, onStatusCha
                     ) : null}
                     <LicenseTypeEditor key={`${license.driverId}-${license.licenseType}`} license={license} disabled={isUpdating} onSave={onTypeChange} />
                     {license.status === 'pending' ? (
+                      <label className="mt-4 block text-[12px] font-bold text-ink">
+                        Licence expiry date (check it on the photo; required to approve)
+                        <input
+                          type="date"
+                          value={expiryValue}
+                          onChange={(event) => setExpiryDrafts((prev) => ({ ...prev, [license.driverId]: event.target.value }))}
+                          className="mt-1 block rounded-lg border border-line bg-surface px-2.5 py-1.5 text-[12.5px] font-medium text-ink"
+                        />
+                        <span className="mt-1 block font-normal text-muted-soft">The driver can&apos;t submit a new licence until this date.</span>
+                      </label>
+                    ) : null}
+                    {license.status === 'pending' ? (
                       <div className="mt-4 flex flex-wrap gap-2">
-                        <button type="button" onClick={() => onStatusChange?.(license.driverId, 'approved')} disabled={isUpdating} className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 dark:border-emerald-400/30 bg-emerald-50 dark:bg-emerald-400/10 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 transition hover:bg-emerald-100 dark:hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-60">
+                        <button type="button" onClick={() => onStatusChange?.(license.driverId, 'approved', undefined, expiryValue)} disabled={isUpdating || !expiryValue} className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 dark:border-emerald-400/30 bg-emerald-50 dark:bg-emerald-400/10 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 transition hover:bg-emerald-100 dark:hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-60">
                           {isUpdating ? (<><Loader2 className="h-4 w-4 animate-spin" /> Updating…</>) : (<><CheckCircle2 className="h-4 w-4" /> Approve</>)}
                         </button>
                         <button type="button" onClick={handleReject} disabled={isUpdating} className="inline-flex items-center gap-2 rounded-lg border border-rose-200 dark:border-rose-400/30 bg-rose-50 dark:bg-rose-400/10 px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-300 transition hover:bg-rose-100 dark:hover:bg-rose-400/20 disabled:cursor-not-allowed disabled:opacity-60">

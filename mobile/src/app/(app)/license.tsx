@@ -11,6 +11,7 @@ import { Card } from '../../components/Card';
 import { Button } from '../../components/Button';
 import { IconButton } from '../../components/IconButton';
 import { Chip } from '../../components/Chip';
+import { DatePickerField } from '../../components/DatePickerField';
 import { useOverview, qk } from '../../hooks/queries';
 import { submitLicense } from '../../api/driver';
 import { pickImage, appendImage } from '../../lib/media';
@@ -36,6 +37,11 @@ export default function License() {
   const [editing, setEditing] = useState(false);
   const [selectedType, setSelectedType] = useState<LicenseType | null>(null);
   const [photoUri, setPhotoUri] = useState<string | undefined>();
+  const [expiry, setExpiry] = useState(profile?.licenseExpiresAt ? String(profile.licenseExpiresAt).slice(0, 10) : '');
+  // An approved licence can't be resubmitted until it expires (the server enforces this too).
+  const locked =
+    profile?.licenseStatus === 'approved' &&
+    (!profile?.licenseExpiresAt || new Date(profile.licenseExpiresAt) > new Date());
 
   const showForm = !hasSubmitted || editing;
 
@@ -68,8 +74,13 @@ export default function License() {
       Alert.alert('Upload a photo', 'Please upload a photo of your SLTDA license, not your driving license.');
       return;
     }
+    if (!expiry) {
+      Alert.alert('Add the expiry date', 'Enter the expiry date printed on your license.');
+      return;
+    }
     const form = new FormData();
     form.append('licenseType', type);
+    form.append('licenseExpiresAt', expiry);
     if (photoUri) await appendImage(form, 'licenseImage', photoUri);
     submit.mutate(form);
   };
@@ -135,6 +146,11 @@ export default function License() {
                         Verified {formatDate(profile.licenseReviewedAt)}
                       </Text>
                     ) : null}
+                    {profile.licenseExpiresAt ? (
+                      <Text className="mt-0.5 font-med text-[12px] text-muted-soft">
+                        Expires {formatDate(profile.licenseExpiresAt)}
+                      </Text>
+                    ) : null}
                   </View>
                 </View>
 
@@ -146,15 +162,24 @@ export default function License() {
                 ) : null}
               </Card>
 
-              <Button
-                title={profile.licenseStatus === 'rejected' ? 'Resubmit' : 'Update submission'}
-                variant="secondary"
-                className="mt-3.5"
-                onPress={() => {
-                  setSelectedType(profile.licenseType ?? null);
-                  setEditing(true);
-                }}
-              />
+              {locked ? (
+                <Text className="mt-3.5 text-center font-med text-[12.5px] leading-[18px] text-muted-soft">
+                  {profile.licenseExpiresAt
+                    ? `Your license is approved. You can submit a new one after ${formatDate(profile.licenseExpiresAt)}.`
+                    : 'Your license is approved. Contact support if you need to update it.'}
+                </Text>
+              ) : (
+                <Button
+                  title={profile.licenseStatus === 'rejected' ? 'Resubmit' : 'Update submission'}
+                  variant="secondary"
+                  className="mt-3.5"
+                  onPress={() => {
+                    setSelectedType(profile.licenseType ?? null);
+                    setExpiry(profile.licenseExpiresAt ? String(profile.licenseExpiresAt).slice(0, 10) : '');
+                    setEditing(true);
+                  }}
+                />
+              )}
             </>
           ) : (
             <>
@@ -221,6 +246,18 @@ export default function License() {
                 <Pressable onPress={handlePickPhoto} className="mt-2.5 self-start rounded-lg border-[1.5px] border-line px-3 py-1.5">
                   <Text className="font-heavy text-[12px] text-ink">{photoUri || existingPhoto ? 'Change photo' : 'Upload'}</Text>
                 </Pressable>
+              </Card>
+
+              <Card className="mt-3 p-4">
+                <DatePickerField
+                  label="License expiry date"
+                  value={expiry}
+                  onChange={setExpiry}
+                  minimumDate={new Date(Date.now() + 86400000)}
+                />
+                <Text className="mt-1.5 font-med text-[11.5px] leading-4 text-muted-soft">
+                  As printed on your license. Once approved, you can submit a new license only after this date.
+                </Text>
               </Card>
 
               <Button

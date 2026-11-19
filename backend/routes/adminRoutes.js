@@ -83,6 +83,7 @@ import {
   requestInsuranceVerification,
   reviewVehicleInsurance,
 } from '../controllers/adminVehicleInsuranceController.js';
+import { listCoverPhotos, reviewCoverPhoto } from '../controllers/coverPhotoController.js';
 const router = express.Router();
 
 router.use(authenticate);
@@ -110,6 +111,18 @@ router.patch(
     body('enabled').isBoolean().withMessage('enabled must be true or false'),
   ],
   setDriverBriefAlertEmail
+);
+
+// Driver cover photos waiting for approval (controllers/coverPhotoController.js).
+router.get('/cover-photos', listCoverPhotos);
+router.patch(
+  '/drivers/:id/cover-photo',
+  [
+    param('id').isMongoId().withMessage('Invalid driver identifier'),
+    body('action').isIn(['approve', 'reject']).withMessage('action must be approve or reject'),
+    body('note').optional({ nullable: true }).isString().trim().isLength({ max: 300 }),
+  ],
+  reviewCoverPhoto
 );
 
 router.patch(

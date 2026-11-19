@@ -208,6 +208,30 @@ const bookingSchema = new mongoose.Schema(
       ref: 'ChatMessage',
       default: null,
     },
+    // The chat between traveller and driver for this booking. Offer bookings use the
+    // offer's chat; direct bookings get one created (utils/bookingConversation.js) so
+    // either side can message from the booking.
+    conversation: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ChatConversation',
+      default: null,
+    },
+    // Who is travelling, so the driver can check the vehicle fits before accepting.
+    // Null on bookings made before this was asked.
+    adults: {
+      type: Number,
+      min: 1,
+      default: null,
+    },
+    children: {
+      type: Number,
+      min: 0,
+      default: null,
+    },
+    childAges: {
+      type: [Number],
+      default: [],
+    },
     // Set when the "your trip starts in 3 days" email goes out (services/tripReminderService.js).
     preTripReminderSentAt: {
       type: Date,

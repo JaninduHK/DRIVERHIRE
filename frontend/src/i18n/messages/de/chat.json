@@ -45,7 +45,9 @@
       "confirmed": "bestätigt",
       "cancelled": "storniert",
       "rejected": "abgelehnt"
-    }
+    },
+    "travellers": "Reisende",
+    "notProvided": "Nicht angegeben"
   },
   "photos": {
     "vehicle": "Fahrzeug",

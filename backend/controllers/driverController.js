@@ -25,6 +25,7 @@ import {
   findRegistrationConflict,
   parseRegistrationNumber,
 } from '../utils/vehicleRegistration.js';
+import { isLicenseLocked, licenseLockedMessage, parseLicenseExpiry } from '../utils/licenseLock.js';
 
 const handleValidation = (req, res) => {
   const errors = validationResult(req);
@@ -129,7 +130,7 @@ const sameDay = (a, b) => Boolean(a && b) && new Date(a).toISOString().slice(0, 
 export const getDriverOverview = async (req, res) => {
   try {
     const driver = await User.findById(req.user.id).select(
-      'name email contactNumber address description tripAdvisor driverStatus createdAt profilePhoto driverLocation shareLiveLocation driverApprovedAt driverProfileTourCompletedAt driverReviewedAt experienceYears licenseType licenseImage licenseStatus licenseSubmittedAt licenseReviewedAt licenseAdminNote commissionFrozenAt commissionFrozenPeriods serviceAreas'
+      'name email contactNumber address description tripAdvisor driverStatus createdAt profilePhoto driverLocation shareLiveLocation driverApprovedAt driverProfileTourCompletedAt driverReviewedAt experienceYears licenseType licenseImage licenseStatus licenseSubmittedAt licenseReviewedAt licenseAdminNote licenseExpiresAt commissionFrozenAt commissionFrozenPeriods serviceAreas coverPhoto coverPhotoPending coverPhotoStatus coverPhotoNote coverPhotoSubmittedAt'
     );
 
     if (!driver) {
@@ -144,6 +145,8 @@ export const getDriverOverview = async (req, res) => {
     if (profile.profilePhoto) {
       profile.profilePhoto = buildAssetUrl(profile.profilePhoto, req);
     }
+    if (profile.coverPhoto) profile.coverPhoto = buildAssetUrl(profile.coverPhoto, req);
+    if (profile.coverPhotoPending) profile.coverPhotoPending = buildAssetUrl(profile.coverPhotoPending, req);
     if (profile.licenseImage) {
       profile.licenseImage = buildAssetUrl(profile.licenseImage, req);
     }
@@ -212,6 +215,16 @@ export const updateDriverLicense = async (req, res) => {
       return res.status(404).json({ message: 'Driver not found' });
     }
 
+    // An approved licence can't be resubmitted until it expires (checked before
+    // uploading anything, so a refused attempt leaves no stray image behind).
+    if (isLicenseLocked(user)) {
+      return res.status(403).json({ message: licenseLockedMessage(user) });
+    }
+    const expiry = parseLicenseExpiry(req.body?.licenseExpiresAt);
+    if (!expiry.ok) {
+      return res.status(400).json({ message: expiry.message });
+    }
+
     if (req.file) {
       if (user.licenseImage && cloudinaryService.isCloudinaryUrl(user.licenseImage)) {
         try {
@@ -233,6 +246,7 @@ export const updateDriverLicense = async (req, res) => {
     user.licenseType = licenseType;
     user.licenseStatus = LICENSE_STATUS.PENDING;
     user.licenseSubmittedAt = new Date();
+    user.licenseExpiresAt = expiry.value;
     user.licenseReviewedAt = undefined;
     user.licenseReviewedBy = undefined;
     user.licenseAdminNote = undefined;
@@ -246,6 +260,7 @@ export const updateDriverLicense = async (req, res) => {
         image: buildAssetUrl(user.licenseImage, req),
         status: user.licenseStatus,
         submittedAt: user.licenseSubmittedAt,
+        expiresAt: user.licenseExpiresAt,
         reviewedAt: null,
         adminNote: null,
       },
