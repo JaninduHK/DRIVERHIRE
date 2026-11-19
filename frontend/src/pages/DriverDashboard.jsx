@@ -32,6 +32,9 @@ import {
   User2,
   Users,
   XCircle,
+  ExternalLink,
+  Circle,
+  Search,
 } from 'lucide-react';
 import {
   DashboardSidebar,
@@ -73,7 +76,7 @@ import DeleteAccountCard from '../components/DeleteAccountCard.jsx';
 import imageCompression from 'browser-image-compression';
 import LocationSelect from '../components/LocationSelect.jsx';
 import ServiceAreasPicker from '../components/ServiceAreasPicker.jsx';
-import { guessLocationName } from '../constants/locations.js';
+import { SERVICE_AREAS, guessLocationName } from '../constants/locations.js';
 import CoverPhotoCard from '../components/CoverPhotoCard.jsx';
 
 const NAV_ITEMS = [
@@ -1694,6 +1697,41 @@ const OverviewPanel = ({ profile }) => (
   </div>
 );
 
+// Desktop page title used where the green phone header is hidden on large screens.
+const DesktopPageTitle = ({ eyebrow, title, subtitle, actions }) => (
+  <div className="mb-6 hidden items-end justify-between gap-4 lg:flex">
+    <div className="min-w-0">
+      <p className="text-[12px] font-extrabold uppercase tracking-[0.08em] text-brand-dark">{eyebrow}</p>
+      <h1 className="mt-1 text-[28px] font-extrabold tracking-tight text-ink">{title}</h1>
+      {subtitle ? <p className="mt-1 text-[13.5px] text-muted-soft">{subtitle}</p> : null}
+    </div>
+    {actions ? <div className="flex flex-shrink-0 items-center gap-2">{actions}</div> : null}
+  </div>
+);
+
+const StatTile = ({ label, value, hint, icon: Icon, tone = 'bg-brand-tint text-brand-dark' }) => (
+  <div className="rounded-[18px] bg-white p-5 shadow-card">
+    <div className="flex items-start justify-between gap-3">
+      <p className="text-[12px] font-bold uppercase tracking-wide text-muted-soft">{label}</p>
+      {Icon ? (
+        <span className={`grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl ${tone}`}>
+          <Icon className="h-[18px] w-[18px]" />
+        </span>
+      ) : null}
+    </div>
+    <p className="mt-1 text-[26px] font-extrabold tracking-tight text-ink">{value}</p>
+    {hint ? <p className="mt-1 text-[12.5px] text-muted-soft">{hint}</p> : null}
+  </div>
+);
+
+const VEHICLE_STATUS_DISPLAY = {
+  approved: { label: 'Live', cls: 'bg-brand-tint text-brand-dark' },
+  pending: { label: 'In review', cls: 'bg-[#fdf0d8] text-[#a86a15]' },
+  rejected: { label: 'Rejected', cls: 'bg-[#ffe4e9] text-[#e11d48]' },
+};
+
+const INSURANCE_ATTENTION_STATES = ['missing', 'expiring', 'expired', 'rejected'];
+
 const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, error, onRefresh, onCreate, onUpdate, onDelete }) => {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState(() => buildInitialVehicleForm());
@@ -2040,13 +2078,47 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
     );
   }
 
+  const vehicleList = Array.isArray(vehicles) ? vehicles : [];
+  const liveCount = vehicleList.filter((v) => v.status === 'approved').length;
+  const reviewCount = vehicleList.filter((v) => v.status === 'pending').length;
+  const rejectedCount = vehicleList.filter((v) => v.status === 'rejected').length;
+  const insuranceAttention = vehicleList.filter(
+    (v) => INSURANCE_ATTENTION_STATES.includes(v.insurance?.state) || v.insurance?.requestedAt
+  ).length;
+  const lowestPrice = vehicleList.length ? Math.min(...vehicleList.map((v) => Number(v.pricePerDay) || 0)) : 0;
+  const highestPrice = vehicleList.length ? Math.max(...vehicleList.map((v) => Number(v.pricePerDay) || 0)) : 0;
+
   return (
     <>
-      {head}
-      <Sheet>
+      <div className="lg:hidden">{head}</div>
+      <Sheet wide className="lg:!mt-8">
         {showForm ? (
-          <form onSubmit={handleSubmit} className="space-y-3">
-            <div className="rounded-[18px] bg-white p-4 shadow-card">
+          <>
+          <DesktopPageTitle
+            eyebrow="Fleet"
+            title={editingVehicle ? `Edit ${editingVehicle.model || 'vehicle'}` : 'Submit a vehicle'}
+            subtitle="Complete details and clear photos help our team approve your vehicle faster."
+            actions={
+              <button
+                type="button"
+                onClick={handleNewVehicleClick}
+                className="inline-flex h-11 items-center gap-2 rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-5 text-[13.5px] font-bold text-ink transition hover:border-muted-soft"
+              >
+                Cancel
+              </button>
+            }
+          />
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start lg:gap-6"
+          >
+            {/* On phones these wrappers vanish (display: contents) and `order` keeps the original card order. */}
+            <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-6">
+            <div className="order-1 rounded-[18px] bg-white p-4 shadow-card lg:order-none lg:p-6">
+              <div className="mb-4 hidden border-b border-hairline pb-3 lg:block">
+                <h3 className="text-[14.5px] font-extrabold text-ink">Vehicle details</h3>
+                <p className="mt-0.5 text-[12px] text-muted-soft">What travellers see on your listing.</p>
+              </div>
               <div className="flex gap-2.5">
                 <div className="min-w-0 flex-1">
                   <label htmlFor="model" className="text-[12.5px] font-bold text-ink-soft">Model</label>
@@ -2101,10 +2173,10 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
               </div>
             </div>
 
-            <div className="rounded-[18px] bg-white p-4 shadow-card">
-              <b className="text-[14px] text-ink">Included services</b>
+            <div className="order-2 rounded-[18px] bg-white p-4 shadow-card lg:order-none lg:p-6">
+              <b className="text-[14px] text-ink lg:text-[14.5px] lg:font-extrabold">Included services</b>
               <p className="mb-3 mt-0.5 text-[12.5px] text-muted-soft">What&apos;s bundled with every booking.</p>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 lg:grid lg:grid-cols-2">
                 {VEHICLE_FEATURES.map(({ key, label }) => {
                   const on = Boolean(formData[key]);
                   return (
@@ -2130,9 +2202,84 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
               </div>
             </div>
 
-            <div className="rounded-[18px] bg-white p-4 shadow-card">
+            <div className="order-4 rounded-[18px] bg-white p-4 shadow-card lg:order-none lg:p-6">
+              <b className="text-[14px] text-ink lg:text-[14.5px] lg:font-extrabold">Passenger insurance</b>
+              <p className="mb-3 mt-0.5 text-[12.5px] text-muted-soft">
+                Upload a clear photo of the document that shows this vehicle&apos;s passenger insurance, and enter its cover period. Only you and our team can see it.
+              </p>
+              {editingVehicle?.insurance?.requestedAt ? (
+                <p className="mb-3 rounded-xl bg-[#fdf0d8] px-3 py-2 text-[12.5px] font-semibold text-[#a86a15]">
+                  We asked you to verify this vehicle&apos;s insurance. Upload a new photo of your current passenger insurance document.
+                  {editingVehicle.insurance.requestNote ? ` Note from our team: ${editingVehicle.insurance.requestNote}` : ''}
+                </p>
+              ) : null}
+              <div className="flex gap-2.5">
+                <div className="min-w-0 flex-1">
+                  <label htmlFor="insuranceStartDate" className="text-[12.5px] font-bold text-ink-soft">Cover starts</label>
+                  <DateField
+                    id="insuranceStartDate" required value={insuranceDates.startDate}
+                    onChange={(event) => setInsuranceDates((prev) => ({ ...prev, startDate: event.target.value }))}
+                    className="mt-1.5 h-11 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 text-sm font-semibold text-ink focus:border-brand focus:outline-none"
+                  />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <label htmlFor="insuranceEndDate" className="text-[12.5px] font-bold text-ink-soft">Cover ends</label>
+                  <DateField
+                    id="insuranceEndDate" required value={insuranceDates.endDate}
+                    min={new Date().toISOString().slice(0, 10)}
+                    onChange={(event) => setInsuranceDates((prev) => ({ ...prev, endDate: event.target.value }))}
+                    className="mt-1.5 h-11 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 text-sm font-semibold text-ink focus:border-brand focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {insuranceFiles.length === 0 && editingVehicle?.insurance?.cardImages?.length > 0 ? (
+                <div className="mt-3.5">
+                  <div className="mb-2 text-[12.5px] font-bold text-ink-soft">Document on file</div>
+                  <div className="grid grid-cols-3 gap-2.5">
+                    {editingVehicle.insurance.cardImages.map((url, index) => (
+                      <img key={url || index} src={url} alt={`Passenger insurance document ${index + 1}`} className="h-20 w-full rounded-xl border border-[#e2e8ea] object-cover" />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              {insuranceFiles.length > 0 ? (
+                <div className="mt-3.5">
+                  <div className="mb-2 text-[12.5px] font-bold text-ink-soft">New photo{insuranceFiles.length === 1 ? '' : 's'}</div>
+                  <div className="grid grid-cols-3 gap-2.5">
+                    {insuranceFiles.map((file) => (
+                      <div key={file.preview} className="relative overflow-hidden rounded-xl border border-[#e2e8ea]">
+                        <img src={file.preview} alt={file.name} className="h-20 w-full object-cover" />
+                        <button
+                          type="button" onClick={() => removeInsuranceFile(file)}
+                          className="absolute right-1.5 top-1.5 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-bold text-[#e11d48] shadow"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              <input ref={insuranceInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleInsuranceFiles} />
+              <button
+                type="button"
+                onClick={() => insuranceInputRef.current?.click()}
+                className="mt-3.5 flex w-full items-center justify-center gap-2 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white py-[11px] text-[13.5px] font-bold text-ink transition hover:border-muted-soft"
+              >
+                <ShieldCheck className="h-[15px] w-[15px]" />
+                {editingVehicle?.insurance?.cardImages?.length > 0 || insuranceFiles.length > 0 ? 'Replace passenger insurance photo' : 'Upload passenger insurance photo'}
+              </button>
+              <p className="mt-1.5 text-[12px] text-muted-soft">1 photo required, 2 allowed if the cover runs over two pages.</p>
+            </div>
+            </div>
+
+            <div className="contents lg:sticky lg:top-6 lg:flex lg:flex-col lg:gap-4">
+            <div className="order-3 flex flex-col gap-3 lg:order-none">
+            <div className="rounded-[18px] bg-white p-4 shadow-card lg:p-6">
               <div className="flex items-baseline justify-between gap-3">
-                <b className="text-[14px] text-ink">Vehicle photos</b>
+                <b className="text-[14px] text-ink lg:text-[14.5px] lg:font-extrabold">Vehicle photos</b>
                 <span className={`text-[12px] font-bold ${photoCount >= MIN_VEHICLE_IMAGES ? 'text-brand-dark' : 'text-[#a86a15]'}`}>
                   {photoCount} of {MIN_VEHICLE_IMAGES}
                 </span>
@@ -2203,90 +2350,219 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
               </div>
             )}
 
-            <div className="rounded-[18px] bg-white p-4 shadow-card">
-              <b className="text-[14px] text-ink">Passenger insurance</b>
-              <p className="mb-3 mt-0.5 text-[12.5px] text-muted-soft">
-                Upload a clear photo of the document that shows this vehicle&apos;s passenger insurance, and enter its cover period. Only you and our team can see it.
-              </p>
-              {editingVehicle?.insurance?.requestedAt ? (
-                <p className="mb-3 rounded-xl bg-[#fdf0d8] px-3 py-2 text-[12.5px] font-semibold text-[#a86a15]">
-                  We asked you to verify this vehicle&apos;s insurance. Upload a new photo of your current passenger insurance document.
-                  {editingVehicle.insurance.requestNote ? ` Note from our team: ${editingVehicle.insurance.requestNote}` : ''}
-                </p>
-              ) : null}
-              <div className="flex gap-2.5">
-                <div className="min-w-0 flex-1">
-                  <label htmlFor="insuranceStartDate" className="text-[12.5px] font-bold text-ink-soft">Cover starts</label>
-                  <DateField
-                    id="insuranceStartDate" required value={insuranceDates.startDate}
-                    onChange={(event) => setInsuranceDates((prev) => ({ ...prev, startDate: event.target.value }))}
-                    className="mt-1.5 h-11 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 text-sm font-semibold text-ink focus:border-brand focus:outline-none"
-                  />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <label htmlFor="insuranceEndDate" className="text-[12.5px] font-bold text-ink-soft">Cover ends</label>
-                  <DateField
-                    id="insuranceEndDate" required value={insuranceDates.endDate}
-                    min={new Date().toISOString().slice(0, 10)}
-                    onChange={(event) => setInsuranceDates((prev) => ({ ...prev, endDate: event.target.value }))}
-                    className="mt-1.5 h-11 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 text-sm font-semibold text-ink focus:border-brand focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {insuranceFiles.length === 0 && editingVehicle?.insurance?.cardImages?.length > 0 ? (
-                <div className="mt-3.5">
-                  <div className="mb-2 text-[12.5px] font-bold text-ink-soft">Document on file</div>
-                  <div className="grid grid-cols-3 gap-2.5">
-                    {editingVehicle.insurance.cardImages.map((url, index) => (
-                      <img key={url || index} src={url} alt={`Passenger insurance document ${index + 1}`} className="h-20 w-full rounded-xl border border-[#e2e8ea] object-cover" />
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-              {insuranceFiles.length > 0 ? (
-                <div className="mt-3.5">
-                  <div className="mb-2 text-[12.5px] font-bold text-ink-soft">New photo{insuranceFiles.length === 1 ? '' : 's'}</div>
-                  <div className="grid grid-cols-3 gap-2.5">
-                    {insuranceFiles.map((file) => (
-                      <div key={file.preview} className="relative overflow-hidden rounded-xl border border-[#e2e8ea]">
-                        <img src={file.preview} alt={file.name} className="h-20 w-full object-cover" />
-                        <button
-                          type="button" onClick={() => removeInsuranceFile(file)}
-                          className="absolute right-1.5 top-1.5 rounded-full bg-white/90 px-2 py-0.5 text-[11px] font-bold text-[#e11d48] shadow"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
-              <input ref={insuranceInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleInsuranceFiles} />
-              <button
-                type="button"
-                onClick={() => insuranceInputRef.current?.click()}
-                className="mt-3.5 flex w-full items-center justify-center gap-2 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white py-[11px] text-[13.5px] font-bold text-ink transition hover:border-muted-soft"
-              >
-                <ShieldCheck className="h-[15px] w-[15px]" />
-                {editingVehicle?.insurance?.cardImages?.length > 0 || insuranceFiles.length > 0 ? 'Replace passenger insurance photo' : 'Upload passenger insurance photo'}
-              </button>
-              <p className="mt-1.5 text-[12px] text-muted-soft">1 photo required, 2 allowed if the cover runs over two pages.</p>
             </div>
 
             <button
               type="submit"
               disabled={submitting}
-              className="w-full rounded-[14px] bg-brand py-[15px] text-[15px] font-extrabold text-white transition hover:bg-brand-dark disabled:opacity-70"
+              className="order-5 w-full rounded-[14px] bg-brand lg:order-none py-[15px] text-[15px] font-extrabold text-white transition hover:bg-brand-dark disabled:opacity-70"
             >
               {submitting
                 ? editingVehicle ? 'Saving…' : 'Submitting…'
                 : editingVehicle ? 'Save changes' : 'Submit for approval'}
             </button>
+            </div>
           </form>
+          </>
         ) : (
           <>
+          {/* ---------- Desktop ---------- */}
+          <div className="hidden lg:block">
+            <DesktopPageTitle
+              eyebrow="Fleet"
+              title="My Vehicles"
+              subtitle="Manage the vehicles travellers can book with you."
+              actions={
+                <>
+                  <button type="button" onClick={onRefresh} aria-label="Refresh" className="grid h-11 w-11 place-items-center rounded-xl border-[1.5px] border-[#e2e8ea] bg-white text-muted transition hover:border-muted-soft">
+                    <RefreshCw className="h-4 w-4" />
+                  </button>
+                  <button type="button" onClick={handleNewVehicleClick} className="inline-flex h-11 items-center gap-2 rounded-xl bg-brand px-5 text-[13.5px] font-bold text-white transition hover:bg-brand-dark">
+                    <PlusCircle className="h-4 w-4" strokeWidth={2} /> Add vehicle
+                  </button>
+                </>
+              }
+            />
+
+            <div className="grid grid-cols-4 gap-4">
+              <StatTile label="Vehicles" value={vehicleList.length} hint={vehicleList.length ? `$${lowestPrice}${highestPrice !== lowestPrice ? `–$${highestPrice}` : ''} per day` : 'None listed yet'} icon={Car} />
+              <StatTile label="Live" value={liveCount} hint="Bookable by travellers" icon={CheckCircle2} />
+              <StatTile
+                label="In review"
+                value={reviewCount}
+                hint={rejectedCount ? `${rejectedCount} rejected` : 'Waiting for our team'}
+                icon={ClipboardList}
+                tone="bg-[#fdf0d8] text-[#a86a15]"
+              />
+              <StatTile
+                label="Insurance"
+                value={insuranceAttention ? insuranceAttention : 'All good'}
+                hint={insuranceAttention ? `vehicle${insuranceAttention === 1 ? '' : 's'} need${insuranceAttention === 1 ? 's' : ''} attention` : 'No action needed'}
+                icon={insuranceAttention ? ShieldAlert : ShieldCheck}
+                tone={insuranceAttention ? 'bg-[#ffe4e9] text-[#e11d48]' : 'bg-brand-tint text-brand-dark'}
+              />
+            </div>
+
+            <div className="mt-6 grid grid-cols-[minmax(0,1fr)_320px] items-start gap-6">
+              <div className="flex min-w-0 flex-col gap-4">
+                {vehicleList.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center rounded-[18px] bg-white px-8 py-14 text-center shadow-card">
+                    <span className="grid h-14 w-14 place-items-center rounded-2xl bg-brand-tint text-brand-dark"><Car className="h-7 w-7" /></span>
+                    <h3 className="mt-4 text-[17px] font-extrabold text-ink">No vehicles yet</h3>
+                    <p className="mt-1 max-w-sm text-[13.5px] text-muted-soft">Submit your first vehicle. Once our team approves it, travellers can find and book it.</p>
+                    <button type="button" onClick={handleNewVehicleClick} className="mt-5 inline-flex h-11 items-center gap-2 rounded-xl bg-brand px-5 text-[13.5px] font-bold text-white transition hover:bg-brand-dark">
+                      <PlusCircle className="h-4 w-4" strokeWidth={2} /> Add vehicle
+                    </button>
+                  </div>
+                ) : (
+                  vehicleList.map((vehicle) => {
+                    const statusDisplay = VEHICLE_STATUS_DISPLAY[vehicle.status] || { label: vehicle.status || 'Unknown', cls: 'bg-[#eef1f0] text-muted' };
+                    const included = getVehicleFeatureLabels(vehicle);
+                    const insuranceNotice = INSURANCE_NOTICES[vehicle.insurance?.state] || null;
+                    const cover = Array.isArray(vehicle.images) ? vehicle.images[0] : null;
+                    const photos = Array.isArray(vehicle.images) ? vehicle.images.length : 0;
+                    const notes = [];
+                    if (vehicle.status === 'rejected' && vehicle.rejectedReason) {
+                      notes.push({ key: 'rejected', cls: 'bg-[#fff5f6] text-[#e11d48]', text: `Rejection notes: ${vehicle.rejectedReason}` });
+                    }
+                    if (vehicle.insurance?.requestedAt) {
+                      notes.push({
+                        key: 'requested',
+                        cls: 'bg-[#fffaf0] text-[#a86a15]',
+                        text: `We asked you to verify this vehicle's insurance. Edit it and resubmit with a new photo of your passenger insurance document and ${MIN_VEHICLE_IMAGES} photos.${vehicle.insurance.requestNote ? ` Note from our team: ${vehicle.insurance.requestNote}` : ''}`,
+                      });
+                    } else if (insuranceNotice?.text) {
+                      notes.push({ key: 'insurance', cls: 'bg-[#fffaf0] text-[#a86a15]', text: insuranceNotice.text });
+                    }
+                    return (
+                      <article key={vehicle.id} className="overflow-hidden rounded-[18px] bg-white shadow-card">
+                        <div className="grid grid-cols-[210px_minmax(0,1fr)_auto] gap-6 p-5">
+                          <div className="relative h-[140px] overflow-hidden rounded-[14px] bg-[#eef1f0]">
+                            {cover ? (
+                              <img src={cover} alt={vehicle.model} className="h-full w-full object-cover" />
+                            ) : (
+                              <div className="grid h-full w-full place-items-center"><Car className="h-9 w-9 text-muted-soft" strokeWidth={1.5} /></div>
+                            )}
+                            {photos ? (
+                              <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-ink/70 px-2 py-0.5 text-[11px] font-bold text-white">
+                                <Camera className="h-3 w-3" /> {photos}
+                              </span>
+                            ) : null}
+                          </div>
+
+                          <div className="min-w-0 py-0.5">
+                            <div className="flex items-center gap-2.5">
+                              <h3 className="truncate text-[18px] font-extrabold tracking-tight text-ink">{vehicle.model}</h3>
+                              <span className={`flex-shrink-0 rounded-full px-2.5 py-[3px] text-[11.5px] font-extrabold ${statusDisplay.cls}`}>{statusDisplay.label}</span>
+                            </div>
+                            <p className="mt-0.5 text-[12.5px] text-muted-soft">
+                              {vehicle.registrationNumber ? <span className="font-bold uppercase text-ink-soft">{vehicle.registrationNumber}</span> : null}
+                              {vehicle.registrationNumber ? ' · ' : ''}{vehicle.year} · {vehicle.status === 'pending' ? 'submitted' : 'added'} {formatDate(vehicle.createdAt)}
+                            </p>
+                            <dl className="mt-4 grid max-w-md grid-cols-3 gap-4">
+                              <div>
+                                <dt className="text-[11px] font-bold uppercase tracking-wide text-muted-soft">Price / day</dt>
+                                <dd className="mt-0.5 text-[16px] font-extrabold text-brand-dark">${(vehicle.pricePerDay ?? 0).toLocaleString()}</dd>
+                              </div>
+                              <div>
+                                <dt className="text-[11px] font-bold uppercase tracking-wide text-muted-soft">Seats</dt>
+                                <dd className="mt-0.5 text-[16px] font-extrabold text-ink">{vehicle.seats || '—'}</dd>
+                              </div>
+                              <div>
+                                <dt className="text-[11px] font-bold uppercase tracking-wide text-muted-soft">Year</dt>
+                                <dd className="mt-0.5 text-[16px] font-extrabold text-ink">{vehicle.year || '—'}</dd>
+                              </div>
+                            </dl>
+                            {included.length > 0 ? (
+                              <div className="mt-3.5 flex flex-wrap gap-1.5">
+                                {included.map((label) => (
+                                  <span key={label} className="rounded-lg bg-canvas px-2.5 py-[5px] text-[11.5px] font-bold text-ink-soft">{label}</span>
+                                ))}
+                              </div>
+                            ) : null}
+                          </div>
+
+                          <div className="flex w-[210px] flex-col items-end justify-between gap-4">
+                            {insuranceNotice ? (
+                              <div className="text-right">
+                                <span className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-[5px] text-[11.5px] font-bold ${insuranceNotice.tone}`}>
+                                  <ShieldCheck className="h-3.5 w-3.5" /> {insuranceNotice.chip}
+                                </span>
+                                {vehicle.insurance?.endDate && ['verified', 'expiring', 'pending'].includes(vehicle.insurance.state) ? (
+                                  <p className="mt-1 text-[12px] text-muted-soft">Cover until {formatDate(vehicle.insurance.endDate)}</p>
+                                ) : null}
+                              </div>
+                            ) : <span />}
+                            <div className="flex gap-2">
+                              <button
+                                type="button"
+                                disabled={submitting}
+                                onClick={() => handleEditVehicle(vehicle)}
+                                className="inline-flex h-10 items-center gap-1.5 rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-4 text-[13px] font-bold text-ink transition hover:border-brand disabled:opacity-50"
+                              >
+                                <Pencil className="h-4 w-4" /> Edit
+                              </button>
+                              <button
+                                type="button"
+                                disabled={submitting || deletingId === vehicle.id}
+                                onClick={() => setDeleteTarget(vehicle)}
+                                aria-label={`Delete ${vehicle.model}`}
+                                className="inline-flex h-10 items-center gap-1.5 rounded-xl border-[1.5px] border-[#ffd2da] bg-[#fff5f6] px-3.5 text-[13px] font-bold text-[#e11d48] transition hover:border-[#f43f5e] disabled:opacity-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                {deletingId === vehicle.id ? 'Deleting…' : 'Delete'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                        {notes.map((note) => (
+                          <div key={note.key} className={`flex items-start gap-2 border-t border-hairline px-5 py-3 text-[12.5px] font-semibold ${note.cls}`}>
+                            <AlertTriangle className="mt-[1px] h-4 w-4 flex-shrink-0" />
+                            <span>{note.text}</span>
+                          </div>
+                        ))}
+                      </article>
+                    );
+                  })
+                )}
+              </div>
+
+              <aside className="sticky top-6 flex flex-col gap-4">
+                <section className="rounded-[18px] bg-white shadow-card">
+                  <div className="border-b border-hairline px-5 py-4">
+                    <h3 className="text-[14.5px] font-extrabold text-ink">What our team checks</h3>
+                    <p className="mt-0.5 text-[12px] text-muted-soft">Before a vehicle goes live.</p>
+                  </div>
+                  <ul className="flex flex-col gap-3 px-5 py-4 text-[13px] text-ink-soft">
+                    {[
+                      `${MIN_VEHICLE_IMAGES} clear photos, inside and out`,
+                      'Registration number as on the plate',
+                      'Current passenger insurance and cover dates',
+                      'A daily price above $50',
+                      'One listing per vehicle',
+                    ].map((item) => (
+                      <li key={item} className="flex items-start gap-2.5">
+                        <CheckCircle2 className="mt-[1px] h-4 w-4 flex-shrink-0 text-brand" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+                <section className="rounded-[18px] bg-white p-5 shadow-card">
+                  <div className="flex items-center gap-2.5">
+                    <span className="grid h-9 w-9 place-items-center rounded-xl bg-[#e6f0fb] text-[#1d5fa8]"><ShieldCheck className="h-[18px] w-[18px]" /></span>
+                    <h3 className="text-[14.5px] font-extrabold text-ink">Keep insurance current</h3>
+                  </div>
+                  <p className="mt-3 text-[12.5px] leading-relaxed text-muted">
+                    A vehicle leaves the marketplace when its passenger insurance expires. Upload the renewed document before the cover ends to stay bookable.
+                  </p>
+                </section>
+              </aside>
+            </div>
+          </div>
+
+          {/* ---------- Phone ---------- */}
+          <div className="lg:hidden">
             <button
               type="button"
               onClick={handleNewVehicleClick}
@@ -2302,7 +2578,7 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
                 <p>No vehicles added yet. Submit your first vehicle to start receiving bookings.</p>
               </div>
             ) : (
-              <div className="mt-3.5 grid gap-3 lg:grid-cols-2">
+              <div className="mt-3.5 grid gap-3">
                 {vehicles.map((vehicle) => {
                   const isPending = vehicle.status === 'pending';
                   const isRejected = vehicle.status === 'rejected';
@@ -2404,6 +2680,7 @@ const VehiclesPanel = ({ onMenu, driverName, driverImage, vehicles, loading, err
                 })}
               </div>
             )}
+          </div>
           </>
         )}
       </Sheet>
@@ -2458,6 +2735,8 @@ const DriverBookingsPanel = ({ onMenu, onNavigate, driverName, driverImage, book
   const [selectedBooking, setSelectedBooking] = useState(null);
 
   const [view, setView] = useState('upcoming');
+  const [deskFilter, setDeskFilter] = useState('upcoming');
+  const [deskQuery, setDeskQuery] = useState('');
 
   const handleReload = () => {
     if (typeof onReload === 'function') onReload();
@@ -2528,10 +2807,254 @@ const DriverBookingsPanel = ({ onMenu, onNavigate, driverName, driverImage, book
   const completed = bookings.filter((b) => !isUpcoming(b));
   const list = view === 'upcoming' ? upcoming : completed;
 
+  // Desktop: counts, filter, search and sort.
+  const pendingList = upcoming.filter((b) => b.status === 'pending');
+  const confirmedUpcoming = upcoming.filter((b) => b.status === 'confirmed');
+  const completedTrips = completed.filter((b) => b.status === 'confirmed');
+  const sumEarnings = (rows) => rows.reduce((sum, b) => sum + (typeof b.driverEarnings === 'number' ? b.driverEarnings : 0), 0);
+  const deskSource =
+    deskFilter === 'pending' ? pendingList
+    : deskFilter === 'confirmed' ? confirmedUpcoming
+    : deskFilter === 'past' ? completed
+    : deskFilter === 'all' ? bookings
+    : upcoming;
+  const q = deskQuery.trim().toLowerCase();
+  const startTime = (b) => (b.startDate ? new Date(b.startDate).getTime() : 0);
+  const deskRows = deskSource
+    .filter((b) =>
+      !q ||
+      [b.traveler?.fullName, b.vehicle?.model, b.startPoint, b.endPoint]
+        .filter(Boolean)
+        .some((text) => String(text).toLowerCase().includes(q))
+    )
+    .slice()
+    .sort((a, b) => (deskFilter === 'upcoming' || deskFilter === 'pending' || deskFilter === 'confirmed' ? startTime(a) - startTime(b) : startTime(b) - startTime(a)));
+  const DAY_MS = 86400000;
+  const tripTiming = (b) => {
+    if (!b.startDate) return '';
+    const start = new Date(b.startDate).getTime();
+    const end = b.endDate ? new Date(b.endDate).getTime() : start;
+    const now = Date.now();
+    if (end < now) return 'Finished';
+    if (start <= now) return 'On trip now';
+    const days = Math.ceil((start - now) / DAY_MS);
+    return days <= 1 ? 'Starts tomorrow' : `Starts in ${days} days`;
+  };
+  const tripDays = (b) => {
+    if (!b.startDate || !b.endDate) return null;
+    return Math.max(1, Math.round((new Date(b.endDate).getTime() - new Date(b.startDate).getTime()) / DAY_MS) + 1);
+  };
+  const bookingValue = (b) =>
+    typeof b.payableTotal === 'number' && b.payableTotal > 0 ? b.payableTotal
+    : typeof b.totalPrice === 'number' && b.totalPrice > 0 ? b.totalPrice
+    : null;
+  const deskChip = (b) => {
+    const pastEnd = isPastEnd(b);
+    if (b.status === 'pending') return pastEnd ? { text: 'Expired', cls: 'bg-[#eef1f0] text-muted' } : { text: 'Needs reply', cls: 'bg-[#fdf0d8] text-[#a86a15]' };
+    if (b.status === 'confirmed') return pastEnd ? { text: 'Completed', cls: 'bg-[#eef1f0] text-ink-soft' } : { text: 'Confirmed', cls: 'bg-brand-tint text-brand-dark' };
+    if (b.status === 'rejected') return { text: 'Rejected', cls: 'bg-[#ffe4e9] text-[#e11d48]' };
+    if (b.status === 'cancelled') return { text: 'Cancelled', cls: 'bg-[#ffe4e9] text-[#e11d48]' };
+    const label = String(b.status || 'Past');
+    return { text: label.charAt(0).toUpperCase() + label.slice(1), cls: 'bg-[#eef1f0] text-muted' };
+  };
+  const openMessages = (booking) =>
+    booking.conversationId
+      ? navigate(`/portal/driver/messages?conversation=${booking.conversationId}`)
+      : onNavigate?.('messages');
+  const DESK_FILTERS = [
+    { key: 'upcoming', label: 'Upcoming', count: upcoming.length },
+    { key: 'pending', label: 'Needs reply', count: pendingList.length },
+    { key: 'confirmed', label: 'Confirmed', count: confirmedUpcoming.length },
+    { key: 'past', label: 'Past', count: completed.length },
+    { key: 'all', label: 'All', count: bookings.length },
+  ];
+
   return (
     <>
-      {head}
-      <Sheet>
+      <div className="lg:hidden">{head}</div>
+      <Sheet wide className="lg:!mt-8">
+        {/* ---------- Desktop ---------- */}
+        <div className="hidden lg:block">
+          <DesktopPageTitle
+            eyebrow="Trips"
+            title="My Bookings"
+            subtitle="Reply to new requests and keep track of every trip."
+            actions={
+              <button type="button" onClick={handleReload} aria-label="Refresh" className="inline-flex h-11 items-center gap-2 rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-4 text-[13.5px] font-bold text-ink transition hover:border-muted-soft">
+                <RefreshCw className="h-4 w-4" /> Refresh
+              </button>
+            }
+          />
+
+          <div className="grid grid-cols-4 gap-4">
+            <StatTile label="Needs reply" value={pendingList.length} hint={pendingList.length ? 'Accept or reject soon' : 'You are all caught up'} icon={MessageCircle} tone="bg-[#fdf0d8] text-[#a86a15]" />
+            <StatTile label="Confirmed upcoming" value={confirmedUpcoming.length} hint={confirmedUpcoming[0] ? `Next: ${formatDate(confirmedUpcoming.slice().sort((a, b) => startTime(a) - startTime(b))[0].startDate)}` : 'No trips scheduled'} icon={CalendarCheck} />
+            <StatTile label="Upcoming earnings" value={formatMoney(sumEarnings(confirmedUpcoming))} hint="After commission, confirmed trips" icon={DollarSign} />
+            <StatTile label="Completed trips" value={completedTrips.length} hint={completedTrips.length ? `${formatMoney(sumEarnings(completedTrips))} earned` : 'None yet'} icon={CheckCircle2} tone="bg-[#e6f0fb] text-[#1d5fa8]" />
+          </div>
+
+          {pendingList.length > 0 && deskFilter !== 'pending' ? (
+            <div className="mt-5 flex items-center justify-between gap-4 rounded-[16px] border border-[#f6dfb0] bg-[#fffaf0] px-5 py-3.5">
+              <p className="flex items-center gap-2 text-[13.5px] font-semibold text-[#a86a15]">
+                <AlertTriangle className="h-4 w-4" />
+                {pendingList.length === 1 ? '1 booking request is' : `${pendingList.length} booking requests are`} waiting for your reply.
+              </p>
+              <button type="button" onClick={() => setDeskFilter('pending')} className="text-[13px] font-extrabold text-[#a86a15] underline-offset-2 hover:underline">
+                Review now
+              </button>
+            </div>
+          ) : null}
+
+          <section className="mt-6 overflow-hidden rounded-[18px] bg-white shadow-card">
+            <div className="flex items-center justify-between gap-4 border-b border-hairline px-5 py-4">
+              <div className="flex gap-1 rounded-xl bg-[#eef1f0] p-1">
+                {DESK_FILTERS.map((f) => (
+                  <button
+                    key={f.key}
+                    type="button"
+                    onClick={() => setDeskFilter(f.key)}
+                    className={`inline-flex items-center gap-1.5 rounded-[9px] px-3.5 py-1.5 text-[13px] font-bold transition ${
+                      deskFilter === f.key ? 'bg-white text-ink shadow-sm' : 'text-muted hover:text-ink'
+                    }`}
+                  >
+                    {f.label}
+                    <span className={`rounded-full px-1.5 text-[11px] ${deskFilter === f.key ? 'bg-brand-tint text-brand-dark' : 'bg-white/70 text-muted-soft'}`}>{f.count}</span>
+                  </button>
+                ))}
+              </div>
+              <label className="flex h-10 w-72 items-center gap-2 rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 focus-within:border-brand">
+                <Search className="h-4 w-4 text-muted-soft" />
+                <input
+                  value={deskQuery}
+                  onChange={(event) => setDeskQuery(event.target.value)}
+                  placeholder="Search traveller, vehicle or place"
+                  className="min-w-0 flex-1 bg-transparent text-[13px] text-ink placeholder:text-muted-soft focus:outline-none"
+                />
+              </label>
+            </div>
+
+            <div className="grid grid-cols-[minmax(0,1.3fr)_minmax(0,1.25fr)_minmax(0,1fr)_minmax(0,0.9fr)_260px] gap-4 border-b border-hairline bg-canvas/60 px-5 py-2.5 text-[11px] font-extrabold uppercase tracking-wide text-muted-soft">
+              <span>Traveller</span>
+              <span>Trip</span>
+              <span>Vehicle</span>
+              <span>Your earnings</span>
+              <span className="text-right">Status &amp; actions</span>
+            </div>
+
+            {deskRows.length === 0 ? (
+              <div className="px-6 py-14 text-center">
+                <CalendarDays className="mx-auto h-8 w-8 text-muted-soft" />
+                <p className="mt-3 text-[14px] font-bold text-ink">
+                  {q ? 'No bookings match your search' : deskFilter === 'pending' ? 'No requests waiting for you' : deskFilter === 'past' ? 'No past trips yet' : 'No bookings here yet'}
+                </p>
+                <p className="mt-1 text-[12.5px] text-muted-soft">New requests and confirmed trips appear here as soon as travellers book.</p>
+              </div>
+            ) : (
+              <ul>
+                {deskRows.map((booking, index) => {
+                  const name = booking.traveler?.fullName || 'Traveller';
+                  const chip = deskChip(booking);
+                  const value = bookingValue(booking);
+                  const days = tripDays(booking);
+                  const busy = responding?.id === booking.id;
+                  const pendingOpen = booking.status === 'pending' && !isPastEnd(booking);
+                  const canMessage = !['cancelled', 'rejected'].includes(booking.status);
+                  return (
+                    <li
+                      key={booking.id || index}
+                      className={`grid grid-cols-[minmax(0,1.3fr)_minmax(0,1.25fr)_minmax(0,1fr)_minmax(0,0.9fr)_260px] items-center gap-4 border-b border-hairline px-5 py-4 last:border-b-0 ${pendingOpen ? 'bg-[#fffdf7]' : ''}`}
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                        <Avatar name={name} tone={index % 2 === 0 ? 'amber' : 'purple'} className="h-10 w-10 flex-shrink-0 text-sm" />
+                        <div className="min-w-0">
+                          <div className="truncate text-[14px] font-bold text-ink">{name}</div>
+                          <div className="truncate text-[12px] text-muted-soft">
+                            {booking.passengerSummary || (booking.guests ?? booking.numberOfGuests ? `${booking.guests ?? booking.numberOfGuests} guests` : 'Passengers to confirm')}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[13.5px] font-bold text-ink">
+                          {formatDate(booking.startDate)} – {formatDate(booking.endDate)}
+                        </div>
+                        <div className="truncate text-[12px] text-muted-soft">
+                          {days ? `${days} day${days === 1 ? '' : 's'} · ` : ''}{tripTiming(booking)}
+                        </div>
+                        {booking.startPoint && booking.endPoint ? (
+                          <div className="mt-0.5 flex min-w-0 items-center gap-1 text-[12px] text-ink-soft">
+                            <MapPin className="h-3 w-3 flex-shrink-0 text-muted-soft" />
+                            <span className="truncate">{booking.startPoint} → {booking.endPoint}</span>
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className="flex min-w-0 items-center gap-2 text-[13px] font-semibold text-ink">
+                        <Car className="h-4 w-4 flex-shrink-0 text-brand" />
+                        <span className="truncate">{booking.vehicle?.model || 'Vehicle to confirm'}</span>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[14px] font-extrabold text-brand-dark">
+                          {typeof booking.driverEarnings === 'number' ? formatMoney(booking.driverEarnings) : '—'}
+                        </div>
+                        {value ? (
+                          <div className="text-[11.5px] text-muted-soft">
+                            of {formatMoney(value)}{typeof booking.commissionRate === 'number' ? ` · ${formatRatePercent(booking.commissionRate, 1)} fee` : ''}
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className="flex items-center justify-end gap-2">
+                        {pendingOpen ? (
+                          <>
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() => handleRespond(booking.id, 'accept')}
+                              className="h-9 rounded-[10px] bg-brand px-3.5 text-[12.5px] font-bold text-white transition hover:bg-brand-dark disabled:opacity-60"
+                            >
+                              {busy && responding.action === 'accept' ? 'Confirming…' : 'Accept'}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={busy}
+                              onClick={() => handleRespond(booking.id, 'reject')}
+                              className="h-9 rounded-[10px] border-[1.5px] border-[#ffd3d9] bg-white px-3.5 text-[12.5px] font-bold text-[#f43f5e] transition hover:border-[#f43f5e] disabled:opacity-60"
+                            >
+                              {busy && responding.action === 'reject' ? 'Rejecting…' : 'Reject'}
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <span className={`rounded-full px-2.5 py-[3px] text-[11.5px] font-extrabold ${chip.cls}`}>{chip.text}</span>
+                            {canMessage ? (
+                              <button
+                                type="button"
+                                onClick={() => openMessages(booking)}
+                                aria-label={`Message ${name}`}
+                                title="Message traveller"
+                                className="grid h-9 w-9 place-items-center rounded-[10px] border-[1.5px] border-[#e2e8ea] bg-white text-ink transition hover:border-brand hover:text-brand-dark"
+                              >
+                                <MessageCircle className="h-4 w-4" />
+                              </button>
+                            ) : null}
+                          </>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedBooking(booking)}
+                          className="h-9 rounded-[10px] border-[1.5px] border-[#e2e8ea] bg-white px-3 text-[12.5px] font-bold text-ink transition hover:border-muted-soft"
+                        >
+                          Details
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        </div>
+
+        {/* ---------- Phone ---------- */}
+        <div className="lg:hidden">
         <div className="mb-3.5 flex gap-1.5 rounded-xl bg-[#eef1f0] p-1">
           <button
             type="button"
@@ -2559,7 +3082,7 @@ const DriverBookingsPanel = ({ onMenu, onNavigate, driverName, driverImage, book
               : 'No completed trips yet.'}
           </div>
         ) : (
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className="grid gap-3">
             {list.map((booking, index) => (
               <BookingCard
                 key={booking.id || index}
@@ -2577,6 +3100,7 @@ const DriverBookingsPanel = ({ onMenu, onNavigate, driverName, driverImage, book
             ))}
           </div>
         )}
+        </div>
       </Sheet>
       {selectedBooking ? (
         <BookingDetailsModal booking={selectedBooking} onClose={() => setSelectedBooking(null)} />
@@ -2855,8 +3379,316 @@ const DriverEarningsPanel = ({ onMenu, driverName, driverImage, state, onMonthCh
       )
     : null;
 
+  // ---- Desktop view data ----
+  const COMMISSION_STATUS_LABELS = { pending: 'Not paid', submitted: 'Slip under review', approved: 'Paid' };
+  const statusLabel = COMMISSION_STATUS_LABELS[commission?.status] || 'Not paid';
+  const bookingValue = (booking) =>
+    typeof booking.payableTotal === 'number' && booking.payableTotal > 0 ? booking.payableTotal : booking.totalPrice;
+  const gross = Number(totals?.totalGross) || 0;
+  const driverShare = Number(totals?.driverEarnings) || 0;
+  const sharePercent = gross > 0 ? Math.round((driverShare / gross) * 100) : 0;
+  // Last 6 months of history, oldest first, for the earnings chart.
+  const chartMonths = (Array.isArray(history) ? [...history] : [])
+    .filter((entry) => entry?.period?.value)
+    .sort((a, b) => (a.period.value < b.period.value ? -1 : 1))
+    .slice(-6);
+  const chartMax = Math.max(1, ...chartMonths.map((entry) => Number(entry.totals?.driverEarnings) || 0));
+  const historyRows = (Array.isArray(history) ? [...history] : []).sort((a, b) => (a.period?.value < b.period?.value ? 1 : -1));
+  const copyText = async (value, label) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(`${label} copied`);
+    } catch {
+      toast.error('Unable to copy');
+    }
+  };
+  const bankRows = [
+    ['Account name', bankDetails?.accountName],
+    ['Account number', bankDetails?.accountNumber],
+    ['Bank', bankDetails?.bankName],
+    ['Branch', bankDetails?.branch],
+    ['SWIFT / BIC', bankDetails?.swiftCode],
+    ['Reference', bankDetails?.referenceNote],
+  ].filter(([, value]) => value);
+
   return (
     <>
+      {/* ---------- Desktop ---------- */}
+      <div className="hidden px-8 pb-16 pt-8 lg:block">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <p className="text-[12px] font-extrabold uppercase tracking-[0.08em] text-brand-dark">Earnings</p>
+            <h1 className="mt-1 text-[28px] font-extrabold tracking-tight text-ink">My Earnings · {period?.label || selectedMonth}</h1>
+            <p className="mt-1 text-[13.5px] text-muted-soft">Commission for this month is due by <b className="text-ink">{dueDateLabel}</b>.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedMonth}
+              onChange={handleMonthSelect}
+              aria-label="Month"
+              className="h-11 min-w-[200px] rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 text-[13.5px] font-semibold text-ink focus:border-brand focus:outline-none"
+            >
+              {monthOptions.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
+            <button type="button" onClick={handleRefresh} aria-label="Refresh" className="grid h-11 w-11 place-items-center rounded-xl border-[1.5px] border-[#e2e8ea] bg-white text-muted transition hover:border-muted-soft">
+              <RefreshCw className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* KPI tiles */}
+        <div className="mt-6 grid grid-cols-4 gap-4">
+          <div className="rounded-[18px] bg-white p-5 shadow-card">
+            <p className="text-[12px] font-bold uppercase tracking-wide text-muted-soft">Booking value</p>
+            <p className="mt-2 text-[26px] font-extrabold tracking-tight text-ink">{totalGrossLabel}</p>
+            <p className="mt-1 text-[12.5px] text-muted-soft">{totals?.bookingCount ?? bookings?.length ?? 0} completed trip{(totals?.bookingCount ?? bookings?.length ?? 0) === 1 ? '' : 's'}</p>
+          </div>
+          <div className="rounded-[18px] bg-gradient-to-br from-[#0c7a44] to-brand p-5 text-white shadow-card">
+            <p className="text-[12px] font-bold uppercase tracking-wide text-white/80">Your earnings</p>
+            <p className="mt-2 text-[26px] font-extrabold tracking-tight">{driverEarningsLabel}</p>
+            <p className="mt-1 text-[12.5px] text-white/80">{sharePercent}% of booking value</p>
+          </div>
+          <div className="rounded-[18px] bg-white p-5 shadow-card">
+            <p className="text-[12px] font-bold uppercase tracking-wide text-muted-soft">Commission ({commissionRateLabel})</p>
+            <p className="mt-2 text-[26px] font-extrabold tracking-tight text-ink">{commissionDueLabel}</p>
+            <p className="mt-1 text-[12.5px] text-muted-soft">{discount ? `${discount.name} applied` : `Standard rate ${baseRateLabel}`}</p>
+          </div>
+          <div className="rounded-[18px] bg-white p-5 shadow-card">
+            <p className="text-[12px] font-bold uppercase tracking-wide text-muted-soft">Payment status</p>
+            <span className={`mt-2.5 inline-block rounded-lg px-2.5 py-1 text-[12px] font-extrabold ${statusBadge}`}>{statusLabel}</span>
+            <p className="mt-2 text-[12.5px] text-muted-soft">
+              {commission?.paymentSlipUrl ? (
+                <a href={commission.paymentSlipUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-bold text-brand-dark">View uploaded slip <ExternalLink className="h-3 w-3" /></a>
+              ) : (
+                `Due by ${dueDateLabel}`
+              )}
+            </p>
+          </div>
+        </div>
+
+        {/* Where the booking value goes */}
+        {gross > 0 ? (
+          <div className="mt-4 rounded-[18px] bg-white px-5 py-4 shadow-card">
+            <div className="flex items-center justify-between text-[12.5px] font-semibold text-muted">
+              <span>Where the booking value goes</span>
+              <span>{totalGrossLabel} total</span>
+            </div>
+            <div className="mt-2.5 flex h-3 gap-[2px] overflow-hidden rounded-full">
+              <div className="h-full rounded-l-full bg-brand" style={{ width: `${sharePercent}%` }} title={`Your earnings: ${driverEarningsLabel}`} />
+              <div className="h-full flex-1 rounded-r-full bg-[#9fb3c0]" title={`Commission: ${commissionDueLabel}`} />
+            </div>
+            <div className="mt-2 flex items-center gap-5 text-[12.5px] text-ink-soft">
+              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-brand" /> Your earnings {driverEarningsLabel} ({sharePercent}%)</span>
+              <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-[#9fb3c0]" /> Commission {commissionDueLabel} ({100 - sharePercent}%)</span>
+            </div>
+          </div>
+        ) : null}
+
+        <div className="mt-6 grid grid-cols-[minmax(0,1fr)_380px] items-start gap-6">
+          <div className="flex min-w-0 flex-col gap-6">
+            {/* Bookings this month */}
+            <section className="overflow-hidden rounded-[18px] bg-white shadow-card">
+              <div className="flex items-center justify-between border-b border-hairline px-6 py-4">
+                <h2 className="text-[15px] font-extrabold text-ink">Trips in {period?.label || 'this month'}</h2>
+                <span className="text-[12.5px] text-muted-soft">Confirmed trips that ended this month</span>
+              </div>
+              {Array.isArray(bookings) && bookings.length > 0 ? (
+                <table className="w-full border-collapse text-left text-[13.5px]">
+                  <thead>
+                    <tr className="bg-[#f7faf8] text-[11.5px] font-bold uppercase tracking-wide text-muted-soft">
+                      <th className="px-6 py-2.5 font-bold">Traveller</th>
+                      <th className="px-3 py-2.5 font-bold">Dates</th>
+                      <th className="px-3 py-2.5 text-right font-bold">Booking value</th>
+                      <th className="px-3 py-2.5 text-right font-bold">Commission</th>
+                      <th className="px-6 py-2.5 text-right font-bold">Your earnings</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bookings.map((booking, index) => (
+                      <tr key={booking.id || index} className="border-t border-hairline">
+                        <td className="px-6 py-3 font-bold text-ink">{booking.travelerName}</td>
+                        <td className="px-3 py-3 text-muted">{displayDate(booking.startDate)} – {displayDate(booking.endDate)}</td>
+                        <td className="px-3 py-3 text-right font-semibold text-ink">{formatCurrency(bookingValue(booking))}</td>
+                        <td className="px-3 py-3 text-right text-muted">
+                          {formatCurrency(booking.commissionAmount)}
+                          {booking.commissionDiscountLabel ? <span className="ml-1 text-[11px] text-brand-dark">({booking.commissionDiscountLabel})</span> : null}
+                        </td>
+                        <td className="px-6 py-3 text-right font-bold text-brand-dark">{formatCurrency(booking.driverEarnings)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t-2 border-hairline bg-[#f7faf8] font-extrabold text-ink">
+                      <td className="px-6 py-3" colSpan={2}>Total</td>
+                      <td className="px-3 py-3 text-right">{totalGrossLabel}</td>
+                      <td className="px-3 py-3 text-right">{commissionDueLabel}</td>
+                      <td className="px-6 py-3 text-right text-brand-dark">{driverEarningsLabel}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              ) : (
+                <p className="px-6 py-10 text-center text-[13.5px] text-muted">No confirmed trips ended during this month.</p>
+              )}
+            </section>
+
+            {/* Earnings history: chart + table */}
+            <section className="rounded-[18px] bg-white shadow-card">
+              <div className="border-b border-hairline px-6 py-4">
+                <h2 className="text-[15px] font-extrabold text-ink">Your earnings by month</h2>
+                <p className="mt-0.5 text-[12.5px] text-muted-soft">After commission, last {chartMonths.length || 6} months</p>
+              </div>
+              {chartMonths.length > 0 ? (
+                <div className="px-6 pb-2 pt-6">
+                  <div className="flex h-44 items-end gap-3 border-b border-[#dfe6e2]">
+                    {chartMonths.map((entry, index) => {
+                      const value = Number(entry.totals?.driverEarnings) || 0;
+                      const isLatest = index === chartMonths.length - 1;
+                      const isSelected = entry.period.value === selectedMonth;
+                      return (
+                        <div key={entry.period.value} className="group relative flex h-full flex-1 flex-col items-center justify-end">
+                          {isLatest ? <span className="mb-1 text-[11.5px] font-bold text-ink">{formatCurrency(value)}</span> : null}
+                          <button
+                            type="button"
+                            onClick={() => onMonthChange?.(entry.period.value)}
+                            aria-label={`${entry.period.label}: ${formatCurrency(value)}`}
+                            className={`w-full max-w-[56px] rounded-t-[4px] transition ${isSelected ? 'bg-brand' : 'bg-[#8fd1ae] hover:bg-brand'}`}
+                            style={{ height: `${Math.max(2, (value / chartMax) * 100)}%` }}
+                          />
+                          <div className="pointer-events-none absolute bottom-full mb-1 hidden whitespace-nowrap rounded-lg bg-ink px-2.5 py-1.5 text-[11.5px] font-semibold text-white shadow-lg group-hover:block">
+                            {entry.period.label}: {formatCurrency(value)} · {entry.totals?.bookingCount ?? 0} trips
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-2 flex gap-3">
+                    {chartMonths.map((entry) => (
+                      <span key={entry.period.value} className="flex-1 text-center text-[11.5px] font-semibold text-muted-soft">{(entry.period.label || '').replace(/ \d{4}$/, '').slice(0, 3)}</span>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-[11.5px] text-muted-soft">Click a bar to open that month.</p>
+                </div>
+              ) : null}
+              {historyRows.length > 0 ? (
+                <table className="mt-2 w-full border-collapse text-left text-[13px]">
+                  <thead>
+                    <tr className="bg-[#f7faf8] text-[11.5px] font-bold uppercase tracking-wide text-muted-soft">
+                      <th className="px-6 py-2.5 font-bold">Month</th>
+                      <th className="px-3 py-2.5 text-right font-bold">Trips</th>
+                      <th className="px-3 py-2.5 text-right font-bold">Booking value</th>
+                      <th className="px-3 py-2.5 text-right font-bold">Commission</th>
+                      <th className="px-3 py-2.5 text-right font-bold">Your earnings</th>
+                      <th className="px-6 py-2.5 font-bold">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {historyRows.map((entry) => (
+                      <tr
+                        key={entry.id || entry.period?.value}
+                        onClick={() => onMonthChange?.(entry.period?.value)}
+                        className={`cursor-pointer border-t border-hairline transition hover:bg-canvas ${entry.period?.value === selectedMonth ? 'bg-[#f3fbf6]' : ''}`}
+                      >
+                        <td className="px-6 py-3 font-bold text-ink">{entry.period?.label}</td>
+                        <td className="px-3 py-3 text-right text-muted">{entry.totals?.bookingCount ?? 0}</td>
+                        <td className="px-3 py-3 text-right text-ink-soft">{formatCurrency(entry.totals?.totalGross)}</td>
+                        <td className="px-3 py-3 text-right text-ink-soft">{formatCurrency(entry.totals?.commissionDue)}</td>
+                        <td className="px-3 py-3 text-right font-bold text-brand-dark">{formatCurrency(entry.totals?.driverEarnings)}</td>
+                        <td className="px-6 py-3">
+                          <span className={`rounded-md px-2 py-0.5 text-[11px] font-extrabold ${statusBadgeStyles[entry.status] || 'bg-slate-200 text-slate-700'}`}>
+                            {COMMISSION_STATUS_LABELS[entry.status] || 'Not paid'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="px-6 py-8 text-center text-[13px] text-muted">Your monthly history appears here once you have completed trips.</p>
+              )}
+            </section>
+          </div>
+
+          <aside className="flex flex-col gap-6">
+            {/* Pay commission */}
+            <section className="rounded-[18px] bg-white shadow-card">
+              <div className="border-b border-hairline px-6 py-4">
+                <h2 className="text-[15px] font-extrabold text-ink">Pay commission</h2>
+                <p className="mt-0.5 text-[12.5px] text-muted-soft">One bank transfer by {dueDateLabel}, then upload the slip.</p>
+              </div>
+              <div className="px-6 py-5">
+                <div className="flex items-end justify-between">
+                  <div>
+                    <p className="text-[12px] font-bold uppercase tracking-wide text-muted-soft">Amount due</p>
+                    <p className="mt-1 text-[28px] font-extrabold tracking-tight text-ink">{commissionDueLabel}</p>
+                  </div>
+                  <span className={`rounded-lg px-2.5 py-1 text-[11.5px] font-extrabold ${statusBadge}`}>{statusLabel}</span>
+                </div>
+                <dl className="mt-4 divide-y divide-hairline rounded-xl border border-hairline">
+                  {bankRows.map(([label, value]) => (
+                    <div key={label} className="flex items-center justify-between gap-3 px-3.5 py-2.5">
+                      <div className="min-w-0">
+                        <dt className="text-[11px] font-bold uppercase tracking-wide text-muted-soft">{label}</dt>
+                        <dd className="truncate text-[13.5px] font-semibold text-ink">{value}</dd>
+                      </div>
+                      <button type="button" onClick={() => copyText(String(value), label)} className="flex-shrink-0 rounded-lg px-2 py-1 text-[11.5px] font-bold text-brand-dark hover:bg-brand-tint">Copy</button>
+                    </div>
+                  ))}
+                </dl>
+                {slipNotYet && commission?.status !== 'approved' ? (
+                  <p className="mt-4 rounded-xl bg-canvas px-3.5 py-3 text-[12.5px] text-muted">
+                    You can upload the payment slip for {period?.label} from {period?.slipUploadOpensLabel}, once the month has ended.
+                  </p>
+                ) : null}
+                {canUploadSlip ? (
+                  <button
+                    type="button"
+                    onClick={handleUploadClick}
+                    disabled={uploading}
+                    className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-brand py-3 text-[13.5px] font-bold text-white transition hover:bg-brand-dark disabled:opacity-70"
+                  >
+                    {uploading ? <><Loader2 className="h-4 w-4 animate-spin" /> Uploading…</> : <><Upload className="h-4 w-4" /> {commission?.paymentSlipUrl ? 'Replace payment slip' : 'Upload payment slip'}</>}
+                  </button>
+                ) : null}
+                {commission?.status === 'approved' ? (
+                  <p className="mt-4 flex items-center gap-2 rounded-xl bg-brand-tint px-3.5 py-3 text-[12.5px] font-semibold text-brand-dark">
+                    <CheckCircle2 className="h-4 w-4" /> Paid and confirmed. Thank you!
+                  </p>
+                ) : null}
+              </div>
+            </section>
+
+            {/* Commission programme */}
+            <section className="rounded-[18px] bg-white px-6 py-5 shadow-card">
+              <h2 className="text-[15px] font-extrabold text-ink">Commission rate</h2>
+              {discount ? (
+                <div className="mt-2 text-[13px] text-muted">
+                  <p className="font-bold text-ink">{discount.name}</p>
+                  <p className="mt-1">
+                    {discountPercentLabel} off the standard {baseRateLabel}. You pay <b className="text-ink">{commissionRateLabel}</b> on trips in this window.
+                  </p>
+                  <p className="mt-1 text-[12px] text-muted-soft">
+                    {discount.status === 'scheduled'
+                      ? `Starts ${displayDate(discount.startDate)}`
+                      : discount.status === 'expired'
+                      ? `Ended ${displayDate(discount.endDate)}`
+                      : `Valid through ${displayDate(discount.endDate)}`}
+                  </p>
+                </div>
+              ) : (
+                <p className="mt-2 text-[13px] text-muted">Standard commission is {baseRateLabel} of each trip&apos;s booking value. No promotional discount this month.</p>
+              )}
+              <p className="mt-3 border-t border-hairline pt-3 text-[12px] leading-relaxed text-muted-soft">
+                Commission is due by the 10th of the following month. Unpaid commission after that freezes your account until it is paid.
+              </p>
+            </section>
+          </aside>
+        </div>
+      </div>
+
+      {/* ---------- Phones ---------- */}
+      <div className="lg:hidden">
       <MobileHeader
         onMenu={onMenu}
         right={<Avatar name={driverName} image={driverImage} tone="light" className="h-10 w-10 text-[15px]" />}
@@ -3038,6 +3870,7 @@ const DriverEarningsPanel = ({ onMenu, driverName, driverImage, state, onMonthCh
           </div>
         )}
       </Sheet>
+      </div>
     </>
   );
 };
@@ -3065,6 +3898,21 @@ const buildDriverProfileForm = (profile) => ({
       ? String(profile.driverLocation.longitude)
       : '',
 });
+
+// A titled card for the profile edit screen: heading and short description on top,
+// fields below. Roomier padding on desktop.
+const FormSection = ({ title, description, action, children }) => (
+  <section className="rounded-[18px] bg-white shadow-card">
+    <div className="flex items-start justify-between gap-3 border-b border-hairline px-4 py-3.5 lg:px-6 lg:py-4">
+      <div className="min-w-0">
+        <h3 className="text-[14.5px] font-extrabold text-ink">{title}</h3>
+        {description ? <p className="mt-0.5 text-[12px] leading-relaxed text-muted-soft">{description}</p> : null}
+      </div>
+      {action}
+    </div>
+    <div className="p-4 lg:p-6">{children}</div>
+  </section>
+);
 
 const DriverProfilePanel = ({
   onMenu,
@@ -3449,21 +4297,24 @@ const DriverProfilePanel = ({
           eyebrow="PROFILE"
           title="Edit details"
         />
-        <Sheet>
-          {/* Cover photo uploads and removes on its own (it needs admin approval), so it
-              sits above the details form rather than being saved with it. */}
-          <CoverPhotoCard key={profile?.id || 'cover'} profile={profile} className="mb-3" onChanged={onProfileRefresh} />
-          <form onSubmit={handleProfileSubmit} className="flex flex-col gap-3">
-            <div className="flex items-center gap-3.5 rounded-[18px] bg-white p-4 shadow-card">
-              <div className="grid h-16 w-16 flex-shrink-0 place-items-center overflow-hidden rounded-2xl bg-canvas">
-                {photoPreview ? (
-                  <img src={photoPreview} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <Avatar name={formState.name} className="h-full w-full rounded-2xl text-xl" />
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-[13.5px] font-bold text-ink">Profile photo</p>
+        <Sheet wide>
+          {/* Phones: one column. Desktop: photos on the left (stay in view), the
+              details in titled sections on the right. */}
+          <div className="flex flex-col gap-3 lg:grid lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start lg:gap-6">
+            <aside className="flex flex-col gap-3 lg:sticky lg:top-6">
+              <section className="rounded-[18px] bg-white p-4 shadow-card lg:p-6">
+                <div className="flex items-center gap-3.5 lg:flex-col lg:text-center">
+                  <div className="grid h-16 w-16 flex-shrink-0 place-items-center overflow-hidden rounded-2xl bg-canvas lg:h-28 lg:w-28 lg:rounded-full lg:ring-4 lg:ring-[#f3fbf6]">
+                    {photoPreview ? (
+                      <img src={photoPreview} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <Avatar name={formState.name} className="h-full w-full rounded-2xl text-xl lg:rounded-full lg:text-3xl" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1 lg:flex-none">
+                    <p className="text-[13.5px] font-bold text-ink">Profile photo</p>
+                    <p className="mt-0.5 hidden text-[11.5px] text-muted-soft lg:block">A clear photo of your face helps travellers trust you.</p>
+                    <div className="lg:flex lg:justify-center">
                 <div className="mt-1.5 flex gap-2">
                   <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
                   <button type="button" onClick={() => photoInputRef.current?.click()} className="rounded-lg border-[1.5px] border-[#e2e8ea] px-3 py-1.5 text-[12px] font-bold text-ink">
@@ -3475,55 +4326,78 @@ const DriverProfilePanel = ({
                     </button>
                   ) : null}
                 </div>
-              </div>
-            </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
 
-            <div className="rounded-[18px] bg-white p-4 shadow-card">
-              <div>
+              {/* Cover photo uploads and removes on its own (it needs admin approval). */}
+              <CoverPhotoCard key={profile?.id || 'cover'} profile={profile} className="lg:p-6" onChanged={onProfileRefresh} />
+            </aside>
+
+            <div className="flex min-w-0 flex-col gap-3">
+              <form onSubmit={handleProfileSubmit} className="flex flex-col gap-3">
+                <FormSection title="Personal details" description="Shown on your public profile.">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
                 <label className={labelCls} htmlFor="driver-profile-name">Name</label>
                 <input id="driver-profile-name" name="name" value={formState.name} onChange={handleFieldChange} className={inputCls} required />
-              </div>
-              <div className="mt-3">
+                    </div>
+                    <div>
                 <label className={labelCls} htmlFor="driver-profile-contact">Contact number</label>
                 <input id="driver-profile-contact" name="contactNumber" value={formState.contactNumber} onChange={handleFieldChange} className={inputCls} placeholder="e.g. +94 71 555 5555" />
-              </div>
-              <div className="mt-3">
+                    </div>
+                    <div>
                 <label className={labelCls} htmlFor="driver-profile-experience">Years of driving experience</label>
                 <input id="driver-profile-experience" name="experienceYears" type="number" inputMode="numeric" min="0" max="60" value={formState.experienceYears} onChange={handleFieldChange} className={inputCls} placeholder="e.g. 5" />
-              </div>
-              <div className="mt-3">
-                <label className={labelCls} htmlFor="driver-profile-address">Base location</label>
-                <LocationSelect id="driver-profile-address" name="address" value={formState.address} onChange={(_value, event) => handleFieldChange(event)} className={inputCls} />
-                {formState.address && !guessLocationName(formState.address) ? (
-                  <p className="mt-1 text-[11.5px] font-semibold text-amber-700">
-                    Your current location &quot;{formState.address}&quot; is not in the list. Please choose your town or the nearest one.
-                  </p>
-                ) : null}
-                <span className={`${labelCls} mt-3 block`}>Also available in</span>
-                <ServiceAreasPicker value={formState.serviceAreas} onChange={(serviceAreas) => setFormState((prev) => ({ ...prev, serviceAreas }))} />
-                <p className="mt-1 text-[11.5px] text-muted-soft">Choose the town you are based in, or the nearest one. Travellers use it to find drivers near them.</p>
-              </div>
-              <div className="mt-3">
+                    </div>
+                  </div>
+                </FormSection>
+
+                <FormSection title="Where you work" description="Travellers use this to find drivers near them, and it decides which city pages you appear on.">
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    <div>
+                      <label className={labelCls} htmlFor="driver-profile-address">Base location</label>
+                      <LocationSelect id="driver-profile-address" name="address" value={formState.address} onChange={(_value, event) => handleFieldChange(event)} className={inputCls} />
+                      <p className="mt-1 text-[11.5px] text-muted-soft">Choose the town you are based in, or the nearest one.</p>
+                      {formState.address && !guessLocationName(formState.address) ? (
+                        <p className="mt-1 text-[11.5px] font-semibold text-amber-700">
+                          Your current location &quot;{formState.address}&quot; is not in the list. Please choose your town or the nearest one.
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="lg:col-span-2">
+                      <span className={`${labelCls} block`}>Also available in</span>
+                      <div className="mt-1.5">
+                        <ServiceAreasPicker value={formState.serviceAreas} onChange={(serviceAreas) => setFormState((prev) => ({ ...prev, serviceAreas }))} />
+                      </div>
+                    </div>
+                  </div>
+                </FormSection>
+
+                <FormSection title="About you" description="Your bio is public. Tell travellers about your experience and the trips you love.">
+                  <div className="flex flex-col gap-3">
+                    <div>
                 <label className={labelCls} htmlFor="driver-profile-description">Bio</label>
                 <textarea id="driver-profile-description" name="description" value={formState.description} onChange={handleFieldChange} rows={4} className="mt-1 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 py-2.5 text-sm text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none" placeholder="Tell travellers about your experience and specialties." />
                 <p className="mt-1 text-[11.5px] text-muted-soft">Do not put phone numbers, email addresses or links here — your bio is public and is not masked.</p>
                 <ContactWarning value={formState.description} messageFor={bioContactWarningMessage} />
-              </div>
-              <div className="mt-3">
+                    </div>
+                    <div>
                 <label className={labelCls} htmlFor="driver-profile-tripAdvisor">TripAdvisor link</label>
                 <input id="driver-profile-tripAdvisor" name="tripAdvisor" value={formState.tripAdvisor} onChange={handleFieldChange} className={inputCls} placeholder="https://" />
-              </div>
-            </div>
+                    </div>
+                  </div>
+                </FormSection>
 
-            <div className="rounded-[18px] bg-white p-4 shadow-card">
-              <div className="flex items-center justify-between">
-                <b className="text-[14px] text-ink">Live location</b>
-                {formState.currentLatitude || formState.currentLongitude || formState.currentLocationLabel ? (
-                  <button type="button" onClick={handleClearLocation} className="text-[12px] font-bold text-[#f43f5e]">Clear</button>
-                ) : null}
-              </div>
-              <p className="mt-0.5 text-[12px] text-muted-soft">Set your base so the homepage map can spotlight you.</p>
-              <button
+                <FormSection
+                  title="Live location"
+                  description="Set your base so the homepage map can spotlight you."
+                  action={formState.currentLatitude || formState.currentLongitude || formState.currentLocationLabel ? (
+                    <button type="button" onClick={handleClearLocation} className="text-[12px] font-bold text-[#f43f5e]">Clear</button>
+                  ) : null}
+                >
+                            <button
                 type="button"
                 onClick={handleUseLiveLocation}
                 disabled={locating}
@@ -3549,12 +4423,12 @@ const DriverProfilePanel = ({
                 </p>
               ) : null}
               {locationStatus ? <p className="mt-1.5 text-[12px] text-muted-soft">{locationStatus}</p> : null}
-            </div>
+                </FormSection>
 
             <button
               type="submit"
               disabled={savingProfile}
-              className="flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand py-[15px] text-[15px] font-extrabold text-white transition hover:bg-brand-dark disabled:opacity-70"
+              className="flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand py-[15px] text-[15px] font-extrabold text-white transition hover:bg-brand-dark disabled:opacity-70 lg:ml-auto lg:w-auto lg:px-10 lg:py-3"
             >
               {savingProfile ? (
                 <>
@@ -3564,12 +4438,13 @@ const DriverProfilePanel = ({
                 'Save changes'
               )}
             </button>
-          </form>
 
-          <form onSubmit={handleLicenseSubmit} className="mt-3 flex flex-col gap-3">
-            <div className="rounded-[18px] bg-white p-4 shadow-card">
+              </form>
+
+          <form onSubmit={handleLicenseSubmit} className="flex flex-col gap-3">
+            <div className="rounded-[18px] bg-white p-4 shadow-card lg:p-6">
               <div className="flex items-center justify-between">
-                <b className="text-[14px] text-ink">{LICENSE_COPY.heading}</b>
+                <h3 className="text-[14.5px] font-extrabold text-ink">{LICENSE_COPY.heading}</h3>
                 <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${LICENSE_STATUS_TAGS[profile?.licenseStatus] || 'bg-canvas text-muted-soft'}`}>
                   {licenseStatusLabel(profile?.licenseStatus)}
                 </span>
@@ -3660,7 +4535,7 @@ const DriverProfilePanel = ({
             <button
               type="submit"
               disabled={licenseSaving}
-              className="flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand py-[15px] text-[15px] font-extrabold text-white transition hover:bg-brand-dark disabled:opacity-70"
+              className="flex w-full items-center justify-center gap-2 rounded-[14px] bg-brand py-[15px] text-[15px] font-extrabold text-white transition hover:bg-brand-dark disabled:opacity-70 lg:ml-auto lg:w-auto lg:px-10 lg:py-3"
             >
               {licenseSaving ? (
                 <>
@@ -3672,27 +4547,205 @@ const DriverProfilePanel = ({
             </button>
             )}
           </form>
+            </div>
+          </div>
         </Sheet>
       </>
     );
   }
 
+  // Desktop profile overview: what's filled in, for the checklist card.
+  const serviceAreaNames = (profile?.serviceAreas || [])
+    .map((slug) => SERVICE_AREAS.find((area) => area.slug === slug)?.name)
+    .filter(Boolean);
+  const checklist = [
+    { label: 'Profile photo', done: Boolean(profile?.profilePhoto) },
+    { label: 'Cover photo', done: profile?.coverPhotoStatus === 'approved', note: profile?.coverPhotoStatus === 'pending' ? 'Waiting for approval' : '' },
+    { label: 'Bio (at least 100 characters)', done: (profile?.description || '').trim().length >= 100 },
+    { label: 'Base town from the list', done: Boolean(guessLocationName(profile?.address)) },
+    { label: '"Also available in" areas', done: serviceAreaNames.length > 0 },
+    { label: 'SLTDA licence approved', done: profile?.licenseStatus === 'approved' },
+  ];
+  const checklistDone = checklist.filter((item) => item.done).length;
+  const baseTown = guessLocationName(profile?.address) || profile?.address || '';
+  const expiryText = profile?.licenseExpiresAt
+    ? new Date(profile.licenseExpiresAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    : '';
+
   return (
     <>
-      <MobileHeader
-        onMenu={onMenu}
-        pb="pb-20"
-        right={
-          <button
-            type="button"
-            onClick={onLogout}
-            className="h-10 rounded-xl bg-white/[0.18] px-3.5 text-[13px] font-bold text-white transition hover:bg-white/25"
-          >
-            Logout
-          </button>
-        }
-      />
-      <Sheet pull="-mt-14">
+      {/* Phones keep the green header; desktop uses the profile card below instead. */}
+      <div className="lg:hidden">
+        <MobileHeader
+          onMenu={onMenu}
+          pb="pb-20"
+          right={
+            <button
+              type="button"
+              onClick={onLogout}
+              className="h-10 rounded-xl bg-white/[0.18] px-3.5 text-[13px] font-bold text-white transition hover:bg-white/25"
+            >
+              Logout
+            </button>
+          }
+        />
+      </div>
+      <Sheet pull="-mt-14" wide className="lg:!mt-8">
+        {/* ---------- Desktop ---------- */}
+        <div className="hidden lg:block">
+          <section className="overflow-hidden rounded-[20px] bg-white shadow-card">
+            <div className="relative h-44 bg-gradient-to-br from-[#0c7a44] to-brand">
+              {profile?.coverPhoto ? <img src={profile.coverPhoto} alt="" className="h-full w-full object-cover" /> : null}
+            </div>
+            <div className="flex items-end gap-6 px-8 pb-6">
+              <div className="relative z-10 -mt-14 flex-shrink-0 rounded-full bg-white p-1.5 shadow-[0_8px_22px_rgba(15,31,45,0.16)]">
+                <div className="grid h-28 w-28 place-items-center overflow-hidden rounded-full">
+                  {profile?.profilePhoto ? (
+                    <img src={profile.profilePhoto} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <Avatar name={profile?.name} className="h-full w-full rounded-full text-[36px]" />
+                  )}
+                </div>
+              </div>
+              <div className="min-w-0 flex-1 pt-4">
+                <div className="flex items-center gap-2">
+                  <h1 className="truncate text-[26px] font-extrabold tracking-tight text-ink">{profile?.name || 'Driver'}</h1>
+                  <BadgeCheck className="h-6 w-6 flex-shrink-0 text-brand" />
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-[12.5px] font-bold">
+                  <span className="rounded-full bg-brand-tint px-3 py-1 text-brand-dark">Approved driver</span>
+                  {profile?.licenseType ? <span className="rounded-full bg-[#e5f0fb] px-3 py-1 text-[#1d6fb8]">{profile.licenseType}</span> : null}
+                  {baseTown ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-canvas px-3 py-1 text-ink-soft"><MapPin className="h-3.5 w-3.5" /> {baseTown}</span>
+                  ) : null}
+                  {profile?.experienceYears ? <span className="rounded-full bg-canvas px-3 py-1 text-ink-soft">{profile.experienceYears} years driving</span> : null}
+                </div>
+              </div>
+              <div className="flex flex-shrink-0 items-center gap-2">
+                {profile?.id ? (
+                  <a href={`/drivers/${profile.id}`} target="_blank" rel="noopener noreferrer" className="inline-flex h-11 items-center gap-2 rounded-xl border-[1.5px] border-[#e2e8ea] px-4 text-[13.5px] font-bold text-ink transition hover:border-brand">
+                    <ExternalLink className="h-4 w-4" /> View public profile
+                  </a>
+                ) : null}
+                <button type="button" onClick={() => setMode('edit')} className="inline-flex h-11 items-center gap-2 rounded-xl bg-brand px-5 text-[13.5px] font-bold text-white transition hover:bg-brand-dark">
+                  <Pencil className="h-4 w-4" /> Edit profile
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <div className="mt-6 grid grid-cols-[minmax(0,1fr)_340px] items-start gap-6">
+            <div className="flex min-w-0 flex-col gap-6">
+              <section className="rounded-[18px] bg-white shadow-card">
+                <div className="flex items-center justify-between border-b border-hairline px-6 py-4">
+                  <h2 className="text-[15px] font-extrabold text-ink">About</h2>
+                  <button type="button" onClick={() => setMode('edit')} className="text-[13px] font-bold text-brand-dark hover:text-brand">Edit</button>
+                </div>
+                <p className="whitespace-pre-line px-6 py-5 text-[14px] leading-relaxed text-ink-soft">
+                  {profile?.description || 'Add a short bio so travellers know what makes your tours special.'}
+                </p>
+              </section>
+
+              <section className="rounded-[18px] bg-white shadow-card">
+                <div className="border-b border-hairline px-6 py-4">
+                  <h2 className="text-[15px] font-extrabold text-ink">Details</h2>
+                </div>
+                <dl className="grid grid-cols-2 gap-x-8 gap-y-5 px-6 py-5 text-[13.5px]">
+                  <div>
+                    <dt className="text-[11.5px] font-bold uppercase tracking-wide text-muted-soft">Contact number</dt>
+                    <dd className="mt-1 flex items-center gap-2 font-semibold text-ink"><Phone className="h-4 w-4 text-muted-soft" /> {profile?.contactNumber || 'Not added'}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-[11.5px] font-bold uppercase tracking-wide text-muted-soft">Base location</dt>
+                    <dd className="mt-1 flex items-center gap-2 font-semibold text-ink"><MapPin className="h-4 w-4 text-muted-soft" /> {baseTown || 'Not set'}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-[11.5px] font-bold uppercase tracking-wide text-muted-soft">Also available in</dt>
+                    <dd className="mt-1 font-semibold text-ink">{serviceAreaNames.length ? serviceAreaNames.join(', ') : 'Not set'}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-[11.5px] font-bold uppercase tracking-wide text-muted-soft">Driving experience</dt>
+                    <dd className="mt-1 font-semibold text-ink">{profile?.experienceYears ? `${profile.experienceYears} years` : 'Not added'}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-[11.5px] font-bold uppercase tracking-wide text-muted-soft">SLTDA licence</dt>
+                    <dd className="mt-1 flex flex-wrap items-center gap-2 font-semibold text-ink">
+                      <ShieldCheck className="h-4 w-4 text-muted-soft" />
+                      {profile?.licenseType || 'Not submitted'}
+                      <span className={`rounded-full px-2 py-0.5 text-[10.5px] font-bold ${LICENSE_STATUS_TAGS[profile?.licenseStatus] || 'bg-canvas text-muted-soft'}`}>
+                        {licenseStatusLabel(profile?.licenseStatus)}
+                      </span>
+                    </dd>
+                    {expiryText ? <p className="mt-0.5 text-[12px] text-muted-soft">Valid until {expiryText}</p> : null}
+                  </div>
+                  <div>
+                    <dt className="text-[11.5px] font-bold uppercase tracking-wide text-muted-soft">TripAdvisor</dt>
+                    <dd className="mt-1 font-semibold">
+                      {profile?.tripAdvisor ? (
+                        <a href={profile.tripAdvisor} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-brand-dark hover:text-brand">View TripAdvisor profile <ExternalLink className="h-3.5 w-3.5" /></a>
+                      ) : (
+                        <span className="text-ink">Not added</span>
+                      )}
+                    </dd>
+                  </div>
+                </dl>
+              </section>
+            </div>
+
+            <aside className="flex flex-col gap-6">
+              <section className="rounded-[18px] bg-white shadow-card">
+                <div className="border-b border-hairline px-6 py-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-[15px] font-extrabold text-ink">Profile checklist</h2>
+                    <span className="text-[12.5px] font-bold text-brand-dark">{checklistDone}/{checklist.length}</span>
+                  </div>
+                  <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-canvas">
+                    <div className="h-full rounded-full bg-brand" style={{ width: `${(checklistDone / checklist.length) * 100}%` }} />
+                  </div>
+                  <p className="mt-2 text-[12px] text-muted-soft">Complete profiles get more quote requests and bookings.</p>
+                </div>
+                <ul className="flex flex-col gap-2.5 px-6 py-4 text-[13px]">
+                  {checklist.map((item) => (
+                    <li key={item.label} className="flex items-start gap-2.5">
+                      {item.done ? <CheckCircle2 className="mt-px h-4 w-4 flex-shrink-0 text-brand" /> : <Circle className="mt-px h-4 w-4 flex-shrink-0 text-[#c3ccd3]" />}
+                      <span className={item.done ? 'text-ink-soft' : 'font-semibold text-ink'}>
+                        {item.label}
+                        {!item.done && item.note ? <span className="ml-1 font-normal text-muted-soft">· {item.note}</span> : null}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                {checklistDone < checklist.length ? (
+                  <div className="px-6 pb-5">
+                    <button type="button" onClick={() => setMode('edit')} className="w-full rounded-xl bg-brand-tint py-2.5 text-[13px] font-bold text-brand-dark transition hover:bg-[#d8f1e3]">Complete your profile</button>
+                  </div>
+                ) : null}
+              </section>
+
+              <section className="overflow-hidden rounded-[18px] bg-white shadow-card">
+                <div className="border-b border-hairline px-6 py-4">
+                  <h2 className="text-[15px] font-extrabold text-ink">Account</h2>
+                </div>
+                <button type="button" onClick={() => setMode('password')} className="flex w-full items-center gap-3 px-6 py-3.5 text-left transition hover:bg-canvas">
+                  <KeyRound className="h-[18px] w-[18px] text-muted" strokeWidth={1.8} />
+                  <span className="flex-1 text-[13.5px] font-semibold text-ink">Change password</span>
+                  <ChevronRight className="h-4 w-4 text-[#c3ccd3]" />
+                </button>
+                <a href="mailto:support@carwithdriver.lk" className="flex w-full items-center gap-3 border-t border-hairline px-6 py-3.5 text-left transition hover:bg-canvas">
+                  <LifeBuoy className="h-[18px] w-[18px] text-muted" strokeWidth={1.8} />
+                  <span className="flex-1 text-[13.5px] font-semibold text-ink">Help &amp; support</span>
+                  <ChevronRight className="h-4 w-4 text-[#c3ccd3]" />
+                </a>
+                <button type="button" onClick={onLogout} className="flex w-full items-center gap-3 border-t border-hairline px-6 py-3.5 text-left text-[13.5px] font-bold text-[#f43f5e] transition hover:bg-[#fef4f5]">
+                  Log out
+                </button>
+              </section>
+            </aside>
+          </div>
+        </div>
+
+        {/* ---------- Phones ---------- */}
+        <div className="lg:hidden">
         <div className="flex flex-col items-center">
           <div className="-mt-12 rounded-[24px] bg-white p-1 shadow-[0_8px_22px_rgba(15,31,45,0.14)]">
             <div className="grid h-20 w-20 place-items-center overflow-hidden rounded-[20px]">
@@ -3782,6 +4835,7 @@ const DriverProfilePanel = ({
         >
           Log out
         </button>
+        </div>
       </Sheet>
     </>
   );
@@ -3967,11 +5021,192 @@ const AvailabilityPanel = ({
     );
   }
 
+  // Desktop: per-day status for the next 60 days, from the vehicle's date ranges.
+  const DAYS_AHEAD = 60;
+  const todayUtc = (() => {
+    const now = new Date();
+    return Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  })();
+  const dayStrip = (entries) =>
+    Array.from({ length: DAYS_AHEAD }, (_, index) => {
+      const dayMs = todayUtc + index * 86400000;
+      const entry = entries.find((item) => {
+        const start = new Date(item.startDate).getTime();
+        const end = new Date(item.endDate).getTime();
+        return dayMs + 43200000 >= start && dayMs <= end;
+      });
+      return { dayMs, status: entry ? entry.status : null };
+    });
+  const dayCount = (entry) =>
+    Math.max(1, Math.round((new Date(entry.endDate).getTime() - new Date(entry.startDate).getTime()) / 86400000));
+
+  const fieldCls =
+    'mt-1 h-11 w-full min-w-0 rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 text-[13.5px] font-semibold text-ink focus:border-brand focus:outline-none';
+
   return (
     <>
       {head}
-      <Sheet>
-        <div className="grid gap-3.5 lg:grid-cols-2">
+      <Sheet wide>
+        {/* ---------- Desktop ---------- */}
+        <div className="hidden flex-col gap-6 lg:flex">
+          <div className="flex items-center gap-6 rounded-[18px] bg-white px-6 py-4 text-[12.5px] text-muted shadow-card">
+            <span className="font-bold text-ink">How it works</span>
+            <span>Add the dates a vehicle is available or blocked. Travellers can't book blocked dates.</span>
+            <span className="ml-auto flex items-center gap-4 whitespace-nowrap">
+              <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-[3px] bg-brand" /> Available</span>
+              <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-[3px] bg-[#f43f5e]" /> Unavailable</span>
+              <span className="flex items-center gap-1.5"><span className="h-3 w-3 rounded-[3px] bg-[#e6ece9]" /> Not set</span>
+            </span>
+          </div>
+
+          {vehicles.map((vehicle) => {
+            const entries = Array.isArray(vehicle.availability) ? vehicle.availability : [];
+            const sorted = [...entries].sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+            const form = getFormState(vehicle.id);
+            const photo = Array.isArray(vehicle.images) ? vehicle.images[0] : null;
+            const strip = dayStrip(entries);
+            return (
+              <section key={vehicle.id} className="overflow-hidden rounded-[20px] bg-white shadow-card">
+                <div className="flex items-center gap-4 border-b border-hairline px-6 py-4">
+                  <div className="h-14 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-canvas">
+                    {photo ? <img src={photo} alt="" className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center"><Car className="h-6 w-6 text-muted-soft" /></div>}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <h2 className="truncate text-[17px] font-extrabold text-ink">{vehicle.model}</h2>
+                      <span className={`flex-shrink-0 rounded-[7px] px-2 py-[3px] text-[11px] font-extrabold uppercase ${VEHICLE_STATUS_STYLES[vehicle.status] || VEHICLE_STATUS_STYLES.pending}`}>
+                        {vehicle.status}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-[12.5px] text-muted-soft">
+                      {[vehicle.registrationNumber, vehicle.seats ? `${vehicle.seats} seats` : null, vehicle.pricePerDay ? `$${vehicle.pricePerDay.toLocaleString()} / day` : null].filter(Boolean).join(' · ')}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-canvas px-3 py-1 text-[12px] font-bold text-ink-soft">
+                    {entries.length === 0 ? 'No dates set' : `${entries.length} date range${entries.length === 1 ? '' : 's'}`}
+                  </span>
+                </div>
+
+                {/* Next 60 days at a glance */}
+                <div className="border-b border-hairline px-6 py-4">
+                  <div className="mb-2 flex items-center justify-between text-[11.5px] font-bold uppercase tracking-wide text-muted-soft">
+                    <span>Next {DAYS_AHEAD} days</span>
+                    <span>{formatDate(new Date(todayUtc).toISOString())} → {formatDate(new Date(todayUtc + (DAYS_AHEAD - 1) * 86400000).toISOString())}</span>
+                  </div>
+                  <div className="grid gap-[3px]" style={{ gridTemplateColumns: `repeat(${DAYS_AHEAD}, minmax(0, 1fr))` }}>
+                    {strip.map((day) => (
+                      <span
+                        key={day.dayMs}
+                        title={`${formatDate(new Date(day.dayMs).toISOString())}${day.status ? ` · ${day.status}` : ''}`}
+                        className={`h-7 rounded-[4px] ${day.status === AVAILABILITY_STATUS.AVAILABLE ? 'bg-brand' : day.status === AVAILABILITY_STATUS.UNAVAILABLE ? 'bg-[#f43f5e]' : 'bg-[#e6ece9]'}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-[340px_minmax(0,1fr)]">
+                  <form onSubmit={(event) => handleFormSubmit(event, vehicle.id)} className="border-r border-hairline p-6">
+                    <h3 className="text-[14px] font-extrabold text-ink">Add dates</h3>
+                    <div className="mt-3 grid grid-cols-2 gap-3">
+                      <label className="block text-[12px] font-bold text-muted">
+                        Start
+                        <DateField value={form.startDate} required onChange={(e) => handleInputChange(vehicle.id, 'startDate', e.target.value)} className={fieldCls} />
+                      </label>
+                      <label className="block text-[12px] font-bold text-muted">
+                        End
+                        <DateField value={form.endDate} required onChange={(e) => handleInputChange(vehicle.id, 'endDate', e.target.value)} className={fieldCls} />
+                      </label>
+                    </div>
+                    <div className="mt-3">
+                      <span className="text-[12px] font-bold text-muted">Status</span>
+                      <div className="mt-1 grid grid-cols-2 gap-1 rounded-xl bg-canvas p-1">
+                        {[
+                          { value: AVAILABILITY_STATUS.AVAILABLE, label: 'Available' },
+                          { value: AVAILABILITY_STATUS.UNAVAILABLE, label: 'Unavailable' },
+                        ].map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => handleInputChange(vehicle.id, 'status', option.value)}
+                            className={`rounded-lg py-2 text-[13px] font-bold transition ${form.status === option.value ? 'bg-white text-ink shadow-sm' : 'text-muted-soft hover:text-ink'}`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <label className="mt-3 block text-[12px] font-bold text-muted">
+                      Note (optional)
+                      <input type="text" value={form.note} onChange={(e) => handleInputChange(vehicle.id, 'note', e.target.value)} placeholder="Guidance for travellers" className={`${fieldCls} font-normal placeholder:text-[#adb8c0]`} />
+                    </label>
+                    <button
+                      type="submit"
+                      disabled={creatingVehicleId === vehicle.id}
+                      className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl bg-brand py-3 text-[13.5px] font-bold text-white transition hover:bg-brand-dark disabled:opacity-60"
+                    >
+                      <PlusCircle className="h-4 w-4" />
+                      {creatingVehicleId === vehicle.id ? 'Adding…' : 'Add dates'}
+                    </button>
+                  </form>
+
+                  <div className="min-w-0 p-6">
+                    <h3 className="text-[14px] font-extrabold text-ink">Scheduled dates</h3>
+                    {sorted.length === 0 ? (
+                      <div className="mt-3 flex min-h-[160px] flex-col items-center justify-center rounded-xl border border-dashed border-[#dfe6e2] text-center text-[13px] text-muted-soft">
+                        <CalendarCheck className="mb-2 h-6 w-6" />
+                        No dates yet. Add the dates this vehicle is available or blocked.
+                      </div>
+                    ) : (
+                      <table className="mt-3 w-full border-collapse text-left text-[13px]">
+                        <thead>
+                          <tr className="text-[11.5px] font-bold uppercase tracking-wide text-muted-soft">
+                            <th className="pb-2 font-bold">Dates</th>
+                            <th className="pb-2 font-bold">Days</th>
+                            <th className="pb-2 font-bold">Status</th>
+                            <th className="pb-2 font-bold">Note</th>
+                            <th className="pb-2" />
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sorted.map((entry) => {
+                            const rangeStart = formatDate(entry.startDate);
+                            const rangeEnd = formatDate(entry.endDate);
+                            const isAvail = entry.status === AVAILABILITY_STATUS.AVAILABLE;
+                            const isUpdating = updatingEntryId === entry.id;
+                            const isRemoving = removingEntryId === entry.id;
+                            return (
+                              <tr key={entry.id} className="border-t border-hairline align-middle">
+                                <td className="py-3 pr-3 font-bold text-ink">{rangeStart === rangeEnd ? rangeStart : `${rangeStart} → ${rangeEnd}`}</td>
+                                <td className="py-3 pr-3 text-muted">{dayCount(entry)}</td>
+                                <td className="py-3 pr-3">
+                                  <span className={`rounded-md px-2 py-0.5 text-[11px] font-extrabold uppercase ${isAvail ? 'bg-brand-tint text-brand-dark' : 'bg-[#ffe4e9] text-[#e11d48]'}`}>
+                                    {isAvail ? 'Available' : 'Unavailable'}
+                                  </span>
+                                </td>
+                                <td className="max-w-[220px] truncate py-3 pr-3 text-muted" title={entry.note || ''}>{entry.note || '—'}</td>
+                                <td className="whitespace-nowrap py-3 text-right">
+                                  <button type="button" disabled={isUpdating} onClick={() => handleStatusToggle(vehicle.id, entry)} className="rounded-lg border-[1.5px] border-[#e2e8ea] px-3 py-1.5 text-[12px] font-bold text-ink transition hover:border-muted-soft disabled:opacity-60">
+                                    {isUpdating ? 'Updating…' : isAvail ? 'Mark unavailable' : 'Mark available'}
+                                  </button>
+                                  <button type="button" disabled={isRemoving} onClick={() => handleEntryDelete(vehicle.id, entry.id)} aria-label="Remove dates" className="ml-2 inline-grid h-8 w-8 place-items-center rounded-lg border-[1.5px] border-[#ffd3d9] text-[#f43f5e] transition hover:border-[#f43f5e] disabled:opacity-60">
+                                    {isRemoving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                </div>
+              </section>
+            );
+          })}
+        </div>
+
+        {/* ---------- Phones ---------- */}
+        <div className="grid gap-3.5 lg:hidden">
           {vehicles.map((vehicle) => {
             const entries = Array.isArray(vehicle.availability) ? vehicle.availability : [];
             const form = getFormState(vehicle.id);

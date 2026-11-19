@@ -85,6 +85,11 @@ import {
   reviewVehicleInsurance,
 } from '../controllers/adminVehicleInsuranceController.js';
 import { listCoverPhotos, reviewCoverPhoto } from '../controllers/coverPhotoController.js';
+
+const VEHICLE_FEATURE_KEYS = ['englishSpeakingDriver', 'meetAndGreetAtAirport', 'fuelAndInsurance', 'driverMealsAndAccommodation', 'parkingFeesAndTolls', 'allTaxes'];
+const toFeatureFlag = (value) =>
+  value === true || value === 1 || ['true', '1', 'yes', 'on'].includes(String(value ?? '').toLowerCase().trim());
+
 const router = express.Router();
 
 router.use(authenticate);
@@ -350,36 +355,8 @@ router.patch(
       .withMessage('Price per day must be between $35 and $250 USD')
       .toFloat(),
     body('seats').optional().isInt({ min: 1 }).withMessage('Seats must be at least 1').toInt(),
-    body('englishSpeakingDriver').optional().trim().custom((value) => {
-      if (typeof value === 'boolean') return true;
-      const normalized = String(value).toLowerCase().trim();
-      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
-    }),
-    body('meetAndGreetAtAirport').optional().trim().custom((value) => {
-      if (typeof value === 'boolean') return true;
-      const normalized = String(value).toLowerCase().trim();
-      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
-    }),
-    body('fuelAndInsurance').optional().trim().custom((value) => {
-      if (typeof value === 'boolean') return true;
-      const normalized = String(value).toLowerCase().trim();
-      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
-    }),
-    body('driverMealsAndAccommodation').optional().trim().custom((value) => {
-      if (typeof value === 'boolean') return true;
-      const normalized = String(value).toLowerCase().trim();
-      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
-    }),
-    body('parkingFeesAndTolls').optional().trim().custom((value) => {
-      if (typeof value === 'boolean') return true;
-      const normalized = String(value).toLowerCase().trim();
-      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
-    }),
-    body('allTaxes').optional().trim().custom((value) => {
-      if (typeof value === 'boolean') return true;
-      const normalized = String(value).toLowerCase().trim();
-      return ['true', '1', 'yes', 'on'].includes(normalized) || value === false || value === 0 || value === '';
-    }),
+    // Ticked or not: anything other than a clear yes is saved as not included.
+    ...VEHICLE_FEATURE_KEYS.map((key) => body(key).optional().customSanitizer(toFeatureFlag)),
   ],
   updateVehicleDetails
 );

@@ -12,6 +12,7 @@ import {
   Loader2,
   MapPin,
   MessageCircle,
+  Search,
   Send,
   User2,
   Users,
@@ -20,7 +21,7 @@ import {
 import { fetchOpenBriefs, respondToBrief } from '../services/briefApi.js';
 import { fetchDriverVehicles } from '../services/driverApi.js';
 import { fetchCurrentUser } from '../services/profileApi.js';
-import { getStoredToken, saveReturnPath, clearStoredToken } from '../services/authToken.js';
+import { getStoredToken, getStoredUser, saveReturnPath, clearStoredToken } from '../services/authToken.js';
 import { DashboardSidebar, DriverDrawer, MobileHeader, Sheet } from '../components/dashboard/mobile.jsx';
 import ContactWarning from '../components/ContactWarning.jsx';
 import { OfferInclusionPicker } from '../components/OfferInclusions.jsx';
@@ -73,7 +74,17 @@ const BLOCK_COPY = {
 
 const TourBriefsBoard = () => {
   const navigate = useNavigate();
-  const [userState, setUserState] = useState({ loading: true, error: '', data: null });
+  // Start from the user saved at sign-in so a signed-in driver sees the dashboard at
+  // once (this page renders in the browser only); the account is re-checked below.
+  const [userState, setUserState] = useState(() => {
+    const stored = getStoredToken() ? getStoredUser() : null;
+    return stored ? { loading: false, error: '', data: stored } : { loading: true, error: '', data: null };
+  });
+  // Desktop list controls.
+  const [briefFilter, setBriefFilter] = useState('all');
+  const [briefSort, setBriefSort] = useState('newest');
+  const [briefQuery, setBriefQuery] = useState('');
+  const [expandedBriefs, setExpandedBriefs] = useState(() => new Set());
   const [briefsState, setBriefsState] = useState({ loading: true, error: '', items: [] });
   const [vehiclesState, setVehiclesState] = useState({ loading: false, error: '', items: [] });
   const [offerModal, setOfferModal] = useState({ open: false, brief: null });
@@ -318,6 +329,36 @@ const TourBriefsBoard = () => {
     return null;
   }, [userState.loading, userState.data, isApprovedDriver, isLoggedIn]);
 
+  // ---- Desktop list: filters, search, sort and summary counts ----
+  const now = Date.now();
+  const tripDays = (brief) =>
+    brief.startDate && brief.endDate
+      ? Math.max(1, Math.round((new Date(brief.endDate) - new Date(brief.startDate)) / 86400000) + 1)
+      : null;
+  const startsSoon = (brief) => brief.startDate && new Date(brief.startDate) - now <= 14 * 86400000;
+  const stats = {
+    open: briefsState.items.length,
+    unanswered: briefsState.items.filter((brief) => !brief.hasResponded).length,
+    soon: briefsState.items.filter(startsSoon).length,
+  };
+  const term = briefQuery.trim().toLowerCase();
+  const visibleBriefs = briefsState.items
+    .filter((brief) => (briefFilter === 'unanswered' ? !brief.hasResponded : briefFilter === 'answered' ? brief.hasResponded : true))
+    .filter((brief) => !term || `${brief.startLocation} ${brief.endLocation} ${brief.country} ${brief.message}`.toLowerCase().includes(term))
+    .sort((a, b) =>
+      briefSort === 'soonest'
+        ? new Date(a.startDate || 0) - new Date(b.startDate || 0)
+        : new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+    );
+  const postedAgo = (value) => {
+    if (!value) return '';
+    const hours = Math.round((now - new Date(value).getTime()) / 3600000);
+    if (hours < 1) return 'Posted just now';
+    if (hours < 24) return `Posted ${hours} h ago`;
+    const days = Math.round(hours / 24);
+    return `Posted ${days} day${days === 1 ? '' : 's'} ago`;
+  };
+
   const inputCls =
     'h-11 w-full min-w-0 rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 text-sm font-medium text-ink placeholder:font-normal placeholder:text-[#adb8c0] focus:border-brand focus:outline-none';
   const labelCls = 'text-[12.5px] font-bold text-ink-soft';
@@ -363,7 +404,7 @@ const TourBriefsBoard = () => {
               title="Open briefs"
               subtitle="Live trip requests — send an offer to start a chat."
             />
-            <Sheet>
+            <Sheet wide>
               {briefsState.loading ? (
                 <div className="flex min-h-[40vh] items-center justify-center gap-2 text-sm text-muted">
                   <Loader2 className="h-5 w-5 animate-spin text-brand" /> Loading tour briefs…
@@ -385,7 +426,126 @@ const TourBriefsBoard = () => {
                   Check back soon — new itineraries are posted daily.
                 </div>
               ) : (
-                <div className="grid gap-3 lg:grid-cols-2">
+                <>
+                {/* ---------- Desktop ---------- */}
+                <div className="hidden lg:block">
+                  <div className="grid grid-cols-3 gap-4">
+                    {[
+                      { label: 'Open requests', value: stats.open, note: 'Travellers waiting for quotes' },
+                      { label: 'Not answered by you', value: stats.unanswered, note: 'Send an offer to start a chat', accent: true },
+                      { label: 'Starting within 14 days', value: stats.soon, note: 'Quote these first' },
+                    ].map((tile) => (
+                      <div key={tile.label} className={`rounded-[18px] p-5 shadow-card ${tile.accent ? 'bg-gradient-to-br from-[#0c7a44] to-brand text-white' : 'bg-white'}`}>
+                        <p className={`text-[12px] font-bold uppercase tracking-wide ${tile.accent ? 'text-white/80' : 'text-muted-soft'}`}>{tile.label}</p>
+                        <p className={`mt-2 text-[28px] font-extrabold tracking-tight ${tile.accent ? '' : 'text-ink'}`}>{tile.value}</p>
+                        <p className={`mt-0.5 text-[12.5px] ${tile.accent ? 'text-white/80' : 'text-muted-soft'}`}>{tile.note}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-5 flex items-center gap-3 rounded-[18px] bg-white px-4 py-3 shadow-card">
+                    <div className="inline-flex rounded-xl bg-canvas p-1">
+                      {[
+                        { value: 'all', label: `All (${stats.open})` },
+                        { value: 'unanswered', label: `Not answered (${stats.unanswered})` },
+                        { value: 'answered', label: `Offer sent (${stats.open - stats.unanswered})` },
+                      ].map((option) => (
+                        <button key={option.value} type="button" onClick={() => setBriefFilter(option.value)}
+                          className={`rounded-lg px-3.5 py-2 text-[13px] font-bold transition ${briefFilter === option.value ? 'bg-white text-ink shadow-sm' : 'text-muted-soft hover:text-ink'}`}>
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="relative flex-1">
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-soft" />
+                      <input value={briefQuery} onChange={(e) => setBriefQuery(e.target.value)} placeholder="Search route, country or message" className="h-10 w-full rounded-xl border-[1.5px] border-[#e2e8ea] bg-white pl-9 pr-3 text-[13px] text-ink placeholder:text-[#adb8c0] focus:border-brand focus:outline-none" />
+                    </div>
+                    <select value={briefSort} onChange={(e) => setBriefSort(e.target.value)} aria-label="Sort" className="h-10 rounded-xl border-[1.5px] border-[#e2e8ea] bg-white px-3 text-[13px] font-semibold text-ink focus:border-brand focus:outline-none">
+                      <option value="newest">Newest first</option>
+                      <option value="soonest">Trip date: soonest</option>
+                    </select>
+                  </div>
+
+                  {vehiclesState.items.length === 0 ? (
+                    <p className="mt-4 rounded-xl bg-[#fdf0d8] px-4 py-3 text-[13px] font-semibold text-[#a86a15]">Add a vehicle in your portal to send offers.</p>
+                  ) : null}
+
+                  <div className="mt-5 flex flex-col gap-3">
+                    {visibleBriefs.length === 0 ? (
+                      <div className="rounded-[18px] bg-white p-10 text-center text-[13.5px] text-muted shadow-card">No requests match these filters.</div>
+                    ) : null}
+                    {visibleBriefs.map((brief) => {
+                      const start = formatDateLabel(brief.startDate);
+                      const end = formatDateLabel(brief.endDate);
+                      const days = tripDays(brief);
+                      const hasResponded = Boolean(brief.hasResponded);
+                      const blockReason =
+                        brief.eligibility && !brief.eligibility.canRespond && brief.eligibility.reason !== 'already_responded'
+                          ? brief.eligibility.reason
+                          : null;
+                      const restrictionLabel = brief.requiredLicenseType
+                        ? `${brief.requiredLicenseType}s only`
+                        : brief.maxOffers
+                          ? `${brief.offersCount} of ${brief.maxOffers} quotes`
+                          : null;
+                      const expanded = expandedBriefs.has(brief.id);
+                      const longMessage = (brief.message || '').length > 240;
+                      return (
+                        <article key={brief.id} id={`brief-d-${brief.id}`} className={`grid grid-cols-[minmax(0,1fr)_240px] overflow-hidden rounded-[18px] bg-white shadow-card ${hasResponded ? 'opacity-80' : ''}`}>
+                          <div className="min-w-0 p-5">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h2 className="flex min-w-0 items-center gap-1.5 text-[16.5px] font-extrabold text-ink">
+                                <MapPin className="h-4 w-4 flex-shrink-0 text-brand" />
+                                <span className="truncate">{brief.startLocation}</span>
+                                <span className="text-muted-soft">→</span>
+                                <span className="truncate">{brief.endLocation}</span>
+                              </h2>
+                              {startsSoon(brief) && !hasResponded ? <span className="rounded-md bg-[#fdf0d8] px-2 py-0.5 text-[11px] font-extrabold text-[#a86a15]">Starts soon</span> : null}
+                              {hasResponded ? <span className="rounded-md bg-brand-tint px-2 py-0.5 text-[11px] font-extrabold uppercase text-brand-dark">Offer sent</span> : null}
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5 text-[13px] font-semibold text-ink-soft">
+                              <span className="inline-flex items-center gap-1.5"><CalendarDays className="h-4 w-4 text-muted-soft" />{start && end ? `${start} – ${end}` : 'Dates to be confirmed'}{days ? ` · ${days} day${days === 1 ? '' : 's'}` : ''}</span>
+                              <span className="inline-flex items-center gap-1.5"><Users className="h-4 w-4 text-muted-soft" />{brief.adults} adult{brief.adults === 1 ? '' : 's'}{brief.children > 0 ? ` · ${brief.children} child${brief.children === 1 ? '' : 'ren'}` : ''}</span>
+                              {brief.traveler?.name ? <span className="inline-flex items-center gap-1.5"><User2 className="h-4 w-4 text-muted-soft" />{brief.traveler.name}{brief.country ? ` · ${brief.country}` : ''}</span> : null}
+                              {travellerLanguageLabel(brief.language) ? <span title="The language the traveller used on the website">Language: {travellerLanguageLabel(brief.language)}</span> : null}
+                            </div>
+                            {brief.message ? (
+                              <div className="mt-3 rounded-xl bg-canvas px-4 py-3">
+                                <p className={`whitespace-pre-line text-[13.5px] leading-relaxed text-muted ${expanded || !longMessage ? '' : 'line-clamp-3'}`}>{brief.message}</p>
+                                {longMessage ? (
+                                  <button type="button" onClick={() => setExpandedBriefs((prev) => { const next = new Set(prev); if (next.has(brief.id)) next.delete(brief.id); else next.add(brief.id); return next; })} className="mt-1 text-[12.5px] font-bold text-brand-dark">
+                                    {expanded ? 'Show less' : 'Read more'}
+                                  </button>
+                                ) : null}
+                              </div>
+                            ) : null}
+                            {brief.contactHidden ? (
+                              <p className="mt-2 flex items-center gap-1.5 text-[11.5px] font-semibold text-muted-soft"><EyeOff className="h-3 w-3" /> Contact details are hidden — message the traveller in chat instead.</p>
+                            ) : null}
+                          </div>
+                          <div className="flex flex-col justify-between gap-3 border-l border-hairline bg-[#fbfcfc] p-5">
+                            <div className="text-[12.5px] text-muted">
+                              <p className="flex items-center gap-1.5 font-bold text-ink"><MessageCircle className="h-4 w-4 text-muted-soft" /> {brief.offersCount} offer{brief.offersCount === 1 ? '' : 's'} so far</p>
+                              {restrictionLabel ? <p className="mt-2 inline-block rounded-lg bg-[#fdf7e8] px-2.5 py-1 text-[11.5px] font-bold text-[#7a5410]">{restrictionLabel}</p> : null}
+                              <p className="mt-2 text-[11.5px] text-muted-soft">{postedAgo(brief.createdAt)}</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => openOfferModal(brief)}
+                              disabled={hasResponded || vehiclesState.items.length === 0 || blockReason}
+                              className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-brand py-3 text-[13.5px] font-bold text-white transition hover:bg-brand-dark disabled:opacity-50"
+                            >
+                              {hasResponded ? 'Offer sent' : blockReason ? BLOCK_COPY[blockReason] || 'Not accepting quotes' : <><Send className="h-[15px] w-[15px]" /> Send offer</>}
+                            </button>
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* ---------- Phones ---------- */}
+                <div className="grid gap-3 lg:hidden">
                   {briefsState.items.map((brief) => {
                     const start = formatDateLabel(brief.startDate);
                     const end = formatDateLabel(brief.endDate);
@@ -480,15 +640,16 @@ const TourBriefsBoard = () => {
                     );
                   })}
                 </div>
+                </>
               )}
             </Sheet>
           </div>
 
           {offerModal.open && offerModal.brief ? (
-            <div className="fixed inset-0 z-[70] flex items-end justify-center">
+            <div className="fixed inset-0 z-[70] flex items-end justify-center lg:items-center lg:p-6">
               <div className="absolute inset-0 bg-ink/45" onClick={closeOfferModal} aria-hidden="true" />
-              <div className="relative mx-auto max-h-[90vh] w-full max-w-[480px] overflow-y-auto rounded-t-[24px] bg-canvas p-5 pb-8 shadow-drawer">
-                <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-[#cbd5db]" />
+              <div className="relative mx-auto max-h-[90vh] w-full max-w-[480px] overflow-y-auto rounded-t-[24px] bg-canvas p-5 pb-8 shadow-drawer lg:max-w-[640px] lg:rounded-[24px] lg:p-7">
+                <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-[#cbd5db] lg:hidden" />
                 <div className="mb-3 flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-[11px] font-extrabold uppercase tracking-wide text-brand">Send offer</p>

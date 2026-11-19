@@ -92,11 +92,13 @@ export const MobileHeader = ({
 
 // Content sheet that overlaps the header bottom on mobile (design uses -40px).
 // On desktop it becomes a plain wide content area beside the persistent sidebar.
-export const Sheet = ({ children, className = '', pull = '-mt-10' }) => (
+// `wide`: on desktop, use the same full width as the page header above it instead of
+// the centred 1080px column.
+export const Sheet = ({ children, className = '', pull = '-mt-10', wide = false }) => (
   <div
     className={`relative ${pull} min-h-[40vh] rounded-t-[28px] bg-canvas px-[18px] pb-28 pt-[18px] lg:mx-8 lg:mt-6 lg:rounded-none lg:px-0 lg:pb-16 lg:pt-0 ${className}`}
   >
-    <div className="lg:mx-auto lg:max-w-[1080px]">{children}</div>
+    <div className={wide ? '' : 'lg:mx-auto lg:max-w-[1080px]'}>{children}</div>
   </div>
 );
 
