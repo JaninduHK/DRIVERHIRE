@@ -73,14 +73,14 @@
   },
   "types": {
     "title": "Which driver type do you need?",
-    "lead": "Sri Lanka has three distinct roles, and booking sites use the words loosely. The difference is licensing: the Sri Lanka Tourism Development Authority trains and certifies chauffeur guides and national guide lecturers, while a tourist driver holds a standard driving licence. Drivers on this site submit their licence for review, and the type they hold is shown on their profile.",
+    "lead": "Sri Lanka has three distinct roles, and booking sites use the words loosely. All three are licensed by the Sri Lanka Tourism Development Authority (SLTDA); the difference is the guiding qualification. A tourist driver is licensed to drive travellers, a chauffeur guide lecturer is also trained to guide, and a national guide lecturer holds the highest guiding qualification. Drivers on this site submit their licence for review, and the type they hold is shown on their profile.",
     "bestFor": "Best for: {text}",
     "touristDriver": {
-      "body": "Holds a standard licence and drives your itinerary, handles logistics and knows where to stop, eat and stay.",
+      "body": "Holds an SLTDA tourist driver licence, drives your itinerary, handles logistics and knows where to stop, eat and stay.",
       "bestFor": "Beach trips, transfers and travellers who like to read up themselves"
     },
     "chauffeurGuideLecturer": {
-      "body": "Licensed by the Sri Lanka Tourism Development Authority, so they drive and also explain the sites you visit.",
+      "body": "Holds an SLTDA licence that also covers guiding, so they drive and explain the sites you visit.",
       "bestFor": "Most two-week itineraries — one person for the whole trip"
     },
     "nationalGuideLecturer": {
@@ -175,7 +175,7 @@
     },
     "difference": {
       "q": "What’s the difference between a tourist driver and a chauffeur guide?",
-      "a": "A tourist driver holds a standard licence and drives your itinerary. A chauffeur guide lecturer is licensed by the Sri Lanka Tourism Development Authority and may also explain the sites you visit. A national guide lecturer holds the highest SLTDA qualification and delivers full historical interpretation."
+      "a": "All three hold a licence from the Sri Lanka Tourism Development Authority (SLTDA). A tourist driver is licensed to drive your itinerary. A chauffeur guide lecturer is also trained to guide and explains the sites you visit. A national guide lecturer holds the highest SLTDA qualification and delivers full historical interpretation."
     },
     "fuel": {
       "q": "Are fuel and kilometres included?",

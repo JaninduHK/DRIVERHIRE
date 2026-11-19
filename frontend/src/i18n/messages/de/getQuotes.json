@@ -73,14 +73,14 @@
   },
   "types": {
     "title": "Welchen Fahrertyp brauchen Sie?",
-    "lead": "In Sri Lanka gibt es drei unterschiedliche Rollen, und Buchungsseiten verwenden die Begriffe oft ungenau. Der Unterschied liegt in der Lizenz: Die Sri Lanka Tourism Development Authority bildet Chauffeur-Guides (offiziell: Chauffeur Guide Lecturer) und Nationale Guides (offiziell: National Guide Lecturer) aus und zertifiziert sie, während ein Touristenfahrer (Tourist Driver) einen gewöhnlichen Führerschein besitzt. Die Fahrer auf dieser Website reichen ihre Lizenz zur Prüfung ein, und der Typ, den sie besitzen, wird in ihrem Profil angezeigt.",
+    "lead": "In Sri Lanka gibt es drei unterschiedliche Rollen, und Buchungsseiten verwenden die Begriffe oft ungenau. Alle drei werden von der Sri Lanka Tourism Development Authority (SLTDA) lizenziert; der Unterschied liegt in der Guide-Qualifikation. Ein Touristenfahrer (Tourist Driver) ist für das Fahren von Reisenden lizenziert, ein Chauffeur-Guide (offiziell: Chauffeur Guide Lecturer) ist zusätzlich als Guide ausgebildet, und ein Nationaler Guide (offiziell: National Guide Lecturer) hat die höchste Guide-Qualifikation. Die Fahrer auf dieser Website reichen ihre Lizenz zur Prüfung ein, und der Typ, den sie besitzen, wird in ihrem Profil angezeigt.",
     "bestFor": "Ideal für: {text}",
     "touristDriver": {
-      "body": "Besitzt einen gewöhnlichen Führerschein, fährt Ihre Reiseroute, kümmert sich um die Organisation und weiß, wo man anhält, isst und übernachtet.",
+      "body": "Besitzt eine SLTDA-Lizenz als Touristenfahrer, fährt Ihre Reiseroute, kümmert sich um die Organisation und weiß, wo man anhält, isst und übernachtet.",
       "bestFor": "Strandurlaube, Transfers und Reisende, die sich gern selbst informieren"
     },
     "chauffeurGuideLecturer": {
-      "body": "Von der Sri Lanka Tourism Development Authority lizenziert – fährt also und erklärt Ihnen auch die Sehenswürdigkeiten, die Sie besuchen.",
+      "body": "Besitzt eine SLTDA-Lizenz, die auch das Führen umfasst – fährt also und erklärt Ihnen die Sehenswürdigkeiten, die Sie besuchen.",
       "bestFor": "Die meisten zweiwöchigen Reiserouten – eine Person für die ganze Reise"
     },
     "nationalGuideLecturer": {
@@ -181,7 +181,7 @@
     },
     "difference": {
       "q": "Was ist der Unterschied zwischen einem Touristenfahrer und einem Chauffeur-Guide?",
-      "a": "Ein Touristenfahrer besitzt einen gewöhnlichen Führerschein und fährt Ihre Reiseroute. Ein Chauffeur-Guide (Chauffeur Guide Lecturer) ist von der Sri Lanka Tourism Development Authority lizenziert und kann Ihnen auch die Sehenswürdigkeiten erklären, die Sie besuchen. Ein Nationaler Guide (National Guide Lecturer) besitzt die höchste Qualifikation der SLTDA und bietet umfassende historische Erläuterungen."
+      "a": "Alle drei besitzen eine Lizenz der Sri Lanka Tourism Development Authority (SLTDA). Ein Touristenfahrer ist dafür lizenziert, Ihre Reiseroute zu fahren. Ein Chauffeur-Guide (Chauffeur Guide Lecturer) ist zusätzlich als Guide ausgebildet und erklärt Ihnen die Sehenswürdigkeiten, die Sie besuchen. Ein Nationaler Guide (National Guide Lecturer) besitzt die höchste Qualifikation der SLTDA und bietet umfassende historische Erläuterungen."
     },
     "fuel": {
       "q": "Sind Kraftstoff und Kilometer inklusive?",

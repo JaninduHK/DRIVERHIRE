@@ -73,14 +73,14 @@
   },
   "types": {
     "title": "Di quale tipo di autista hai bisogno?",
-    "lead": "In Sri Lanka esistono tre ruoli distinti, e i siti di prenotazione usano questi termini in modo impreciso. La differenza sta nella licenza: la Sri Lanka Tourism Development Authority forma e certifica gli autisti-guida (titolo ufficiale: Chauffeur Guide Lecturer) e le guide nazionali (titolo ufficiale: National Guide Lecturer), mentre un autista turistico (Tourist Driver) ha una normale patente di guida. Gli autisti di questo sito inviano la loro licenza per la verifica, e il tipo che possiedono è indicato nel loro profilo.",
+    "lead": "In Sri Lanka esistono tre ruoli distinti, e i siti di prenotazione usano questi termini in modo impreciso. Tutti e tre hanno la licenza della Sri Lanka Tourism Development Authority (SLTDA); la differenza sta nella qualifica di guida. Un autista turistico (Tourist Driver) ha la licenza per guidare i viaggiatori, un autista-guida (titolo ufficiale: Chauffeur Guide Lecturer) è anche formato come guida, e una guida nazionale (titolo ufficiale: National Guide Lecturer) ha la qualifica di guida più alta. Gli autisti di questo sito inviano la loro licenza per la verifica, e il tipo che possiedono è indicato nel loro profilo.",
     "bestFor": "Ideale per: {text}",
     "touristDriver": {
-      "body": "Ha una patente normale, guida lungo il tuo itinerario, si occupa della logistica e sa dove fermarsi, mangiare e dormire.",
+      "body": "Ha una licenza SLTDA di autista turistico, guida lungo il tuo itinerario, si occupa della logistica e sa dove fermarsi, mangiare e dormire.",
       "bestFor": "vacanze al mare, trasferimenti e viaggiatori che amano documentarsi da soli"
     },
     "chauffeurGuideLecturer": {
-      "body": "Ha la licenza della Sri Lanka Tourism Development Authority, quindi guida e ti spiega anche i luoghi che visiti.",
+      "body": "Ha una licenza SLTDA che comprende anche l'attività di guida, quindi guida e ti spiega i luoghi che visiti.",
       "bestFor": "la maggior parte degli itinerari di due settimane, con una sola persona per tutto il viaggio"
     },
     "nationalGuideLecturer": {
@@ -181,7 +181,7 @@
     },
     "difference": {
       "q": "Qual è la differenza tra un autista turistico e un autista-guida?",
-      "a": "Un autista turistico ha una patente normale e guida lungo il tuo itinerario. Un autista-guida (Chauffeur Guide Lecturer) ha la licenza della Sri Lanka Tourism Development Authority e può anche spiegarti i luoghi che visiti. Una guida nazionale (National Guide Lecturer) ha la qualifica più alta della SLTDA e offre un'interpretazione storica completa."
+      "a": "Tutti e tre hanno una licenza della Sri Lanka Tourism Development Authority (SLTDA). Un autista turistico ha la licenza per guidare lungo il tuo itinerario. Un autista-guida (Chauffeur Guide Lecturer) è anche formato come guida e ti spiega i luoghi che visiti. Una guida nazionale (National Guide Lecturer) ha la qualifica più alta della SLTDA e offre un'interpretazione storica completa."
     },
     "fuel": {
       "q": "Carburante e chilometri sono inclusi?",

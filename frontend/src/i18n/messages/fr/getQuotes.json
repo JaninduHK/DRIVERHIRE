@@ -73,14 +73,14 @@
   },
   "types": {
     "title": "De quel type de chauffeur avez-vous besoin ?",
-    "lead": "Le Sri Lanka compte trois rôles distincts, et les sites de réservation emploient les termes de façon approximative. La différence tient à la licence : la Sri Lanka Tourism Development Authority forme et certifie les chauffeurs-guides (titre officiel : Chauffeur Guide Lecturer) et les guides nationaux (titre officiel : National Guide Lecturer), tandis qu'un chauffeur touristique (Tourist Driver) possède un permis de conduire standard. Les chauffeurs de ce site soumettent leur licence pour vérification, et le type qu'ils détiennent est indiqué sur leur profil.",
+    "lead": "Le Sri Lanka compte trois rôles distincts, et les sites de réservation emploient les termes de façon approximative. Tous les trois sont agréés par la Sri Lanka Tourism Development Authority (SLTDA) ; la différence tient à la qualification de guide. Un chauffeur touristique (Tourist Driver) est agréé pour conduire des voyageurs, un chauffeur-guide (titre officiel : Chauffeur Guide Lecturer) est en plus formé au guidage, et un guide national (titre officiel : National Guide Lecturer) détient la plus haute qualification de guide. Les chauffeurs de ce site soumettent leur licence pour vérification, et le type qu'ils détiennent est indiqué sur leur profil.",
     "bestFor": "Idéal pour : {text}",
     "touristDriver": {
-      "body": "Titulaire d'un permis standard, il conduit selon votre itinéraire, s'occupe de la logistique et sait où s'arrêter, manger et dormir.",
+      "body": "Titulaire d'une licence SLTDA de chauffeur touristique, il conduit selon votre itinéraire, s'occupe de la logistique et sait où s'arrêter, manger et dormir.",
       "bestFor": "les séjours balnéaires, les transferts et les voyageurs qui aiment se documenter eux-mêmes"
     },
     "chauffeurGuideLecturer": {
-      "body": "Agréé par la Sri Lanka Tourism Development Authority : il conduit et vous explique aussi les sites que vous visitez.",
+      "body": "Titulaire d'une licence SLTDA qui couvre aussi le guidage : il conduit et vous explique les sites que vous visitez.",
       "bestFor": "la plupart des itinéraires de deux semaines, avec une seule personne pour tout le voyage"
     },
     "nationalGuideLecturer": {
@@ -181,7 +181,7 @@
     },
     "difference": {
       "q": "Quelle est la différence entre un chauffeur touristique et un chauffeur-guide ?",
-      "a": "Un chauffeur touristique possède un permis standard et conduit selon votre itinéraire. Un chauffeur-guide (Chauffeur Guide Lecturer) est agréé par la Sri Lanka Tourism Development Authority et peut aussi vous expliquer les sites que vous visitez. Un guide national (National Guide Lecturer) détient la plus haute qualification de la SLTDA et assure une interprétation historique complète."
+      "a": "Tous les trois détiennent une licence de la Sri Lanka Tourism Development Authority (SLTDA). Un chauffeur touristique est agréé pour conduire selon votre itinéraire. Un chauffeur-guide (Chauffeur Guide Lecturer) est en plus formé au guidage et vous explique les sites que vous visitez. Un guide national (National Guide Lecturer) détient la plus haute qualification de la SLTDA et assure une interprétation historique complète."
     },
     "fuel": {
       "q": "Le carburant et les kilomètres sont-ils inclus ?",

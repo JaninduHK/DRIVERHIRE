@@ -73,14 +73,14 @@
   },
   "types": {
     "title": "どの種類のドライバーが必要ですか？",
-    "lead": "スリランカには3つの異なる役割があり、予約サイトではこれらの言葉があいまいに使われています。違いはライセンスです。Sri Lanka Tourism Development Authority（スリランカ観光開発局）はショーファーガイド（正式名称：Chauffeur Guide Lecturer）とナショナルガイド（正式名称：National Guide Lecturer）を養成・認定しており、ツーリストドライバー（Tourist Driver）は通常の運転免許を持っています。このサイトのドライバーは審査のためにライセンスを提出しており、保有するライセンスの種類はプロフィールに表示されます。",
+    "lead": "スリランカには3つの異なる役割があり、予約サイトではこれらの言葉があいまいに使われています。3つともSri Lanka Tourism Development Authority（スリランカ観光開発局、SLTDA）のライセンスを持っており、違いはガイドとしての資格です。ツーリストドライバー（Tourist Driver）は旅行者を乗せて運転するライセンスを持ち、ショーファーガイド（正式名称：Chauffeur Guide Lecturer）はガイドとしての訓練も受けており、ナショナルガイド（正式名称：National Guide Lecturer）は最高位のガイド資格を持っています。このサイトのドライバーは審査のためにライセンスを提出しており、保有するライセンスの種類はプロフィールに表示されます。",
     "bestFor": "おすすめ：{text}",
     "touristDriver": {
-      "body": "通常の免許を持ち、旅程どおりに運転し、手配をこなし、立ち寄る場所や食事・宿泊先をよく知っています。",
+      "body": "SLTDAのツーリストドライバーのライセンスを持ち、旅程どおりに運転し、手配をこなし、立ち寄る場所や食事・宿泊先をよく知っています。",
       "bestFor": "ビーチ旅行、送迎、自分で調べるのが好きな旅行者"
     },
     "chauffeurGuideLecturer": {
-      "body": "Sri Lanka Tourism Development Authorityのライセンスを持ち、運転に加えて訪れる名所の解説もします。",
+      "body": "ガイド業務も含むSLTDAのライセンスを持ち、運転に加えて訪れる名所の解説もします。",
       "bestFor": "ほとんどの2週間の旅程。旅行全体を1人に任せられます"
     },
     "nationalGuideLecturer": {
@@ -175,7 +175,7 @@
     },
     "difference": {
       "q": "ツーリストドライバーとショーファーガイドの違いは何ですか？",
-      "a": "ツーリストドライバーは通常の免許を持ち、旅程どおりに運転します。ショーファーガイド（Chauffeur Guide Lecturer）はSri Lanka Tourism Development Authorityのライセンスを持ち、訪れる名所の解説もできます。ナショナルガイド（National Guide Lecturer）はSLTDAの最高位の資格を持ち、本格的な歴史解説を行います。"
+      "a": "3つともSri Lanka Tourism Development Authority（SLTDA）のライセンスを持っています。ツーリストドライバーは旅程どおりに運転するライセンスを持っています。ショーファーガイド（Chauffeur Guide Lecturer）はガイドとしての訓練も受けており、訪れる名所の解説をします。ナショナルガイド（National Guide Lecturer）はSLTDAの最高位の資格を持ち、本格的な歴史解説を行います。"
     },
     "fuel": {
       "q": "燃料費と走行距離は含まれていますか？",
