@@ -855,6 +855,31 @@ export const setDriverCommissionEnforceFrom = async (req, res) => {
   }
 };
 
+/**
+ * DELETE /admin/drivers/:id/live-location
+ *
+ * Clears the driver's shared live location (e.g. stale or wrong), so it no longer
+ * shows on the live map or their profile until they share it again.
+ */
+export const clearDriverLiveLocation = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+  try {
+    const driver = await User.findOne({ _id: req.params.id, role: USER_ROLES.DRIVER });
+    if (!driver) {
+      return res.status(404).json({ message: 'Driver not found.' });
+    }
+    driver.driverLocation = undefined;
+    await driver.save({ validateBeforeSave: false });
+    return res.json({ message: 'Live location cleared.' });
+  } catch (error) {
+    console.error('Clear driver live location error:', error);
+    return res.status(500).json({ message: 'Unable to clear the live location.' });
+  }
+};
+
 export const setDriverEmailVerified = async (req, res) => {
   const validationError = handleValidation(req, res);
   if (validationError) {

@@ -10,6 +10,7 @@ import {
   setDriverBriefAlertEmail,
   setDriverEmailVerified,
   setDriverCommissionGrace,
+  clearDriverLiveLocation,
   setDriverCommissionEnforceFrom,
   reorderFeaturedDrivers,
   updateDriverDetails,
@@ -132,6 +133,12 @@ router.patch(
     body('from').optional({ nullable: true }).matches(/^\d{4}-(0[1-9]|1[0-2])$/).withMessage('from must be YYYY-MM'),
   ],
   setDriverCommissionEnforceFrom
+);
+
+router.delete(
+  '/drivers/:id/live-location',
+  [param('id').isMongoId().withMessage('Invalid driver identifier')],
+  clearDriverLiveLocation
 );
 
 router.patch(

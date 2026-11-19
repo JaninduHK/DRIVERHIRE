@@ -244,6 +244,10 @@ export const setDriverCommissionEnforceFrom = (driverId, from) =>
     body: JSON.stringify({ from }),
   });
 
+// Remove a driver's shared live location (live map and profile) until they share it again.
+export const clearDriverLiveLocation = (driverId) =>
+  request(`/drivers/${driverId}/live-location`, { method: 'DELETE' });
+
 // Give a driver extra time on unpaid commission (no freeze until `until`); null removes it.
 export const setDriverCommissionGrace = (driverId, until) =>
   request(`/drivers/${driverId}/commission-grace`, {

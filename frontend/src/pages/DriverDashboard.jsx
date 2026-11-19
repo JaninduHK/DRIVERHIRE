@@ -1144,6 +1144,8 @@ const DriverDashboard = () => {
     onEarningsMonthChange: handleEarningsMonthChange,
     onEarningsSlipUpload: handleCommissionSlipUpload,
     onProfileSave: handleDriverProfileSave,
+    // Refresh profile data quietly after a cover photo upload/removal.
+    onProfileRefresh: () => loadOverview({ silent: true }),
     onPasswordChange: handleDriverPasswordChange,
     onLicenseSave: handleDriverLicenseSave,
     profileSaving,
@@ -3066,6 +3068,7 @@ const buildDriverProfileForm = (profile) => ({
 
 const DriverProfilePanel = ({
   onMenu,
+  onProfileRefresh,
   driverName,
   driverImage,
   onLogout,
@@ -3447,6 +3450,9 @@ const DriverProfilePanel = ({
           title="Edit details"
         />
         <Sheet>
+          {/* Cover photo uploads and removes on its own (it needs admin approval), so it
+              sits above the details form rather than being saved with it. */}
+          <CoverPhotoCard key={profile?.id || 'cover'} profile={profile} className="mb-3" onChanged={onProfileRefresh} />
           <form onSubmit={handleProfileSubmit} className="flex flex-col gap-3">
             <div className="flex items-center gap-3.5 rounded-[18px] bg-white p-4 shadow-card">
               <div className="grid h-16 w-16 flex-shrink-0 place-items-center overflow-hidden rounded-2xl bg-canvas">
@@ -3703,8 +3709,6 @@ const DriverProfilePanel = ({
           </div>
           <div className="mt-0.5 text-[13px] font-semibold text-muted-soft">Approved driver · {city}</div>
         </div>
-
-        <CoverPhotoCard key={profile?.id || 'cover'} profile={profile} />
 
         <div className="mt-4 rounded-[18px] bg-white p-4 shadow-card">
           <div className="mb-2 flex items-center justify-between">
@@ -4127,6 +4131,7 @@ const renderTabContent = (tabId, context) => {
     onEarningsMonthChange,
     onEarningsSlipUpload,
     onProfileSave,
+    onProfileRefresh,
     onPasswordChange,
     onLicenseSave,
     profileSaving,
@@ -4190,6 +4195,7 @@ const renderTabContent = (tabId, context) => {
           profile={profile}
           onLogout={onLogout}
           onSave={onProfileSave}
+          onProfileRefresh={onProfileRefresh}
           onPasswordChange={onPasswordChange}
           onLicenseSave={onLicenseSave}
           savingProfile={profileSaving}

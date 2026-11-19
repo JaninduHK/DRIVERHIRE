@@ -28,6 +28,7 @@ import {
   setDriverBriefAlertEmail,
   setDriverEmailVerified,
   setDriverCommissionGrace,
+  clearDriverLiveLocation,
   setDriverCommissionEnforceFrom,
   setDriverMessagingSuspension,
   setDriverPassword,
@@ -94,7 +95,7 @@ const Stat = ({ value, label }) => (
 
 const Timestamp = ({ value }) => <span title={value || ''}>{formatDateTime(value)}</span>;
 
-const DriverOverview = ({ data, onEdit, onVerification, onChangeLicenseType, onEnforceFrom, actionLoading }) => {
+const DriverOverview = ({ data, onEdit, onVerification, onChangeLicenseType, onEnforceFrom, onClearLocation, actionLoading }) => {
   // Month picked for "Freeze if unpaid" (older months, before the automatic start).
   const [enforceMonth, setEnforceMonth] = useState('2026-10');
   const { driver } = data;
@@ -186,7 +187,17 @@ const DriverOverview = ({ data, onEdit, onVerification, onChangeLicenseType, onE
           </dl>
         </Panel>
 
-        <Panel title="Location and availability" subtitle="The location shared through the driver dashboard.">
+        <Panel
+          title="Location and availability"
+          subtitle="The location shared through the driver dashboard."
+          action={
+            driver.driverLocation?.latitude != null || driver.driverLocation?.label ? (
+              <button type="button" disabled={Boolean(actionLoading)} onClick={onClearLocation} className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-100 disabled:opacity-60">
+                {actionLoading === 'clear-location' ? 'Clearing…' : 'Clear live location'}
+              </button>
+            ) : null
+          }
+        >
           <dl>
             <DetailRow label="Sharing enabled">{driver.shareLiveLocation ? <span className={tagClass('green')}>Yes</span> : <span className={tagClass('grey')}>No</span>}</DetailRow>
             <DetailRow label="Location label" value={driver.driverLocation?.label} />
@@ -467,6 +478,12 @@ const AdminDriverDetails = () => {
     runAction('commission-grace', () => setDriverCommissionGrace(driverId, until), 'Driver has 7 days extra time and is not frozen until then.');
   };
 
+  // Remove a stale or wrong live location from the live map and profile.
+  const clearLocation = () => {
+    if (!window.confirm('Clear this driver\'s live location? It disappears from the live map until they share it again.')) return;
+    runAction('clear-location', () => clearDriverLiveLocation(driverId), 'Live location cleared.');
+  };
+
   // Freeze for an older unpaid month (before the automatic start, November 2026).
   const applyEnforceFrom = (from) =>
     runAction('commission-enforce', async () => {
@@ -564,7 +581,7 @@ const AdminDriverDetails = () => {
 
       <nav className="flex gap-1 overflow-x-auto rounded-[16px] bg-surface p-1.5 shadow-card">{tabs.map(([id, label, count]) => <button key={id} type="button" onClick={() => setActiveTab(id)} className={`whitespace-nowrap rounded-xl px-3.5 py-2.5 text-xs font-extrabold transition ${activeTab === id ? 'bg-brand text-white' : 'text-muted hover:bg-canvas hover:text-ink'}`}>{label}{count != null ? ` (${count})` : ''}</button>)}</nav>
 
-      {activeTab === 'overview' ? <DriverOverview data={data} onEdit={openEdit} onChangeLicenseType={() => { setLicenseTypeChoice(driver.licenseType || ''); setFormError(''); setModal('license-type'); }} onVerification={() => navigate(`/admin?section=verification&search=${encodeURIComponent(driver.email)}`)} onEnforceFrom={applyEnforceFrom} actionLoading={actionLoading} /> : null}
+      {activeTab === 'overview' ? <DriverOverview data={data} onEdit={openEdit} onChangeLicenseType={() => { setLicenseTypeChoice(driver.licenseType || ''); setFormError(''); setModal('license-type'); }} onVerification={() => navigate(`/admin?section=verification&search=${encodeURIComponent(driver.email)}`)} onEnforceFrom={applyEnforceFrom} onClearLocation={clearLocation} actionLoading={actionLoading} /> : null}
       {activeTab === 'vehicles' ? <VehiclesTab vehicles={data.vehicles} /> : null}
       {activeTab === 'bookings' ? <BookingsTab bookings={data.bookings} /> : null}
       {activeTab === 'offers' ? <OffersChatsTab offers={data.offers} conversations={data.conversations} /> : null}

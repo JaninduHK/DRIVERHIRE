@@ -15,7 +15,7 @@ const STATUS = {
  * Driver dashboard: upload a profile cover photo. It goes live only after an admin
  * approves it; until then (or without one) the profile uses a vehicle photo.
  */
-const CoverPhotoCard = ({ profile }) => {
+const CoverPhotoCard = ({ profile, className = 'mt-4', onChanged }) => {
   const inputRef = useRef(null);
   const [busy, setBusy] = useState('');
   const [cover, setCover] = useState(() => ({
@@ -41,6 +41,7 @@ const CoverPhotoCard = ({ profile }) => {
     try {
       const response = await uploadCoverPhoto(file);
       setCover(response.cover);
+      onChanged?.();
       toast.success('Cover photo sent for review. It goes live once approved.');
     } catch (error) {
       toast.error(error?.message || 'Unable to upload the cover photo.');
@@ -54,6 +55,7 @@ const CoverPhotoCard = ({ profile }) => {
     try {
       const response = await removeCoverPhoto();
       setCover(response.cover);
+      onChanged?.();
       toast.success('Cover photo removed. Your profile shows a vehicle photo instead.');
     } catch (error) {
       toast.error(error?.message || 'Unable to remove the cover photo.');
@@ -67,7 +69,7 @@ const CoverPhotoCard = ({ profile }) => {
   const preview = cover.coverPhotoPending || cover.coverPhoto;
 
   return (
-    <div className="mt-4 rounded-[18px] bg-white p-4 shadow-card">
+    <div className={`rounded-[18px] bg-white p-4 shadow-card ${className}`}>
       <div className="mb-2 flex items-center justify-between gap-2">
         <b className="text-[14px] text-ink">Cover photo</b>
         {status ? <span className={`rounded-md px-2 py-0.5 text-[11px] font-extrabold ${status.cls}`}>{status.text}</span> : null}
