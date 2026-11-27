@@ -241,6 +241,20 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: null,
     },
+    // Extra qualifications added by an admin after checking proof (see
+    // utils/driverCredentials.js). Starred ones show with the driver's offers.
+    credentials: {
+      type: [
+        {
+          _id: false,
+          section: { type: String, enum: ['qualifications', 'experience', 'awards', 'specialties', 'languages'], required: true },
+          text: { type: String, trim: true, maxlength: 80, required: true },
+          highlight: { type: Boolean, default: false },
+        },
+      ],
+      default: [],
+    },
+    credentialsUpdatedAt: Date,
     licenseSubmittedAt: Date,
     // When the driving/guide licence expires. Entered by the driver, checked by the
     // admin on approval. An approved licence can't be resubmitted until this date.

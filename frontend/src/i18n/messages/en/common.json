@@ -102,5 +102,19 @@
   "date": {
     "select": "Select date",
     "selectTime": "Select time"
+  },
+  "credentials": {
+    "title": "Credentials",
+    "titleFor": "{name}'s credentials",
+    "verified": "Verified by CarWithDriver.LK",
+    "seeAll": "See all credentials ({count})",
+    "close": "Close",
+    "sections": {
+      "qualifications": "Qualifications",
+      "experience": "Experience",
+      "awards": "Awards",
+      "specialties": "Specialties",
+      "languages": "Languages"
+    }
   }
 }

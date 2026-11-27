@@ -262,6 +262,13 @@ export const setDriverEmailVerified = (driverId, verified) =>
     body: JSON.stringify({ verified }),
   });
 
+// Replace a driver's credentials list: [{ section, text, highlight }].
+export const setDriverCredentials = (driverId, credentials) =>
+  request(`/drivers/${driverId}/credentials`, {
+    method: 'PUT',
+    body: JSON.stringify({ credentials }),
+  });
+
 export const setDriverFeatured = (driverId, featured) =>
   request(`/drivers/${driverId}/featured`, {
     method: 'PATCH',

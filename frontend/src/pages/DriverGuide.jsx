@@ -302,7 +302,7 @@ const DriverGuide = () => (
               </div>
               <div className="mt-5 inline-flex items-center gap-2.5 rounded-2xl bg-white/15 px-4 py-3">
                 <MessageSquare className="h-[19px] w-[19px] flex-shrink-0" />
-                <b className="text-[15px] font-extrabold">You receive your payment on the first day of the tour.</b>
+                <b className="text-[15px] font-extrabold">The traveller pays you 50% on the first day and the rest on the last day (a one-day hire: in full on arrival).</b>
               </div>
             </div>
           </section>

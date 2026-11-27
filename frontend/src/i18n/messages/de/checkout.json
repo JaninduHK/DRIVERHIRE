@@ -118,7 +118,8 @@
   "checking": "Verfügbarkeit wird geprüft…",
   "sending": "Wird gesendet…",
   "send": "Buchungsanfrage senden",
-  "noCard": "Jetzt ist keine Karte nötig. Sie zahlen <b>{amount}</b> an Ihren Fahrer, wenn Sie sich am ersten Tag treffen.",
+  "noCard": "Jetzt ist keine Karte nötig. Sie zahlen <b>{amount}</b> an Ihren Fahrer, wenn Sie sich treffen.",
+  "noCardMultiDay": "Keine Karte und keine Anzahlung nötig. Sie zahlen Ihrem Fahrer <b>{amount}</b>: 50 % am ersten Tag, den Rest am letzten Tag.",
   "next": {
     "title": "So geht es weiter",
     "email": "Die Bestätigung per E-Mail kommt sofort.",

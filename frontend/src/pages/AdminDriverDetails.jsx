@@ -25,6 +25,7 @@ import {
   fetchDriverDetails,
   sendDriverEmail,
   setDriverFeatured,
+  setDriverCredentials,
   setDriverBriefAlertEmail,
   setDriverEmailVerified,
   setDriverCommissionGrace,
@@ -46,6 +47,7 @@ import { LICENSE_TYPE_OPTIONS, getLicenseBadge } from '../constants/driverLicens
 import LocationSelect from '../components/LocationSelect.jsx';
 import ServiceAreasPicker from '../components/ServiceAreasPicker.jsx';
 import { guessLocationName } from '../constants/locations.js';
+import { CREDENTIAL_SECTIONS, MAX_CREDENTIALS, MAX_CREDENTIAL_HIGHLIGHTS, MAX_CREDENTIAL_LENGTH } from '../constants/driverCredentials.js';
 
 const DRIVER_STATUS = { PENDING: 'pending', APPROVED: 'approved', REJECTED: 'rejected' };
 const STATUS_COLORS = { pending: 'amber', submitted: 'amber', approved: 'green', confirmed: 'green', active: 'green', accepted: 'green', rejected: 'red', cancelled: 'red', declined: 'red', closed: 'grey' };
@@ -95,7 +97,93 @@ const Stat = ({ value, label }) => (
 
 const Timestamp = ({ value }) => <span title={value || ''}>{formatDateTime(value)}</span>;
 
-const DriverOverview = ({ data, onEdit, onVerification, onChangeLicenseType, onEnforceFrom, onClearLocation, actionLoading }) => {
+// Extra qualifications our team has checked (degrees, experience, awards,
+// specialties, languages). Starred ones show on every offer the driver sends.
+const CredentialsEditor = ({ driver, onSave, saving }) => {
+  const fromDriver = () => (Array.isArray(driver.credentials) ? driver.credentials.map((item) => ({ ...item })) : []);
+  const [items, setItems] = useState(fromDriver);
+  const [draft, setDraft] = useState({ section: 'qualifications', text: '' });
+  useEffect(() => { setItems(fromDriver()); }, [driver.credentials]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const highlightCount = items.filter((item) => item.highlight).length;
+  const dirty = JSON.stringify(items) !== JSON.stringify(fromDriver());
+  const update = (index, patch) => setItems((current) => current.map((item, i) => (i === index ? { ...item, ...patch } : item)));
+  const remove = (index) => setItems((current) => current.filter((_, i) => i !== index));
+  const move = (index, step) => setItems((current) => {
+    const next = [...current];
+    const target = index + step;
+    if (target < 0 || target >= next.length || next[target].section !== next[index].section) return current;
+    [next[index], next[target]] = [next[target], next[index]];
+    return next;
+  });
+  const add = (event) => {
+    event.preventDefault();
+    const text = draft.text.replace(/\s+/g, ' ').trim();
+    if (!text) return;
+    if (items.length >= MAX_CREDENTIALS) { toast.error(`A driver can have up to ${MAX_CREDENTIALS} credentials.`); return; }
+    setItems((current) => [...current, { section: draft.section, text, highlight: false }]);
+    setDraft((current) => ({ ...current, text: '' }));
+  };
+  const toggleStar = (index) => {
+    if (!items[index].highlight && highlightCount >= MAX_CREDENTIAL_HIGHLIGHTS) {
+      toast.error(`Star up to ${MAX_CREDENTIAL_HIGHLIGHTS} highlights. Unstar one first.`);
+      return;
+    }
+    update(index, { highlight: !items[index].highlight });
+  };
+
+  return (
+    <Panel
+      title="Credentials"
+      subtitle={`Add only what you have checked (certificate, award page). Shown on the profile as "Verified by our team"; starred lines (up to ${MAX_CREDENTIAL_HIGHLIGHTS}) show on every offer. Don't add licences: the SLTDA licence has its own badge.`}
+      action={driver.credentialsUpdatedAt ? <span className="text-[11px] text-muted-soft">Updated <Timestamp value={driver.credentialsUpdatedAt} /></span> : null}
+    >
+      {CREDENTIAL_SECTIONS.map((section) => {
+        const rows = items.map((item, index) => ({ item, index })).filter(({ item }) => item.section === section.key);
+        if (rows.length === 0) return null;
+        return (
+          <div key={section.key} className="mb-4">
+            <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wide text-muted-soft">
+              {createElement(section.icon, { className: 'h-3.5 w-3.5' })} {section.label}
+            </div>
+            <ul className="m-0 grid list-none gap-1.5 p-0">
+              {rows.map(({ item, index }) => (
+                <li key={index} className="flex items-center gap-2 rounded-xl bg-canvas px-2.5 py-1.5">
+                  <button type="button" onClick={() => toggleStar(index)} title={item.highlight ? 'Shown on offers. Click to unstar.' : 'Star to show on offers'} className={`grid h-7 w-7 flex-none place-items-center rounded-lg ${item.highlight ? 'bg-amber-100 text-amber-600' : 'text-muted-soft hover:bg-white'}`}>
+                    <Star className="h-4 w-4" fill={item.highlight ? 'currentColor' : 'none'} />
+                  </button>
+                  <input value={item.text} maxLength={MAX_CREDENTIAL_LENGTH} onChange={(event) => update(index, { text: event.target.value })} className="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-2 py-1 text-sm font-semibold text-ink focus:border-line focus:bg-white focus:outline-none" />
+                  <button type="button" onClick={() => move(index, -1)} title="Move up" className="px-1 text-xs font-bold text-muted-soft hover:text-ink">↑</button>
+                  <button type="button" onClick={() => move(index, 1)} title="Move down" className="px-1 text-xs font-bold text-muted-soft hover:text-ink">↓</button>
+                  <button type="button" onClick={() => remove(index)} title="Remove" className="grid h-7 w-7 flex-none place-items-center rounded-lg text-rose-500 hover:bg-white"><XCircle className="h-4 w-4" /></button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })}
+      {items.length === 0 ? <p className="mb-4 text-sm text-muted-soft">No credentials yet.</p> : null}
+
+      <form onSubmit={add} className="flex flex-wrap gap-2">
+        <select value={draft.section} onChange={(event) => setDraft((current) => ({ ...current, section: event.target.value }))} className="rounded-xl border border-line bg-surface px-3 py-2.5 text-sm font-semibold text-ink">
+          {CREDENTIAL_SECTIONS.map((section) => <option key={section.key} value={section.key}>{section.label}</option>)}
+        </select>
+        <input value={draft.text} maxLength={MAX_CREDENTIAL_LENGTH} onChange={(event) => setDraft((current) => ({ ...current, text: event.target.value }))} placeholder={`e.g. ${CREDENTIAL_SECTIONS.find((section) => section.key === draft.section)?.example}`} className="min-w-[200px] flex-1 rounded-xl border border-line bg-surface px-3.5 py-2.5 text-sm text-ink focus:border-ink focus:outline-none" />
+        <button type="submit" className="rounded-xl border border-line px-4 py-2.5 text-sm font-bold text-ink hover:bg-canvas">Add</button>
+      </form>
+
+      <div className="mt-4 flex items-center justify-between gap-3 border-t border-hairline pt-4">
+        <span className="text-xs text-muted-soft">{items.length} of {MAX_CREDENTIALS} · {highlightCount} of {MAX_CREDENTIAL_HIGHLIGHTS} starred</span>
+        <div className="flex gap-2">
+          {dirty ? <button type="button" onClick={() => setItems(fromDriver())} className="rounded-xl border border-line px-4 py-2 text-sm font-bold text-ink">Undo changes</button> : null}
+          <button type="button" disabled={!dirty || saving} onClick={() => onSave(items)} className="rounded-xl bg-brand px-5 py-2 text-sm font-bold text-white disabled:opacity-50">{saving ? 'Saving…' : 'Save credentials'}</button>
+        </div>
+      </div>
+    </Panel>
+  );
+};
+
+const DriverOverview = ({ data, onEdit, onVerification, onChangeLicenseType, onEnforceFrom, onClearLocation, onSaveCredentials, actionLoading }) => {
   // Month picked for "Freeze if unpaid" (older months, before the automatic start).
   const [enforceMonth, setEnforceMonth] = useState('2026-10');
   const { driver } = data;
@@ -123,6 +211,8 @@ const DriverOverview = ({ data, onEdit, onVerification, onChangeLicenseType, onE
             <DetailRow label="Bio"><span className="whitespace-pre-wrap font-normal leading-relaxed text-muted">{driver.description || EMPTY}</span></DetailRow>
           </dl>
         </Panel>
+
+        <CredentialsEditor driver={driver} onSave={onSaveCredentials} saving={actionLoading === 'credentials'} />
 
         <Panel title="License verification" subtitle="SLTDA license information and the latest review decision." action={<div className="flex flex-wrap items-center gap-3">{driver.licenseStatus ? <button type="button" onClick={onChangeLicenseType} className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs font-bold text-ink hover:bg-canvas">Change type</button> : null}<button type="button" onClick={onVerification} className="text-xs font-bold text-brand-dark hover:underline">Open verification</button></div>}>
           <div className="grid gap-5 md:grid-cols-[180px_1fr]">
@@ -581,7 +671,7 @@ const AdminDriverDetails = () => {
 
       <nav className="flex gap-1 overflow-x-auto rounded-[16px] bg-surface p-1.5 shadow-card">{tabs.map(([id, label, count]) => <button key={id} type="button" onClick={() => setActiveTab(id)} className={`whitespace-nowrap rounded-xl px-3.5 py-2.5 text-xs font-extrabold transition ${activeTab === id ? 'bg-brand text-white' : 'text-muted hover:bg-canvas hover:text-ink'}`}>{label}{count != null ? ` (${count})` : ''}</button>)}</nav>
 
-      {activeTab === 'overview' ? <DriverOverview data={data} onEdit={openEdit} onChangeLicenseType={() => { setLicenseTypeChoice(driver.licenseType || ''); setFormError(''); setModal('license-type'); }} onVerification={() => navigate(`/admin?section=verification&search=${encodeURIComponent(driver.email)}`)} onEnforceFrom={applyEnforceFrom} onClearLocation={clearLocation} actionLoading={actionLoading} /> : null}
+      {activeTab === 'overview' ? <DriverOverview data={data} onEdit={openEdit} onChangeLicenseType={() => { setLicenseTypeChoice(driver.licenseType || ''); setFormError(''); setModal('license-type'); }} onVerification={() => navigate(`/admin?section=verification&search=${encodeURIComponent(driver.email)}`)} onEnforceFrom={applyEnforceFrom} onClearLocation={clearLocation} onSaveCredentials={(credentials) => runAction('credentials', () => setDriverCredentials(driverId, credentials), 'Credentials saved.')} actionLoading={actionLoading} /> : null}
       {activeTab === 'vehicles' ? <VehiclesTab vehicles={data.vehicles} /> : null}
       {activeTab === 'bookings' ? <BookingsTab bookings={data.bookings} /> : null}
       {activeTab === 'offers' ? <OffersChatsTab offers={data.offers} conversations={data.conversations} /> : null}

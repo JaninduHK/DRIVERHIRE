@@ -10,7 +10,7 @@ import { sanitizeMessageContent } from '../utils/chatSanitizer.js';
 import { hasVehicleDateConflict, VEHICLE_UNAVAILABLE_MESSAGE } from '../utils/vehicleAvailability.js';
 import { createChatMessage } from '../services/chatService.js';
 import { checkMessagingSuspension } from '../utils/messagingSuspension.js';
-import { offerExpiresAt } from '../utils/offerExpiry.js';
+import { offerExpiresAt, isOfferBookable } from '../utils/offerExpiry.js';
 import {
   checkTravellerBookingLock,
   travellerBookingLockMap,
@@ -20,6 +20,7 @@ import { notifyUser } from '../services/expoPushService.js';
 import { mapAssetUrls, buildAssetUrl } from '../utils/assetUtils.js';
 import { normalizeOfferInclusions } from '../utils/offerInclusions.js';
 import { travellerSnapshotFor } from '../utils/travellerContact.js';
+import { attachOfferAssurances } from '../utils/offerAssurances.js';
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
@@ -434,6 +435,7 @@ export const fetchMessages = async (req, res) => {
           withVehicleImageUrls(message.offer, req);
         })
     );
+    await attachOfferAssurances(messages, conversation.driver);
 
     await ChatMessage.updateMany(
       { conversation: conversationId, readBy: { $ne: req.user.id } },
@@ -744,6 +746,7 @@ export const sendOffer = async (req, res) => {
       .populate('offer.vehicle', 'id model pricePerDay images')
       .lean();
     withVehicleImageUrls(response.offer, req);
+    await attachOfferAssurances([response], conversation.driver);
 
     return res.status(201).json({
       message: withReadReceipts([response], {
@@ -754,6 +757,67 @@ export const sendOffer = async (req, res) => {
   } catch (error) {
     console.error('Send offer error:', error);
     return res.status(500).json({ message: 'Unable to send offer right now.' });
+  }
+};
+
+// Reasons the traveller can pick when declining; sent to the driver in chat.
+export const DECLINE_REASONS = {
+  price: 'The price is higher than I expected.',
+  dates: 'My dates or plans have changed.',
+  vehicle: 'The vehicle is not right for us.',
+  other_driver: 'I have chosen another driver.',
+};
+
+/**
+ * The traveller turns down an offer. It is marked declined (no longer bookable,
+ * no expiry countdown or reminders), and a short message tells the driver in
+ * chat, which also notifies them. Body: { reason?: key of DECLINE_REASONS, note? }.
+ */
+export const declineOffer = async (req, res) => {
+  const { offerId } = req.params;
+  if (!isValidObjectId(offerId)) {
+    return res.status(400).json({ message: 'Invalid offer identifier.' });
+  }
+
+  try {
+    const message = await ChatMessage.findById(offerId).populate('conversation');
+    if (!message || message.type !== 'offer' || !message.conversation) {
+      return res.status(404).json({ message: 'Offer not found.' });
+    }
+    const { conversation } = message;
+    if (conversation.traveler.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Only the traveller can decline this offer.' });
+    }
+    if (!isOfferBookable(message.offer)) {
+      return res.status(409).json({ message: 'This offer is no longer open.' });
+    }
+
+    message.offer.status = 'declined';
+    message.offer.declinedAt = new Date();
+    message.offer.declinedBy = 'traveller';
+    await message.save();
+
+    const reason = DECLINE_REASONS[req.body?.reason] || '';
+    const { sanitized: note } = sanitizeMessageContent(String(req.body?.note || '').slice(0, 500));
+    const model = (await Vehicle.findById(message.offer.vehicle).select('model').lean())?.model;
+    const content = [
+      `I've declined your offer${model ? ` for the ${model}` : ''}.`,
+      reason,
+      note ? note.trim() : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+    await createChatMessage({
+      conversation,
+      senderId: req.user.id,
+      senderRole: USER_ROLES.GUEST,
+      content,
+    });
+
+    return res.json({ offer: { id: message._id.toString(), status: 'declined' } });
+  } catch (error) {
+    console.error('Decline offer error:', error);
+    return res.status(500).json({ message: 'Unable to decline this offer right now.' });
   }
 };
 
@@ -784,6 +848,8 @@ export const fetchOffer = async (req, res) => {
     }
 
     // The quote request this offer answers: checkout pre-fills the passengers from it.
+    await attachOfferAssurances([message], conversation.driver);
+
     const brief = message.offer.brief
       ? await TourBrief.findById(message.offer.brief).select('adults children').lean().catch(() => null)
       : null;
@@ -800,6 +866,7 @@ export const fetchOffer = async (req, res) => {
         totalKms: message.offer.totalKms,
         pricePerExtraKm: message.offer.pricePerExtraKm,
         inclusions: message.offer.inclusions,
+        assurances: message.offer.assurances,
         currency: message.offer.currency,
         vehicle: withVehicleImageUrls(message.offer, req).vehicle,
         // Checkout prices an offer off this, not off the vehicle's daily-rate

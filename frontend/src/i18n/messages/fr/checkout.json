@@ -118,7 +118,8 @@
   "checking": "Vérification de la disponibilité…",
   "sending": "Envoi…",
   "send": "Envoyer la demande de réservation",
-  "noCard": "Aucune carte nécessaire maintenant. Vous payez <b>{amount}</b> à votre chauffeur lors de votre rencontre le premier jour.",
+  "noCard": "Aucune carte nécessaire maintenant. Vous payez <b>{amount}</b> à votre chauffeur lors de votre rencontre.",
+  "noCardMultiDay": "Ni carte ni acompte. Vous payez <b>{amount}</b> à votre chauffeur : 50 % le premier jour, le reste le dernier jour.",
   "next": {
     "title": "La suite",
     "email": "L'e-mail de confirmation arrive immédiatement.",

@@ -7,6 +7,7 @@ import {
   getDriverDetails,
   updateDriverStatus,
   setDriverFeatured,
+  setDriverCredentials,
   setDriverBriefAlertEmail,
   setDriverEmailVerified,
   setDriverCommissionGrace,
@@ -162,6 +163,12 @@ router.patch(
     body('verified').isBoolean().withMessage('verified must be true or false'),
   ],
   setDriverEmailVerified
+);
+
+router.put(
+  '/drivers/:id/credentials',
+  [param('id').isMongoId().withMessage('Invalid driver identifier')],
+  setDriverCredentials
 );
 
 router.patch(

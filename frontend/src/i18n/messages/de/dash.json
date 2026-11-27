@@ -286,7 +286,27 @@
     "declineHint": "Antworten Sie im Chat, um zu verhandeln oder abzulehnen.",
     "decline": "Ablehnen",
     "viewBooking": "Buchung & Fahrerkontakt ansehen",
-    "closed": "Dieses Angebot ist nicht mehr verfügbar."
+    "closed": "Dieses Angebot ist nicht mehr verfügbar.",
+    "driverNote": "Nachricht von Ihrem Fahrer",
+    "declineDialog": {
+      "title": "Dieses Angebot ablehnen?",
+      "body": "Wir informieren den Fahrer in diesem Chat. Sie können ihm weiterhin schreiben und später ein neues Angebot anfragen.",
+      "reasonLabel": "Warum lehnen Sie ab? (optional)",
+      "reasons": {
+        "price": "Preis ist zu hoch",
+        "dates": "Meine Pläne haben sich geändert",
+        "vehicle": "Fahrzeug passt nicht",
+        "other_driver": "Anderen Fahrer gewählt"
+      },
+      "noteLabel": "Nachricht an den Fahrer (optional)",
+      "notePlaceholder": "Was der Fahrer wissen sollte",
+      "confirm": "Angebot ablehnen",
+      "cancel": "Angebot behalten",
+      "declining": "Wird abgelehnt…",
+      "done": "Angebot abgelehnt. Wir haben den Fahrer informiert.",
+      "failed": "Das Angebot kann gerade nicht abgelehnt werden.",
+      "youDeclined": "Sie haben dieses Angebot abgelehnt."
+    }
   },
   "requests": {
     "booked": "Gebucht",

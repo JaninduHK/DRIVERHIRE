@@ -15,7 +15,7 @@
         "title": "2. Bookings and payments",
         "items": [
           "Pricing: Drivers set rates. Platform-wide discounts reduce the payable total shown at checkout.",
-          "Payment: Travellers pay the driver directly unless specified otherwise. Commission is deducted from driver earnings.",
+          "Payment: Travellers pay the driver directly, with no deposit: 50% on the first day of the hire and the rest on the last day, or in full on arrival for a one-day hire. Commission is deducted from driver earnings.",
           "Changes/cancellations: Follow the instructions in your booking emails or message the driver. Some trips may be non-refundable after start.",
           "Conflicts: Contact support if a driver or traveller needs to amend or resolve an issue."
         ]

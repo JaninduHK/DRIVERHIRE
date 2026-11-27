@@ -8,6 +8,7 @@ import { LicenseIconBadge, LicenseTypeChip } from './LicenseBadge.jsx';
 import { useI18n } from '../i18n/I18nProvider.jsx';
 import { translateFeature } from '../i18n/labels.js';
 import { localizePath } from '../i18n/locales.js';
+import { CredentialsCard } from './DriverCredentials.jsx';
 
 const formatDate = (value, intl = 'en-US') => {
   if (!value) return null;
@@ -144,6 +145,7 @@ const DriverProfileSheet = ({ driverId, activeVehicleId, hasBooking, onClose, on
                 <p className="mt-2 text-[14px] leading-relaxed text-muted">
                   {driver.description?.trim() || t('chat.profile.noBio', { name: driver.name })}
                 </p>
+                <CredentialsCard credentials={driver.credentials} className="mt-3" />
                 {Array.isArray(driver.badges) && driver.badges.length ? (
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {driver.badges.map((label) => (

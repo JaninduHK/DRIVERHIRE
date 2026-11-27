@@ -286,7 +286,27 @@
     "declineHint": "Reply in the chat to negotiate or decline.",
     "decline": "Decline",
     "viewBooking": "View booking & driver contact",
-    "closed": "This offer is no longer available."
+    "closed": "This offer is no longer available.",
+    "driverNote": "Message from your driver",
+    "declineDialog": {
+      "title": "Decline this offer?",
+      "body": "We'll let the driver know in this chat. You can still message them and ask for a new offer later.",
+      "reasonLabel": "Why are you declining? (optional)",
+      "reasons": {
+        "price": "Price is too high",
+        "dates": "My plans changed",
+        "vehicle": "Vehicle isn't right",
+        "other_driver": "Chose another driver"
+      },
+      "noteLabel": "Message to the driver (optional)",
+      "notePlaceholder": "Anything the driver should know",
+      "confirm": "Decline offer",
+      "cancel": "Keep offer",
+      "declining": "Declining…",
+      "done": "Offer declined. We've let the driver know.",
+      "failed": "Unable to decline this offer right now.",
+      "youDeclined": "You declined this offer."
+    }
   },
   "requests": {
     "booked": "Booked",

@@ -11,5 +11,13 @@
       "one": "Scade tra {count} minuto",
       "other": "Scade tra {count} minuti"
     }
+  },
+  "assurance": {
+    "title": "Buono a sapersi",
+    "licence": "Licenza SLTDA verificata",
+    "insurance": "Assicurazione passeggeri verificata",
+    "payMultiDay": "Nessun acconto · 50% il primo giorno, il resto l'ultimo giorno",
+    "paySingleDay": "Nessun acconto · paghi all'arrivo",
+    "cancel": "Cancellazione gratuita fino a 2 giorni prima della partenza"
   }
 }

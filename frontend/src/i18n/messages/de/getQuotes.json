@@ -54,7 +54,7 @@
   },
   "how": {
     "title": "So funktioniert es – in drei Schritten",
-    "lead": "Es gibt keinen Schritt des Suchens und Ratens. Sie beschreiben die Reise einmal, und Fahrer, die an Ihren Reisedaten frei sind, kommen mit einem Preis auf Sie zu. Zu keinem Zeitpunkt wird etwas berechnet – wenn Sie ein Angebot annehmen, bezahlen Sie diesen Fahrer direkt, am ersten Tag der Reise.",
+    "lead": "Es gibt keinen Schritt des Suchens und Ratens. Sie beschreiben die Reise einmal, und Fahrer, die an Ihren Reisedaten frei sind, kommen mit einem Preis auf Sie zu. Eine Anzahlung wird nicht erhoben – wenn Sie ein Angebot annehmen, bezahlen Sie diesen Fahrer direkt: 50 % am ersten Tag der Reise und den Rest am letzten Tag.",
     "step1": {
       "title": "Beschreiben Sie Ihre Reise einmal",
       "body": "Reisedaten, Abholort, wie viele Sie sind und eine grobe Route. Wenn etwas noch nicht feststeht, sagen Sie es – die Fahrer schlagen dann Alternativen vor, statt zu raten.",
@@ -67,7 +67,7 @@
     },
     "step3": {
       "title": "Chatten, vergleichen und buchen",
-      "body": "Stellen Sie Fragen im Chat, passen Sie den Plan an und nehmen Sie dann das passende Angebot an. Keine Karte nötig – Sie bezahlen Ihren Fahrer direkt, wenn Sie sich am ersten Tag treffen.",
+      "body": "Stellen Sie Fragen im Chat, passen Sie den Plan an und nehmen Sie dann das passende Angebot an. Keine Karte und keine Anzahlung nötig – Sie bezahlen Ihren Fahrer direkt: die Hälfte am ersten Tag, den Rest am letzten Tag.",
       "meta": "Zu keinem Zeitpunkt eine Buchungsgebühr"
     }
   },
@@ -177,7 +177,7 @@
     },
     "pay": {
       "q": "Wie und wann bezahle ich?",
-      "a": "Sie bezahlen Ihren Fahrer direkt, wenn Sie sich am ersten Tag der Reise treffen – auf dieser Website werden keine Kartendaten erfasst, und über die Plattform wird keine Anzahlung erhoben. Vereinbaren Sie alles Ungewöhnliche vorher mit Ihrem Fahrer im Chat, damit es dokumentiert ist."
+      "a": "Sie bezahlen Ihren Fahrer direkt und ohne Anzahlung: 50 % beim Treffen am ersten Tag der Reise und den Rest am letzten Tag. Bei einer Tagesfahrt zahlen Sie bei Ankunft. Auf dieser Website werden keine Kartendaten erfasst. Vereinbaren Sie alles Ungewöhnliche vorher mit Ihrem Fahrer im Chat, damit es dokumentiert ist."
     },
     "difference": {
       "q": "Was ist der Unterschied zwischen einem Touristenfahrer und einem Chauffeur-Guide?",

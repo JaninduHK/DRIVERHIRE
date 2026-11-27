@@ -17,7 +17,7 @@
     "year": "Anno",
     "rating": "Valutazione",
     "payment": "Pagamento",
-    "onArrival": "All'arrivo"
+    "onArrival": "Nessun acconto"
   },
   "availability": {
     "missingVehicle": "Mancano le informazioni sul veicolo. Riprova dal catalogo.",
@@ -77,8 +77,10 @@
     "payDriver": "Da pagare al tuo autista",
     "licenseVerified": "{license} verificato",
     "identityVerified": "Identità e licenza verificate",
-    "payOnArrival": "Paghi l'autista all'arrivo",
-    "freeCancellation": "Cancellazione gratuita fino a 2 giorni prima del viaggio"
+    "payOnArrival": "Nessun acconto · paghi l'autista durante il viaggio",
+    "freeCancellation": "Cancellazione gratuita fino a 2 giorni prima del viaggio",
+    "payMultiDay": "Nessun acconto. Paghi al tuo autista il 50% il primo giorno e il resto l'ultimo giorno.",
+    "paySingleDay": "Nessun acconto. Paghi il tuo autista all'arrivo."
   },
   "driver": {
     "rating": "Valutazione {rating}",

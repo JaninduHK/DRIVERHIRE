@@ -17,7 +17,7 @@
     "year": "Année",
     "rating": "Note",
     "payment": "Paiement",
-    "onArrival": "À l'arrivée"
+    "onArrival": "Sans acompte"
   },
   "availability": {
     "missingVehicle": "Les informations du véhicule sont manquantes. Veuillez réessayer depuis le catalogue.",
@@ -77,8 +77,10 @@
     "payDriver": "À payer à votre chauffeur",
     "licenseVerified": "{license} vérifié",
     "identityVerified": "Identité et permis vérifiés",
-    "payOnArrival": "Paiement au chauffeur à l'arrivée",
-    "freeCancellation": "Annulation gratuite jusqu'à 2 jours avant votre voyage"
+    "payOnArrival": "Sans acompte · paiement au chauffeur pendant le voyage",
+    "freeCancellation": "Annulation gratuite jusqu'à 2 jours avant votre voyage",
+    "payMultiDay": "Sans acompte. Vous payez 50 % à votre chauffeur le premier jour et le reste le dernier jour.",
+    "paySingleDay": "Sans acompte. Vous payez votre chauffeur à l'arrivée."
   },
   "driver": {
     "rating": "Note : {rating}",

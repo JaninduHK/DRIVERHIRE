@@ -54,7 +54,7 @@
   },
   "how": {
     "title": "How it works in three steps",
-    "lead": "There is no search-and-guess step. You describe the trip once, and drivers who are free on your dates come to you with a price. Nothing is charged at any point — when you accept an offer you pay that driver directly, on the first day of the trip.",
+    "lead": "There is no search-and-guess step. You describe the trip once, and drivers who are free on your dates come to you with a price. No deposit is taken — when you accept an offer you pay that driver directly: 50% on the first day of the trip and the rest on the last day.",
     "step1": {
       "title": "Describe your trip once",
       "body": "Dates, pick-up, how many of you and a rough route. If something is still undecided, say so — drivers will suggest alternatives rather than guess.",
@@ -67,7 +67,7 @@
     },
     "step3": {
       "title": "Chat, compare and book",
-      "body": "Ask questions in chat, adjust the plan, then accept the offer that fits. No card is needed — you pay your driver directly when you meet on day one.",
+      "body": "Ask questions in chat, adjust the plan, then accept the offer that fits. No card or deposit is needed — you pay your driver directly: half on the first day, the rest on the last day.",
       "meta": "No booking fee at any point"
     }
   },
@@ -171,7 +171,7 @@
     },
     "pay": {
       "q": "How and when do I pay?",
-      "a": "You pay your driver directly when you meet on the first day of the trip — no card details are taken on this site and no deposit is charged through the platform. Agree anything unusual with your driver in chat first so it stays on record."
+      "a": "You pay your driver directly, with no deposit: 50% when you meet on the first day of the trip and the rest on the last day. For a one-day trip you pay on arrival. No card details are taken on this site. Agree anything unusual with your driver in chat first so it stays on record."
     },
     "difference": {
       "q": "What’s the difference between a tourist driver and a chauffeur guide?",

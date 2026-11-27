@@ -9,5 +9,13 @@
     "minutes": {
       "other": "あと{count}分で期限切れ"
     }
+  },
+  "assurance": {
+    "title": "知っておきたいこと",
+    "licence": "SLTDAライセンス認証済み",
+    "insurance": "乗客保険認証済み",
+    "payMultiDay": "デポジット不要 · 初日に50%、最終日に残り",
+    "paySingleDay": "デポジット不要 · 到着時にお支払い",
+    "cancel": "出発の2日前まで無料でキャンセル可能"
   }
 }

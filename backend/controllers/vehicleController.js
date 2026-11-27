@@ -618,7 +618,10 @@ export const checkVehicleAvailability = async (req, res) => {
               status: activeDiscount.status || 'active',
             }
           : null,
-        paymentNote: 'Pay your driver directly on the first day of the trip.',
+        paymentNote:
+          totalDays > 1
+            ? 'No deposit. Pay your driver 50% on the first day and the rest on the last day.'
+            : 'No deposit. Pay your driver on arrival.',
       },
     });
   } catch (error) {

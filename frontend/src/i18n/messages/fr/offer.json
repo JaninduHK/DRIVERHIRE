@@ -11,5 +11,13 @@
       "one": "Expire dans {count} minute",
       "other": "Expire dans {count} minutes"
     }
+  },
+  "assurance": {
+    "title": "Bon à savoir",
+    "licence": "Licence SLTDA vérifiée",
+    "insurance": "Assurance passagers vérifiée",
+    "payMultiDay": "Sans acompte · 50 % le premier jour, le reste le dernier jour",
+    "paySingleDay": "Sans acompte · paiement à l'arrivée",
+    "cancel": "Annulation gratuite jusqu'à 2 jours avant le départ"
   }
 }

@@ -25,6 +25,7 @@ import { Button } from '../../../components/Button';
 import { TextField } from '../../../components/TextField';
 import { Chip } from '../../../components/Chip';
 import { OfferInclusionList, OfferInclusionPicker } from '../../../components/OfferInclusions';
+import { OfferAssurances } from '../../../components/OfferAssurances';
 import { Loading } from '../../../components/states';
 import { BookingDetailsSheet } from '../../../components/BookingDetailsSheet';
 import { DatePickerField } from '../../../components/DatePickerField';
@@ -291,6 +292,7 @@ function Bubble({ message, mine }: { message: ChatMessage; mine: boolean }) {
           </Text>
         ) : null}
         <OfferInclusionList inclusions={o.inclusions} className="mt-2" />
+        <OfferAssurances startDate={o.startDate} endDate={o.endDate} assurances={o.assurances} className="mt-2.5" />
         {o.note ? (
           <Text className="mt-1.5 font-med text-muted-soft" style={{ fontSize: 12 * scale, lineHeight: 16 * scale }}>
             {o.note}

@@ -590,7 +590,7 @@ const BookingPanel = ({
           <div className="flex justify-between"><span>{t('vehicle.booking.dayTrip', { count: availability.quote.totalDays })}</span><b>{quoteTotalLabel}</b></div>
           {quoteDiscountLabel ? <div className="flex justify-between"><span>{quoteDiscount?.name || t('vehicle.booking.discount')}</span><b>-{quoteDiscountLabel}</b></div> : null}
           {quotePayableLabel ? <div className="flex justify-between border-t border-brand/20 pt-1.5 text-[14px] font-extrabold text-brand-dark"><span>{t('vehicle.booking.payDriver')}</span><span>{quotePayableLabel}</span></div> : null}
-          {availability.quote.paymentNote ? <p className="text-[11px] text-brand-dark/70">{availability.quote.paymentNote}</p> : null}
+          <p className="text-[11px] text-brand-dark/70">{availability.quote.totalDays > 1 ? t('vehicle.booking.payMultiDay') : t('vehicle.booking.paySingleDay')}</p>
         </div>
       ) : null}
 

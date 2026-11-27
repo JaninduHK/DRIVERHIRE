@@ -102,5 +102,19 @@
   "date": {
     "select": "日付を選択",
     "selectTime": "時刻を選択"
+  },
+  "credentials": {
+    "title": "資格・実績",
+    "titleFor": "{name}さんの資格・実績",
+    "verified": "CarWithDriver.LKが確認済み",
+    "seeAll": "すべての資格・実績を見る（{count}）",
+    "close": "閉じる",
+    "sections": {
+      "qualifications": "学歴・資格",
+      "experience": "経験",
+      "awards": "受賞歴",
+      "specialties": "得意分野",
+      "languages": "対応言語"
+    }
   }
 }

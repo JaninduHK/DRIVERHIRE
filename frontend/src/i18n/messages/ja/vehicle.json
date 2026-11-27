@@ -17,7 +17,7 @@
     "year": "年式",
     "rating": "評価",
     "payment": "お支払い",
-    "onArrival": "到着時"
+    "onArrival": "デポジット不要"
   },
   "availability": {
     "missingVehicle": "車両情報がありません。カタログからもう一度お試しください。",
@@ -68,8 +68,10 @@
     "payDriver": "ドライバーへのお支払い",
     "licenseVerified": "{license}（認証済み）",
     "identityVerified": "本人確認・ライセンス認証済み",
-    "payOnArrival": "到着時にドライバーへお支払い",
-    "freeCancellation": "旅行の2日前まで無料キャンセル"
+    "payOnArrival": "デポジット不要 · 旅行中にドライバーへお支払い",
+    "freeCancellation": "旅行の2日前まで無料キャンセル",
+    "payMultiDay": "デポジット不要。ドライバーへ初日に50%、最終日に残りをお支払いください。",
+    "paySingleDay": "デポジット不要。到着時にドライバーへお支払いください。"
   },
   "driver": {
     "rating": "評価 {rating}",

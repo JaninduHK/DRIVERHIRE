@@ -17,7 +17,7 @@
     "year": "Baujahr",
     "rating": "Bewertung",
     "payment": "Bezahlung",
-    "onArrival": "Bei Ankunft"
+    "onArrival": "Keine Anzahlung"
   },
   "availability": {
     "missingVehicle": "Fahrzeuginformationen fehlen. Bitte versuchen Sie es erneut über den Katalog.",
@@ -74,8 +74,10 @@
     "payDriver": "An Ihren Fahrer zu zahlen",
     "licenseVerified": "{license} verifiziert",
     "identityVerified": "Identität & Lizenz verifiziert",
-    "payOnArrival": "Bezahlung an den Fahrer bei Ankunft",
-    "freeCancellation": "Kostenlose Stornierung bis 2 Tage vor Ihrer Reise"
+    "payOnArrival": "Keine Anzahlung · Bezahlung an den Fahrer während der Reise",
+    "freeCancellation": "Kostenlose Stornierung bis 2 Tage vor Ihrer Reise",
+    "payMultiDay": "Keine Anzahlung. Sie zahlen Ihrem Fahrer 50 % am ersten Tag und den Rest am letzten Tag.",
+    "paySingleDay": "Keine Anzahlung. Sie bezahlen Ihren Fahrer bei Ankunft."
   },
   "driver": {
     "rating": "Bewertung {rating}",

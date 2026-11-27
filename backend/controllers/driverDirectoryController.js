@@ -4,6 +4,7 @@ import Vehicle, { VEHICLE_STATUS } from '../models/Vehicle.js';
 import Review, { REVIEW_STATUS } from '../models/Review.js';
 import CommissionDiscount from '../models/CommissionDiscount.js';
 import { buildAssetUrl } from '../utils/assetUtils.js';
+import { publicCredentials } from '../utils/driverCredentials.js';
 import { rankDrivers } from '../utils/driverRanking.js';
 
 const FEATURE_FLAGS = [
@@ -148,6 +149,8 @@ const buildDriverSummary = (driver, vehicles = [], reviewStats = null, req, acti
     featuredVehicle,
     badges,
     experienceYears,
+    // Admin-checked extras; only the detail page loads them, lists get [].
+    credentials: publicCredentials(driver.credentials),
     joinedAt: driver.createdAt,
     featured: Boolean(driver.featured),
     featuredOrder: Number.isFinite(driver.featuredOrder) ? driver.featuredOrder : null,
@@ -285,7 +288,7 @@ export const getPublicDriverDetails = async (req, res) => {
       deletedAt: null,
     })
       .select(
-        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation shareLiveLocation experienceYears licenseType licenseStatus featured featuredOrder serviceAreas coverPhoto commissionFrozenAt'
+        'name description contactNumber tripAdvisor address createdAt profilePhoto driverLocation shareLiveLocation experienceYears licenseType licenseStatus featured featuredOrder serviceAreas coverPhoto credentials commissionFrozenAt'
       )
       .lean();
 

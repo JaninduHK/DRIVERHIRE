@@ -1,6 +1,7 @@
 import ChatMessage from '../models/ChatMessage.js';
 import { hashOfferToken } from '../services/chatService.js';
 import { LINK_PURPOSES, verifyLinkToken } from '../utils/signedLinks.js';
+import { attachOfferAssurances } from '../utils/offerAssurances.js';
 
 const conversationFields = {
   path: 'conversation',
@@ -67,6 +68,9 @@ export const getOfferInvite = async (req, res) => {
       );
     }
 
+    const checked = { type: 'offer', offer: { vehicle: offer.vehicle, endDate: offer.endDate } };
+    await attachOfferAssurances([checked], conversation.driver);
+
     return res.json({
       invite: {
         conversationId: conversation._id.toString(),
@@ -78,6 +82,7 @@ export const getOfferInvite = async (req, res) => {
         totalKms: offer.totalKms,
         pricePerExtraKm: offer.pricePerExtraKm,
         inclusions: offer.inclusions,
+        assurances: checked.offer.assurances,
         currency: offer.currency,
         status: offer.status,
         note: message.body,

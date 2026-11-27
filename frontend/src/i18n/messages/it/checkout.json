@@ -118,7 +118,8 @@
   "checking": "Verifica della disponibilità…",
   "sending": "Invio…",
   "send": "Invia richiesta di prenotazione",
-  "noCard": "Ora non serve nessuna carta. Paghi <b>{amount}</b> al tuo autista quando vi incontrate il primo giorno.",
+  "noCard": "Ora non serve nessuna carta. Paghi <b>{amount}</b> al tuo autista quando vi incontrate.",
+  "noCardMultiDay": "Non servono carta né acconto. Paghi <b>{amount}</b> al tuo autista: il 50% il primo giorno, il resto l'ultimo giorno.",
   "next": {
     "title": "Cosa succede ora",
     "email": "L'email di conferma arriva subito.",

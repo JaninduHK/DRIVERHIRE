@@ -5,6 +5,7 @@ import { CalendarDays, Car, Loader2, LogIn, Route } from 'lucide-react';
 import { fetchOfferInvite } from '../services/offerApi.js';
 import { redirectToSsoLogin } from '../services/authToken.js';
 import { OfferInclusionList } from '../components/OfferInclusions.jsx';
+import { OfferAssurances } from '../components/OfferAssurances.jsx';
 
 // English pages always showed British-style dates here ("5 Jan 2027").
 const formatDateRange = (start, end, intl = 'en-GB') => {
@@ -124,6 +125,7 @@ const OfferFromEmail = () => {
         ) : null}
         <OfferInclusionList inclusions={invite.inclusions} className="border-t border-[#e2e8ea] pt-3" />
       </div>
+      <OfferAssurances startDate={invite.startDate} endDate={invite.endDate} assurances={invite.assurances} className="mt-3" />
 
       {price ? (
         <p className="mt-5 text-[26px] font-extrabold text-ink">{price}</p>

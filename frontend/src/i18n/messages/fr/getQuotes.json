@@ -54,7 +54,7 @@
   },
   "how": {
     "title": "Comment ça marche, en trois étapes",
-    "lead": "Pas besoin de chercher au hasard. Vous décrivez le voyage une seule fois, et les chauffeurs disponibles à vos dates viennent à vous avec un prix. Rien ne vous est facturé à aucun moment : lorsque vous acceptez une offre, vous payez ce chauffeur directement, le premier jour du voyage.",
+    "lead": "Pas besoin de chercher au hasard. Vous décrivez le voyage une seule fois, et les chauffeurs disponibles à vos dates viennent à vous avec un prix. Aucun acompte n'est demandé : lorsque vous acceptez une offre, vous payez ce chauffeur directement, 50 % le premier jour du voyage et le reste le dernier jour.",
     "step1": {
       "title": "Décrivez votre voyage une seule fois",
       "body": "Vos dates, le lieu de prise en charge, votre nombre et un itinéraire approximatif. Si quelque chose n'est pas encore décidé, dites-le : les chauffeurs vous proposeront des alternatives plutôt que de deviner.",
@@ -67,7 +67,7 @@
     },
     "step3": {
       "title": "Discutez, comparez et réservez",
-      "body": "Posez vos questions dans le chat, ajustez le programme, puis acceptez l'offre qui vous convient. Aucune carte n'est nécessaire : vous payez directement votre chauffeur lorsque vous le rencontrez le premier jour.",
+      "body": "Posez vos questions dans le chat, ajustez le programme, puis acceptez l'offre qui vous convient. Ni carte ni acompte : vous payez directement votre chauffeur, la moitié le premier jour et le reste le dernier jour.",
       "meta": "Aucuns frais de réservation, à aucun moment"
     }
   },
@@ -177,7 +177,7 @@
     },
     "pay": {
       "q": "Comment et quand dois-je payer ?",
-      "a": "Vous payez votre chauffeur directement lorsque vous le rencontrez le premier jour du voyage : aucune donnée de carte n'est demandée sur ce site et aucun acompte n'est prélevé via la plateforme. Convenez d'abord de tout élément inhabituel avec votre chauffeur dans le chat, afin d'en garder une trace."
+      "a": "Vous payez votre chauffeur directement, sans acompte : 50 % lorsque vous le rencontrez le premier jour du voyage et le reste le dernier jour. Pour un voyage d'une journée, vous payez à l'arrivée. Aucune donnée de carte n'est demandée sur ce site. Convenez d'abord de tout élément inhabituel avec votre chauffeur dans le chat, afin d'en garder une trace."
     },
     "difference": {
       "q": "Quelle est la différence entre un chauffeur touristique et un chauffeur-guide ?",

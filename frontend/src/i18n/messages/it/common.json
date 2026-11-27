@@ -102,5 +102,19 @@
   "date": {
     "select": "Scegli la data",
     "selectTime": "Scegli l'ora"
+  },
+  "credentials": {
+    "title": "Credenziali",
+    "titleFor": "Credenziali di {name}",
+    "verified": "Verificato da CarWithDriver.LK",
+    "seeAll": "Vedi tutte le credenziali ({count})",
+    "close": "Chiudi",
+    "sections": {
+      "qualifications": "Titoli di studio",
+      "experience": "Esperienza",
+      "awards": "Riconoscimenti",
+      "specialties": "Specialità",
+      "languages": "Lingue"
+    }
   }
 }

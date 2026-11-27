@@ -36,6 +36,10 @@ import BookingDetailsModal from '../components/BookingDetailsModal.jsx';
 import { clearStoredToken, getStoredUser } from '../services/authToken.js';
 import OfferVehicleImages from '../components/OfferVehicleImages.jsx';
 import { OfferInclusionList, OfferInclusionPicker } from '../components/OfferInclusions.jsx';
+import { OfferAssurances } from '../components/OfferAssurances.jsx';
+import { CredentialHighlights } from '../components/DriverCredentials.jsx';
+import { offerTripDays, splitOfferBody } from '../lib/offerBody.js';
+import { OfferNote } from '../components/OfferNote.jsx';
 import BriefRequestBubble from '../components/BriefRequestBubble.jsx';
 import MessageMeta from '../components/MessageMeta.jsx';
 import { offerExpiryNotice, offerExpiryClass } from '../lib/offerExpiry.js';
@@ -805,7 +809,7 @@ const DriverMessages = () => {
                 />
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto">{renderConvList('desktop')}</div>
+            <div className="relative flex-1 overflow-y-auto">{renderConvList('desktop')}</div>
           </div>
 
           <div className="flex flex-1 flex-col bg-canvas">
@@ -818,7 +822,7 @@ const DriverMessages = () => {
                     <div className="truncate text-[12px] text-muted-soft">{threadSubtitle}</div>
                   </div>
                 </div>
-                <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto px-6 py-6">
+                <div className="relative flex flex-1 flex-col gap-2.5 overflow-y-auto px-6 py-6">
                   {bookingNotice}
                   {chatBody}
                 </div>
@@ -965,36 +969,55 @@ const OfferBubble = ({ message, align }) => {
   const start = formatDateLabel(offer.startDate);
   const end = formatDateLabel(offer.endDate);
   const expiry = offerExpiryNotice(offer);
+  const days = offerTripDays(offer.startDate, offer.endDate);
+  const { note, route, extra } = splitOfferBody(message.body);
   return (
     <div className={`flex ${align === 'end' ? 'justify-end' : 'justify-start'}`}>
-      <div className="max-w-[88%] rounded-[16px] border-[1.5px] border-[#cdeede] bg-white p-3.5 shadow-[0_4px_14px_rgba(15,31,45,0.06)]">
-        <div className="mb-2 flex items-center justify-between gap-3">
-          <span className="rounded-[7px] bg-brand-tint px-2 py-[3px] text-[10.5px] font-extrabold uppercase text-brand-dark">
+      <div className="w-full max-w-[88%] rounded-[18px] border-[1.5px] border-[#cdeede] bg-white p-4 shadow-[0_4px_14px_rgba(15,31,45,0.06)] lg:max-w-[520px]">
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <span className="mt-1 rounded-[7px] bg-brand-tint px-2 py-[3px] text-[10.5px] font-extrabold uppercase text-brand-dark">
             Offer sent
           </span>
-          <b className="text-[18px] text-ink">{formatCurrency(offer.totalPrice)}</b>
+          <div className="text-right">
+            <b className="block text-[22px] leading-none tracking-tight text-ink">{formatCurrency(offer.totalPrice)}</b>
+            {days ? <div className="mt-1 text-[11.5px] font-semibold text-muted-soft">{days}-day trip</div> : null}
+          </div>
         </div>
         <OfferVehicleImages
           images={offer.vehicle?.images}
           alt={offer.vehicle?.model || 'Vehicle'}
-          className="mb-2"
+          className="mb-2.5"
         />
-        <div className="text-[13px] font-bold text-ink">
-          {offer.vehicle?.model || 'Selected vehicle'} · {start}–{end}
+        <div className="text-[14.5px] font-extrabold leading-snug text-ink">{offer.vehicle?.model || 'Selected vehicle'}</div>
+        <div className="mt-1 flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-soft">
+          <CalendarDays className="h-3.5 w-3.5 flex-none text-brand" /> {start} – {end}
         </div>
+        {route ? (
+          <div className="mt-0.5 flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-soft">
+            <MapPin className="h-3.5 w-3.5 flex-none text-brand" /> <span className="min-w-0">{route}</span>
+          </div>
+        ) : null}
         <div className="mt-0.5 text-[12px] text-muted-soft">
           {offer.totalKms} km included · {formatRate(offer.pricePerExtraKm)} / extra km
         </div>
-        <OfferInclusionList inclusions={offer.inclusions} className="mt-2" />
-        {message.body ? (
-          <div className="mt-1.5 whitespace-pre-wrap text-[12px] leading-relaxed text-muted">{message.body}</div>
-        ) : null}
+        <CredentialHighlights credentials={offer.driverCredentials} className="mt-3" />
+        <OfferInclusionList inclusions={offer.inclusions} columns={2} className="mt-3 border-t border-hairline pt-3" />
+        {/* The same "Good to know" block the traveller sees with this offer. */}
+        <OfferAssurances startDate={offer.startDate} endDate={offer.endDate} assurances={offer.assurances} className="mt-3" />
         {expiry ? (
           <div className={`mt-2 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold ${offerExpiryClass(expiry.tone)}`}>
             <Clock className="h-3 w-3 flex-none" />
             {expiry.text}
           </div>
         ) : null}
+        {offer.status === 'accepted' ? (
+          <div className="mt-3 rounded-lg bg-brand-tint px-2.5 py-2 text-[12px] font-bold text-brand-dark">Accepted: this offer became a booking.</div>
+        ) : offer.status === 'declined' ? (
+          <div className="mt-3 rounded-lg bg-[#fff1f3] px-2.5 py-2 text-[12px] font-bold text-[#be123c]">
+            {offer.declinedBy === 'traveller' ? 'Declined by the traveller. Their reason, if they gave one, is in the chat below.' : 'Closed: the traveller booked these dates elsewhere.'}
+          </div>
+        ) : null}
+        <OfferNote text={note || extra} label="Your message" className="mt-3" />
       </div>
     </div>
   );

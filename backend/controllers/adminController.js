@@ -50,6 +50,7 @@ import {
   parseRegistrationNumber,
 } from '../utils/vehicleRegistration.js';
 import { refreshDriverFreeze } from '../services/commissionFreezeService.js';
+import { parseCredentials } from '../utils/driverCredentials.js';
 import { normalizeDriverBase, normalizeServiceAreas } from '../constants/locations.js';
 
 const handleValidation = (req, res) => {
@@ -722,6 +723,10 @@ export const getDriverDetails = async (req, res) => {
         ? { id: toId(driver.licenseReviewedBy), name: driver.licenseReviewedBy.name, email: driver.licenseReviewedBy.email }
         : null,
       licenseAdminNote: driver.licenseAdminNote || '',
+      credentials: Array.isArray(driver.credentials)
+        ? driver.credentials.map(({ section, text, highlight }) => ({ section, text, highlight: Boolean(highlight) }))
+        : [],
+      credentialsUpdatedAt: driver.credentialsUpdatedAt || null,
       deletedAt: driver.deletedAt,
       createdAt: driver.createdAt,
       updatedAt: driver.updatedAt,
@@ -941,6 +946,34 @@ export const setDriverFeatured = async (req, res) => {
   } catch (error) {
     console.error('Set driver featured error:', error);
     return res.status(500).json({ message: 'Unable to update homepage picks.' });
+  }
+};
+
+// Replaces the driver's credentials list (degrees, experience, awards, specialties,
+// languages). Body: { credentials: [{ section, text, highlight }] }.
+export const setDriverCredentials = async (req, res) => {
+  const validationError = handleValidation(req, res);
+  if (validationError) {
+    return validationError;
+  }
+
+  const { credentials, error } = parseCredentials(req.body?.credentials);
+  if (error) {
+    return res.status(400).json({ message: error });
+  }
+
+  try {
+    const driver = await User.findOne({ _id: req.params.id, role: USER_ROLES.DRIVER });
+    if (!driver) {
+      return res.status(404).json({ message: 'Driver not found.' });
+    }
+    driver.credentials = credentials;
+    driver.credentialsUpdatedAt = new Date();
+    await driver.save();
+    return res.json({ driver: driver.toJSON() });
+  } catch (saveError) {
+    console.error('Set driver credentials error:', saveError);
+    return res.status(500).json({ message: 'Unable to save the credentials.' });
   }
 };
 

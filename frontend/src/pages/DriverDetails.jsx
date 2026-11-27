@@ -27,6 +27,7 @@ import ReviewsSection from '../components/ReviewsSection.jsx';
 import { useAggregatedDriverReviews } from '../hooks/useAggregatedDriverReviews.js';
 import { LicenseIconBadge, LicenseTypeChip } from '../components/LicenseBadge.jsx';
 import { SERVICE_AREAS, guessLocationName } from '../constants/locations.js';
+import { CredentialsCard } from '../components/DriverCredentials.jsx';
 
 const formatCurrency = (value) => (!Number.isFinite(value) ? '$0' : `$${value.toLocaleString('en-US')}`);
 const DriverDetails = () => {
@@ -305,6 +306,7 @@ const MobileProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks,
         {/* About */}
         <div id="m-about">
           <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-ink-soft">{driver.description || t('driver.noBio')}</p>
+          <CredentialsCard credentials={driver.credentials} className="mt-4" />
           {perks.length > 0 ? (
             <>
               <SectionLabel className="mt-5">{t('driver.everyTripIncludes')}</SectionLabel>
@@ -423,6 +425,7 @@ const DesktopProfile = ({ driver, vehicles, reviewProps, cover, cityLabel, perks
           </div>
 
           <p className="mt-[22px] max-w-[640px] whitespace-pre-wrap text-[15px] leading-relaxed text-ink-soft">{driver.description || t('driver.noBio')}</p>
+          <CredentialsCard credentials={driver.credentials} className="mt-6" />
 
           <div className="mt-6 grid grid-cols-3 gap-3">
             <DeskStatCard value={expYears ? t('driver.years', { count: expYears }) : t('driver.new')} label={t('driver.stats.guidingExperience')} />

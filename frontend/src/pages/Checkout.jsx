@@ -968,7 +968,7 @@ const Checkout = () => {
                   {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> {t('checkout.sending')}</> : t('checkout.send')}
                 </button>
                 <p className="max-w-[34ch] text-[13px] leading-[1.5] text-muted">
-                  <Trans k="checkout.noCard" vars={{ amount: payLabel }} components={{ b: <strong className="text-ink" /> }} />
+                  <Trans k={calculateTripDays(effectiveStartDate, effectiveEndDate) > 1 ? 'checkout.noCardMultiDay' : 'checkout.noCard'} vars={{ amount: payLabel }} components={{ b: <strong className="text-ink" /> }} />
                 </p>
               </div>
             </form>

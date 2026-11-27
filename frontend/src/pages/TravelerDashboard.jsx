@@ -32,6 +32,7 @@ import {
   fetchMessages,
   sendMessage as sendChatMessage,
   markConversationRead,
+  declineOffer as declineChatOffer,
 } from '../services/chatApi.js';
 import {
   fetchTravelerBookings,
@@ -58,6 +59,11 @@ import { LicenseIconBadge, LicenseTypeChip } from '../components/LicenseBadge.js
 import DeleteAccountCard from '../components/DeleteAccountCard.jsx';
 import OfferVehicleImages from '../components/OfferVehicleImages.jsx';
 import { OfferInclusionList } from '../components/OfferInclusions.jsx';
+import { OfferAssurances } from '../components/OfferAssurances.jsx';
+import { CredentialHighlights } from '../components/DriverCredentials.jsx';
+import { offerTripDays, splitOfferBody } from '../lib/offerBody.js';
+import { OfferNote } from '../components/OfferNote.jsx';
+import { DeclineOfferDialog } from '../components/DeclineOfferDialog.jsx';
 import { clearPendingBrief, hasPendingBrief, readPendingBrief } from '../lib/pendingBrief.js';
 import { trackQuoteRequest } from '../lib/analytics.js';
 import BriefRequestBubble from '../components/BriefRequestBubble.jsx';
@@ -434,6 +440,19 @@ const TravelerDashboard = () => {
     }
   };
 
+  // Decline from the offer card: marks the offer declined and tells the driver in chat.
+  const handleDeclineOffer = async (message, { reason, note }) => {
+    try {
+      await declineChatOffer(message.id, { reason, note });
+      toast.success(t('dash.offer.declineDialog.done'));
+      await loadMessages(selectedConversationId, { silent: true });
+      loadConversations({ silent: true });
+    } catch (error) {
+      toast.error(error?.message || t('dash.offer.declineDialog.failed'));
+      throw error;
+    }
+  };
+
   const handleOfferBooking = (message) => {
     const vehicleRef = message?.offer?.vehicle;
     let vehicleId = null;
@@ -536,6 +555,7 @@ const TravelerDashboard = () => {
         onBookOffer={handleOfferBooking}
         onViewBookings={() => setActiveTab('bookings')}
         onRequestNewOffer={handleRequestNewOffer}
+        onDeclineOffer={handleDeclineOffer}
         requestingOfferId={requestingOfferId}
         onReloadConversations={() => loadConversations({ silent: false })}
       />
@@ -1651,6 +1671,7 @@ const TravelerMessages = ({
   onBookOffer,
   onViewBookings,
   onRequestNewOffer,
+  onDeclineOffer,
   requestingOfferId,
   onReloadConversations,
 }) => {
@@ -1743,6 +1764,7 @@ const TravelerMessages = ({
                 align={align}
                 onBook={() => onBookOffer(message)}
                 onRequestNew={() => onRequestNewOffer?.(message)}
+                onDecline={(payload) => onDeclineOffer?.(message, payload)}
                 onViewBooking={onViewBookings}
                 requesting={requestingOfferId === message.id}
                 followUp={offerFollowUp(messages.slice(index + 1))}
@@ -1974,7 +1996,7 @@ const TravelerMessages = ({
               <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('dash.chat.search')} className="w-full min-w-0 bg-transparent text-[13px] text-ink placeholder:text-[#adb8c0] focus:outline-none" />
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto">{conversationList('desktop')}</div>
+          <div className="relative flex-1 overflow-y-auto">{conversationList('desktop')}</div>
         </div>
 
         <div className="flex flex-1 flex-col bg-canvas">
@@ -2003,7 +2025,7 @@ const TravelerMessages = ({
                   {activeDriverId ? <ChevronRight className="h-4 w-4 flex-shrink-0 text-muted-soft transition group-hover:text-brand-dark" /> : null}
                 </button>
               </div>
-              <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto px-6 py-6">
+              <div className="relative flex flex-1 flex-col gap-2.5 overflow-y-auto px-6 py-6">
                 {bookingNotice}
                 {chatMessages}
                 <div ref={desktopEndRef} aria-hidden="true" />
@@ -2069,8 +2091,9 @@ const offerFollowUp = (laterMessages) => {
   return null;
 };
 
-const TravelerOfferBubble = ({ message, align, onBook, onRequestNew, onViewBooking, requesting = false, followUp = null }) => {
+const TravelerOfferBubble = ({ message, align, onBook, onRequestNew, onDecline, onViewBooking, requesting = false, followUp = null }) => {
   const { t } = useI18n();
+  const [declineOpen, setDeclineOpen] = useState(false);
   const { offer } = message;
   const start = formatDateLabel(offer.startDate);
   const end = formatDateLabel(offer.endDate);
@@ -2081,14 +2104,17 @@ const TravelerOfferBubble = ({ message, align, onBook, onRequestNew, onViewBooki
   const declined = offer.status === 'declined';
   const expiry = accepted || declined ? null : offerExpiryNotice(offer, undefined, t);
   const lapsed = expiry?.tone === 'expired';
+  const days = offerTripDays(offer.startDate, offer.endDate);
+  const { note, route, extra } = splitOfferBody(message.body);
   return (
     <div className={`flex ${align === 'end' ? 'justify-end' : 'justify-start'}`}>
-      <div className={`max-w-[88%] rounded-[16px] border-[1.5px] border-[#cdeede] bg-white p-3.5 shadow-[0_4px_14px_rgba(15,31,45,0.06)] ${lapsed && followUp ? 'opacity-70' : ''}`}>
-        <div className="mb-2 flex items-center justify-between gap-3">
-          <span className="rounded-[7px] bg-brand-tint px-2 py-[3px] text-[10.5px] font-extrabold uppercase text-brand-dark">{t('dash.offer.received')}</span>
+      <div className={`w-full max-w-[88%] rounded-[18px] border-[1.5px] border-[#cdeede] bg-white p-4 shadow-[0_4px_14px_rgba(15,31,45,0.06)] lg:max-w-[520px] ${lapsed && followUp ? 'opacity-70' : ''}`}>
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <span className="mt-1 rounded-[7px] bg-brand-tint px-2 py-[3px] text-[10.5px] font-extrabold uppercase text-brand-dark">{t('dash.offer.received')}</span>
           <div className="text-right">
             {discount ? <div className="text-[11px] font-semibold text-[#e11d48] line-through">{formatCurrency(offer.totalPrice)}</div> : null}
-            <b className="text-[18px] text-ink">{formatCurrency(discount ? discount.payableTotal : offer.totalPrice)}</b>
+            <b className="block text-[22px] leading-none tracking-tight text-ink">{formatCurrency(discount ? discount.payableTotal : offer.totalPrice)}</b>
+            {days ? <div className="mt-1 text-[11.5px] font-semibold text-muted-soft">{t('vehicle.booking.dayTrip', { count: days })}</div> : null}
           </div>
         </div>
         {discount ? (
@@ -2099,18 +2125,25 @@ const TravelerOfferBubble = ({ message, align, onBook, onRequestNew, onViewBooki
         <OfferVehicleImages
           images={offer.vehicle?.images}
           alt={offer.vehicle?.model || t('dash.offer.vehicle')}
-          className="mb-2"
+          className="mb-2.5"
         />
-        <div className="text-[13px] font-bold text-ink">
-          {offer.vehicle?.model || t('dash.offer.selectedVehicle')} · {start}–{end}
+        <div className="text-[14.5px] font-extrabold leading-snug text-ink">{offer.vehicle?.model || t('dash.offer.selectedVehicle')}</div>
+        <div className="mt-1 flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-soft">
+          <CalendarDays className="h-3.5 w-3.5 flex-none text-brand" /> {start} – {end}
         </div>
+        {route ? (
+          <div className="mt-0.5 flex items-center gap-1.5 text-[12.5px] font-semibold text-ink-soft">
+            <MapPin className="h-3.5 w-3.5 flex-none text-brand" /> <span className="min-w-0">{route}</span>
+          </div>
+        ) : null}
         <div className="mt-0.5 text-[12px] text-muted-soft">
           {t('dash.offer.kms', { km: offer.totalKms, rate: formatRate(offer.pricePerExtraKm) })}
         </div>
-        <OfferInclusionList inclusions={offer.inclusions} className="mt-2" />
-        {message.body ? <div className="mt-1.5 whitespace-pre-wrap text-[12px] leading-relaxed text-muted">{message.body}</div> : null}
+        <CredentialHighlights credentials={offer.driverCredentials} className="mt-3" />
+        <OfferInclusionList inclusions={offer.inclusions} columns={2} className="mt-3 border-t border-hairline pt-3" />
+        {declined ? null : <OfferAssurances startDate={offer.startDate} endDate={offer.endDate} assurances={offer.assurances} className="mt-3" />}
         {expiry ? (
-          <div className={`mt-2 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold ${offerExpiryClass(expiry.tone)}`}>
+          <div className={`mt-3 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold ${offerExpiryClass(expiry.tone)}`}>
             <Clock className="h-3 w-3 flex-none" />
             {expiry.text}
           </div>
@@ -2130,7 +2163,7 @@ const TravelerOfferBubble = ({ message, align, onBook, onRequestNew, onViewBooki
           </div>
         ) : declined ? (
           <div className="mt-3 rounded-lg bg-[#eef1f0] px-2.5 py-2 text-[12px] font-semibold text-muted">
-            {t('dash.chat.offerDeclined')} · {t('dash.offer.closed')}
+            {offer.declinedBy === 'traveller' ? t('dash.offer.declineDialog.youDeclined') : `${t('dash.chat.offerDeclined')} · ${t('dash.offer.closed')}`}
           </div>
         ) : (
         <div className="mt-3 flex gap-2">
@@ -2151,12 +2184,16 @@ const TravelerOfferBubble = ({ message, align, onBook, onRequestNew, onViewBooki
                     : t('dash.offer.requestNew')}
           </button>
           {lapsed ? null : (
-            <button type="button" onClick={() => toast(t('dash.offer.declineHint'))} className="flex-shrink-0 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white px-4 py-[11px] text-[13.5px] font-bold text-ink transition hover:border-muted-soft">
+            <button type="button" onClick={() => setDeclineOpen(true)} className="flex-shrink-0 rounded-[11px] border-[1.5px] border-[#e2e8ea] bg-white px-4 py-[11px] text-[13.5px] font-bold text-ink transition hover:border-muted-soft">
               {t('dash.offer.decline')}
             </button>
           )}
         </div>
         )}
+        {/* The driver's own words go last: they can be long, and the price,
+            inclusions and buttons above should be seen first. */}
+        <OfferNote text={note || extra} label={t('dash.offer.driverNote')} className="mt-3" />
+        {declineOpen ? <DeclineOfferDialog onConfirm={(payload) => onDecline?.(payload)} onClose={() => setDeclineOpen(false)} /> : null}
       </div>
     </div>
   );

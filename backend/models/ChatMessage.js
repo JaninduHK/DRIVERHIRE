@@ -39,6 +39,10 @@ const offerSchema = new mongoose.Schema(
       enum: ['pending', 'accepted', 'declined', 'expired'],
       default: 'pending',
     },
+    // Set when the traveller turns the offer down with the Decline button.
+    // Offers declined because another booking took the dates have no declinedBy.
+    declinedAt: { type: Date, default: null },
+    declinedBy: { type: String, enum: ['traveller', null], default: null },
     // When this offer stops being bookable. Set on creation from
     // utils/offerExpiry.js; the hourly sweep flips status to 'expired' past it.
     expiresAt: {

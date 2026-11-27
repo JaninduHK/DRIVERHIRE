@@ -102,5 +102,19 @@
   "date": {
     "select": "Datum wählen",
     "selectTime": "Uhrzeit wählen"
+  },
+  "credentials": {
+    "title": "Qualifikationen",
+    "titleFor": "Qualifikationen von {name}",
+    "verified": "Von CarWithDriver.LK geprüft",
+    "seeAll": "Alle Qualifikationen ansehen ({count})",
+    "close": "Schließen",
+    "sections": {
+      "qualifications": "Ausbildung",
+      "experience": "Erfahrung",
+      "awards": "Auszeichnungen",
+      "specialties": "Schwerpunkte",
+      "languages": "Sprachen"
+    }
   }
 }

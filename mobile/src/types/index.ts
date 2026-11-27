@@ -181,6 +181,8 @@ export interface Offer {
   pricePerExtraKm?: number;
   /** Keys from constants/offerInclusions; absent on offers sent before inclusions existed. */
   inclusions?: string[] | null;
+  /** Worked out by the server when offers are read; only true values are shown. */
+  assurances?: { licenceVerified?: boolean; insuranceVerified?: boolean } | null;
   includedKm?: number; // legacy alias
   extraKmRate?: number; // legacy alias
   vehicle?: Vehicle | null;

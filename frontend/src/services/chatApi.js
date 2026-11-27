@@ -115,6 +115,13 @@ export const sendOffer = (conversationId, payload) =>
     body: JSON.stringify(payload),
   });
 
+// Traveller turns down an offer; reason is one of price | dates | vehicle | other_driver.
+export const declineOffer = (offerId, { reason = '', note = '' } = {}) =>
+  request(`/offers/${encodeURIComponent(offerId)}/decline`, {
+    method: 'POST',
+    body: JSON.stringify({ reason, note }),
+  });
+
 export const fetchOffer = (offerId) =>
   request(`/offers/${encodeURIComponent(offerId)}`, {
     method: 'GET',

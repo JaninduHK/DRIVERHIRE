@@ -11,5 +11,13 @@
       "one": "Läuft in {count} Minute ab",
       "other": "Läuft in {count} Minuten ab"
     }
+  },
+  "assurance": {
+    "title": "Gut zu wissen",
+    "licence": "SLTDA-Lizenz verifiziert",
+    "insurance": "Fahrgastversicherung verifiziert",
+    "payMultiDay": "Keine Anzahlung · 50 % am ersten Tag, den Rest am letzten Tag",
+    "paySingleDay": "Keine Anzahlung · Bezahlung bei Ankunft",
+    "cancel": "Kostenlose Stornierung bis 2 Tage vor Beginn"
   }
 }

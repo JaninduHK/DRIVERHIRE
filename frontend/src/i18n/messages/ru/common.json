@@ -102,5 +102,19 @@
   "date": {
     "select": "Выберите дату",
     "selectTime": "Выберите время"
+  },
+  "credentials": {
+    "title": "Квалификация",
+    "titleFor": "Квалификация: {name}",
+    "verified": "Проверено CarWithDriver.LK",
+    "seeAll": "Показать всю квалификацию ({count})",
+    "close": "Закрыть",
+    "sections": {
+      "qualifications": "Образование",
+      "experience": "Опыт",
+      "awards": "Награды",
+      "specialties": "Специализация",
+      "languages": "Языки"
+    }
   }
 }

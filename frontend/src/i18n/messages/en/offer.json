@@ -11,5 +11,13 @@
       "one": "Expires in {count} minute",
       "other": "Expires in {count} minutes"
     }
+  },
+  "assurance": {
+    "title": "Good to know",
+    "licence": "SLTDA licence verified",
+    "insurance": "Passenger insurance verified",
+    "payMultiDay": "No deposit · pay 50% on the first day, the rest on the last day",
+    "paySingleDay": "No deposit · pay on arrival",
+    "cancel": "Free to cancel up to 2 days before the start"
   }
 }

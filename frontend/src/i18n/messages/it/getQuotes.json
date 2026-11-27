@@ -54,7 +54,7 @@
   },
   "how": {
     "title": "Come funziona in tre passaggi",
-    "lead": "Non devi cercare e tirare a indovinare. Descrivi il viaggio una volta sola e gli autisti liberi nelle tue date ti propongono un prezzo. Non ti viene addebitato nulla in nessun momento: quando accetti un'offerta paghi direttamente quell'autista, il primo giorno del viaggio.",
+    "lead": "Non devi cercare e tirare a indovinare. Descrivi il viaggio una volta sola e gli autisti liberi nelle tue date ti propongono un prezzo. Non è richiesto alcun acconto: quando accetti un'offerta paghi direttamente quell'autista, il 50% il primo giorno del viaggio e il resto l'ultimo giorno.",
     "step1": {
       "title": "Descrivi il tuo viaggio una volta sola",
       "body": "Date, luogo di partenza, quanti siete e un percorso di massima. Se qualcosa non è ancora deciso, dillo: gli autisti ti proporranno alternative invece di tirare a indovinare.",
@@ -67,7 +67,7 @@
     },
     "step3": {
       "title": "Chatta, confronta e prenota",
-      "body": "Fai domande in chat, modifica il programma e poi accetta l'offerta che fa per te. Non serve nessuna carta: paghi direttamente il tuo autista quando vi incontrate il primo giorno.",
+      "body": "Fai domande in chat, modifica il programma e poi accetta l'offerta che fa per te. Non servono carta né acconto: paghi direttamente il tuo autista, metà il primo giorno e il resto l'ultimo giorno.",
       "meta": "Nessun costo di prenotazione, mai"
     }
   },
@@ -177,7 +177,7 @@
     },
     "pay": {
       "q": "Come e quando pago?",
-      "a": "Paghi il tuo autista direttamente quando vi incontrate il primo giorno del viaggio: su questo sito non vengono richiesti dati di carta e nessun acconto viene addebitato tramite la piattaforma. Concorda prima in chat con il tuo autista qualsiasi cosa insolita, così ne resta traccia."
+      "a": "Paghi il tuo autista direttamente, senza acconto: il 50% quando vi incontrate il primo giorno del viaggio e il resto l'ultimo giorno. Per un viaggio di un giorno paghi all'arrivo. Su questo sito non vengono richiesti dati di carta. Concorda prima in chat con il tuo autista qualsiasi cosa insolita, così ne resta traccia."
     },
     "difference": {
       "q": "Qual è la differenza tra un autista turistico e un autista-guida?",

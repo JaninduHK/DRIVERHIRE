@@ -286,7 +286,27 @@
     "declineHint": "Répondez dans le chat pour négocier ou refuser.",
     "decline": "Refuser",
     "viewBooking": "Voir la réservation et le contact du chauffeur",
-    "closed": "Cette offre n'est plus disponible."
+    "closed": "Cette offre n'est plus disponible.",
+    "driverNote": "Message de votre chauffeur",
+    "declineDialog": {
+      "title": "Refuser cette offre ?",
+      "body": "Nous prévenons le chauffeur dans ce chat. Vous pouvez toujours lui écrire et demander une nouvelle offre plus tard.",
+      "reasonLabel": "Pourquoi refusez-vous ? (facultatif)",
+      "reasons": {
+        "price": "Le prix est trop élevé",
+        "dates": "Mes plans ont changé",
+        "vehicle": "Le véhicule ne convient pas",
+        "other_driver": "J'ai choisi un autre chauffeur"
+      },
+      "noteLabel": "Message au chauffeur (facultatif)",
+      "notePlaceholder": "Ce que le chauffeur doit savoir",
+      "confirm": "Refuser l'offre",
+      "cancel": "Garder l'offre",
+      "declining": "Refus en cours…",
+      "done": "Offre refusée. Nous avons prévenu le chauffeur.",
+      "failed": "Impossible de refuser cette offre pour le moment.",
+      "youDeclined": "Vous avez refusé cette offre."
+    }
   },
   "requests": {
     "booked": "Réservé",

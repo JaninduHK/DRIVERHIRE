@@ -10,13 +10,13 @@ import { useI18n } from '../i18n/I18nProvider.jsx';
  * inclusions existed carry no list, and showing six crosses for those would
  * wrongly read as "nothing included".
  */
-export const OfferInclusionList = ({ inclusions, className = '' }) => {
+export const OfferInclusionList = ({ inclusions, className = '', columns = 1 }) => {
   const { t } = useI18n();
   if (!Array.isArray(inclusions)) {
     return null;
   }
   return (
-    <ul className={`m-0 grid list-none gap-1 p-0 ${className}`}>
+    <ul className={`relative m-0 grid list-none p-0 ${columns === 2 ? 'gap-1 sm:grid-cols-2 sm:gap-x-3 sm:gap-y-1.5' : 'gap-1'} ${className}`}>
       {OFFER_INCLUSIONS.map(({ key }) => {
         const included = inclusions.includes(key);
         return (

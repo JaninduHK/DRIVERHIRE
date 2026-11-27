@@ -286,7 +286,27 @@
     "declineHint": "Rispondi in chat per trattare o rifiutare.",
     "decline": "Rifiuta",
     "viewBooking": "Vedi prenotazione e contatto dell'autista",
-    "closed": "Questa offerta non è più disponibile."
+    "closed": "Questa offerta non è più disponibile.",
+    "driverNote": "Messaggio del tuo autista",
+    "declineDialog": {
+      "title": "Rifiutare questa offerta?",
+      "body": "Avviseremo l'autista in questa chat. Potrai comunque scrivergli e chiedere una nuova offerta più tardi.",
+      "reasonLabel": "Perché rifiuti? (facoltativo)",
+      "reasons": {
+        "price": "Il prezzo è troppo alto",
+        "dates": "I miei piani sono cambiati",
+        "vehicle": "Il veicolo non va bene",
+        "other_driver": "Ho scelto un altro autista"
+      },
+      "noteLabel": "Messaggio all'autista (facoltativo)",
+      "notePlaceholder": "Cosa dovrebbe sapere l'autista",
+      "confirm": "Rifiuta l'offerta",
+      "cancel": "Tieni l'offerta",
+      "declining": "Rifiuto in corso…",
+      "done": "Offerta rifiutata. Abbiamo avvisato l'autista.",
+      "failed": "Impossibile rifiutare l'offerta in questo momento.",
+      "youDeclined": "Hai rifiutato questa offerta."
+    }
   },
   "requests": {
     "booked": "Prenotato",

@@ -17,7 +17,7 @@
     "year": "Year",
     "rating": "Rating",
     "payment": "Payment",
-    "onArrival": "On arrival"
+    "onArrival": "No deposit"
   },
   "availability": {
     "missingVehicle": "Vehicle information is missing. Please try again from the catalog.",
@@ -68,8 +68,10 @@
     "payDriver": "Pay your driver",
     "licenseVerified": "{license} verified",
     "identityVerified": "Identity & licence verified",
-    "payOnArrival": "Pay the driver on arrival",
-    "freeCancellation": "Free cancellation until 2 days before your trip"
+    "payOnArrival": "No deposit · pay your driver during the trip",
+    "freeCancellation": "Free cancellation until 2 days before your trip",
+    "payMultiDay": "No deposit. Pay your driver 50% on the first day and the rest on the last day.",
+    "paySingleDay": "No deposit. Pay your driver on arrival."
   },
   "driver": {
     "rating": "{rating} rating",

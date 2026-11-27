@@ -118,7 +118,8 @@
   "checking": "Checking availability…",
   "sending": "Sending…",
   "send": "Send booking request",
-  "noCard": "No card needed now. You pay <b>{amount}</b> to your driver when you meet on day one.",
+  "noCard": "No card needed now. You pay <b>{amount}</b> to your driver when you meet.",
+  "noCardMultiDay": "No card or deposit needed. You pay your driver <b>{amount}</b>: 50% on the first day, the rest on the last day.",
   "next": {
     "title": "What happens next",
     "email": "Email confirmation lands right away.",

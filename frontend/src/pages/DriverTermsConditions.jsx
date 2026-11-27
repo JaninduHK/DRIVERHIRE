@@ -20,7 +20,7 @@ const CANCELLATION_ROWS = [
 ];
 
 const DriverTermsConditions = () => {
-  const updatedOn = '2026-09-26';
+  const updatedOn = '2026-11-25';
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
@@ -91,6 +91,7 @@ const DriverTermsConditions = () => {
             <Point n="5.3">If illness, breakdown or another emergency prevents you from carrying out a confirmed hire, inform the traveller and Admin immediately so that a replacement can be arranged.</Point>
             <Point n="5.4">You must respond to messages from confirmed travellers within a reasonable time — normally within 24 hours — up to and during the hire.</Point>
             <Point n="5.5">You are responsible for the safety and lawful conduct of the hire, including observing speed limits, working hours and rest, and carrying valid insurance for your passengers throughout.</Point>
+            <Point n="5.6">The traveller pays you directly, with <b className="text-slate-900">no deposit</b>: <b className="text-slate-900">50% of the hire price on the first day</b> and the rest on the last day. For a one-day hire, the full price is paid on arrival. You may not ask for a deposit, an advance, or any amount before it is due under this clause.</Point>
           </Section>
 
           <Section title="6. Commission">
@@ -121,7 +122,7 @@ const DriverTermsConditions = () => {
               ))}
             </div>
             <Point n="7.1">&ldquo;Days&rdquo; means the hire days set out in the confirmed booking.</Point>
-            <Point n="7.2">Drivers may not apply a stricter cancellation policy, and may not request a non-refundable deposit that exceeds the amounts above.</Point>
+            <Point n="7.2">Drivers may not apply a stricter cancellation policy, and may not request a deposit (see 5.6) or any cancellation charge above the amounts shown.</Point>
             <Point n="7.3">A driver may choose to waive or reduce these charges as a gesture of goodwill, but may not demand more.</Point>
             <Point n="7.4">If a driver cancels a confirmed hire, no cancellation charge is payable by the traveller and any advance payment must be refunded in full. Repeated cancellations by a driver will result in removal from the site.</Point>
             <Point n="7.5">Where a hire cannot go ahead because of events outside the control of either party — natural disaster, civil unrest, government restrictions, closure of a border or airport — Admin will decide a fair outcome, normally payment for completed days only.</Point>
